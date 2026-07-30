@@ -81,7 +81,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
       <aside className="w-[200px] flex-shrink-0 flex flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800">
 
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
           {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
             const w = Number(ui.logo_width) || 40
             const h = Number(ui.logo_height) || 40
