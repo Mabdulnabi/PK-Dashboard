@@ -1,0 +1,415 @@
+'use client'
+// app/u/subscription/[id]/page.tsx
+
+import { useEffect, useState, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { ArrowLeft, Download, Monitor, Smartphone, ExternalLink, Zap, Wifi, WifiOff, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
+import { useLang } from '@/lib/lang-context'
+import { useSiteSettings } from '@/lib/use-site-settings'
+
+interface Purchase {
+  id: string
+  tool_name: string
+  tool_image?: string
+  tool_video?: string
+  duration_label: string
+  expires_at?: string
+  payment_method: string
+  amount_egp: number
+}
+
+interface ServerInfo {
+  id: string
+  server_label: string
+  tier_required: string
+  max_concurrent_users: number
+  current_active_users: number
+  proxy_host: string | null
+  status: string
+  is_full: boolean
+}
+
+interface Settings {
+  extension_url_1: string
+  extension_url_2: string
+  extension_pc_guide: string
+  extension_mobile_guide: string
+  whatsapp_number: string
+}
+
+// Tool name → domain mapping
+const TOOL_DOMAINS: Record<string, string> = {
+  'QuillBot':   'quillbot.com',
+  'Grammarly':  'grammarly.com',
+  'Canva Pro':  'canva.com',
+  'Canva':      'canva.com',
+  'Turnitin':   'turnitin.com',
+  'Perplexity': 'perplexity.ai',
+  'SciSpace':   'scispace.com',
+  'Gamma Pro':  'gamma.app',
+  'Semrush':    'semrush.com',
+  'Ahrefs':     'ahrefs.com',
+  'Envato':     'eu.studio.envato.com',
+}
+
+function daysLeft(expiresAt?: string) {
+  if (!expiresAt) return null
+  return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
+}
+
+export default function SubscriptionDetailPage() {
+  const { id } = useParams()
+  const router  = useRouter()
+  const { t, lang, dir, formatPrice } = useLang()
+  const settings = useSiteSettings()
+
+  const [purchase,    setPurchase]    = useState<Purchase|null>(null)
+  const [servers,     setServers]     = useState<ServerInfo[]>([])
+  const [extReady,    setExtReady]    = useState(false)
+  const [connecting,  setConnecting]  = useState(false)
+  const [connected,   setConnected]   = useState(false)
+  const [connError,   setConnError]   = useState('')
+  const [activeServer,setActiveServer]= useState<string|null>(null)
+  const [loading,     setLoading]     = useState(true)
+  const extCheckRef   = useRef(false)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/member/purchases').then(r => r.json()),
+      fetch('/api/member/shop').then(r => r.json()),
+    ]).then(([pData, sData]) => {
+      const p = pData.purchases?.find((x: any) => x.id === id)
+      if (p) setPurchase(p)
+      setLoading(false)
+    })
+
+  // ── Fetch servers when purchase is loaded ──
+  }, [id])
+
+  useEffect(() => {
+    if (!purchase?.tool_name) return
+
+    const fetchServers = () =>
+      fetch(`/api/member/servers?tool=${encodeURIComponent(purchase.tool_name)}`, { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => setServers(d.servers || []))
+
+    fetchServers()
+
+    // Poll every 30 seconds
+    const poll = setInterval(fetchServers, 30000)
+    return () => clearInterval(poll)
+  }, [purchase?.id])
+
+  // ── Extension detection (independent of purchase) ──
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.source !== window) return
+      const data = e.data
+      if (!data?.type?.startsWith('PK_')) return
+
+      if (data.type === 'PK_EXTENSION_READY') {
+        setExtReady(true)
+        window.postMessage({ type: 'PK_GET_STATE' }, '*')
+      }
+      if (data.type === 'PK_STATE') {
+        setExtReady(true)
+        if (data.state?.active_tool && data.state?.server_id) {
+          // Verify session is still active in DB
+          fetch(`/api/member/servers/session/status?server_id=${data.state.server_id}`, { credentials: 'include' })
+            .then(r => r.json())
+            .then(d => {
+              if (d.active) {
+                setConnected(true)
+                setActiveServer(data.state.server_id)
+              }
+            }).catch(() => {})
+        }
+      }
+      if (data.type === 'PK_INJECT_RESULT') {
+        setConnecting(false)
+        if (data.success) {
+          setConnected(true)
+          // Re-fetch servers to update active count
+          if (purchase?.tool_name) {
+            fetch(`/api/member/servers?tool=${encodeURIComponent(purchase.tool_name)}`, { credentials: 'include' })
+              .then(r => r.json())
+              .then(d => setServers(d.servers || []))
+          }
+        } else {
+          setConnError(data.error || t('Connection failed','فشل الاتصال'))
+        }
+      }
+      if (data.type === 'PK_DISCONNECT_RESULT') {
+        setConnected(false)
+        setActiveServer(null)
+      }
+    }
+    window.addEventListener('message', handler)
+
+    // Ping every 300ms for 5 seconds
+    let attempts = 0
+    const poll = setInterval(() => {
+      if (attempts >= 15) { clearInterval(poll); return }
+      attempts++
+      window.postMessage({ type: 'PK_PING' }, '*')
+    }, 300)
+
+    return () => {
+      window.removeEventListener('message', handler)
+      clearInterval(poll)
+    }
+  }, [])  // ← runs once on mount, independent of purchase
+
+  async function connectServer(server: ServerInfo) {
+    if (!purchase) return
+    setConnecting(true)
+    setConnError('')
+    setActiveServer(server.id)
+
+    // Fetch session data from server (service role on backend)
+    const res  = await fetch(`/api/member/servers/session?server_id=${server.id}`, { credentials: 'include' })
+    const data = await res.json()
+
+    if (!res.ok || !data.session_data) {
+      setConnecting(false)
+      setConnError(data.error || t('Failed to fetch session data','فشل جلب بيانات الجلسة'))
+      return
+    }
+
+    window.postMessage({
+      type: 'PK_INJECT_REQUEST',
+      toolName:    purchase.tool_name,
+      sessionData: data.session_data,
+      serverId:    server.id,
+      proxy:       data.proxy || null,
+    }, '*')
+  }
+
+  const days = daysLeft(purchase?.expires_at)
+
+  if (loading) return (
+    <div className="flex justify-center items-center py-32" style={{fontFamily:'Cairo, sans-serif'}}>
+      <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/>
+    </div>
+  )
+
+  if (!purchase) return (
+    <div className="text-center py-32 text-gray-400" style={{fontFamily:'Cairo, sans-serif'}}>
+      {t('Subscription not found','الاشتراك غير موجود')}
+    </div>
+  )
+
+  return (
+    <div dir={dir} className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center gap-4">
+          <button onClick={() => router.push('/u/dashboard')}
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0">
+            <ArrowLeft size={16}/>
+          </button>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {purchase.tool_image && (
+              <img src={purchase.tool_image} alt={purchase.tool_name} className="w-9 h-9 object-contain flex-shrink-0"/>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-gray-900 dark:text-white truncate">{purchase.tool_name}</h1>
+              <p className="text-xs text-gray-400">
+                {days ? t(`Expires in ${days} days`,`ينتهي بعد ${days} يوم`) : t('Lifetime','مدى الحياة')} · {lang==='ar'?purchase.duration_label.replace('Days','يوم').replace('Day','يوم'):purchase.duration_label}
+              </p>
+            </div>
+          </div>
+          {extReady && connected && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Wifi size={12}/> {t('Connected','متصل')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+
+        {/* ── Servers Section (shown when extension ready) ── */}
+        {extReady ? (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <Zap size={16} className="text-red-500"/>
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Choose a Server & Start','اختر سيرفر وابدأ')}</h2>
+              </div>
+
+            </div>
+
+            {connError && (
+              <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                <AlertCircle size={14} className="text-red-500 flex-shrink-0"/>
+                <p className="text-sm text-red-600 dark:text-red-400">{connError}</p>
+              </div>
+            )}
+
+            <div className="p-6">
+              {servers.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <p className="text-sm">{t('No servers available right now','مفيش سيرفرات متاحة دلوقتي')}</p>
+                  <p className="text-xs mt-1">{t('Contact support','تواصل مع الدعم')}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {servers.map(s => {
+                    const isActive   = activeServer === s.id && connected
+                    const isLoading  = activeServer === s.id && connecting
+                    const isFull     = s.is_full && !isActive
+                    const load       = Math.round((s.current_active_users / s.max_concurrent_users) * 100)
+
+                    return (
+                      <button key={s.id}
+                        onClick={() => !isFull && !connecting && connectServer(s)}
+                        disabled={isFull || connecting}
+                        className={`relative p-4 rounded-2xl border-2 text-right transition-all ${
+                          isActive
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 cursor-default'
+                            : isFull
+                            ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60 cursor-not-allowed'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/5 cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                            isActive ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-gray-700'
+                          }`}>
+                            {isLoading
+                              ? <Loader2 size={14} className="animate-spin text-red-500"/>
+                              : isActive
+                              ? <CheckCircle size={14} className="text-white"/>
+                              : <Wifi size={14} className="text-gray-400"/>
+                            }
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            isFull ? 'bg-red-50 dark:bg-red-500/10 text-red-500' :
+                            load > 70 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600' :
+                            'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          }`}>
+                            {isFull ? t('Full','ممتلئ') : load > 70 ? t('Busy','مزدحم') : t('Available','متاح')}
+                          </span>
+                        </div>
+                        <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">{s.server_label}</div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span>{s.current_active_users}/{s.max_concurrent_users} {t('users','مستخدم')}</span>
+                          {s.proxy_host && <span>· 🌐 Proxy</span>}
+                        </div>
+                        {/* Load bar */}
+                        <div className="mt-3 h-1 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${
+                            load > 70 ? 'bg-amber-400' : 'bg-emerald-400'
+                          }`} style={{ width: `${Math.min(load, 100)}%` }}/>
+                        </div>
+                        {isActive && (
+                          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{t('✓ Connected — Tool is open','✓ متصل — الأداة مفتوحة')}</div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* ── Extension not installed — show download section ── */
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <Download size={16} className="text-red-500"/>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Install Extension to Start','ثبّت الإضافة لتبدأ الاستخدام')}</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <a href={settings?.extension_url_1 || '#'}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+                  <Download size={15}/> Extension 1
+                </a>
+                <a href={settings?.extension_url_2 || '#'}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+                  <Download size={15}/> Extension 2
+                </a>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Monitor size={15} className="text-blue-500"/>
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">PC / Laptop</span>
+                  </div>
+                  <ol className="text-xs text-gray-500 dark:text-gray-400 space-y-1.5 mb-4">
+                    <li>1. {t('Download both extensions','حمّل الإضافتين')}</li>
+                    <li>2. {t('Extract the ZIP','فك الضغط')}</li>
+                    <li>3. Chrome → Extensions</li>
+                    <li>4. Developer Mode ✓</li>
+                    <li>5. Load Unpacked</li>
+                  </ol>
+                  <a href={settings?.extension_pc_guide || '#'} target="_blank"
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors">
+                    <ExternalLink size={11}/> {t('Full Guide','دليل مفصّل')}
+                  </a>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Smartphone size={15} className="text-purple-500"/>
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Mobile</span>
+                  </div>
+                  <ol className="text-xs text-gray-500 dark:text-gray-400 space-y-1.5 mb-4">
+                    <li>1. {t('Download Lemur Browser','حمّل Lemur Browser')}</li>
+                    <li>2. Extensions</li>
+                    <li>3. Developer Mode ✓</li>
+                    <li>4. {t('Download both extensions','حمّل الإضافتين')}</li>
+                    <li>5. {t('Start using','ابدأ الاستخدام')}</li>
+                  </ol>
+                  <a href={settings?.extension_mobile_guide || '#'} target="_blank"
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold transition-colors">
+                    <ExternalLink size={11}/> {t('Full Guide','دليل مفصّل')}
+                  </a>
+                </div>
+              </div>
+
+              <p className="text-center text-xs text-gray-400 mt-4">
+                {t('After installation, reload the page and servers will appear automatically','بعد التثبيت، أعد تحميل الصفحة وستظهر السيرفرات تلقائياً')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Video Tutorial ── */}
+        {purchase.tool_video && (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <Zap size={16} className="text-amber-500"/>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Tutorial Video','فيديو توضيحي')}</h2>
+            </div>
+            <div className="p-4">
+              <div className="rounded-xl overflow-hidden bg-gray-900 aspect-video">
+                <iframe
+                  src={purchase.tool_video.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/')}
+                  className="w-full h-full" allowFullScreen frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── WhatsApp support ── */}
+        <a href={`https://wa.me/${(settings?.whatsapp_number||'').replace(/\D/g,'')}?text=${encodeURIComponent(`مساعدة في: ${purchase.tool_name}`)}`}
+          target="_blank"
+          className="flex items-center gap-4 p-5 rounded-2xl bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-lg">💬</span>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-green-700 dark:text-green-400">{t('Need Help?','محتاج مساعدة؟')}</div>
+            <div className="text-xs text-green-600 dark:text-green-500">{t('Contact us on WhatsApp','تواصل معنا على WhatsApp فوراً')}</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  )
+}
