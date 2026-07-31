@@ -68,9 +68,9 @@ export default function ShopPage({ category }: Props) {
   const buy = (tool:Tool) => { window.location.href=`/u/checkout?tool_id=${tool.id}` }
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6">
       {/* Banner */}
-      <div className="rounded-2xl mb-5 px-8 py-7 text-center" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)'}}>
+      <div className="rounded-2xl mb-5 px-4 md:px-8 py-6 text-center" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)'}}>
         <h1 className="text-2xl font-bold text-white mb-1.5" dir="ltr">
           Pro<span className="text-red-400">Keys</span> {meta.title}
         </h1>
@@ -83,27 +83,29 @@ export default function ShopPage({ category }: Props) {
       </div>
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
         <div className="relative flex-1">
           <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools...','ابحث عن أداة...')}
             className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-red-400 transition-all"/>
         </div>
-        <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
-          <option value="all">{t('All','الكل')} ({tools.length})</option>
-          {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-          ))}
-        </select>
-        <button onClick={()=>setSort('best')}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-          ⭐ {t('Top Rated','الأعلى تقييماً')}
-        </button>
-        <button onClick={()=>setSort('recent')}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-          🕐 {t('New','الأحدث')}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
+            <option value="all">{t('All','الكل')} ({tools.length})</option>
+            {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+            ))}
+          </select>
+          <button onClick={()=>setSort('best')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            ⭐ {t('Top Rated','الأعلى تقييماً')}
+          </button>
+          <button onClick={()=>setSort('recent')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            🕐 {t('New','الأحدث')}
+          </button>
+        </div>
       </div>
 
       {/* Section label */}
@@ -119,7 +121,7 @@ export default function ShopPage({ category }: Props) {
       {loading&&<div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
 
       {/* Tool cards */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
         {filtered.map(tool=>(
           <div key={tool.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
             {/* Card body - always LTR for layout, content direction handled per element */}
@@ -168,12 +170,12 @@ export default function ShopPage({ category }: Props) {
       {/* Popup */}
       {popup && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={()=>setPopup(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex"
-            style={{minHeight:'520px'}} onClick={e=>e.stopPropagation()}>
-            <div className="w-[52%] bg-gray-900 rounded-s-3xl overflow-hidden flex items-center justify-center flex-shrink-0">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row"
+            onClick={e=>e.stopPropagation()}>
+            <div className="w-full md:w-[52%] bg-gray-900 rounded-t-3xl md:rounded-t-none md:rounded-s-3xl overflow-hidden flex items-center justify-center flex-shrink-0" style={{minHeight:'220px',maxHeight:'260px',['--md-max-height' as any]:'none'}}>
               {popup.video_url ? (
                 <iframe src={popup.video_url.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/')}
-                  className="w-full h-full min-h-[520px]" allowFullScreen frameBorder="0"
+                  className="w-full h-full min-h-[220px] md:min-h-[520px]" allowFullScreen frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"/>
               ) : (
                 <div className="flex flex-col items-center gap-3 text-gray-500 p-8 text-center">

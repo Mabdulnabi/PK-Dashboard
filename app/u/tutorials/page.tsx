@@ -21,7 +21,7 @@ export default function TutorialsPage() {
   const badgeColor:any={'MUST WATCH':'#EF4444','BEST SELLER':'#10B981','PRO SELECTION':'#8B5CF6'}
 
   return (
-    <div className="p-6" dir={dir}>
+    <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
       <div className="rounded-2xl mb-6 p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 mb-4">

@@ -47,7 +47,7 @@ export default function PaymentsPage() {
   ]
 
   return (
-    <div dir={dir}>
+    <div dir={dir} className="p-3 md:p-6">
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <div>
@@ -64,7 +64,8 @@ export default function PaymentsPage() {
           </div>
         </div>
 
-        <table className="w-full table-fixed">
+        <div className="overflow-x-auto">
+        <table className="w-full table-fixed min-w-[540px]">
           <colgroup>
             <col className="w-[30%]"/><col className="w-[15%]"/>
             <col className="w-[20%]"/><col className="w-[15%]"/><col className="w-[20%]"/>
@@ -102,6 +103,7 @@ export default function PaymentsPage() {
             })}
           </tbody>
         </table>
+        </div>
 
         {totalPages>1&&(
           <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 dark:border-gray-800">

@@ -54,7 +54,7 @@ export default function HelpdeskPage() {
   }
 
   return (
-    <div className="p-6" dir={dir}>
+    <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
       <div className="rounded-2xl mb-6 p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="flex items-start justify-between gap-4">

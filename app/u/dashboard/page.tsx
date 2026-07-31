@@ -72,7 +72,7 @@ export default function UserDashboard() {
   )
 
   return (
-    <div className="p-6" dir={dir}>
+    <div className="p-3 md:p-6" dir={dir}>
 
       {/* Active Subscriptions */}
       <div className="mb-8">
