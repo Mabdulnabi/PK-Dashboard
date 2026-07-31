@@ -38,6 +38,22 @@ async function injectSession(toolName, sessionData, proxy) {
   console.log('INJECT:', toolName, '→', domain, 'cookies:', sessionData?.cookies?.length)
   if (!domain) return { success: false, error: 'Unknown tool: ' + toolName }
 
+  // 0. Setup proxy FIRST — before opening any tab or setting cookies
+  if (proxy?.host) {
+    await new Promise(resolve => chrome.proxy.settings.set({
+      value: {
+        mode: 'fixed_servers',
+        rules: {
+          singleProxy: { scheme: 'http', host: proxy.host, port: parseInt(proxy.port) },
+          bypassList:  ['localhost', '127.0.0.1']
+        }
+      },
+      scope: 'regular'
+    }, resolve))
+    // Wait for proxy to be active
+    await new Promise(r => setTimeout(r, 600))
+  }
+
   // 1. Clear old cookies — domain + parentDomain + extra subdomains (e.g. coda/capi for Grammarly)
   const parentDomain  = domain.split('.').slice(-2).join('.')
   const extraDomains  = getExtraDomains(domain)
@@ -84,21 +100,7 @@ async function injectSession(toolName, sessionData, proxy) {
     }
   }
 
-  // 3. Setup proxy if provided
-  if (proxy?.host) {
-    chrome.proxy.settings.set({
-      value: {
-        mode: 'fixed_servers',
-        rules: {
-          singleProxy: { scheme: 'http', host: proxy.host, port: parseInt(proxy.port) },
-          bypassList:  ['localhost', '127.0.0.1']
-        }
-      },
-      scope: 'regular'
-    })
-  }
-
-  // 4. Find or open tool tab — inject everything BEFORE opening
+  // 3. Find or open tool tab — inject everything BEFORE opening
   // Store pending inject for onUpdated handler
   await setState({ pending_inject: { toolName, sessionData } })
 
