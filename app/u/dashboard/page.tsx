@@ -9,7 +9,94 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag } from 'lucide-react'
+
+// ── Smart Next Action ──────────────────────────────────────
+type ActionType = 'urgent'|'warning'|'notif'|'new_member'
+interface SmartAction { type: ActionType; title: string; subtitle: string; cta: string; href: string }
+
+function SmartNextAction({ purchases, notifications, loading, t, lang }: {
+  purchases: any[]; notifications: any[]; loading: boolean; t: any; lang: string
+}) {
+  const [dismissed, setDismissed] = useState(false)
+
+  if (loading || dismissed) return null
+
+  const soonest = [...purchases].sort((a,b)=>(daysLeft(a.expires_at)??9999)-(daysLeft(b.expires_at)??9999))[0]
+  const days = soonest ? daysLeft(soonest?.expires_at) : null
+  const unreadNotif = notifications.find(n=>!n.is_read)
+  const isNewMember = purchases.length === 0
+
+  let action: SmartAction | null = null
+
+  if (days !== null && days <= 3 && soonest) {
+    action = {
+      type: 'urgent',
+      title: lang==='ar' ? `⚠ ${soonest.tool_name} ينتهي بعد ${days} ${days===1?'يوم':'أيام'}` : `⚠ ${soonest.tool_name} expires in ${days} day${days===1?'':'s'}`,
+      subtitle: lang==='ar' ? 'جدد الآن لتجنب انقطاع الخدمة' : 'Renew now to avoid interruption',
+      cta: lang==='ar' ? 'تجديد الآن' : 'Renew Now',
+      href: `/u/checkout?tool_id=${soonest.id}&renew=1`,
+    }
+  } else if (days !== null && days <= 7 && soonest) {
+    action = {
+      type: 'warning',
+      title: lang==='ar' ? `${soonest.tool_name} ينتهي بعد ${days} أيام` : `${soonest.tool_name} expires in ${days} days`,
+      subtitle: lang==='ar' ? 'فكر في التجديد قريباً' : 'Consider renewing soon',
+      cta: lang==='ar' ? 'تجديد' : 'Renew',
+      href: `/u/checkout?tool_id=${soonest.id}&renew=1`,
+    }
+  } else if (unreadNotif) {
+    action = {
+      type: 'notif',
+      title: unreadNotif.title || (lang==='ar' ? 'لديك إشعار جديد' : 'You have a new notification'),
+      subtitle: unreadNotif.message || '',
+      cta: lang==='ar' ? 'عرض' : 'View',
+      href: '/u/helpdesk',
+    }
+  } else if (isNewMember) {
+    action = {
+      type: 'new_member',
+      title: lang==='ar' ? 'مرحباً! ابدأ رحلتك مع Pro Keys' : 'Welcome! Start your Pro Keys journey',
+      subtitle: lang==='ar' ? 'تصفح أشهر الأدوات وابدأ الاشتراك' : 'Browse our most popular tools',
+      cta: lang==='ar' ? 'تصفح المتجر' : 'Browse Shop',
+      href: '/u/shop/shared',
+    }
+  }
+
+  if (!action) return null
+
+  const styles: Record<ActionType, { bg: string; border: string; icon: React.ReactNode }> = {
+    urgent:     { bg:'bg-red-50 dark:bg-red-500/10',    border:'border-red-200 dark:border-red-500/30',    icon:<RefreshCw size={16} className="text-red-500 flex-shrink-0"/> },
+    warning:    { bg:'bg-amber-50 dark:bg-amber-500/10', border:'border-amber-200 dark:border-amber-500/30', icon:<Clock size={16} className="text-amber-500 flex-shrink-0"/> },
+    notif:      { bg:'bg-blue-50 dark:bg-blue-500/10',   border:'border-blue-200 dark:border-blue-500/30',   icon:<Bell size={16} className="text-blue-500 flex-shrink-0"/> },
+    new_member: { bg:'bg-purple-50 dark:bg-purple-500/10',border:'border-purple-200 dark:border-purple-500/30',icon:<ShoppingBag size={16} className="text-purple-500 flex-shrink-0"/> },
+  }
+  const ctaStyles: Record<ActionType, string> = {
+    urgent:     'bg-red-500 hover:bg-red-600 text-white',
+    warning:    'bg-amber-500 hover:bg-amber-600 text-white',
+    notif:      'bg-blue-500 hover:bg-blue-600 text-white',
+    new_member: 'bg-purple-500 hover:bg-purple-600 text-white',
+  }
+  const s = styles[action.type]
+
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border mb-6 ${s.bg} ${s.border}`}>
+      {s.icon}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{action.title}</p>
+        {action.subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{action.subtitle}</p>}
+      </div>
+      <a href={action.href}
+        className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${ctaStyles[action.type]}`}>
+        {action.cta} →
+      </a>
+      <button onClick={()=>setDismissed(true)}
+        className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 transition-colors">
+        <X size={13}/>
+      </button>
+    </div>
+  )
+}
 
 interface Purchase {
   id:string; tool_name:string; tool_image?:string
@@ -38,6 +125,7 @@ export default function UserDashboard() {
   const [free,         setFree]         = useState<FreeTool[]>([])
   const [loading,      setLoading]      = useState(true)
   const [extReady,     setExtReady]     = useState(false)
+  const [notifications, setNotifications] = useState<any[]>([])
   const [connectingId, setConnectingId] = useState<string|null>(null)
   const [connectedId,  setConnectedId]  = useState<string|null>(null)
   const [quickError,   setQuickError]   = useState<string|null>(null)
@@ -51,9 +139,11 @@ export default function UserDashboard() {
     Promise.all([
       fetch('/api/member/purchases').then(r=>r.ok?r.json():{purchases:[]}),
       fetch('/api/member/shop').then(r=>r.ok?r.json():{free:[]}),
-    ]).then(([pData,sData])=>{
+      fetch('/api/member/notifications').then(r=>r.ok?r.json():{notifications:[]}),
+    ]).then(([pData,sData,nData])=>{
       setPurchases(pData.purchases||[])
       setFree(sData.free||[])
+      setNotifications(nData.notifications||[])
       setLoading(false)
     }).catch(()=>setLoading(false))
 
@@ -140,6 +230,8 @@ export default function UserDashboard() {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
+
+      <SmartNextAction purchases={purchases} notifications={notifications} loading={loading} t={t} lang={lang}/>
 
       {quickError && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400">
