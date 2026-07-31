@@ -183,6 +183,14 @@ function loadSessionsList() {
   });
 }
 
+// ========== EXTRA SUBDOMAINS PER TOOL ==========
+const EXTRA_SUBDOMAINS = {
+  "grammarly.com": ["app.grammarly.com", "coda.grammarly.com", "capi.grammarly.com"],
+};
+function getExtraSubdomains(rootDomain) {
+  return EXTRA_SUBDOMAINS[rootDomain] || [];
+}
+
 // ========== AUTO CAPTURE ==========
 function autoCaptureFromTab() {
   const statusEl = document.getElementById("captureStatus");
@@ -198,26 +206,37 @@ function autoCaptureFromTab() {
 
     const tabUrl = tabs[0].url;
     const hostname = new URL(tabUrl).hostname;
-    // استخرج الـ root domain عشان نسحب كوكيز الـ subdomains كمان
     const parts = hostname.split(".");
     const rootDomain = parts.slice(-2).join(".");
     const detectedTool = TOOLS.find(t => hostname.includes(new URL(t.url).hostname.replace("app.", "")));
 
-    // اسحب بـ domain عشان ياخد الـ subdomains كلها
-    chrome.cookies.getAll({ domain: rootDomain }, cookies => {
-      if (!cookies || cookies.length === 0) {
-        // جرب بالـ url لو فشل
-        chrome.cookies.getAll({ url: tabUrl }, cookies2 => {
-          if (!cookies2 || cookies2.length === 0) {
-            statusEl.textContent = "❌ مش لاقي cookies — تأكد إنك logged in";
-            statusEl.style.color = "#ef4444";
-            return;
-          }
-          finalizeCookies(cookies2, rootDomain, detectedTool, statusEl);
+    // hostname الحالي + extra subdomains (Grammarly: app + coda + capi)
+    const extraSubdomains = [hostname, ...getExtraSubdomains(rootDomain)];
+
+    // { url } يمسك hostOnly cookies على الـ tab الحالي
+    chrome.cookies.getAll({ url: tabUrl }, mainCookies => {
+      const allCookies = mainCookies || [];
+
+      const fetchExtra = (subs, done) => {
+        if (subs.length === 0) { done(allCookies); return; }
+        const [sub, ...rest] = subs;
+        chrome.cookies.getAll({ url: "https://" + sub + "/" }, subCookies => {
+          (subCookies || []).forEach(c => {
+            if (!allCookies.some(x => x.name === c.name && x.domain === c.domain))
+              allCookies.push(c);
+          });
+          fetchExtra(rest, done);
         });
-        return;
-      }
-      finalizeCookies(cookies, rootDomain, detectedTool, statusEl);
+      };
+
+      fetchExtra(extraSubdomains, merged => {
+        if (merged.length === 0) {
+          statusEl.textContent = "❌ مش لاقي cookies — تأكد إنك logged in";
+          statusEl.style.color = "#ef4444";
+          return;
+        }
+        finalizeCookies(merged, rootDomain, detectedTool, statusEl);
+      });
     });
   });
 }
