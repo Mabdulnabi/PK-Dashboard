@@ -106,7 +106,7 @@ function CheckoutInner() {
 
   const applyCoupon = async()=>{
     if (!coupon.trim()) return
-    const res  = await fetch('/api/member/coupon',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code:coupon }) })
+    const res  = await fetch('/api/member/coupon',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code:coupon, tool_id: toolId }) })
     const data = await res.json()
     if (!data.valid){ setCouponResult({ error:t('Invalid coupon code','كود خصم غير صالح') }); return }
     setCouponResult(data)

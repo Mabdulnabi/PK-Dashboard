@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Pro Keys</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{width:360px;background:#0a0a0a;color:#f0f0f0;font-family:'Segoe UI',Tahoma,sans-serif;font-size:13px}
+
+    .header{background:linear-gradient(135deg,#1a1a1a,#111);border-bottom:2px solid #d4900a;padding:12px 16px;display:flex;align-items:center;gap:10px}
+    .header img{width:34px;height:34px;object-fit:contain}
+    .header h1{font-size:15px;font-weight:700;color:#f0a500;letter-spacing:1px}
+    .header small{font-size:10px;color:#555}
+
+    .status-bar{display:flex;align-items:center;gap:8px;padding:7px 16px;background:#111;border-bottom:1px solid #1a1a1a}
+    .dot{width:7px;height:7px;border-radius:50%;background:#333;transition:all .3s}
+    .dot.on{background:#22c55e;box-shadow:0 0 5px #22c55e99}
+    .dot.off{background:#ef4444}
+    .status-bar span{font-size:11px;color:#666}
+    #activeTool{margin-right:auto;color:#f0a500;font-size:11px;font-weight:600}
+
+    .tabs{display:flex;border-bottom:1px solid #1a1a1a}
+    .tab{flex:1;padding:9px;text-align:center;font-size:11px;font-weight:600;color:#444;cursor:pointer;border-bottom:2px solid transparent;background:#0d0d0d;transition:all .2s}
+    .tab.active{color:#f0a500;border-bottom-color:#f0a500;background:#111}
+    .tab:hover{color:#aaa}
+
+    .panel{display:none;padding:14px 16px}
+    .panel.active{display:block}
+
+    .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .tool-card{background:#141414;border:1px solid #222;border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px}
+    .tool-card:hover{border-color:#f0a500;background:#1a1500;transform:translateY(-1px)}
+    .tool-card.has-session{border-color:#22c55e44}
+    .tool-card.has-session:hover{border-color:#22c55e;background:#0a1a0a}
+    .tool-icon{font-size:20px}
+    .tool-name{font-size:10px;font-weight:600;color:#ccc}
+    .session-badge{font-size:9px;background:#22c55e22;color:#22c55e;border-radius:4px;padding:1px 5px;border:1px solid #22c55e44}
+    .no-session-badge{font-size:9px;background:#1a1a1a;color:#444;border-radius:4px;padding:1px 5px;border:1px solid #222}
+
+    .section-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#444;margin-bottom:8px}
+    .select-field,.input-field,.textarea-field{background:#141414;border:1px solid #222;border-radius:7px;color:#f0f0f0;padding:8px 10px;font-size:12px;outline:none;transition:border-color .2s;width:100%;direction:ltr}
+    .select-field:focus,.input-field:focus,.textarea-field:focus{border-color:#f0a500}
+    .textarea-field{height:75px;resize:none;font-family:monospace;font-size:11px}
+    ::placeholder{color:#444}
+
+    .capture-box{background:#141414;border:1px solid #1e3a1e;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .capture-box-info{flex:1}
+    .capture-box-title{font-size:11px;font-weight:600;color:#22c55e}
+    .capture-box-sub{font-size:10px;color:#555;margin-top:2px}
+    #captureStatus{font-size:10px;color:#666;margin-top:3px}
+
+    .sessions-list{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto}
+    .session-item{display:flex;align-items:center;gap:8px;background:#141414;border:1px solid #222;border-radius:7px;padding:8px 10px}
+    .session-item-icon{font-size:16px}
+    .session-item-info{flex:1}
+    .session-item-name{font-size:12px;font-weight:600;color:#ccc}
+    .session-item-date{font-size:10px;color:#444}
+    .icon-btn{background:none;border:1px solid #2a2a2a;border-radius:5px;color:#555;cursor:pointer;padding:3px 7px;font-size:11px;transition:all .2s}
+    .icon-btn:hover{border-color:#f0a500;color:#f0a500}
+    .icon-btn.del:hover{border-color:#ef4444;color:#ef4444}
+    .empty-state{text-align:center;color:#333;font-size:12px;padding:16px}
+
+    .proxy-form{display:flex;flex-direction:column;gap:8px}
+    .row{display:flex;gap:7px}
+
+    .btn{padding:9px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;width:100%}
+    .btn-gold{background:linear-gradient(135deg,#f0a500,#c88800);color:#000}
+    .btn-gold:hover{opacity:.9}
+    .btn-green{background:#0a1f0a;border:1px solid #22c55e;color:#22c55e}
+    .btn-green:hover{background:#22c55e;color:#000}
+    .btn-red{background:#150808;border:1px solid #ef4444;color:#ef4444}
+    .btn-red:hover{background:#ef4444;color:#fff}
+    .btn-sm{width:auto;padding:7px 11px;font-size:11px}
+    .divider{border:none;border-top:1px solid #1a1a1a;margin:10px 0}
+
+    #toast{position:fixed;bottom:10px;left:50%;transform:translateX(-50%) translateY(30px);background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:7px 16px;font-size:12px;opacity:0;transition:all .25s;white-space:nowrap;z-index:999;pointer-events:none}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    #toast.ok{border-color:#22c55e;color:#22c55e}
+    #toast.err{border-color:#ef4444;color:#ef4444}
+    #toast.info{border-color:#f0a500;color:#f0a500}
+
+    .footer{padding:8px;text-align:center;font-size:10px;color:#222}
+    .footer span{color:#f0a50055}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="icons/logo.png" alt="Pro Keys"/>
+  <div>
+    <h1>PRO KEYS</h1>
+    <small>Premium Tools Access</small>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="dot off" id="dot"></div>
+  <span id="statusText">غير متصل</span>
+  <span id="activeTool"></span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="tools">🔧 الأدوات</div>
+  <div class="tab" data-tab="sessions">🍪 Sessions</div>
+  <div class="tab" data-tab="proxy">🌐 Proxy</div>
+</div>
+
+<div class="panel active" id="tab-tools">
+  <div class="tools-grid" id="toolsGrid"></div>
+</div>
+
+<div class="panel" id="tab-sessions">
+  <div class="capture-box">
+    <div class="capture-box-info">
+      <div class="capture-box-title">🤖 سحب تلقائي من التاب الحالي</div>
+      <div class="capture-box-sub">افتح الموقع وسجل دخول، وبعدين اضغط سحب</div>
+      <div id="captureStatus">جاهز للسحب</div>
+    </div>
+    <button class="btn btn-green btn-sm" id="btnCapture">سحب ⬆</button>
+  </div>
+
+  <div class="section-label">أو أضف يدوياً</div>
+  <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px">
+    <select class="select-field" id="sessionTool"><option value="">اختار الأداة</option></select>
+    <textarea class="textarea-field" id="sessionCookies" placeholder='[{"name":"session","value":"xxx","domain":".quillbot.com"}]'></textarea>
+    <button class="btn btn-gold" id="btnSaveSession">💾 حفظ Session</button>
+  </div>
+
+  <hr class="divider"/>
+  <div class="section-label">📋 Sessions المحفوظة</div>
+  <div class="sessions-list" id="sessionsList">
+    <div class="empty-state">مفيش sessions محفوظة</div>
+  </div>
+</div>
+
+<div class="panel" id="tab-proxy">
+  <div class="proxy-form">
+    <div class="section-label">🌐 إعداد الـ Proxy</div>
+    <div class="row">
+      <input class="input-field" id="proxyHost" placeholder="Host (e.g. 1.2.3.4)"/>
+      <input class="input-field" id="proxyPort" placeholder="Port" style="max-width:90px"/>
+    </div>
+    <div class="row">
+      <input class="input-field" id="proxyUser" placeholder="Username (اختياري)"/>
+      <input class="input-field" id="proxyPass" type="password" placeholder="Password"/>
+    </div>
+    <div class="row">
+      <button class="btn btn-gold" id="btnEnableProxy">🔌 تفعيل</button>
+      <button class="btn btn-red btn-sm" id="btnDisableProxy">✕ إيقاف</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Powered by <span>Pro Keys</span></div>
+<div id="toast"></div>
+<script src="popup.js"></script>
+</body>
+</html>

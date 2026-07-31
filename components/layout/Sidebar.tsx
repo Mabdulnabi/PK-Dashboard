@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, AppWindow, CreditCard, BarChart3, Receipt, Bell, Settings, Key, LogOut, Upload, Globe, Zap, CreditCard as PlanIcon, MessageSquare, UserCircle, ShoppingBag, SlidersHorizontal, Server} from 'lucide-react'
+import { LayoutDashboard, Users, AppWindow, CreditCard, BarChart3, Receipt, Bell, Settings, Key, LogOut, Upload, Globe, Zap, CreditCard as PlanIcon, MessageSquare, UserCircle, ShoppingBag, SlidersHorizontal, Server, Tag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useUISettings } from '@/lib/use-ui-settings'
@@ -29,6 +29,7 @@ const nav = [
     { label:'OneClick',   href:'/oneclick',   icon:Zap },
     { label:'Servers',    href:'/servers',    icon:Server },  // ← ضيف السطر ده
     { label:'Shop Tools', href:'/shop-admin', icon:ShoppingBag },
+    { label:'Coupons',    href:'/coupons',    icon:Tag },
     { label:'Site Settings', href:'/site-settings', icon:SlidersHorizontal },
   ]},
   { section:'System', items:[
