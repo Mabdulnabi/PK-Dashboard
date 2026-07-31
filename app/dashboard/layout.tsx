@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <Sidebar expiringCount={expiring} userName={userName}/>
+      <Sidebar userName={userName}/>
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         {children}
       </main>
