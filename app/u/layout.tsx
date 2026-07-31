@@ -37,6 +37,10 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const [profileOpen,   setProfile]  = useState(false)
   const [notifOpen,     setNotif]    = useState(false)
   const [notifications, setNotifs]   = useState<any[]>([])
+  const [redeemOpen,    setRedeem]   = useState(false)
+  const [redeemCode,    setRedeemCode] = useState('')
+  const [redeemResult,  setRedeemResult] = useState<any>(null)
+  const [redeemLoading, setRedeemLoading] = useState(false)
 
   // Profile form state
   const [newEmail,    setNewEmail]    = useState('')
@@ -63,6 +67,15 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const logout = async()=>{
     await fetch('/api/member/verify',{method:'DELETE'})
     router.push('/u/login')
+  }
+
+  const handleRedeem = async()=>{
+    if (!redeemCode.trim()) return
+    setRedeemLoading(true); setRedeemResult(null)
+    const res  = await fetch('/api/member/coupon/validate',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code: redeemCode }) })
+    const data = await res.json()
+    setRedeemResult(data)
+    setRedeemLoading(false)
   }
 
   if (pathname==='/u/login') return <>{children}</>
@@ -219,7 +232,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
               )}
             </div>
             {/* Redeem */}
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors shadow-sm shadow-red-500/25">
+            <button onClick={()=>{ setRedeem(true); setRedeemCode(''); setRedeemResult(null) }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors shadow-sm shadow-red-500/25">
               🎁 {lang==='ar'?'استرداد كود':'Redeem Code'}
             </button>
             {/* Logout */}
@@ -272,6 +285,73 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
                 <LogOut size={14}/>{lang==='ar'?'تسجيل الخروج':'Sign Out'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Redeem Code Modal ──────────────────────── */}
+      {redeemOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={()=>setRedeem(false)}>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">🎁 {lang==='ar'?'استرداد كود':'Redeem Code'}</h3>
+              <button onClick={()=>setRedeem(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                <X size={14}/>
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {lang==='ar'?'أدخل كود الخصم أو الكود الترويجي':'Enter your coupon or promo code'}
+            </p>
+            <div className="flex gap-2 mb-4">
+              <input
+                value={redeemCode}
+                onChange={e=>{ setRedeemCode(e.target.value.toUpperCase()); setRedeemResult(null) }}
+                onKeyDown={e=>e.key==='Enter'&&handleRedeem()}
+                placeholder={lang==='ar'?'مثال: SAVE20':'e.g. SAVE20'}
+                dir="ltr"
+                className="flex-1 px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-red-500 font-mono uppercase"
+              />
+              <button onClick={handleRedeem} disabled={redeemLoading||!redeemCode.trim()}
+                className="px-5 py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                {redeemLoading ? '...' : (lang==='ar'?'تحقق':'Check')}
+              </button>
+            </div>
+            {redeemResult && (
+              redeemResult.valid ? (
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check size={16} className="text-emerald-500"/>
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                      {lang==='ar'?'كود صالح!':'Valid code!'}
+                    </span>
+                  </div>
+                  {redeemResult.type==='discount' && (
+                    <>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">
+                        {lang==='ar'
+                          ? `خصم ${redeemResult.value}% — استخدم الكود عند الدفع في المتجر`
+                          : `${redeemResult.value}% discount — use this code at checkout`}
+                      </p>
+                      <button onClick={()=>{ setRedeem(false); router.push('/u/shop') }}
+                        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-colors">
+                        {lang==='ar'?'اذهب للمتجر →':'Go to Shop →'}
+                      </button>
+                    </>
+                  )}
+                  {redeemResult.type!=='discount' && (
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                      {lang==='ar'?'تواصل مع الدعم لتفعيل الكود':'Contact support to activate this code'}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4">
+                  <p className="text-sm text-red-500 font-medium">
+                    {lang==='ar'?'كود غير صالح أو منتهي الصلاحية':'Invalid or expired code'}
+                  </p>
+                </div>
+              )
+            )}
           </div>
         </div>
       )}
