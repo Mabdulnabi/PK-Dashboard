@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
 import { createClient } from '@supabase/supabase-js'
@@ -9,11 +9,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi } from 'lucide-react'
 
 interface Purchase {
   id:string; tool_name:string; tool_image?:string
-  tool_video?:string; duration_label:string
+  tool_video?:string; duration_label:string; category_slug?:string
   expires_at?:string; payment_method:string; amount_egp:number
 }
 interface FreeTool { id:string; name:string; image_url?:string; access_url:string }
@@ -34,9 +34,14 @@ export default function UserDashboard() {
   const router = useRouter()
   const settings = useSiteSettings()
   const { t, lang, dir } = useLang()
-  const [purchases, setPurchases] = useState<Purchase[]>([])
-  const [free,      setFree]      = useState<FreeTool[]>([])
-  const [loading,   setLoading]   = useState(true)
+  const [purchases,    setPurchases]    = useState<Purchase[]>([])
+  const [free,         setFree]         = useState<FreeTool[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [extReady,     setExtReady]     = useState(false)
+  const [connectingId, setConnectingId] = useState<string|null>(null)
+  const [connectedId,  setConnectedId]  = useState<string|null>(null)
+  const [quickError,   setQuickError]   = useState<string|null>(null)
+  const activeRef = useRef<string|null>(null)
 
   const fetchPurchases = () => {
     fetch('/api/member/purchases').then(r=>r.ok?r.json():{purchases:[]}).then(d=>setPurchases(d.purchases||[]))
@@ -52,18 +57,80 @@ export default function UserDashboard() {
       setLoading(false)
     }).catch(()=>setLoading(false))
 
-    // ── Realtime: re-fetch purchases on any change ──
     const channel = supabase
       .channel('dashboard-purchases')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tool_purchases',
-      }, () => { fetchPurchases() })
+      .on('postgres_changes',{ event:'*', schema:'public', table:'tool_purchases' },()=>fetchPurchases())
       .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    return ()=>{ supabase.removeChannel(channel) }
   },[])
+
+  // Extension detection
+  useEffect(()=>{
+    const handler = (e: MessageEvent) => {
+      if (e.source !== window) return
+      const d = e.data
+      if (!d?.type?.startsWith('PK_')) return
+      if (d.type==='PK_EXTENSION_READY') { setExtReady(true); window.postMessage({type:'PK_GET_STATE'},'*') }
+      if (d.type==='PK_STATE')           { setExtReady(true) }
+      if (d.type==='PK_INJECT_RESULT') {
+        setConnectingId(null)
+        if (d.success) { setConnectedId(activeRef.current) }
+        else {
+          setConnectedId(null)
+          setQuickError(d.error || t('Connection failed','فشل الاتصال'))
+          setTimeout(()=>setQuickError(null), 4000)
+        }
+      }
+    }
+    window.addEventListener('message', handler)
+    let attempts = 0
+    const poll = setInterval(()=>{
+      if (attempts>=15){ clearInterval(poll); return }
+      attempts++
+      window.postMessage({type:'PK_PING'},'*')
+    }, 300)
+    return ()=>{ window.removeEventListener('message', handler); clearInterval(poll) }
+  },[])
+
+  async function quickConnect(purchase: Purchase) {
+    if (connectingId) return
+    setQuickError(null)
+    setConnectingId(purchase.id)
+    activeRef.current = purchase.id
+
+    const sRes  = await fetch(`/api/member/servers?tool=${encodeURIComponent(purchase.tool_name)}`,{credentials:'include'})
+    const sData = await sRes.json()
+    const available = (sData.servers||[]).filter((s:any)=>!s.is_full)
+
+    if (!available.length) {
+      setConnectingId(null)
+      setQuickError(t('All servers full','كل السيرفرات ممتلئة'))
+      setTimeout(()=>setQuickError(null), 4000)
+      return
+    }
+
+    const best = available.reduce((p:any,c:any)=>
+      (c.current_active_users/c.max_concurrent_users)<(p.current_active_users/p.max_concurrent_users)?c:p
+    )
+
+    const sessRes  = await fetch(`/api/member/servers/session?server_id=${best.id}`,{credentials:'include'})
+    const sessData = await sessRes.json()
+
+    if (!sessRes.ok || !sessData.session_data) {
+      setConnectingId(null)
+      setQuickError(sessData.error || t('Failed to get session','فشل جلب الجلسة'))
+      setTimeout(()=>setQuickError(null), 4000)
+      return
+    }
+
+    window.postMessage({
+      type:'PK_INJECT_REQUEST',
+      toolName:    purchase.tool_name,
+      sessionData: sessData.session_data,
+      serverId:    best.id,
+      proxy:       sessData.proxy || null,
+    },'*')
+  }
 
   if (loading) return (
     <div className="flex justify-center items-center py-32">
@@ -73,6 +140,12 @@ export default function UserDashboard() {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
+
+      {quickError && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400">
+          ⚠ {quickError}
+        </div>
+      )}
 
       {/* Active Subscriptions */}
       <div className="mb-8">
@@ -103,12 +176,14 @@ export default function UserDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {purchases.map(p=>{
-              const days = daysLeft(p.expires_at)
+            {[...purchases].sort((a,b)=>(daysLeft(a.expires_at)??9999)-(daysLeft(b.expires_at)??9999)).map(p=>{
+              const days         = daysLeft(p.expires_at)
+              const isShared     = p.category_slug === 'shared'
+              const isConnecting = connectingId === p.id
+              const isConnected  = connectedId  === p.id
+
               return (
-                <div key={p.id}
-                  className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:shadow-lg hover:border-red-200 dark:hover:border-red-500/30 transition-all duration-200 cursor-pointer"
-                  onClick={()=>router.push(`/u/subscription/${p.id}`)}>
+                <div key={p.id} className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:shadow-lg hover:border-red-200 dark:hover:border-red-500/30 transition-all duration-200">
                   <div className="h-1 w-full bg-gradient-to-r from-red-400 to-red-600"/>
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-4">
@@ -118,10 +193,20 @@ export default function UserDashboard() {
                           : <Package size={20} className="text-gray-300"/>
                         }
                       </div>
-                      <StatusBadge days={days} t={t}/>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <StatusBadge days={days} t={t}/>
+                        {isConnected && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">
+                            <Wifi size={9}/> {t('Connected','متصل')}
+                          </span>
+                        )}
+                      </div>
                     </div>
+
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 leading-tight">{p.tool_name}</h3>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
+
+                    {/* Expires line — red */}
+                    <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium mb-4">
                       <Clock size={11}/>
                       <span>
                         {p.expires_at
@@ -130,9 +215,42 @@ export default function UserDashboard() {
                         }
                       </span>
                     </div>
-                    <button className="w-full py-2.5 rounded-xl border border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:bg-red-500 group-hover:text-white group-hover:border-red-500 transition-all flex items-center justify-center gap-1.5">
-                      {t('View Details','عرض التفاصيل')} <ChevronRight size={13} className={lang==='ar'?'rotate-180':''}/>
-                    </button>
+
+                    {/* Buttons row */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={()=>router.push(`/u/subscription/${p.id}`)}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5">
+                        {t('View Details','عرض التفاصيل')} <ChevronRight size={13} className={lang==='ar'?'rotate-180':''}/>
+                      </button>
+
+                      {isShared && (
+                        extReady ? (
+                          <button
+                            onClick={()=>{ if(!isConnecting) quickConnect(p) }}
+                            disabled={isConnecting || isConnected}
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              isConnected
+                                ? 'bg-emerald-500 text-white cursor-default'
+                                : 'bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white shadow-sm shadow-red-500/20'
+                            }`}>
+                            {isConnecting
+                              ? <><Loader2 size={12} className="animate-spin"/>{t('Connecting...','جاري...')}</>
+                              : isConnected
+                              ? <><Wifi size={12}/>{t('Connected','متصل')}</>
+                              : <><Zap size={12}/>{t('Quick Connect','اتصال سريع')}</>
+                            }
+                          </button>
+                        ) : (
+                          <button
+                            onClick={()=>router.push(`/u/subscription/${p.id}`)}
+                            title={t('Install extension first','ثبّت الإضافة أولاً')}
+                            className="flex-1 py-2.5 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 flex items-center justify-center gap-1.5 hover:border-red-300 hover:text-red-400 transition-all">
+                            <Zap size={12}/>{t('Quick Connect','اتصال سريع')}
+                          </button>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
               )
