@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, CreditCard, MessageSquare, ShoppingBag, Tag,
-  PackageCheck, Archive, Globe, Zap, Server, BarChart3, Receipt,
+  PackageCheck, Archive, Globe, Server, BarChart3, Receipt,
   Bell, Upload, Settings, SlidersHorizontal, Key, LogOut, UserCircle,
-  Gauge,
+  Gauge, Layers,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -22,14 +22,13 @@ const nav = [
   ]},
   { section: 'Shop', items: [
     { label: 'Shop Tools', href: '/shop-admin', icon: ShoppingBag },
+    { label: 'Bundles',    href: '/bundles',    icon: Layers },
     { label: 'Coupons',    href: '/coupons',    icon: Tag },
     { label: 'Orders',     href: '/orders',     icon: PackageCheck },
     { label: 'Stock',      href: '/stock',      icon: Archive },
   ]},
   { section: 'Shared Tools', items: [
-    { label: 'Group Buy',  href: '/groupbuy',  icon: Globe },
-    { label: 'Servers',    href: '/servers',   icon: Server },
-    { label: 'OneClick',   href: '/oneclick',  icon: Zap },
+    { label: 'Servers',    href: '/groupbuy',  icon: Server },
   ]},
   { section: 'Finance', items: [
     { label: 'Analytics',   href: '/analytics',        icon: BarChart3 },

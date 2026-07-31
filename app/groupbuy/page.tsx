@@ -175,7 +175,7 @@ export default function GroupBuyPage() {
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Topbar title="Group Buy" subtitle="Manage shared servers & live sessions" />
+        <Topbar title="Servers" subtitle="Manage shared servers & live sessions" />
 
         {/* Tabs + Add */}
         <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">

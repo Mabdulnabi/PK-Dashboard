@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import {
   Users, Globe, Zap, MessageSquare, TrendingUp, Clock,
@@ -96,21 +95,16 @@ export default function DashboardPage() {
   const statusColor: Record<string, string> = { active: '#22C55E', expiring: '#F59E0B', expired: '#EF4444', pending: '#3B82F6' }
 
   if (loading) return (
-    <div className="flex h-screen" style={{ background: '#0D1117' }}>
-      <Sidebar />
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+    <div className="flex-1 flex items-center justify-center">
+      <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#0D1117' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar title="Dashboard" subtitle={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
+    <>
+      <Topbar title="Dashboard" subtitle={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
 
-        <main className="flex-1 overflow-auto p-6 flex flex-col gap-5">
+      <main className="flex-1 overflow-auto p-6 flex flex-col gap-5">
 
           {/* KPI row 1 */}
           <div className="grid grid-cols-4 gap-4">
@@ -242,8 +236,7 @@ export default function DashboardPage() {
             </div>
 
           </div>
-        </main>
-      </div>
-    </div>
+      </main>
+    </>
   )
 }
