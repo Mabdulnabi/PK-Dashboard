@@ -244,7 +244,8 @@ function autoCaptureFromTab() {
 function finalizeCookies(cookies, hostname, detectedTool, statusEl) {
   const formatted = cookies.map(c => ({
     name: c.name, value: c.value, domain: c.domain,
-    path: c.path || "/", secure: c.secure, httpOnly: c.httpOnly, hostOnly: c.hostOnly
+    path: c.path || "/", secure: c.secure, httpOnly: c.httpOnly,
+    hostOnly: c.hostOnly, sameSite: c.sameSite, expirationDate: c.expirationDate
   }));
 
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {

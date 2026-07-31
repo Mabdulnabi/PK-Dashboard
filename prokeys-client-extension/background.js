@@ -82,9 +82,11 @@ async function injectSession(toolName, sessionData, proxy) {
         name:     cookie.name,
         value:    cookie.value,
         path:     cookie.path || '/',
-        secure:   cookie.secure ?? true,
+        secure:   true,           // must be true — required for sameSite: no_restriction
         httpOnly: cookie.httpOnly ?? false,
         sameSite: 'no_restriction',
+        // preserve original expiry; fallback to 30 min
+        expirationDate: cookie.expirationDate || (Math.floor(Date.now() / 1000) + (30 * 60)),
       }
 
       // Only add domain for non-hostOnly cookies
@@ -92,11 +94,8 @@ async function injectSession(toolName, sessionData, proxy) {
         cookieParams.domain = cookie.domain
       }
 
-      // Short expiry — 30 minutes (heartbeat will renew every 2 min)
-      cookieParams.expirationDate = Math.floor(Date.now() / 1000) + (30 * 60)
-
       await chrome.cookies.set(cookieParams)
-        .catch(e => console.warn('Cookie set failed:', cookie.name, e.message))
+        .catch(e => console.error('Cookie FAILED:', cookie.name, '|', cookie.domain, '|', e.message))
     }
   }
 
