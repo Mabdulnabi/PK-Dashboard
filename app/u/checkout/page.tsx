@@ -250,8 +250,26 @@ function CheckoutInner() {
               </div>
               {couponResult?.error && <p className="text-sm text-red-400 mt-1 mb-3">{couponResult.error}</p>}
               {couponResult?.valid && <p className="text-sm text-emerald-500 mt-1 mb-3">{t(`✓ Coupon applied — ${couponResult.value}% off`,`✓ تم تطبيق الكود — خصم ${couponResult.value}%`)}</p>}
-              <button onClick={()=>setStep('payment')} className="w-full py-4 rounded-xl bg-red-500 hover:bg-red-600 text-white text-base font-bold transition-colors mt-4">
-                {t('Continue to Payment →','متابعة للدفع ←')}
+              <button onClick={async()=>{
+                const isFree = couponResult?.valid && couponResult.type==='discount' && Number(couponResult.value)>=100
+                if (isFree) {
+                  setVerifying(true); setError('')
+                  try {
+                    const res = await fetch('/api/member/payment/free',{
+                      method:'POST', credentials:'include',
+                      headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({ tool_id:toolId, duration_days:tool?.duration_days, coupon_code:coupon })
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error||t('Activation failed','فشل التفعيل'))
+                    setStep('done')
+                  } catch(e:any){ setError(e.message) }
+                  setVerifying(false)
+                } else {
+                  setStep('payment')
+                }
+              }} disabled={verifying} className="w-full py-4 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-base font-bold transition-colors mt-4 flex items-center justify-center gap-2">
+                {verifying ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>{t('Activating...','جاري التفعيل...')}</> : t('Continue to Payment →','متابعة للدفع ←')}
               </button>
             </div>
           )}
