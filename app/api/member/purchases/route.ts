@@ -30,17 +30,30 @@ export async function GET(req: NextRequest) {
     .gte('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
 
+  // Fetch delivery flags for private tools (no side-effects, just read)
+  const purchaseIds = (purchases || []).map((p: any) => p.id)
+  const { data: deliveries } = purchaseIds.length
+    ? await service.from('account_deliveries').select('purchase_id, delivered_at, viewed_at').in('purchase_id', purchaseIds)
+    : { data: [] }
+
+  const deliveryMap: Record<string, { has_delivery: boolean; delivery_viewed: boolean }> = {}
+  ;(deliveries || []).forEach((d: any) => {
+    deliveryMap[d.purchase_id] = { has_delivery: true, delivery_viewed: !!d.viewed_at }
+  })
+
   const formatted = (purchases || []).map((p: any) => ({
-    id:             p.id,
-    tool_id:        p.shop_tools?.id,
-    tool_name:      p.shop_tools?.name,
-    tool_image:     p.shop_tools?.image_url,
-    tool_video:     p.shop_tools?.video_url,
-    duration_label: p.shop_tools?.duration_label,
-    category_slug:  p.shop_tools?.category_slug,
-    expires_at:     p.expires_at,
-    payment_method: p.payment_method,
-    amount_egp:     p.amount_egp,
+    id:              p.id,
+    tool_id:         p.shop_tools?.id,
+    tool_name:       p.shop_tools?.name,
+    tool_image:      p.shop_tools?.image_url,
+    tool_video:      p.shop_tools?.video_url,
+    duration_label:  p.shop_tools?.duration_label,
+    category_slug:   p.shop_tools?.category_slug,
+    expires_at:      p.expires_at,
+    payment_method:  p.payment_method,
+    amount_egp:      p.amount_egp,
+    has_delivery:    deliveryMap[p.id]?.has_delivery  ?? false,
+    delivery_viewed: deliveryMap[p.id]?.delivery_viewed ?? false,
   }))
 
   return NextResponse.json({ purchases: formatted })

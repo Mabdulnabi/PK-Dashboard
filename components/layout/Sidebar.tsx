@@ -1,99 +1,133 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, AppWindow, CreditCard, BarChart3, Receipt, Bell, Settings, Key, LogOut, Upload, Globe, Zap, CreditCard as PlanIcon, MessageSquare, UserCircle, ShoppingBag, SlidersHorizontal, Server, Tag } from 'lucide-react'
+import {
+  LayoutDashboard, Users, CreditCard, MessageSquare, ShoppingBag, Tag,
+  PackageCheck, Archive, Globe, Zap, Server, BarChart3, Receipt,
+  Bell, Upload, Settings, SlidersHorizontal, Key, LogOut, UserCircle,
+  Gauge,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useUISettings } from '@/lib/use-ui-settings'
 
 const nav = [
-  { section:'Overview', items:[
-    { label:'Dashboard',  href:'/dashboard', icon:LayoutDashboard },
+  { section: 'Overview', items: [
+    { label: 'Dashboard',  href: '/dashboard', icon: LayoutDashboard },
   ]},
-  { section:'Members', items:[
-    { label:'Members',    href:'/members',   icon:UserCircle },
-    { label:'Plans',      href:'/plans',     icon:PlanIcon },
-    { label:'Support',    href:'/support',   icon:MessageSquare },
+  { section: 'Members', items: [
+    { label: 'Members',    href: '/members',   icon: UserCircle },
+    { label: 'Plans',      href: '/plans',     icon: CreditCard },
+    { label: 'Support',    href: '/support',   icon: MessageSquare },
   ]},
-  { section:'Catalog', items:[
-    { label:'Products',   href:'/products',  icon:AppWindow },
-    { label:'Customers',  href:'/customers', icon:Users },
+  { section: 'Shop', items: [
+    { label: 'Shop Tools', href: '/shop-admin', icon: ShoppingBag },
+    { label: 'Coupons',    href: '/coupons',    icon: Tag },
+    { label: 'Orders',     href: '/orders',     icon: PackageCheck },
+    { label: 'Stock',      href: '/stock',      icon: Archive },
   ]},
-  { section:'Finance', items:[
-    { label:'Analytics',     href:'/analytics',        icon:BarChart3 },
-    { label:'Transactions',  href:'/transactions',     icon:Receipt },
-    { label: 'Payment Methods',  href:'/payment-gateways', icon:CreditCard },
+  { section: 'Shared Tools', items: [
+    { label: 'Group Buy',  href: '/groupbuy',  icon: Globe },
+    { label: 'Servers',    href: '/servers',   icon: Server },
+    { label: 'OneClick',   href: '/oneclick',  icon: Zap },
   ]},
-  { section:'Group Buy', items:[
-    { label:'Group Buy',  href:'/groupbuy',   icon:Globe },
-    { label:'OneClick',   href:'/oneclick',   icon:Zap },
-    { label:'Servers',    href:'/servers',    icon:Server },  // ← ضيف السطر ده
-    { label:'Shop Tools', href:'/shop-admin', icon:ShoppingBag },
-    { label:'Coupons',    href:'/coupons',    icon:Tag },
-    { label:'Site Settings', href:'/site-settings', icon:SlidersHorizontal },
+  { section: 'Finance', items: [
+    { label: 'Analytics',   href: '/analytics',        icon: BarChart3 },
+    { label: 'Transactions', href: '/transactions',    icon: Receipt },
+    { label: 'Payments',    href: '/payment-gateways', icon: Gauge },
   ]},
-  { section:'System', items:[
-    { label:'Alerts',     href:'/alerts',    icon:Bell },
-    { label:'Import',     href:'/import',    icon:Upload },
-    { label:'Settings',   href:'/settings',  icon:Settings },
-    { label:'UI Settings', href:'/ui-settings', icon:SlidersHorizontal }
+  { section: 'System', items: [
+    { label: 'Alerts',       href: '/alerts',       icon: Bell },
+    { label: 'Site Settings',href: '/site-settings',icon: Globe },
+    { label: 'Import',       href: '/import',       icon: Upload },
+    { label: 'Settings',     href: '/settings',     icon: Settings },
+    { label: 'UI Settings',  href: '/ui-settings',  icon: SlidersHorizontal },
   ]},
 ]
 
-export default function Sidebar({ expiringCount=0, userName='Admin' }:{ expiringCount?:number; userName?:string }) {
+export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
   const pathname = usePathname()
   const router   = useRouter()
   const ui       = useUISettings()
-  const signOut  = async()=>{ await supabase.auth.signOut(); router.push('/auth/login') }
+  const signOut  = async () => { await supabase.auth.signOut(); router.push('/auth/login') }
 
   const adminLogo = ui.admin_logo_dark_url || ''
 
   return (
-    <aside className="w-[210px] flex-shrink-0 flex flex-col h-screen sticky top-0" style={{background:'#111827',borderRight:'1px solid #1F2937'}}>
-      <div className="px-4 py-4 flex items-center gap-3" style={{borderBottom:'1px solid #1F2937'}}>
+    <aside
+      className="w-[210px] flex-shrink-0 flex flex-col h-screen sticky top-0"
+      style={{ background: '#0D1117', borderRight: '1px solid #1a2233' }}
+    >
+      {/* Logo */}
+      <div className="px-4 py-4 flex items-center gap-3" style={{ borderBottom: '1px solid #1a2233' }}>
         {adminLogo ? (
-          <img src={adminLogo} alt="Logo" style={{ width:`${ui.admin_logo_width}px`, height:`${ui.admin_logo_height}px`, objectFit:'contain' }} className="flex-shrink-0"/>
+          <img
+            src={adminLogo} alt="Logo"
+            style={{ width: `${ui.admin_logo_width}px`, height: `${ui.admin_logo_height}px`, objectFit: 'contain' }}
+            className="flex-shrink-0"
+          />
         ) : (
           <>
-            <div className="w-9 h-9 rounded-xl bg-red-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/20">
-              <Key size={18} className="text-white"/>
+            <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-red-500/30">
+              <Key size={16} className="text-white" />
             </div>
             <div>
-              <div className="text-sm font-bold text-white leading-tight">Pro<span className="text-red-400">Keys</span></div>
-              <div className="text-[10px] text-gray-500 mt-0.5 tracking-wide uppercase">Sub Manager</div>
+              <div className="text-sm font-bold text-white leading-tight tracking-tight">
+                Pro<span className="text-red-400">Keys</span>
+              </div>
+              <div className="text-[9px] text-gray-600 uppercase tracking-widest mt-0.5">Admin</div>
             </div>
           </>
         )}
       </div>
-      <nav className="flex-1 px-3 py-3 overflow-y-auto flex flex-col gap-0.5">
-        {nav.map(group=>(
+
+      {/* Nav */}
+      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-gray-800">
+        {nav.map(group => (
           <div key={group.section}>
-            <div className="text-[9px] font-semibold uppercase tracking-widest px-2 py-2 mt-2" style={{color:'#374151'}}>{group.section}</div>
-            {group.items.map(item=>{
-              const active = pathname===item.href||pathname.startsWith(item.href+'/')
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-600 px-3 pt-4 pb-1.5">
+              {group.section}
+            </p>
+            {group.items.map(item => {
+              const active = pathname === item.href || pathname.startsWith(item.href + '/')
               const Icon   = item.icon
               return (
-                <Link key={item.href} href={item.href}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-all relative group"
-                  style={{background:active?'#1F2937':'transparent',color:active?'#F9FAFB':'#9CA3AF'}}>
-                  {active&&<span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-red-500 rounded-r-full"/>}
-                  <Icon size={16} className={active?'text-red-400':'text-gray-600 group-hover:text-gray-300'}/>
-                  <span className="group-hover:text-gray-200 transition-colors">{item.label}</span>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium transition-all duration-150 relative group"
+                  style={{
+                    background: active ? '#1a2233' : 'transparent',
+                    color:      active ? '#f9fafb'  : '#4b5563',
+                  }}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-red-500 rounded-r-full" />
+                  )}
+                  <Icon
+                    size={15}
+                    className={active ? 'text-red-400' : 'text-gray-600 group-hover:text-gray-400'}
+                  />
+                  <span className="group-hover:text-gray-300 transition-colors">{item.label}</span>
                 </Link>
               )
             })}
           </div>
         ))}
       </nav>
-      <div className="px-3 py-3" style={{borderTop:'1px solid #1F2937'}}>
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors group">
-          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{userName.slice(0,2).toUpperCase()}</div>
+
+      {/* User */}
+      <div className="px-2 py-2" style={{ borderTop: '1px solid #1a2233' }}>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-[#1a2233] transition-colors group">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0">
+            {userName.slice(0, 2).toUpperCase()}
+          </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold text-gray-200 truncate">{userName}</div>
-            <div className="text-[10px] text-gray-500">Admin · Pro Plan</div>
+            <div className="text-[12px] font-semibold text-gray-300 truncate">{userName}</div>
+            <div className="text-[10px] text-gray-600">Administrator</div>
           </div>
           <button onClick={signOut} className="opacity-0 group-hover:opacity-100 transition-opacity">
-            <LogOut size={13} className="text-gray-500 hover:text-red-400"/>
+            <LogOut size={13} className="text-gray-600 hover:text-red-400 transition-colors" />
           </button>
         </div>
       </div>

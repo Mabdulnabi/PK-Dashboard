@@ -102,6 +102,7 @@ interface Purchase {
   id:string; tool_name:string; tool_image?:string
   tool_video?:string; duration_label:string; category_slug?:string
   expires_at?:string; payment_method:string; amount_egp:number
+  has_delivery?:boolean; delivery_viewed?:boolean
 }
 interface FreeTool { id:string; name:string; image_url?:string; access_url:string }
 
@@ -271,6 +272,7 @@ export default function UserDashboard() {
             {[...purchases].sort((a,b)=>(daysLeft(a.expires_at)??9999)-(daysLeft(b.expires_at)??9999)).map(p=>{
               const days         = daysLeft(p.expires_at)
               const isShared     = p.category_slug === 'shared'
+              const isPrivate    = p.category_slug === 'private'
               const isConnecting = connectingId === p.id
               const isConnected  = connectedId  === p.id
 
@@ -340,6 +342,22 @@ export default function UserDashboard() {
                             className="flex-1 py-2.5 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 flex items-center justify-center gap-1.5 hover:border-red-300 hover:text-red-400 transition-all">
                             <Zap size={12}/>{t('Quick Connect','اتصال سريع')}
                           </button>
+                        )
+                      )}
+
+                      {isPrivate && (
+                        p.has_delivery ? (
+                          <button onClick={()=>router.push(`/u/subscription/${p.id}`)}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-all flex items-center justify-center gap-1.5 relative">
+                            {!p.delivery_viewed && (
+                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 animate-pulse"/>
+                            )}
+                            <CheckCircle size={12}/>{t('View Credentials','بيانات الدخول')}
+                          </button>
+                        ) : (
+                          <span className="flex-1 py-2.5 rounded-xl border border-dashed border-amber-300 dark:border-amber-700 text-xs font-bold text-amber-500 flex items-center justify-center gap-1.5">
+                            <Clock size={12}/>{t('Pending Delivery','في الانتظار')}
+                          </span>
                         )
                       )}
                     </div>

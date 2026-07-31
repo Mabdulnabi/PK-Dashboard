@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Download, Monitor, Smartphone, ExternalLink, Zap, Wifi, WifiOff, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Download, Monitor, Smartphone, ExternalLink, Zap, Wifi, WifiOff, Loader2, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, Copy, Check as CheckIcon, MessageCircle, Lock } from 'lucide-react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 
@@ -13,9 +13,20 @@ interface Purchase {
   tool_image?: string
   tool_video?: string
   duration_label: string
+  category_slug?: string
   expires_at?: string
   payment_method: string
   amount_egp: number
+}
+
+interface Delivery {
+  delivery_type: 'account'|'key'
+  email?: string
+  password?: string
+  key?: string
+  notes?: string
+  delivered_at: string
+  source: 'manual'|'stock'
 }
 
 interface ServerInfo {
@@ -71,7 +82,17 @@ export default function SubscriptionDetailPage() {
   const [connError,   setConnError]   = useState('')
   const [activeServer,setActiveServer]= useState<string|null>(null)
   const [loading,     setLoading]     = useState(true)
+  const [delivery,    setDelivery]    = useState<Delivery|null>(null)
+  const [deliveryLoading, setDeliveryLoading] = useState(false)
+  const [showPass,    setShowPass]    = useState(false)
+  const [copied,      setCopied]      = useState<'email'|'pass'|null>(null)
   const extCheckRef   = useRef(false)
+
+  const copyText = async (text: string, field: 'email'|'pass') => {
+    await navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(()=>setCopied(null), 2000)
+  }
 
   useEffect(() => {
     Promise.all([
@@ -79,7 +100,16 @@ export default function SubscriptionDetailPage() {
       fetch('/api/member/shop').then(r => r.json()),
     ]).then(([pData, sData]) => {
       const p = pData.purchases?.find((x: any) => x.id === id)
-      if (p) setPurchase(p)
+      if (p) {
+        setPurchase(p)
+        if (p.category_slug === 'private') {
+          setDeliveryLoading(true)
+          fetch(`/api/member/delivery?purchase_id=${id}`)
+            .then(r=>r.json())
+            .then(d=>{ setDelivery(d.delivery||null) })
+            .finally(()=>setDeliveryLoading(false))
+        }
+      }
       setLoading(false)
     })
 
@@ -374,6 +404,101 @@ export default function SubscriptionDetailPage() {
               <p className="text-center text-xs text-gray-400 mt-4">
                 {t('After installation, reload the page and servers will appear automatically','بعد التثبيت، أعد تحميل الصفحة وستظهر السيرفرات تلقائياً')}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Private Account Credentials ── */}
+        {purchase.category_slug === 'private' && (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <Lock size={16} className="text-red-500"/>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Account Credentials','بيانات الدخول')}</h2>
+            </div>
+            <div className="p-6">
+              {deliveryLoading ? (
+                <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>
+              ) : delivery ? (
+                <div className="space-y-4">
+                  {delivery.delivery_type === 'account' ? (
+                    <>
+                      {/* Email */}
+                      <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{t('Email','البريد الإلكتروني')}</div>
+                          <div className="text-sm font-mono text-gray-900 dark:text-white truncate" dir="ltr">{delivery.email}</div>
+                        </div>
+                        <button onClick={()=>copyText(delivery.email!,'email')}
+                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='email'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                          {copied==='email'?<CheckIcon size={14}/>:<Copy size={14}/>}
+                        </button>
+                      </div>
+                      {/* Password */}
+                      <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{t('Password','كلمة المرور')}</div>
+                          <div className="text-sm font-mono text-gray-900 dark:text-white" dir="ltr">
+                            {showPass ? delivery.password : '••••••••••••'}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button onClick={()=>setShowPass(s=>!s)}
+                            className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                            {showPass?<EyeOff size={14}/>:<Eye size={14}/>}
+                          </button>
+                          <button onClick={()=>copyText(delivery.password!,'pass')}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                            {copied==='pass'?<CheckIcon size={14}/>:<Copy size={14}/>}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* Key */
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{t('License Key','مفتاح الترخيص')}</div>
+                        <div className="text-sm font-mono text-gray-900 dark:text-white" dir="ltr">
+                          {showPass ? delivery.key : '••••-••••-••••-••••'}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={()=>setShowPass(s=>!s)}
+                          className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                          {showPass?<EyeOff size={14}/>:<Eye size={14}/>}
+                        </button>
+                        <button onClick={()=>copyText(delivery.key!,'pass')}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                          {copied==='pass'?<CheckIcon size={14}/>:<Copy size={14}/>}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Notes */}
+                  {delivery.notes && (
+                    <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
+                      <div className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">{t('Notes','ملاحظات')}</div>
+                      <p className="text-sm text-amber-800 dark:text-amber-300">{delivery.notes}</p>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-gray-400 text-center">
+                    {t('Delivered','تم التسليم')} {new Date(delivery.delivered_at).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB')}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mx-auto mb-3">
+                    <Lock size={20} className="text-amber-400"/>
+                  </div>
+                  <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">{t('Account Being Prepared','جاري تجهيز حسابك')}</p>
+                  <p className="text-xs text-gray-400">{t('We will deliver your credentials shortly','سنسلم بيانات الدخول قريباً')}</p>
+                  <a href={`https://wa.me/${(settings?.whatsapp_number||'').replace(/\D/g,'')}?text=${encodeURIComponent(`متى سيتم تسليم حساب ${purchase.tool_name}؟`)}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-bold transition-colors">
+                    <MessageCircle size={13}/>{t('Ask on WhatsApp','استفسر على WhatsApp')}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}
