@@ -408,21 +408,25 @@ export default function GroupBuyPage() {
                 </div>
               </div>
 
-              {/* Cookies */}
+              {/* Session Data */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
-                  Cookies {editId && <span className="font-normal text-gray-500">(اتركها فاضية لو مش هتغير)</span>}
+                  Session Data {editId && <span className="font-normal text-gray-500">(اتركه فاضي لو مش هتغير)</span>}
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 mb-1 block">
-                    Cookies JSON {!editId && '*'} — افتح DevTools → Application → Cookies → Copy as JSON
+                  <label className="text-[10px] text-gray-500 mb-1.5 block">
+                    JSON {!editId && '*'} — الـ Extension بيتوقع:
+                    <code className="ml-1 px-1 py-0.5 rounded bg-gray-700 text-gray-300 text-[9px]">
+                      {'{ "cookies": [...], "localStorage": {}, "indexedDB": [] }'}
+                    </code>
                   </label>
                   <textarea
                     value={form.session_data_encrypted}
                     onChange={e=>setForm({...form,session_data_encrypted:e.target.value})}
-                    placeholder={'[{"name":"session","value":"abc123","domain":".quillbot.com",...}]'}
-                    className={inp+" resize-none h-28 font-mono text-[10px]"}
+                    placeholder={`{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com", "path": "/", "httpOnly": false, "expirationDate": 1999999999 }\n  ],\n  "localStorage": {},\n  "indexedDB": []\n}`}
+                    className={inp+" resize-y h-36 font-mono text-[10px] leading-relaxed"}
                     dir="ltr"
+                    spellCheck={false}
                   />
                 </div>
               </div>
