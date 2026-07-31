@@ -63,7 +63,7 @@ export default function GroupBuyPage() {
 
   const emptyForm = {
     tool_name:'QuillBot', server_label:'', session_data_encrypted:'',
-    encryption_iv:'', tier_required:'basic', max_concurrent_users:5,
+    tier_required:'basic', max_concurrent_users:5,
     proxy_host:'', proxy_port:'', proxy_username:'', proxy_password_encrypted:'',
     status:'active'
   }
@@ -94,7 +94,7 @@ export default function GroupBuyPage() {
   const openEdit = (s: ToolServer) => {
     setForm({
       tool_name: s.tool_name, server_label: s.server_label,
-      session_data_encrypted:'', encryption_iv:'',
+      session_data_encrypted:'',
       tier_required: s.tier_required,
       max_concurrent_users: s.max_concurrent_users,
       proxy_host: s.proxy_host||'', proxy_port: String(s.proxy_port||''),
@@ -116,17 +116,12 @@ export default function GroupBuyPage() {
       proxy_username:        form.proxy_username || null,
       status:                form.status,
     }
-    // Only update session data if provided
     if (form.session_data_encrypted) payload.session_data_encrypted = form.session_data_encrypted
-    if (form.encryption_iv)          payload.encryption_iv          = form.encryption_iv
     if (form.proxy_password_encrypted) payload.proxy_password_encrypted = form.proxy_password_encrypted
 
-    // For new server, session_data required
-    if (!editId) {
-      if (!form.session_data_encrypted || !form.encryption_iv) {
-        setToast({ msg:'Session data & IV required', type:'err' })
-        setSaving(false); return
-      }
+    if (!editId && !form.session_data_encrypted) {
+      setToast({ msg:'Cookies JSON required', type:'err' })
+      setSaving(false); return
     }
 
     const res = editId
@@ -413,23 +408,22 @@ export default function GroupBuyPage() {
                 </div>
               </div>
 
-              {/* Session data */}
+              {/* Cookies */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
-                  Session Data {editId && <span className="text-gray-300">(leave empty to keep existing)</span>}
+                  Cookies {editId && <span className="font-normal text-gray-500">(اتركها فاضية لو مش هتغير)</span>}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Encrypted Session Data {!editId&&'*'}</label>
-                    <textarea value={form.session_data_encrypted}
-                      onChange={e=>setForm({...form,session_data_encrypted:e.target.value})}
-                      placeholder="AES-256-GCM encrypted session blob..." className={inp+" resize-none h-16 font-mono text-[10px]"}/>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Encryption IV {!editId&&'*'}</label>
-                    <input value={form.encryption_iv} onChange={e=>setForm({...form,encryption_iv:e.target.value})}
-                      placeholder="Base64 IV..." className={inp+" font-mono"}/>
-                  </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 mb-1 block">
+                    Cookies JSON {!editId && '*'} — افتح DevTools → Application → Cookies → Copy as JSON
+                  </label>
+                  <textarea
+                    value={form.session_data_encrypted}
+                    onChange={e=>setForm({...form,session_data_encrypted:e.target.value})}
+                    placeholder={'[{"name":"session","value":"abc123","domain":".quillbot.com",...}]'}
+                    className={inp+" resize-none h-28 font-mono text-[10px]"}
+                    dir="ltr"
+                  />
                 </div>
               </div>
 
