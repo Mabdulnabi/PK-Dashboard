@@ -34,10 +34,11 @@ function CheckoutInner() {
   const router  = useRouter()
   const toolId  = params.get('tool_id')
 
-  const [tool,         setTool]         = useState<Tool|null>(null)
-  const [settings,     setSettings]     = useState<Settings>({ whatsapp_number:'', usd_to_egp_rate:'50' })
-  const [gateways,     setGateways]     = useState<Gateway[]>([])
-  const [loading,      setLoading]      = useState(true)
+  const [tool,             setTool]             = useState<Tool|null>(null)
+  const [settings,         setSettings]         = useState<Settings>({ whatsapp_number:'', usd_to_egp_rate:'50' })
+  const [gateways,         setGateways]         = useState<Gateway[]>([])
+  const [loading,          setLoading]          = useState(true)
+  const [existingPurchase, setExistingPurchase] = useState<any>(null)
   const [step,         setStep]         = useState<'details'|'payment'|'done'>('details')
   const [method,       setMethod]       = useState('')
   const [txRef,        setTxRef]        = useState('')
@@ -63,7 +64,8 @@ function CheckoutInner() {
     Promise.all([
       fetch('/api/member/shop').then(r=>r.json()),
       fetch('/api/member/gateways').then(r=>r.json()),
-    ]).then(([shopData, gwData])=>{
+      fetch('/api/member/purchases').then(r=>r.json()),
+    ]).then(([shopData, gwData, purchaseData])=>{
       const t = shopData.tools?.find((x:any)=>x.id===toolId)
       if (t) setTool(t)
       const s:any={}
@@ -72,6 +74,9 @@ function CheckoutInner() {
       const gws: Gateway[] = gwData.gateways || []
       setGateways(gws)
       if (gws.length > 0) setMethod(gws[0].id)
+      // Check duplicate purchase
+      const existing = (purchaseData.purchases||[]).find((p:any)=>p.tool_id===toolId)
+      if (existing) setExistingPurchase(existing)
       setLoading(false)
     }).catch(()=>setLoading(false))
 
@@ -197,6 +202,50 @@ function CheckoutInner() {
 
   if (loading) return <div className="flex justify-center items-center py-32" ><div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>
   if (!tool)   return <div className="text-center py-32 text-gray-400 text-lg">{t('Tool not found','الأداة غير موجودة')}</div>
+
+  // ── Duplicate purchase blocker ──────────────────────────
+  if (existingPurchase) {
+    const daysLeft = existingPurchase.expires_at
+      ? Math.ceil((new Date(existingPurchase.expires_at).getTime()-Date.now())/86400000)
+      : null
+    return (
+      <div dir={dir} className="p-4 md:p-8 max-w-lg mx-auto min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-8 text-center shadow-sm w-full">
+          <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mx-auto mb-5">
+            {tool.image_url
+              ? <img src={tool.image_url} alt={tool.name} className="w-10 h-10 object-contain"/>
+              : <span className="text-2xl font-bold text-amber-400">{tool.name.slice(0,2).toUpperCase()}</span>
+            }
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            {lang==='ar' ? 'لديك اشتراك نشط بالفعل!' : 'You already have an active subscription!'}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+            {lang==='ar' ? `${tool.name} — ` : `${tool.name} — `}
+            {daysLeft !== null
+              ? (lang==='ar' ? `ينتهي بعد ${daysLeft} يوم` : `expires in ${daysLeft} day${daysLeft===1?'':'s'}`)
+              : (lang==='ar' ? 'مدى الحياة' : 'Lifetime')
+            }
+          </p>
+          <p className="text-xs text-gray-400 mb-7">
+            {lang==='ar'
+              ? 'الشراء مرة ثانية لن يمدد اشتراكك. استخدم التمديد بدلاً من ذلك.'
+              : 'Buying again won\'t extend your subscription. Use renewal instead.'}
+          </p>
+          <div className="flex flex-col gap-3">
+            <button onClick={()=>router.push(`/u/subscription/${existingPurchase.id}`)}
+              className="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+              {lang==='ar' ? 'عرض اشتراكي الحالي ←' : 'View My Subscription ←'}
+            </button>
+            <button onClick={()=>router.push('/u/shop')}
+              className="w-full py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              {lang==='ar' ? 'تصفح أدوات أخرى' : 'Browse Other Tools'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div dir={dir} style={{fontFamily:lang==='ar'?"'Cairo', sans-serif":"'Inter', system-ui, sans-serif"}} className="p-4 md:p-8 max-w-4xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-950">

@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
 
   const formatted = (purchases || []).map((p: any) => ({
     id:             p.id,
+    tool_id:        p.shop_tools?.id,
     tool_name:      p.shop_tools?.name,
     tool_image:     p.shop_tools?.image_url,
     tool_video:     p.shop_tools?.video_url,
