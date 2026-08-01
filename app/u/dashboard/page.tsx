@@ -552,8 +552,8 @@ export default function UserDashboard() {
                       )
                     })()}
 
-                    {/* Renew button — shown when ≤7 days left */}
-                    {days !== null && days <= 7 && (
+                    {/* Renew button — TEST: always show, prod: days <= 7 */}
+                    {days !== null && (
                       <button
                         onClick={()=>router.push(`/u/checkout?tool_id=${p.id}&renew=1`)}
                         className="w-full mb-2.5 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-colors"
