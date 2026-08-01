@@ -113,16 +113,18 @@ export default function PaymentGatewaysPage() {
     setter(false);
   }
 
+  const fieldCls = "w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm rounded px-3 py-2 border border-gray-200 dark:border-gray-600 focus:border-blue-400 outline-none transition-colors"
+
   function Field({ label, value, onChange, type = 'text', dir = 'rtl' }: any) {
     return (
       <div className="mb-3">
-        <label className="block text-xs text-gray-400 mb-1">{label}</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</label>
         {type === 'textarea' ? (
           <textarea dir={dir} value={value || ''} onChange={e => onChange(e.target.value)} rows={2}
-            className="w-full bg-gray-700 text-white text-sm rounded px-3 py-2 border border-gray-600 focus:border-blue-400 outline-none resize-none"/>
+            className={fieldCls + ' resize-none'}/>
         ) : (
           <input type="text" dir={dir} value={value || ''} onChange={e => onChange(e.target.value)}
-            className="w-full bg-gray-700 text-white text-sm rounded px-3 py-2 border border-gray-600 focus:border-blue-400 outline-none"/>
+            className={fieldCls}/>
         )}
       </div>
     );
@@ -153,11 +155,11 @@ export default function PaymentGatewaysPage() {
 
               <div className="space-y-4">
                 {gateways.map(gw => (
-                  <div key={gw.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                  <div key={gw.id} className="bg-white dark:bg-[#111827] rounded-xl border border-gray-100 dark:border-[#1a2233] shadow-sm overflow-hidden">
 
                     {/* Header */}
                     <div className="flex items-center gap-4 px-5 py-4">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                         {gw.logo_url
                           ? <img src={gw.logo_url} alt={gw.name_en} className="w-full h-full object-contain"/>
                           : <span className="text-2xl">{GATEWAY_ICONS[gw.id] || '💰'}</span>
@@ -166,8 +168,8 @@ export default function PaymentGatewaysPage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-white font-semibold">{gw.name_ar}</span>
-                          <span className="text-gray-400 text-sm">/ {gw.name_en}</span>
+                          <span className="text-gray-900 dark:text-white font-semibold">{gw.name_ar}</span>
+                          <span className="text-gray-500 text-sm">/ {gw.name_en}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             gw.currency === 'EGP' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-blue-500/20 text-blue-300'
                           }`}>{gw.currency}</span>
@@ -201,17 +203,17 @@ export default function PaymentGatewaysPage() {
 
                     {/* Edit panel */}
                     {editingId === gw.id && (
-                      <div className="border-t border-gray-700 px-5 py-5 bg-gray-800/60">
+                      <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-5 bg-gray-50 dark:bg-gray-800/60">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                           {/* LEFT: Images */}
                           <div>
-                            <h3 className="text-white text-sm font-semibold mb-4">🖼️ الصور</h3>
+                            <h3 className="text-gray-900 dark:text-white text-sm font-semibold mb-4">🖼️ الصور</h3>
 
                             <div className="mb-5">
                               <label className="block text-xs text-gray-400 mb-2">لوجو الوسيلة</label>
                               <div className="flex items-center gap-3">
-                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center border border-gray-600">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center border border-gray-200 dark:border-gray-600">
                                   {editData.logo_url
                                     ? <img src={editData.logo_url} alt="logo" className="w-full h-full object-contain"/>
                                     : <span className="text-2xl">{GATEWAY_ICONS[gw.id]}</span>
@@ -234,7 +236,7 @@ export default function PaymentGatewaysPage() {
                               <div>
                                 <label className="block text-xs text-gray-400 mb-2">QR Code</label>
                                 <div className="flex items-center gap-3">
-                                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center border border-gray-600">
+                                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center border border-gray-200 dark:border-gray-600">
                                     {editData.qr_url
                                       ? <img src={editData.qr_url} alt="QR" className="w-full h-full object-contain"/>
                                       : <span className="text-3xl">📷</span>
@@ -258,13 +260,13 @@ export default function PaymentGatewaysPage() {
                               <label className="block text-xs text-gray-400 mb-1">ترتيب الظهور</label>
                               <input type="number" value={editData.sort_order ?? 0}
                                 onChange={e => setEditData(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))}
-                                className="w-24 bg-gray-700 text-white text-sm rounded px-3 py-2 border border-gray-600 outline-none"/>
+                                className="w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm rounded px-3 py-2 border border-gray-200 dark:border-gray-600 outline-none transition-colors"/>
                             </div>
                           </div>
 
                           {/* RIGHT: Text fields */}
                           <div>
-                            <h3 className="text-white text-sm font-semibold mb-4">📝 النصوص والأرقام</h3>
+                            <h3 className="text-gray-900 dark:text-white text-sm font-semibold mb-4">📝 النصوص والأرقام</h3>
 
                             {!gw.is_dynamic && (
                               <>
@@ -305,7 +307,7 @@ export default function PaymentGatewaysPage() {
                           </div>
                         </div>
 
-                        <div className="flex justify-end mt-4 pt-4 border-t border-gray-700">
+                        <div className="flex justify-end mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                           <button onClick={saveGateway} disabled={saving === editingId}
                             className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors">
                             {saving === editingId ? '⏳ جاري الحفظ...' : '💾 حفظ التغييرات'}
@@ -317,10 +319,10 @@ export default function PaymentGatewaysPage() {
                 ))}
               </div>
 
-              <div className="mt-8 bg-gray-800/50 rounded-xl border border-gray-700/50 p-5">
-                <h3 className="text-white font-semibold mb-3">⚙️ إعداد المفاتيح السرية (Vault)</h3>
-                <p className="text-gray-400 text-sm mb-3">شغّل في SQL Editor:</p>
-                <div className="bg-gray-900 rounded-lg p-4 text-xs text-green-300 font-mono space-y-1 overflow-x-auto">
+              <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5">
+                <h3 className="text-gray-900 dark:text-white font-semibold mb-3">⚙️ إعداد المفاتيح السرية (Vault)</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">شغّل في SQL Editor:</p>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 text-xs text-green-700 dark:text-green-300 font-mono space-y-1 overflow-x-auto border border-gray-200 dark:border-gray-700">
                   <div>select set_payment_api_secret('BINANCE_API_KEY', 'your-key');</div>
                   <div>select set_payment_api_secret('BINANCE_API_SECRET', 'your-secret');</div>
                   <div>select set_payment_api_secret('BYBIT_API_KEY', 'your-key');</div>

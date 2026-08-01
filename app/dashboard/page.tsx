@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
+import { useAdminTheme } from '@/lib/admin-theme'
 import {
   Users, Globe, Zap, MessageSquare, TrendingUp, Clock,
   AlertTriangle, ArrowUpRight, CheckCircle2,
@@ -17,25 +18,23 @@ interface KPIs {
   revenue_this_month: number; active_sessions: number; open_tickets: number
 }
 
-const CARD_BORDER = '1px solid #1a2233'
-const CARD_BG     = '#111827'
-
 function StatCard({ label, value, icon: Icon, accent, sub, href }: {
   label: string; value: any; icon: any; accent: string; sub?: string; href?: string
 }) {
   return (
-    <div className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden" style={{ background: CARD_BG, border: CARD_BORDER }}>
-      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${accent}, transparent 70%)` }}/>
+    <div className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm">
+      <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${accent}, transparent 65%)` }}/>
+      <div className="absolute top-0 left-0 right-0 h-[2px] opacity-60" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}/>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-600">{label}</span>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: accent + '18' }}>
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{label}</span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: accent + '15' }}>
           <Icon size={15} style={{ color: accent }} />
         </div>
       </div>
-      <div className="text-3xl font-bold text-gray-100 leading-none tabular-nums">{value}</div>
-      {sub && <div className="text-[11px] text-gray-600">{sub}</div>}
+      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
+      {sub && <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>}
       {href && (
-        <a href={href} className="absolute bottom-4 right-4 text-gray-700 hover:text-gray-400 transition-colors">
+        <a href={href} className="absolute bottom-4 right-4 text-gray-300 dark:text-gray-700 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">
           <ArrowUpRight size={14} />
         </a>
       )}
@@ -43,12 +42,8 @@ function StatCard({ label, value, icon: Icon, accent, sub, href }: {
   )
 }
 
-const chartTooltipStyle = {
-  background: '#0D1117', border: '1px solid #1a2233',
-  borderRadius: 10, fontSize: 11, color: '#e5e7eb',
-}
-
 export default function DashboardPage() {
+  const { dark } = useAdminTheme()
   const [kpis,    setKpis]    = useState<KPIs | null>(null)
   const [revData, setRev]     = useState<any[]>([])
   const [memData, setMem]     = useState<any[]>([])
@@ -94,6 +89,16 @@ export default function DashboardPage() {
   const planColor: Record<string, string> = { basic: '#3B82F6', vip: '#F59E0B', private: '#8B5CF6' }
   const statusColor: Record<string, string> = { active: '#22C55E', expiring: '#F59E0B', expired: '#EF4444', pending: '#3B82F6' }
 
+  const gridColor  = dark ? '#1a2233' : '#f3f4f6'
+  const tooltipStyle = {
+    background:   dark ? '#0D1117' : '#ffffff',
+    border:       `1px solid ${dark ? '#1a2233' : '#e5e7eb'}`,
+    borderRadius: 10, fontSize: 11,
+    color:        dark ? '#e5e7eb' : '#111827',
+  }
+  const cardCls = "rounded-xl overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm"
+  const divCls  = `border-b border-gray-50 dark:border-[#1a2233]`
+
   if (loading) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -106,136 +111,136 @@ export default function DashboardPage() {
 
       <main className="flex-1 overflow-auto p-6 flex flex-col gap-5">
 
-          {/* KPI row 1 */}
-          <div className="grid grid-cols-4 gap-4">
-            <StatCard label="Active Members"    value={kpis?.active_members ?? 0}  icon={Users}         accent="#22C55E" sub="group buy subscribers" href="/members" />
-            <StatCard label="Revenue / Month"   value={`${(kpis?.revenue_this_month ?? 0).toLocaleString()} EGP`} icon={TrendingUp} accent="#EF4444" sub="confirmed payments" href="/analytics" />
-            <StatCard label="Expiring in 7d"   value={kpis?.expiring_7d ?? 0}     icon={Clock}         accent="#F59E0B" sub="need renewal" href="/members" />
-            <StatCard label="Active Sessions"  value={kpis?.active_sessions ?? 0} icon={Globe}         accent="#3B82F6" sub="live connections" href="/groupbuy" />
+        {/* KPI row 1 */}
+        <div className="grid grid-cols-4 gap-4">
+          <StatCard label="Active Members"   value={kpis?.active_members ?? 0}  icon={Users}         accent="#22C55E" sub="group buy subscribers" href="/members" />
+          <StatCard label="Revenue / Month"  value={`${(kpis?.revenue_this_month ?? 0).toLocaleString()} EGP`} icon={TrendingUp} accent="#EF4444" sub="confirmed payments" href="/analytics" />
+          <StatCard label="Expiring in 7d"  value={kpis?.expiring_7d ?? 0}     icon={Clock}         accent="#F59E0B" sub="need renewal" href="/members" />
+          <StatCard label="Active Sessions" value={kpis?.active_sessions ?? 0} icon={Globe}         accent="#3B82F6" sub="live connections" href="/groupbuy" />
+        </div>
+
+        {/* KPI row 2 */}
+        <div className="grid grid-cols-4 gap-4">
+          <StatCard label="Pending Members" value={kpis?.pending_members ?? 0} icon={AlertTriangle} accent="#F59E0B" sub="awaiting activation" href="/members" />
+          <StatCard label="Open Tickets"    value={kpis?.open_tickets ?? 0}    icon={MessageSquare} accent="#8B5CF6" sub="support requests" href="/support" />
+          <StatCard label="OneClick Today"  value="—"                          icon={Zap}           accent="#06B6D4" sub="auto-login tokens" />
+          <StatCard label="System Status"   value="Online"                     icon={CheckCircle2}  accent="#22C55E" sub="all systems go" />
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className={`rounded-xl p-5 bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm`}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Revenue — last 6 months</h2>
+              <a href="/analytics" className="text-[11px] text-red-500 hover:text-red-400 flex items-center gap-1">
+                Full report <ArrowUpRight size={11} />
+              </a>
+            </div>
+            <ResponsiveContainer width="100%" height={150}>
+              <BarChart data={revData} barSize={24}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: dark ? '#4b5563' : '#9ca3af' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: dark ? '#4b5563' : '#9ca3af' }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: dark ? '#1a2233' : '#f9fafb' }} formatter={(v: any) => [`${Number(v).toLocaleString()} EGP`, 'Revenue']} />
+                <Bar dataKey="revenue" fill="#EF4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
-          {/* KPI row 2 */}
-          <div className="grid grid-cols-4 gap-4">
-            <StatCard label="Pending Members"  value={kpis?.pending_members ?? 0} icon={AlertTriangle} accent="#F59E0B" sub="awaiting activation" href="/members" />
-            <StatCard label="Open Tickets"     value={kpis?.open_tickets ?? 0}    icon={MessageSquare} accent="#8B5CF6" sub="support requests" href="/support" />
-            <StatCard label="OneClick Today"   value="—"                          icon={Zap}           accent="#06B6D4" sub="auto-login tokens" href="/oneclick" />
-            <StatCard label="System Status"    value="Online"                     icon={CheckCircle2}  accent="#22C55E" sub="all systems go" />
+          <div className={`rounded-xl p-5 bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm`}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Member Growth — last 6 months</h2>
+              <a href="/members" className="text-[11px] text-red-500 hover:text-red-400 flex items-center gap-1">
+                All members <ArrowUpRight size={11} />
+              </a>
+            </div>
+            <ResponsiveContainer width="100%" height={150}>
+              <LineChart data={memData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: dark ? '#4b5563' : '#9ca3af' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: dark ? '#4b5563' : '#9ca3af' }} axisLine={false} tickLine={false} width={30} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="members" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6', r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
+        </div>
 
-          {/* Charts */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl p-5" style={{ background: CARD_BG, border: CARD_BORDER }}>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-sm font-bold text-gray-200">Revenue — last 6 months</h2>
-                <a href="/analytics" className="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1">
-                  Full report <ArrowUpRight size={11} />
-                </a>
+        {/* Tables */}
+        <div className="grid grid-cols-2 gap-4">
+
+          {/* Expiring soon */}
+          <div className={cardCls}>
+            <div className={`flex items-center justify-between px-5 py-3.5 ${divCls}`}>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-4 rounded-full bg-amber-500" />
+                <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Expiring Soon</h2>
               </div>
-              <ResponsiveContainer width="100%" height={150}>
-                <BarChart data={revData} barSize={24}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2233" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#4b5563' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} axisLine={false} tickLine={false} width={40} />
-                  <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: '#1a2233' }} formatter={(v: any) => [`${Number(v).toLocaleString()} EGP`, 'Revenue']} />
-                  <Bar dataKey="revenue" fill="#EF4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <a href="/members" className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+                View all <ArrowUpRight size={11} />
+              </a>
             </div>
-
-            <div className="rounded-xl p-5" style={{ background: CARD_BG, border: CARD_BORDER }}>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-sm font-bold text-gray-200">Member Growth — last 6 months</h2>
-                <a href="/members" className="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1">
-                  All members <ArrowUpRight size={11} />
-                </a>
+            {expiring.length === 0 ? (
+              <div className="py-10 text-center">
+                <CheckCircle2 size={20} className="mx-auto mb-2 text-emerald-500" />
+                <p className="text-xs text-gray-400">No expirations this week</p>
               </div>
-              <ResponsiveContainer width="100%" height={150}>
-                <LineChart data={memData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2233" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#4b5563' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip contentStyle={chartTooltipStyle} />
-                  <Line type="monotone" dataKey="members" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6', r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Tables */}
-          <div className="grid grid-cols-2 gap-4">
-
-            {/* Expiring soon */}
-            <div className="rounded-xl overflow-hidden" style={{ background: CARD_BG, border: CARD_BORDER }}>
-              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: CARD_BORDER }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-4 rounded-full bg-amber-500" />
-                  <h2 className="text-sm font-bold text-gray-200">Expiring Soon</h2>
-                </div>
-                <a href="/members" className="text-[11px] text-gray-600 hover:text-gray-400 flex items-center gap-1">
-                  View all <ArrowUpRight size={11} />
-                </a>
-              </div>
-              {expiring.length === 0 ? (
-                <div className="py-10 text-center">
-                  <CheckCircle2 size={20} className="mx-auto mb-2 text-emerald-600" />
-                  <p className="text-xs text-gray-600">No expirations this week</p>
-                </div>
-              ) : expiring.map((m, i) => (
-                <div key={i} className="flex items-center justify-between px-5 py-3" style={{ borderBottom: i < expiring.length - 1 ? CARD_BORDER : 'none' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-[11px] font-bold text-amber-400 flex-shrink-0">
-                      {m.full_name.slice(0, 1).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-[12px] font-semibold text-gray-300">{m.full_name}</div>
-                      <div className="text-[10px] text-gray-600">{m.email}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[11px] font-bold" style={{ color: planColor[m.plan_slug] || '#9CA3AF' }}>
-                      {m.plan_slug}
-                    </div>
-                    <div className="text-[10px] text-gray-600 mt-0.5">
-                      {m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-GB') : '—'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Recent members */}
-            <div className="rounded-xl overflow-hidden" style={{ background: CARD_BG, border: CARD_BORDER }}>
-              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: CARD_BORDER }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-4 rounded-full bg-blue-500" />
-                  <h2 className="text-sm font-bold text-gray-200">Recent Members</h2>
-                </div>
-                <a href="/members" className="text-[11px] text-gray-600 hover:text-gray-400 flex items-center gap-1">
-                  View all <ArrowUpRight size={11} />
-                </a>
-              </div>
-              {recent.map((m, i) => (
-                <div key={i} className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: i < recent.length - 1 ? CARD_BORDER : 'none' }}>
-                  <div className="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-[11px] font-bold text-red-400 flex-shrink-0">
+            ) : expiring.map((m, i) => (
+              <div key={i} className={`flex items-center justify-between px-5 py-3 ${i < expiring.length - 1 ? divCls : ''}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-[11px] font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">
                     {m.full_name.slice(0, 1).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-gray-300 truncate">{m.full_name}</div>
-                    <div className="text-[10px] text-gray-600">
-                      {m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB') : '—'}
-                    </div>
+                  <div>
+                    <div className="text-[12px] font-semibold text-gray-700 dark:text-gray-300">{m.full_name}</div>
+                    <div className="text-[10px] text-gray-400">{m.email}</div>
                   </div>
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-md flex-shrink-0"
-                    style={{ color: statusColor[m.computed_status] || '#9CA3AF', background: (statusColor[m.computed_status] || '#9CA3AF') + '18' }}
-                  >
-                    {m.computed_status || 'active'}
-                  </span>
                 </div>
-              ))}
-            </div>
-
+                <div className="text-right">
+                  <div className="text-[11px] font-bold" style={{ color: planColor[m.plan_slug] || '#9CA3AF' }}>
+                    {m.plan_slug}
+                  </div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">
+                    {m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-GB') : '—'}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+
+          {/* Recent members */}
+          <div className={cardCls}>
+            <div className={`flex items-center justify-between px-5 py-3.5 ${divCls}`}>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-4 rounded-full bg-blue-500" />
+                <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Recent Members</h2>
+              </div>
+              <a href="/members" className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+                View all <ArrowUpRight size={11} />
+              </a>
+            </div>
+            {recent.map((m, i) => (
+              <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i < recent.length - 1 ? divCls : ''}`}>
+                <div className="w-7 h-7 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-[11px] font-bold text-red-500 dark:text-red-400 flex-shrink-0">
+                  {m.full_name.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 truncate">{m.full_name}</div>
+                  <div className="text-[10px] text-gray-400">
+                    {m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB') : '—'}
+                  </div>
+                </div>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-md flex-shrink-0"
+                  style={{ color: statusColor[m.computed_status] || '#9CA3AF', background: (statusColor[m.computed_status] || '#9CA3AF') + '18' }}
+                >
+                  {m.computed_status || 'active'}
+                </span>
+              </div>
+            ))}
+          </div>
+
+        </div>
       </main>
     </>
   )
