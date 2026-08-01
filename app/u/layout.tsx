@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard, ShoppingBag, Clock, HelpCircle, PlayCircle,
-  Key, LogOut, Bell, Sun, Moon, ChevronDown, Globe, DollarSign, X, Menu
+  Key, LogOut, Bell, Sun, Moon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu
 } from 'lucide-react'
 
 interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
@@ -36,6 +36,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const ui = useUISettings()
   const [shopOpen,      setShopOpen]   = useState(false)
   const [sidebarOpen,   setSidebar]    = useState(false)
+  const [collapsed,     setCollapsed]  = useState(false)
   const [profileOpen,   setProfile]    = useState(false)
   const [notifOpen,     setNotif]      = useState(false)
   const [notifications, setNotifs]     = useState<any[]>([])
@@ -92,10 +93,12 @@ if (pathname==='/u/login') return <>{children}</>
   const unread = notifications.filter(n=>!n.is_read).length
   const isRtl  = lang==='ar'
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ forMobile = false }: { forMobile?: boolean }) => {
+    const col = !forMobile && collapsed
+    return (
     <>
       {/* Logo */}
-      <div className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div className={`flex items-center ${col ? 'justify-center px-2' : 'gap-2.5 px-4'} py-4 border-b border-gray-100 dark:border-gray-800`}>
         {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
           const w = Number(ui.logo_width) || 40
           const h = Number(ui.logo_height) || 40
@@ -112,28 +115,33 @@ if (pathname==='/u/login') return <>{children}</>
             <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center shadow-md shadow-red-500/30 flex-shrink-0">
               <Key size={16} className="text-white"/>
             </div>
-            <div>
-              <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span className="text-red-500">Keys</span></div>
-              <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
-            </div>
+            {!col && (
+              <div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span className="text-red-500">Keys</span></div>
+                <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
+              </div>
+            )}
           </>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
         {nav.map(item=>{
           const Icon   = item.icon
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
           if (item.sub) return (
             <div key={item.href}>
-              <button onClick={()=>setShopOpen(o=>!o)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${active?'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              <button onClick={()=>!col && setShopOpen(o=>!o)}
+                title={col ? (isRtl ? item.ar : item.en) : undefined}
+                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                 <Icon size={16}/>
-                <span className="flex-1 text-start">{isRtl?item.ar:item.en}</span>
-                <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`}/>
+                {!col && <>
+                  <span className="flex-1 text-start">{isRtl?item.ar:item.en}</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`}/>
+                </>}
               </button>
-              {shopOpen && (
+              {shopOpen && !col && (
                 <div className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
                   {item.sub.map(s=>(
                     <Link key={s.href} href={s.href}
@@ -147,8 +155,10 @@ if (pathname==='/u/login') return <>{children}</>
           )
           return (
             <Link key={item.href} href={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${active?'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-              <Icon size={16}/>{isRtl?item.ar:item.en}
+              title={col ? (isRtl ? item.ar : item.en) : undefined}
+              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              <Icon size={16}/>
+              {!col && (isRtl?item.ar:item.en)}
             </Link>
           )
         })}
@@ -157,35 +167,47 @@ if (pathname==='/u/login') return <>{children}</>
       {/* User */}
       <div className="border-t border-gray-100 dark:border-gray-800 p-3">
         <button onClick={()=>setProfile(o=>!o)}
-          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          title={col ? member?.full_name : undefined}
+          className={`w-full flex items-center ${col ? 'justify-center px-0' : 'gap-2.5 px-2'} py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
           <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
             {member?.avatar_url
               ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
               : member?.full_name?.slice(0,1).toUpperCase()}
           </div>
-          <div className="flex-1 text-left min-w-0">
-            <div className="flex items-center gap-1.5">
-              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{member?.full_name}</div>
-              {member?.member_code && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">{member.member_code}</span>
-              )}
-            </div>
-            <div className="text-[11px] font-semibold capitalize" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
-              {member?.plan_slug} {isRtl?'باقة':'plan'}
-            </div>
-          </div>
-          <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
+          {!col && (
+            <>
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{member?.full_name}</div>
+                  {member?.member_code && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">{member.member_code}</span>
+                  )}
+                </div>
+                <div className="text-[11px] font-semibold capitalize" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
+                  {member?.plan_slug} {isRtl?'باقة':'plan'}
+                </div>
+              </div>
+              <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
+            </>
+          )}
         </button>
       </div>
     </>
   )
+  }
 
   return (
     <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'}>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
-      <aside className="hidden md:flex w-[200px] flex-shrink-0 flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800">
+      <aside className={`hidden md:flex ${collapsed ? 'w-[60px]' : 'w-[200px]'} flex-shrink-0 flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 transition-all duration-200 relative`}>
         <SidebarContent/>
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className={`absolute -${isRtl ? 'left' : 'right'}-3 bottom-16 w-6 h-6 rounded-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow z-10`}
+        >
+          <ChevronLeft size={13} className={`text-gray-500 transition-transform duration-200 ${isRtl ? (collapsed ? '' : 'rotate-180') : (collapsed ? 'rotate-180' : '')}`}/>
+        </button>
       </aside>
 
       {/* ── Mobile Sidebar overlay ───────────────────── */}
@@ -196,7 +218,7 @@ if (pathname==='/u/login') return <>{children}</>
             <button onClick={()=>setSidebar(false)} className="absolute top-3 right-3 w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10">
               <X size={14}/>
             </button>
-            <SidebarContent/>
+            <SidebarContent forMobile/>
           </div>
         </div>
       )}
