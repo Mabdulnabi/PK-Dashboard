@@ -26,7 +26,6 @@ const nav = [
   { en:'My Account',      ar:'حسابي',      href:'/u/profile',   icon:UserCircle,   color:'#14b8a6' },
 ]
 
-const PLAN_COLOR:any = { basic:'#3B82F6', vip:'#F59E0B', private:'#8B5CF6' }
 
 function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const router   = useRouter()
@@ -253,9 +252,6 @@ if (pathname==='/u/login') return <>{children}</>
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
                   )}
                 </div>
-                <div className="text-[11px] font-semibold capitalize" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
-                  {member?.plan_slug} {isRtl?'باقة':'plan'}
-                </div>
               </div>
               <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
             </>
@@ -416,9 +412,6 @@ if (pathname==='/u/login') return <>{children}</>
                   )}
                 </div>
                 <div className="text-[11px] text-gray-400 truncate">{member?.email}</div>
-                <div className="text-[11px] font-semibold capitalize mt-0.5" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
-                  {member?.plan_slug} · exp {member?.expires_at?new Date(member.expires_at).toLocaleDateString('en-GB'):'—'}
-                </div>
               </div>
             </div>
             <div className="p-4 space-y-3">
