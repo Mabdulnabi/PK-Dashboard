@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, X, Check, AlertCircle, ToggleLeft, ToggleRight, Star, Package, Tag } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, AlertCircle, ToggleLeft, ToggleRight, Star, Package, Tag, Layout, ChevronUp, ChevronDown, MessageCircle, ThumbsUp, ThumbsDown, Globe2 } from 'lucide-react'
+import { v4 as uuid } from 'uuid'
 
 interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
 interface Tool {
@@ -12,29 +13,58 @@ interface Tool {
   duration_label:string; duration_days:number; delivery_label:string
   rating:number; review_count:number; video_url?:string
   features:string[]; is_active:boolean; is_out_of_stock:boolean; sort_order:number
+  landing_blocks?: LandingBlock[]
+}
+interface LandingBlock {
+  id: string
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'
+  image_url?: string
+  title_en?: string; title_ar?: string
+  body_en?: string;  body_ar?: string
+}
+interface Review {
+  id: string; tool_id: string; member_name: string; stars: number
+  comment?: string; approved: boolean; created_at: string
+  shop_tools?: { name: string }
 }
 
 function Toast({msg,type,onClose}:{msg:string;type:'ok'|'err';onClose:()=>void}) {
   useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t)},[onClose])
-  return <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${type==='ok'?'bg-emerald-500':'bg-red-500'}`}>{type==='ok'?<Check size={15}/>:<AlertCircle size={15}/>}{msg}</div>
+  return <div className={`fixed bottom-5 right-5 z-[60] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${type==='ok'?'bg-emerald-500':'bg-red-500'}`}>{type==='ok'?<Check size={15}/>:<AlertCircle size={15}/>}{msg}</div>
+}
+
+function StarRow({ n }: { n: number }) {
+  return <div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} size={12} fill={i<=n?'#F59E0B':'none'} stroke={i<=n?'#F59E0B':'#D1D5DB'}/>)}</div>
 }
 
 const inp = "w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 transition-all"
 const SHOP_CATS = ['shared','private','bundle']
 const PRESET_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#EF4444','#F59E0B','#10B981','#06B6D4','#6B7280','#F97316','#14B8A6']
+const LAYOUTS: { value: LandingBlock['layout']; label: string }[] = [
+  { value:'image_left',  label:'🖼️ Image Left + Text Right' },
+  { value:'image_right', label:'📝 Text Left + Image Right' },
+  { value:'text_only',   label:'📄 Text Only' },
+  { value:'image_only',  label:'🖼️ Image Only (full width)' },
+]
 
 export default function ShopAdminPage() {
-  const [tab,      setTab]      = useState<'tools'|'categories'>('tools')
+  const [tab,      setTab]      = useState<'tools'|'categories'|'reviews'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
+  const [reviews,  setReviews]  = useState<Review[]>([])
+  const [revLoad,  setRevLoad]  = useState(false)
   const [toolCat,  setToolCat]  = useState('all')
   const [loading,  setLoading]  = useState(true)
-  const [modal,    setModal]    = useState<'add-tool'|'edit-tool'|'add-cat'|'edit-cat'|null>(null)
+  const [modal,    setModal]    = useState<'add-tool'|'edit-tool'|'add-cat'|'edit-cat'|'landing'|null>(null)
   const [editItem, setEdit]     = useState<any>(null)
   const [toast,    setToast]    = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [saving,   setSaving]   = useState(false)
   const [delItem,  setDel]      = useState<any>(null)
   const [delType,  setDelType]  = useState<'tool'|'cat'>('tool')
+
+  // Landing blocks state
+  const [landingTool,   setLandingTool]   = useState<Tool|null>(null)
+  const [landingBlocks, setLandingBlocks] = useState<LandingBlock[]>([])
 
   // Tool form
   const emptyTool = { name:'',description:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false }
@@ -54,7 +84,16 @@ export default function ShopAdminPage() {
     setLoading(false)
   },[])
 
+  const loadReviews = useCallback(async()=>{
+    setRevLoad(true)
+    const res = await fetch('/api/admin/reviews')
+    const d   = await res.json()
+    setReviews(d.reviews||[])
+    setRevLoad(false)
+  },[])
+
   useEffect(()=>{load()},[load])
+  useEffect(()=>{ if(tab==='reviews') loadReviews() },[tab,loadReviews])
 
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
@@ -92,6 +131,48 @@ export default function ShopAdminPage() {
     setToast({msg:'Updated',type:'ok'}); load()
   }
 
+  // ── Landing Blocks ──
+  const openLanding = (t:Tool)=>{
+    setLandingTool(t)
+    setLandingBlocks(Array.isArray(t.landing_blocks) ? t.landing_blocks : [])
+    setModal('landing')
+  }
+
+  const addBlock = ()=>{
+    const newBlock: LandingBlock = { id: uuid(), layout:'image_left', image_url:'', title_en:'', title_ar:'', body_en:'', body_ar:'' }
+    setLandingBlocks(b=>[...b, newBlock])
+  }
+
+  const updateBlock = (id:string, patch: Partial<LandingBlock>)=>{
+    setLandingBlocks(b=>b.map(bl=>bl.id===id?{...bl,...patch}:bl))
+  }
+
+  const removeBlock = (id:string)=>{
+    setLandingBlocks(b=>b.filter(bl=>bl.id!==id))
+  }
+
+  const moveBlock = (id:string, dir:-1|1)=>{
+    setLandingBlocks(b=>{
+      const idx = b.findIndex(bl=>bl.id===id)
+      if (idx<0) return b
+      const next = idx+dir
+      if (next<0||next>=b.length) return b
+      const arr = [...b]
+      ;[arr[idx],arr[next]] = [arr[next],arr[idx]]
+      return arr
+    })
+  }
+
+  const saveLandingBlocks = async()=>{
+    if (!landingTool) return
+    setSaving(true)
+    const res = await supabase.from('shop_tools').update({ landing_blocks: landingBlocks }).eq('id', landingTool.id)
+    setSaving(false)
+    if (res.error) { setToast({msg:res.error.message,type:'err'}); return }
+    setToast({msg:'Landing page saved',type:'ok'})
+    setModal(null); load()
+  }
+
   // ── Category CRUD ──
   const openAddCat  = ()=>{ setCatForm(emptyCat); setEdit(null); setModal('add-cat') }
   const openEditCat = (c:Category)=>{
@@ -126,17 +207,28 @@ export default function ShopAdminPage() {
     setToast({msg:'Deleted',type:'ok'}); setDel(null); load()
   }
 
+  // ── Reviews ──
+  const approveReview = async(id:string, approved:boolean)=>{
+    await fetch(`/api/admin/reviews/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved})})
+    setToast({msg:approved?'Approved ✓':'Hidden',type:'ok'})
+    loadReviews()
+  }
+  const deleteReview = async(id:string)=>{
+    await fetch(`/api/admin/reviews/${id}`,{method:'DELETE'})
+    setToast({msg:'Deleted',type:'ok'})
+    loadReviews()
+  }
+
   const filtered = toolCat==='all'?tools:tools.filter(t=>t.category_slug===toolCat)
   const counts:any={}; SHOP_CATS.forEach(c=>{counts[c]=tools.filter(t=>t.category_slug===c).length})
-
-  // Get category name from id
   const catName = (id?:string) => cats.find(c=>c.id===id)?.name||'—'
+  const pendingReviews = reviews.filter(r=>!r.approved).length
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar/>
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Topbar title="Shop Manager" subtitle="Manage tools & categories shown in user dashboard"/>
+        <Topbar title="Shop Manager" subtitle="Manage tools, categories & reviews"/>
 
         {/* Top tabs */}
         <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
@@ -149,11 +241,15 @@ export default function ShopAdminPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='categories'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
               <Tag size={12}/>Categories ({cats.length})
             </button>
+            <button onClick={()=>setTab('reviews')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='reviews'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
+              <MessageCircle size={12}/>Reviews
+              {pendingReviews>0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-red-500">{pendingReviews}</span>}
+            </button>
           </div>
 
           {tab==='tools' ? (
             <div className="flex items-center gap-2">
-              {/* Filter by shop category */}
               <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 {[['all','All'],['shared','Shared'],['private','Private'],['bundle','Bundle']].map(([id,label])=>(
                   <button key={id} onClick={()=>setToolCat(id)}
@@ -166,11 +262,11 @@ export default function ShopAdminPage() {
                 <Plus size={13}/>Add Tool
               </button>
             </div>
-          ) : (
+          ) : tab==='categories' ? (
             <button onClick={openAddCat} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors">
               <Plus size={13}/>Add Category
             </button>
-          )}
+          ) : null}
         </div>
 
         <div className="flex-1 overflow-auto p-5">
@@ -181,15 +277,15 @@ export default function ShopAdminPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-800/50">
-                    {['Tool','Shop Type','Category','Price','Rating','Status','Actions'].map(h=>(
+                    {['Tool','Shop Type','Category','Price','Rating','Landing','Status','Actions'].map(h=>(
                       <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {loading&&<tr><td colSpan={7} className="text-center py-12 text-sm text-gray-400">Loading...</td></tr>}
+                  {loading&&<tr><td colSpan={8} className="text-center py-12 text-sm text-gray-400">Loading...</td></tr>}
                   {!loading&&filtered.length===0&&(
-                    <tr><td colSpan={7} className="text-center py-12">
+                    <tr><td colSpan={8} className="text-center py-12">
                       <Package size={28} className="text-gray-200 mx-auto mb-3"/>
                       <p className="text-sm text-gray-400 mb-3">No tools yet</p>
                       <button onClick={openAddTool} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600">
@@ -199,6 +295,7 @@ export default function ShopAdminPage() {
                   )}
                   {filtered.map(t=>{
                     const CAT_COLORS:any={shared:'#3B82F6',private:'#8B5CF6',bundle:'#F59E0B'}
+                    const hasLanding = Array.isArray(t.landing_blocks) && t.landing_blocks.length > 0
                     return (
                       <tr key={t.id} className={`border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${!t.is_active?'opacity-50':''}`}>
                         <td className="px-4 py-3">
@@ -239,6 +336,12 @@ export default function ShopAdminPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
+                          <button onClick={()=>openLanding(t)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${hasLanding?'bg-emerald-50 text-emerald-600 border border-emerald-200':'bg-gray-50 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-500'}`}>
+                            <Layout size={10}/>{hasLanding?`${t.landing_blocks!.length} blocks`:'+ Add'}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">
                             <button onClick={()=>toggleTool(t,'is_active')} className="flex items-center gap-1">
                               {t.is_active?<ToggleRight size={18} className="text-emerald-500"/>:<ToggleLeft size={18} className="text-gray-300"/>}
@@ -275,9 +378,7 @@ export default function ShopAdminPage() {
                     <div className="h-1.5" style={{background:c.color}}/>
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:c.color+'15'}}>
-                          {c.icon}
-                        </div>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:c.color+'15'}}>{c.icon}</div>
                         <div className="flex items-center gap-1">
                           <button onClick={()=>openEditCat(c)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"><Pencil size={12}/></button>
                           <button onClick={()=>{setDel(c);setDelType('cat')}} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={12}/></button>
@@ -287,9 +388,7 @@ export default function ShopAdminPage() {
                       <div className="text-[10px] font-mono text-gray-400 mb-3">{c.slug}</div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-400"><span className="font-bold text-gray-700 dark:text-gray-300">{toolCount}</span> tools</span>
-                        <button onClick={()=>toggleCat(c)}>
-                          {c.is_active?<ToggleRight size={20} style={{color:c.color}}/>:<ToggleLeft size={20} className="text-gray-300"/>}
-                        </button>
+                        <button onClick={()=>toggleCat(c)}>{c.is_active?<ToggleRight size={20} style={{color:c.color}}/>:<ToggleLeft size={20} className="text-gray-300"/>}</button>
                       </div>
                     </div>
                   </div>
@@ -304,8 +403,142 @@ export default function ShopAdminPage() {
               )}
             </div>
           )}
+
+          {/* ── Reviews tab ── */}
+          {tab==='reviews' && (
+            <div className="space-y-4">
+              {revLoad && <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
+              {!revLoad && reviews.length===0 && (
+                <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-sm text-gray-400">
+                  <MessageCircle size={28} className="text-gray-200 mx-auto mb-3"/>No reviews yet
+                </div>
+              )}
+              {!revLoad && reviews.map(r=>(
+                <div key={r.id} className={`bg-white dark:bg-gray-900 border rounded-xl p-4 flex items-start gap-4 ${!r.approved?'border-amber-200 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-900/10':'border-gray-100 dark:border-gray-800'}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{r.member_name}</span>
+                      <StarRow n={r.stars}/>
+                      {!r.approved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Pending</span>}
+                      {r.approved  && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Approved</span>}
+                      <span className="text-[10px] text-gray-400 ms-auto">{r.shop_tools?.name}</span>
+                    </div>
+                    {r.comment && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-1">{r.comment}</p>}
+                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1.5">{new Date(r.created_at).toLocaleString('en-GB')}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {!r.approved && (
+                      <button onClick={()=>approveReview(r.id,true)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                        <ThumbsUp size={12}/>Approve
+                      </button>
+                    )}
+                    {r.approved && (
+                      <button onClick={()=>approveReview(r.id,false)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 text-xs font-semibold hover:bg-gray-50 transition-colors">
+                        <ThumbsDown size={12}/>Hide
+                      </button>
+                    )}
+                    <button onClick={()=>deleteReview(r.id)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <Trash2 size={12}/>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
+
+      {/* ── Landing Blocks Modal ── */}
+      {modal==='landing' && landingTool && (
+        <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-3xl shadow-2xl my-4">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl">
+              <div>
+                <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Landing Page — {landingTool.name}</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Blocks show below the tool description on the landing page</p>
+              </div>
+              <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {landingBlocks.length===0 && (
+                <div className="text-center py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400">
+                  No blocks yet. Add your first block below.
+                </div>
+              )}
+
+              {landingBlocks.map((block, i)=>(
+                <div key={block.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+                  {/* Block header */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Block {i+1}</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={()=>moveBlock(block.id,-1)} disabled={i===0} className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 disabled:opacity-30"><ChevronUp size={13}/></button>
+                      <button onClick={()=>moveBlock(block.id,1)} disabled={i===landingBlocks.length-1} className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 disabled:opacity-30"><ChevronDown size={13}/></button>
+                      <button onClick={()=>removeBlock(block.id)} className="w-6 h-6 rounded flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50"><X size={13}/></button>
+                    </div>
+                  </div>
+
+                  {/* Layout picker */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Layout</label>
+                    <select value={block.layout} onChange={e=>updateBlock(block.id,{layout:e.target.value as any})} className={inp}>
+                      {LAYOUTS.map(l=><option key={l.value} value={l.value}>{l.label}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Image URL */}
+                  {(block.layout==='image_left'||block.layout==='image_right'||block.layout==='image_only') && (
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Image / GIF URL</label>
+                      <input value={block.image_url||''} onChange={e=>updateBlock(block.id,{image_url:e.target.value})} placeholder="https://..." className={inp}/>
+                      {block.image_url && <img src={block.image_url} alt="" className="mt-2 h-24 rounded-lg object-cover border border-gray-100 dark:border-gray-700"/>}
+                    </div>
+                  )}
+
+                  {/* Text fields */}
+                  {block.layout!=='image_only' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe2 size={9}/>Title (EN)</label>
+                        <input value={block.title_en||''} onChange={e=>updateBlock(block.id,{title_en:e.target.value})} placeholder="Feature title" className={inp}/>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe2 size={9}/>عنوان (AR)</label>
+                        <input value={block.title_ar||''} onChange={e=>updateBlock(block.id,{title_ar:e.target.value})} placeholder="عنوان القسم" className={inp+" text-right"} dir="rtl"/>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Body (EN)</label>
+                        <textarea value={block.body_en||''} onChange={e=>updateBlock(block.id,{body_en:e.target.value})} rows={3} placeholder="Description text..." className={inp+" resize-none"}/>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">نص (AR)</label>
+                        <textarea value={block.body_ar||''} onChange={e=>updateBlock(block.id,{body_ar:e.target.value})} rows={3} placeholder="النص بالعربي..." className={inp+" resize-none text-right"} dir="rtl"/>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <button onClick={addBlock}
+                className="w-full py-2.5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors flex items-center justify-center gap-2">
+                <Plus size={14}/>Add Block
+              </button>
+            </div>
+
+            <div className="flex gap-2 px-5 pb-5">
+              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
+              <button onClick={saveLandingBlocks} disabled={saving}
+                className="flex-[2] py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+                {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><Check size={13}/>Save Landing Page</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Add/Edit Tool Modal ── */}
       {(modal==='add-tool'||modal==='edit-tool') && (
@@ -325,7 +558,7 @@ export default function ShopAdminPage() {
                 <textarea value={toolForm.description} onChange={e=>setToolForm({...toolForm,description:e.target.value})} className={inp+" resize-none h-16"}/>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Shop Type (shared/private/bundle)</label>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Shop Type</label>
                 <select value={toolForm.category_slug} onChange={e=>setToolForm({...toolForm,category_slug:e.target.value})} className={inp+" cursor-pointer"}>
                   {SHOP_CATS.map(c=><option key={c} value={c} className="capitalize">{c}</option>)}
                 </select>
@@ -354,7 +587,7 @@ export default function ShopAdminPage() {
                 <input type="number" value={toolForm.price_usd} onChange={e=>setToolForm({...toolForm,price_usd:e.target.value})} className={inp}/>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Retail Price EGP <span className="text-gray-500 normal-case">(original market price)</span></label>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Retail Price EGP</label>
                 <input type="number" value={toolForm.retail_price_egp} onChange={e=>setToolForm({...toolForm,retail_price_egp:e.target.value})} placeholder="0" className={inp}/>
               </div>
               <div>
@@ -412,7 +645,6 @@ export default function ShopAdminPage() {
               <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
             </div>
             <div className="p-5 flex flex-col gap-3">
-              {/* Preview */}
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{background:catForm.color+'15',border:`1px solid ${catForm.color}30`}}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:catForm.color+'20'}}>{catForm.icon}</div>
                 <div>

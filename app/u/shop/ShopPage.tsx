@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { Star, Zap, Info, X, Search } from 'lucide-react'
+import ToolLandingPage from './ToolLandingPage'
 
 interface Tool {
   id:string; name:string; description:string; image_url?:string
@@ -10,6 +11,7 @@ interface Tool {
   delivery_label:string; rating:number; review_count:number
   video_url?:string; features:string[]; is_out_of_stock:boolean
   category_slug:string; sort_order:number
+  landing_blocks?: any[]
 }
 interface DbCategory { id:string; name:string; slug:string; color:string; icon:string }
 interface Props { category: 'shared'|'private'|'bundle' }
@@ -37,6 +39,7 @@ export default function ShopPage({ category }: Props) {
   const [q,         setQ]         = useState('')
   const [sort,      setSort]      = useState<'best'|'recent'>('best')
   const [popup,     setPopup]     = useState<Tool|null>(null)
+  const [landing,   setLanding]   = useState<Tool|null>(null)
   const [catFilter, setCatFilter] = useState('all')
   const [categories,setCategories]= useState<DbCategory[]>([])
 
@@ -66,6 +69,14 @@ export default function ShopPage({ category }: Props) {
     .sort((a,b)=>sort==='best'?b.rating-a.rating:b.sort_order-a.sort_order)
 
   const buy = (tool:Tool) => { window.location.href=`/u/checkout?tool_id=${tool.id}` }
+
+  const openDetails = (tool: Tool) => {
+    const hasBlocks = Array.isArray(tool.landing_blocks) && tool.landing_blocks.length > 0
+    if (hasBlocks) setLanding(tool)
+    else setPopup(tool)
+  }
+
+  if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)}/>
 
   return (
     <div className="p-3 md:p-6">
@@ -149,7 +160,7 @@ export default function ShopPage({ category }: Props) {
             </div>
             <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
             <div className="px-5 py-3 flex items-center justify-between" dir={lang==='ar'?'rtl':'ltr'}>
-              <button onClick={()=>setPopup(tool)}
+              <button onClick={()=>openDetails(tool)}
                 className="flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors">
                 <Info size={15}/>{t('Details','التفاصيل')}
               </button>
