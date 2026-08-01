@@ -441,11 +441,8 @@ function CheckoutInner() {
               <p className="text-base text-gray-500 dark:text-gray-400 mb-2">{t('Subscription added to your account.','تم إضافة الاشتراك لحسابك بنجاح.')}</p>
               <p className="text-sm text-gray-400 mb-8">{t('You can start using it now from the dashboard.','تقدر تبدأ الاستخدام فوراً من لوحة التحكم.')}</p>
               <div className="flex flex-col gap-3 max-w-xs mx-auto">
-                <a href={wa} target="_blank" className="flex items-center justify-center gap-2 py-4 rounded-xl bg-green-500 hover:bg-green-600 text-white text-base font-bold transition-colors">
-                  <MessageCircle size={18}/>{t('Contact on WhatsApp','تواصل على WhatsApp')}
-                </a>
-                <button onClick={()=>router.push('/u/dashboard')} className="py-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  {t('Back to Dashboard','الرجوع للوحة التحكم')}
+                <button onClick={()=>router.push('/u/dashboard')} className="py-4 rounded-xl text-white text-base font-bold transition-colors" style={{background:'#d99401'}}>
+                  {t('Go to Dashboard 🚀','الذهاب للوحة التحكم 🚀')}
                 </button>
               </div>
             </div>
