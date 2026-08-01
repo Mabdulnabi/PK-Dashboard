@@ -169,8 +169,8 @@ if (pathname==='/u/login') return <>{children}</>
                 onClick={()=>!col && setShopOpen(!shopOpen)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
                 whileHover="hover"
-                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all duration-200 ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                style={active ? {background: item.color+'15'} : {}}>
+                className={`w-full relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
                 <motion.div
                   variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                   transition={{type:'spring', stiffness:400, damping:15}}
@@ -219,8 +219,8 @@ if (pathname==='/u/login') return <>{children}</>
             <motion.div key={item.href} whileHover="hover">
             <Link href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all duration-200 ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-              style={active ? {background: item.color+'15'} : {}}>
+              className={`relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                 transition={{type:'spring', stiffness:400, damping:15}}
@@ -271,7 +271,7 @@ if (pathname==='/u/login') return <>{children}</>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
       <aside className={`hidden md:flex ${collapsed ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 transition-all duration-200 relative`}>
-        <SidebarContent/>
+        {SidebarContent({})}
         <button
           onClick={() => setCollapsed(c => !c)}
           className={`absolute -${isRtl ? 'left' : 'right'}-3 bottom-16 w-6 h-6 rounded-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow z-10`}
@@ -288,7 +288,7 @@ if (pathname==='/u/login') return <>{children}</>
             <button onClick={()=>setSidebar(false)} className="absolute top-3 right-3 w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10">
               <X size={14}/>
             </button>
-            <SidebarContent forMobile/>
+            {SidebarContent({forMobile:true})}
           </div>
         </div>
       )}
