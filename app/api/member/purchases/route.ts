@@ -20,9 +20,9 @@ export async function GET(req: NextRequest) {
   const { data: purchases } = await service
     .from('tool_purchases')
     .select(`
-      id, status, expires_at, starts_at, payment_method, amount_egp,
+      id, status, expires_at, starts_at, payment_method, amount_egp, created_at,
       shop_tools (
-        id, name, image_url, duration_label, category_slug, video_url
+        id, name, image_url, duration_label, duration_days, category_slug, video_url, retail_price_egp
       )
     `)
     .eq('member_id', session.member_id)
@@ -49,9 +49,12 @@ export async function GET(req: NextRequest) {
     tool_video:      p.shop_tools?.video_url,
     duration_label:  p.shop_tools?.duration_label,
     category_slug:   p.shop_tools?.category_slug,
-    expires_at:      p.expires_at,
-    payment_method:  p.payment_method,
-    amount_egp:      p.amount_egp,
+    expires_at:        p.expires_at,
+    starts_at:         p.starts_at || null,
+    payment_method:    p.payment_method,
+    amount_egp:        p.amount_egp,
+    duration_days:     p.shop_tools?.duration_days ?? 30,
+    retail_price_egp:  p.shop_tools?.retail_price_egp ?? 0,
     has_delivery:    deliveryMap[p.id]?.has_delivery  ?? false,
     delivery_viewed: deliveryMap[p.id]?.delivery_viewed ?? false,
   }))

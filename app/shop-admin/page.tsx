@@ -8,7 +8,7 @@ import { Plus, Pencil, Trash2, X, Check, AlertCircle, ToggleLeft, ToggleRight, S
 interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
 interface Tool {
   id:string; name:string; description:string; image_url?:string
-  category_slug:string; category_id?:string; price_egp:number; price_usd?:number
+  category_slug:string; category_id?:string; price_egp:number; price_usd?:number; retail_price_egp?:number
   duration_label:string; duration_days:number; delivery_label:string
   rating:number; review_count:number; video_url?:string
   features:string[]; is_active:boolean; is_out_of_stock:boolean; sort_order:number
@@ -37,7 +37,7 @@ export default function ShopAdminPage() {
   const [delType,  setDelType]  = useState<'tool'|'cat'>('tool')
 
   // Tool form
-  const emptyTool = { name:'',description:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false }
+  const emptyTool = { name:'',description:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   // Category form
@@ -59,7 +59,7 @@ export default function ShopAdminPage() {
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
   const openEditTool = (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock})
+    setToolForm({name:t.name,description:t.description||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock})
     setEdit(t); setModal('edit-tool')
   }
 
@@ -70,6 +70,7 @@ export default function ShopAdminPage() {
       name:toolForm.name, description:toolForm.description||null, image_url:toolForm.image_url||null,
       category_slug:toolForm.category_slug, category_id:toolForm.category_id||null,
       price_egp:parseFloat(toolForm.price_egp), price_usd:toolForm.price_usd?parseFloat(toolForm.price_usd):null,
+      retail_price_egp:toolForm.retail_price_egp?parseFloat(toolForm.retail_price_egp):0,
       duration_label:toolForm.duration_label, duration_days:parseInt(toolForm.duration_days)||28,
       delivery_label:toolForm.delivery_label||'INSTANT',
       rating:parseFloat(toolForm.rating)||5.0, review_count:parseInt(toolForm.review_count)||0,
@@ -351,6 +352,10 @@ export default function ShopAdminPage() {
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Price USD</label>
                 <input type="number" value={toolForm.price_usd} onChange={e=>setToolForm({...toolForm,price_usd:e.target.value})} className={inp}/>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Retail Price EGP <span className="text-gray-500 normal-case">(original market price)</span></label>
+                <input type="number" value={toolForm.retail_price_egp} onChange={e=>setToolForm({...toolForm,retail_price_egp:e.target.value})} placeholder="0" className={inp}/>
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Duration Label</label>

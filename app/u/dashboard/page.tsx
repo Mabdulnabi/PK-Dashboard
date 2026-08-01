@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid } from 'lucide-react'
 
 // ── Smart Next Action ──────────────────────────────────────
 type ActionType = 'urgent'|'warning'|'notif'|'new_member'
@@ -101,8 +101,17 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
 interface Purchase {
   id:string; tool_name:string; tool_image?:string
   tool_video?:string; duration_label:string; category_slug?:string
-  expires_at?:string; payment_method:string; amount_egp:number
+  expires_at?:string; starts_at?:string; payment_method:string
+  amount_egp:number; duration_days?:number; retail_price_egp?:number
   has_delivery?:boolean; delivery_viewed?:boolean
+}
+
+function subProgress(p: Purchase): number | null {
+  if (!p.expires_at || !p.duration_days) return null
+  const expiresMs = new Date(p.expires_at).getTime()
+  const totalMs   = p.duration_days * 86400000
+  const startsMs  = p.starts_at ? new Date(p.starts_at).getTime() : expiresMs - totalMs
+  return Math.min(100, Math.max(0, ((Date.now() - startsMs) / totalMs) * 100))
 }
 interface FreeTool { id:string; name:string; image_url?:string; access_url:string }
 
@@ -116,6 +125,88 @@ function StatusBadge({ days, t }:{ days:number|null; t:any }) {
   if (days<=3) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 dark:bg-red-500/10 text-red-600 animate-pulse">⚠ {days} {t('d','ي')}</span>
   if (days<=7) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600">{days} {t('days','أيام')}</span>
   return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600"><CheckCircle size={9}/> {days} {t('days','أيام')}</span>
+}
+
+function QuickStats({ purchases, t, lang }: { purchases: Purchase[]; t: any; lang: string }) {
+  if (purchases.length === 0) return null
+
+  const active = purchases.length
+
+  const soonest = [...purchases]
+    .filter(p => p.expires_at)
+    .sort((a,b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime())[0]
+  const nextDays = soonest ? daysLeft(soonest.expires_at) : null
+
+  const monthlySpend = purchases.reduce((sum, p) => {
+    const days = p.duration_days || 30
+    return sum + (p.amount_egp / (days / 30))
+  }, 0)
+
+  const monthlySavings = purchases
+    .filter(p => (p.retail_price_egp || 0) > 0)
+    .reduce((sum, p) => {
+      const days = p.duration_days || 30
+      return sum + ((p.retail_price_egp! - p.amount_egp) / (days / 30))
+    }, 0)
+
+  const cards = [
+    {
+      label: lang === 'ar' ? 'الاشتراكات النشطة' : 'Active Subscriptions',
+      value: active.toString(),
+      sub:   lang === 'ar' ? 'اشتراك نشط' : 'active plans',
+      icon:  <LayoutGrid size={18}/>,
+      gradient: 'from-indigo-500 to-blue-500',
+      bg: 'from-indigo-50 to-blue-50 dark:from-indigo-500/10 dark:to-blue-500/10',
+      border: 'border-indigo-100 dark:border-indigo-500/20',
+      text: 'text-indigo-600 dark:text-indigo-400',
+    },
+    {
+      label: lang === 'ar' ? 'أقرب تجديد' : 'Next Renewal',
+      value: nextDays !== null ? `${nextDays}` : '—',
+      sub:   nextDays !== null ? (lang === 'ar' ? 'يوم متبقي' : 'days left') : (lang === 'ar' ? 'لا يوجد' : 'none'),
+      icon:  <CalendarClock size={18}/>,
+      gradient: 'from-amber-500 to-orange-500',
+      bg: 'from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10',
+      border: 'border-amber-100 dark:border-amber-500/20',
+      text: 'text-amber-600 dark:text-amber-400',
+    },
+    {
+      label: lang === 'ar' ? 'الإنفاق الشهري' : 'Monthly Spend',
+      value: `${Math.round(monthlySpend).toLocaleString()}`,
+      sub:   lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo',
+      icon:  <Wallet size={18}/>,
+      gradient: 'from-rose-500 to-red-500',
+      bg: 'from-rose-50 to-red-50 dark:from-rose-500/10 dark:to-red-500/10',
+      border: 'border-rose-100 dark:border-rose-500/20',
+      text: 'text-rose-600 dark:text-rose-400',
+    },
+    {
+      label: lang === 'ar' ? 'التوفير الشهري' : 'Monthly Savings',
+      value: monthlySavings > 0 ? `${Math.round(monthlySavings).toLocaleString()}` : '—',
+      sub:   monthlySavings > 0 ? (lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo') : (lang === 'ar' ? 'أضف سعر السوق' : 'set market price'),
+      icon:  <TrendingDown size={18}/>,
+      gradient: 'from-emerald-500 to-teal-500',
+      bg: 'from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10',
+      border: 'border-emerald-100 dark:border-emerald-500/20',
+      text: 'text-emerald-600 dark:text-emerald-400',
+    },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      {cards.map((c, i) => (
+        <div key={i} className={`relative rounded-2xl border bg-gradient-to-br ${c.bg} ${c.border} p-4 overflow-hidden`}>
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${c.gradient} opacity-70`}/>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${c.gradient} text-white shadow-sm`}>
+            {c.icon}
+          </div>
+          <div className={`text-2xl font-extrabold ${c.text} leading-none mb-1`}>{c.value}</div>
+          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{c.sub}</div>
+          <div className="text-[11px] text-gray-600 dark:text-gray-300 mt-1 font-medium leading-tight">{c.label}</div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function UserDashboard() {
@@ -234,6 +325,8 @@ export default function UserDashboard() {
 
       <SmartNextAction purchases={purchases} notifications={notifications} loading={loading} t={t} lang={lang}/>
 
+      {!loading && <QuickStats purchases={purchases} t={t} lang={lang}/>}
+
       {quickError && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400">
           ⚠ {quickError}
@@ -300,7 +393,7 @@ export default function UserDashboard() {
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 leading-tight">{p.tool_name}</h3>
 
                     {/* Expires line — red */}
-                    <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium mb-4">
+                    <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium mb-2">
                       <Clock size={11}/>
                       <span>
                         {p.expires_at
@@ -309,6 +402,20 @@ export default function UserDashboard() {
                         }
                       </span>
                     </div>
+
+                    {/* Progress bar */}
+                    {(() => {
+                      const pct = subProgress(p)
+                      if (pct === null) return null
+                      const barColor = pct >= 85 ? 'bg-red-500' : pct >= 65 ? 'bg-amber-400' : 'bg-emerald-400'
+                      return (
+                        <div className="mb-4">
+                          <div className="h-1 w-full rounded-full bg-gray-100 dark:bg-gray-700/60 overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }}/>
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                     {/* Buttons row */}
                     <div className="flex gap-2">
