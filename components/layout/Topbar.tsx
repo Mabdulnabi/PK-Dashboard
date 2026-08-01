@@ -1,24 +1,30 @@
 'use client'
-import { Bell, Plus } from 'lucide-react'
+import { Bell, Plus, Sun, Moon } from 'lucide-react'
+import { useAdminTheme } from '@/lib/admin-theme'
 
 export default function Topbar({ title, subtitle, onAdd, addLabel = 'Add New' }: {
   title: string; subtitle?: string; onAdd?: () => void; addLabel?: string
 }) {
+  const { dark, toggle } = useAdminTheme()
+
   return (
-    <header
-      className="h-14 flex items-center justify-between px-6 flex-shrink-0"
-      style={{ background: '#0D1117', borderBottom: '1px solid #1a2233' }}
-    >
-      <div className="flex items-center gap-3">
-        <div>
-          <h1 className="text-sm font-bold text-gray-100 leading-tight">{title}</h1>
-          {subtitle && <p className="text-[11px] text-gray-600 mt-0.5">{subtitle}</p>}
-        </div>
+    <header className="h-14 flex items-center justify-between px-6 flex-shrink-0 bg-white dark:bg-[#0D1117] border-b border-gray-200 dark:border-[#1a2233]">
+      <div>
+        <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{title}</h1>
+        {subtitle && <p className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">{subtitle}</p>}
       </div>
 
       <div className="flex items-center gap-2">
         <button
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-300 hover:bg-[#1a2233] transition-colors relative"
+          onClick={toggle}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1a2233] transition-colors"
+          title={dark ? 'Light mode' : 'Dark mode'}
+        >
+          {dark ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+
+        <button
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1a2233] transition-colors relative"
           title="Notifications"
         >
           <Bell size={15} />

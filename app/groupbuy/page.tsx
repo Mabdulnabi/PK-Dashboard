@@ -17,10 +17,10 @@ interface ToolServer {
   free_slots?: number; load_percent?: number
 }
 interface LiveSession {
-  id: string; user_email: string; tool_name: string
+  id: string; user_email: string; user_name: string; tool_name: string
   server_label: string; started_at: string
   last_active_at: string; expires_at: string
-  inactive_minutes: number; device_fingerprint: string
+  inactive_minutes: number; device_fingerprint: string; status: string
 }
 
 const TIERS    = ['basic','vip','private']
@@ -72,8 +72,12 @@ export default function GroupBuyPage() {
   const load = useCallback(async () => {
     const [srvRes, sesRes, logRes] = await Promise.all([
       supabase.from('tool_servers').select('*').order('tool_name'),
-      supabase.from('live_sessions').select('*').order('started_at', { ascending:false }),
-      supabase.from('groupbuy_activity_log').select('*').order('created_at', { ascending:false }).limit(50),
+      supabase.from('live_sessions').select('*').order('last_active_at', { ascending:false }),
+      // Activity log = all sessions history (joined with member + server)
+      supabase.from('user_server_sessions')
+        .select('id, status, started_at, last_active_at, expires_at, device_fingerprint, members(email,full_name), tool_servers(tool_name,server_label)')
+        .order('started_at', { ascending:false })
+        .limit(100),
     ])
     if (srvRes.data) setServers(srvRes.data)
     if (sesRes.data) setSessions(sesRes.data)
@@ -167,7 +171,7 @@ export default function GroupBuyPage() {
     a==='failed'     ? 'text-red-400' : 'text-blue-400'
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117]">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar title="Servers" subtitle="Manage shared servers & live sessions" />
@@ -298,29 +302,40 @@ export default function GroupBuyPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800/50">
-                      {['User','Server','Tool','Started','Last Active','Expires','Action'].map(h=>(
+                      {['User','Server','Tool','Started','Last Active','Status','Action'].map(h=>(
                         <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {sessions.map(s=>(
-                      <tr key={s.id} className={`border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${s.inactive_minutes > 10 ? 'opacity-60' : ''}`}>
-                        <td className="px-4 py-2.5 text-xs font-medium text-gray-800 dark:text-gray-200">{s.user_email}</td>
+                      <tr key={s.id} className={`border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${s.status!=='active'?'opacity-60':''}`}>
+                        <td className="px-4 py-2.5">
+                          <div className="text-xs font-medium text-gray-800 dark:text-gray-200">{s.user_name||s.user_email}</div>
+                          <div className="text-[10px] text-gray-400">{s.user_email}</div>
+                        </td>
                         <td className="px-4 py-2.5 text-xs text-gray-500">{s.server_label}</td>
                         <td className="px-4 py-2.5 text-xs text-gray-500">{s.tool_name}</td>
                         <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(s.started_at).toLocaleTimeString()}</td>
                         <td className="px-4 py-2.5">
-                          <span className={`text-[10px] font-semibold ${s.inactive_minutes > 10 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                            {s.inactive_minutes < 1 ? 'Just now' : `${Math.round(s.inactive_minutes)}m ago`}
+                          <span className={`text-[10px] font-semibold ${(s.inactive_minutes??0) > 10 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                            {(s.inactive_minutes??0) < 1 ? 'Just now' : `${Math.round(s.inactive_minutes??0)}m ago`}
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(s.expires_at).toLocaleTimeString()}</td>
                         <td className="px-4 py-2.5">
-                          <button onClick={()=>kickSession(s.id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors">
-                            <Zap size={10}/>Kick
-                          </button>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            s.status==='active' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
+                            s.status==='kicked' ? 'bg-red-100 dark:bg-red-900/30 text-red-500' :
+                            'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                          }`}>{s.status}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {s.status==='active' && (
+                            <button onClick={()=>kickSession(s.id)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors">
+                              <Zap size={10}/>Kick
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -333,29 +348,44 @@ export default function GroupBuyPage() {
           {/* ══ ACTIVITY LOG TAB ══ */}
           {tab==='log' && (
             <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800/50">
-                    {['Action','User','Server','Device','Time','Reason'].map(h=>(
-                      <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map(l=>(
-                    <tr key={l.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                      <td className="px-4 py-2.5">
-                        <span className={`text-[11px] font-bold ${actionColor(l.action)}`}>{l.action}</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">{l.user_id?.slice(0,8)}...</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">{l.server_id?.slice(0,8)}...</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">{l.device_fingerprint?.slice(0,12)}...</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(l.created_at).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400">{l.reason||'—'}</td>
+              {logs.length===0 ? (
+                <div className="text-center py-16">
+                  <Shield size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
+                  <p className="text-sm text-gray-400">No session history</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50">
+                      {['Status','User','Tool','Server','Device','Time'].map(h=>(
+                        <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {logs.map((l:any)=>(
+                      <tr key={l.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            l.status==='active'  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
+                            l.status==='kicked'  ? 'bg-red-100 dark:bg-red-900/30 text-red-500' :
+                            l.status==='expired' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-500' :
+                            'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                          }`}>{l.status||'—'}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{l.members?.full_name||'—'}</div>
+                          <div className="text-[10px] text-gray-400">{l.members?.email||''}</div>
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-gray-500">{l.tool_servers?.tool_name||'—'}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-500">{l.tool_servers?.server_label||'—'}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">{l.device_fingerprint?.slice(0,12)||'—'}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(l.started_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>

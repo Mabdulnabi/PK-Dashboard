@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
+import { useAdminTheme } from '@/lib/admin-theme'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [userName, setUserName] = useState('Admin')
   const [expiring, setExpiring] = useState(0)
   const [loading,  setLoading]  = useState(true)
+  useAdminTheme() // applies dark class from localStorage on mount
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -29,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117]">
       <Sidebar userName={userName}/>
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         {children}
