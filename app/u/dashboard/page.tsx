@@ -127,7 +127,10 @@ function StatusBadge({ days, t }:{ days:number|null; t:any }) {
   return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600"><CheckCircle size={9}/> {days} {t('days','أيام')}</span>
 }
 
-function QuickStats({ purchases, t, lang }: { purchases: Purchase[]; t: any; lang: string }) {
+function QuickStats({ purchases, t, lang, currency, formatPrice, usdRate }: {
+  purchases: Purchase[]; t: any; lang: string
+  currency: string; formatPrice: (egp: number, rate?: number) => string; usdRate: number
+}) {
   if (purchases.length === 0) return null
 
   const active = purchases.length
@@ -166,15 +169,21 @@ function QuickStats({ purchases, t, lang }: { purchases: Purchase[]; t: any; lan
     },
     {
       label:  lang === 'ar' ? 'الإنفاق الشهري' : 'Monthly Spend',
-      value:  Math.round(monthlySpend).toLocaleString(),
-      sub:    lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo',
+      value:  formatPrice(Math.round(monthlySpend), usdRate),
+      sub:    currency === 'usd'
+        ? `${Math.round(monthlySpend).toLocaleString()} ${lang==='ar'?'جنيه':'EGP'} / ${lang==='ar'?'شهر':'mo'}`
+        : lang === 'ar' ? 'شهرياً' : 'per month',
       Icon:   Wallet,
       accent: '#ef4444',
     },
     {
       label:  lang === 'ar' ? 'التوفير الشهري' : 'Monthly Savings',
-      value:  monthlySavings > 0 ? Math.round(monthlySavings).toLocaleString() : '—',
-      sub:    monthlySavings > 0 ? (lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo') : (lang === 'ar' ? 'أضف سعر السوق' : 'set market price'),
+      value:  monthlySavings > 0 ? formatPrice(Math.round(monthlySavings), usdRate) : '—',
+      sub:    monthlySavings > 0
+        ? currency === 'usd'
+          ? `${Math.round(monthlySavings).toLocaleString()} ${lang==='ar'?'جنيه':'EGP'} / ${lang==='ar'?'شهر':'mo'}`
+          : lang === 'ar' ? 'شهرياً' : 'per month'
+        : (lang === 'ar' ? 'أضف سعر السوق' : 'set market price'),
       Icon:   TrendingDown,
       accent: '#10b981',
     },
@@ -202,8 +211,9 @@ function QuickStats({ purchases, t, lang }: { purchases: Purchase[]; t: any; lan
 
 export default function UserDashboard() {
   const router = useRouter()
-  const settings = useSiteSettings()
-  const { t, lang, dir } = useLang()
+  const settings  = useSiteSettings()
+  const usdRate   = parseFloat(settings.usd_to_egp_rate || '50')
+  const { t, lang, dir, currency, formatPrice } = useLang()
   const [purchases,    setPurchases]    = useState<Purchase[]>([])
   const [free,         setFree]         = useState<FreeTool[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -316,7 +326,7 @@ export default function UserDashboard() {
 
       <SmartNextAction purchases={purchases} notifications={notifications} loading={loading} t={t} lang={lang}/>
 
-      {!loading && <QuickStats purchases={purchases} t={t} lang={lang}/>}
+      {!loading && <QuickStats purchases={purchases} t={t} lang={lang} currency={currency} formatPrice={formatPrice} usdRate={usdRate}/>}
 
       {quickError && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400">
