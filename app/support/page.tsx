@@ -37,8 +37,14 @@ export default function SupportPage() {
     if(!replyText.trim()) return
     setSaving(true)
     const {data:{user}} = await supabase.auth.getUser()
-    await supabase.from('support_tickets').update({reply:replyText,status:'resolved',replied_by:user?.id,replied_at:new Date().toISOString()}).eq('id',t.id)
-    setSaving(false); setToast({msg:'Reply sent',type:'ok'}); setReplyText(''); setExpanded(null); load()
+    const res = await fetch(`/api/admin/tickets/${t.id}/reply`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ reply: replyText, status: 'resolved', admin_id: user?.id }),
+    })
+    setSaving(false)
+    if(res.ok){ setToast({msg:'Reply sent',type:'ok'}); setReplyText(''); setExpanded(null); load() }
+    else { setToast({msg:'Failed to send reply',type:'err'}) }
   }
 
   const updateStatus = async(id:string, status:string)=>{

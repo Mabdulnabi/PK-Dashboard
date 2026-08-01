@@ -53,6 +53,15 @@ export async function POST(req: NextRequest) {
 
     if (purchErr) throw purchErr
 
+    // Notify member: subscription activated
+    const { data: tool } = await service.from('shop_tools').select('name').eq('id', tool_id).single()
+    service.from('member_notifications').insert({
+      member_id,
+      title:   `تم تفعيل اشتراكك ✅`,
+      message: `اشتراكك في ${tool?.name || 'الأداة'} فعال حتى ${expires.toLocaleDateString('ar-EG')}.`,
+      type:    'success',
+    }).then(() => {})
+
     return NextResponse.json({ ok: true, payment_id: pay.id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

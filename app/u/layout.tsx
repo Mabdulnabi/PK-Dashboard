@@ -233,26 +233,42 @@ if (pathname==='/u/login') return <>{children}</>
             </button>
             {/* Notifications */}
             <div className="relative">
-              <button onClick={()=>setNotif(o=>!o)}
+              <button onClick={()=>{
+                  setNotif(o=>{
+                    if(!o && unread>0) {
+                      fetch('/api/member/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+                        .then(()=>setNotifs(ns=>ns.map(n=>({...n,is_read:true}))))
+                    }
+                    return !o
+                  })
+                }}
                 className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
                 <Bell size={14}/>
-                {unread>0&&<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"/>}
+                {unread>0&&<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
               </button>
               {notifOpen&&(
-                <div className={`absolute ${isRtl?'left-0':'right-0'} top-10 w-72 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden`}>
+                <div className={`absolute ${isRtl?'left-0':'right-0'} top-10 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden`}>
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
+                      {unread>0&&<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white">{unread}</span>}
+                    </div>
                     <button onClick={()=>setNotif(false)}><X size={14} className="text-gray-400"/></button>
                   </div>
-                  <div className="max-h-64 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
                     {notifications.length===0
                       ? <p className="text-center py-8 text-sm text-gray-400">{isRtl?'لا توجد إشعارات':'No notifications'}</p>
-                      : notifications.map((n,i)=>(
-                        <div key={i} className={`px-4 py-3 ${!n.is_read?'bg-blue-50/50 dark:bg-blue-900/10':''}`}>
-                          <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{n.title}</div>
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{n.message}</div>
-                        </div>
-                      ))
+                      : notifications.map((n,i)=>{
+                          const iconMap:Record<string,string> = { success:'✅', info:'💬', warning:'⚠️', error:'❌' }
+                          const icon = iconMap[n.type] || '🔔'
+                          return (
+                            <div key={i} className={`px-4 py-3 ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''}`}>
+                              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{n.title}</div>
+                              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.message}</div>
+                              <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleDateString(isRtl?'ar-EG':'en-GB')}</div>
+                            </div>
+                          )
+                        })
                     }
                   </div>
                 </div>

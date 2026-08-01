@@ -41,5 +41,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }, { onConflict: 'purchase_id' })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify member
+  const toolName = (purchase as any).shop_tools?.name || 'الأداة'
+  const label    = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'
+  service.from('member_notifications').insert({
+    member_id: (purchase as any).member_id,
+    title:     `تم تسليم ${label} 🎉`,
+    message:   `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
+    type:      'success',
+  }).then(() => {})
+
   return NextResponse.json({ ok: true })
 }
