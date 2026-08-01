@@ -17,10 +17,13 @@ interface Tool {
 }
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'
   image_url?: string
+  video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
+  features?: { icon: string; en: string; ar: string }[]
+  faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
 }
 interface Review {
   id: string; tool_id: string; member_name: string; stars: number
@@ -41,10 +44,13 @@ const inp = "w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:bor
 const SHOP_CATS = ['shared','private','bundle']
 const PRESET_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#EF4444','#F59E0B','#10B981','#06B6D4','#6B7280','#F97316','#14B8A6']
 const LAYOUTS: { value: LandingBlock['layout']; label: string }[] = [
-  { value:'image_left',  label:'🖼️ Image Left + Text Right' },
-  { value:'image_right', label:'📝 Text Left + Image Right' },
-  { value:'text_only',   label:'📄 Text Only' },
-  { value:'image_only',  label:'🖼️ Image Only (full width)' },
+  { value:'image_left',     label:'🖼️ Image Left + Text Right' },
+  { value:'image_right',    label:'📝 Text Left + Image Right' },
+  { value:'text_only',      label:'📄 Text Only' },
+  { value:'image_only',     label:'🖼️ Image Only (full width)' },
+  { value:'features_grid',  label:'⚡ Features Grid (icons)' },
+  { value:'video',          label:'🎬 Video Embed' },
+  { value:'faq',            label:'❓ FAQ Accordion' },
 ]
 
 export default function ShopAdminPage() {
@@ -499,12 +505,20 @@ export default function ShopAdminPage() {
                     </div>
                   )}
 
-                  {/* Text fields */}
-                  {block.layout!=='image_only' && (
+                  {/* Video URL */}
+                  {block.layout==='video' && (
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">YouTube URL</label>
+                      <input value={block.video_url||''} onChange={e=>updateBlock(block.id,{video_url:e.target.value})} placeholder="https://youtube.com/watch?v=..." className={inp}/>
+                    </div>
+                  )}
+
+                  {/* Title + Body (most layouts) */}
+                  {!['image_only','features_grid','faq'].includes(block.layout) && (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe2 size={9}/>Title (EN)</label>
-                        <input value={block.title_en||''} onChange={e=>updateBlock(block.id,{title_en:e.target.value})} placeholder="Feature title" className={inp}/>
+                        <input value={block.title_en||''} onChange={e=>updateBlock(block.id,{title_en:e.target.value})} placeholder="Section title" className={inp}/>
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe2 size={9}/>عنوان (AR)</label>
@@ -517,6 +531,64 @@ export default function ShopAdminPage() {
                       <div>
                         <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">نص (AR)</label>
                         <textarea value={block.body_ar||''} onChange={e=>updateBlock(block.id,{body_ar:e.target.value})} rows={3} placeholder="النص بالعربي..." className={inp+" resize-none text-right"} dir="rtl"/>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Features Grid */}
+                  {block.layout==='features_grid' && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Title (EN)</label>
+                          <input value={block.title_en||''} onChange={e=>updateBlock(block.id,{title_en:e.target.value})} placeholder="Why choose us" className={inp}/>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">عنوان (AR)</label>
+                          <input value={block.title_ar||''} onChange={e=>updateBlock(block.id,{title_ar:e.target.value})} placeholder="لماذا تختارنا" className={inp+" text-right"} dir="rtl"/>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-2 block">Feature Items</label>
+                        {(block.features||[]).map((f,fi)=>(
+                          <div key={fi} className="flex items-center gap-2 mb-2">
+                            <input value={f.icon} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon:e.target.value}; updateBlock(block.id,{features:fs}) }} placeholder="⚡" className={inp+" w-14 text-center text-lg"}/>
+                            <input value={f.en} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,en:e.target.value}; updateBlock(block.id,{features:fs}) }} placeholder="Feature EN" className={inp+" flex-1"}/>
+                            <input value={f.ar} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,ar:e.target.value}; updateBlock(block.id,{features:fs}) }} placeholder="ميزة AR" className={inp+" flex-1 text-right"} dir="rtl"/>
+                            <button onClick={()=>{ const fs=(block.features||[]).filter((_,j)=>j!==fi); updateBlock(block.id,{features:fs}) }} className="w-7 h-7 rounded flex items-center justify-center text-red-400 hover:bg-red-50 flex-shrink-0"><X size={12}/></button>
+                          </div>
+                        ))}
+                        <button onClick={()=>updateBlock(block.id,{features:[...(block.features||[]),{icon:'⭐',en:'',ar:''}]})}
+                          className="text-xs text-blue-500 hover:underline flex items-center gap-1"><Plus size={11}/>Add Feature</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FAQ */}
+                  {block.layout==='faq' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Section Title (EN)</label>
+                        <input value={block.title_en||''} onChange={e=>updateBlock(block.id,{title_en:e.target.value})} placeholder="Frequently Asked Questions" className={inp}/>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-2 block">FAQ Items</label>
+                        {(block.faqs||[]).map((faq,fi)=>(
+                          <div key={fi} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2 space-y-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-semibold text-gray-400">Q{fi+1}</span>
+                              <button onClick={()=>{ const fs=(block.faqs||[]).filter((_,j)=>j!==fi); updateBlock(block.id,{faqs:fs}) }} className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50"><X size={10}/></button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input value={faq.q_en} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,q_en:e.target.value}; updateBlock(block.id,{faqs:fs}) }} placeholder="Question EN" className={inp}/>
+                              <input value={faq.q_ar} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,q_ar:e.target.value}; updateBlock(block.id,{faqs:fs}) }} placeholder="السؤال AR" className={inp+" text-right"} dir="rtl"/>
+                              <textarea value={faq.a_en} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,a_en:e.target.value}; updateBlock(block.id,{faqs:fs}) }} rows={2} placeholder="Answer EN" className={inp+" resize-none"}/>
+                              <textarea value={faq.a_ar} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,a_ar:e.target.value}; updateBlock(block.id,{faqs:fs}) }} rows={2} placeholder="الإجابة AR" className={inp+" resize-none text-right"} dir="rtl"/>
+                            </div>
+                          </div>
+                        ))}
+                        <button onClick={()=>updateBlock(block.id,{faqs:[...(block.faqs||[]),{q_en:'',q_ar:'',a_en:'',a_ar:''}]})}
+                          className="text-xs text-blue-500 hover:underline flex items-center gap-1"><Plus size={11}/>Add Question</button>
                       </div>
                     </div>
                   )}

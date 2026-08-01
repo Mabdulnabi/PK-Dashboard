@@ -2,14 +2,19 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { ArrowLeft, Star, Zap, Send, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq'
   image_url?: string
+  video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
+  // features_grid: array of {icon, en, ar}
+  features?: { icon: string; en: string; ar: string }[]
+  // faq: array of {q_en, q_ar, a_en, a_ar}
+  faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
 }
 
 interface Review {
@@ -48,9 +53,23 @@ function RatingBar({ label, count, total }: { label: string; count: number; tota
     <div className="flex items-center gap-3 text-sm">
       <span className="text-gray-500 w-12 text-end flex-shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`, background:'#F59E0B'}}/>
+        <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`, background:'#d99401'}}/>
       </div>
       <span className="text-gray-400 w-6 text-start flex-shrink-0">{count}</span>
+    </div>
+  )
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+      <button onClick={()=>setOpen(o=>!o)}
+        className="w-full flex items-center justify-between py-4 text-start gap-4">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{q}</span>
+        {open ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0"/> : <ChevronDown size={16} className="text-gray-400 flex-shrink-0"/>}
+      </button>
+      {open && <p className="pb-4 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{a}</p>}
     </div>
   )
 }
@@ -100,122 +119,177 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const displayRating = avgRating || tool.rating
   const displayCount  = totalReviews || tool.review_count
 
+  const buyUrl = `/u/checkout?tool_id=${tool.id}`
+
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'}>
 
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden" style={{background:'linear-gradient(135deg,#0d0d1a 0%,#111827 50%,#0f1f3d 100%)'}}>
-        {/* Background glow blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl" style={{background:'#d99401'}}/>
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-8 blur-3xl" style={{background:'#3b82f6'}}/>
-        </div>
+      <div className="p-3 md:p-5 pb-0">
+        <div className="relative overflow-hidden rounded-3xl"
+          style={{background:'linear-gradient(135deg,#0a0a18 0%,#0d1424 40%,#0a1628 70%,#0d0f1e 100%)'}}>
 
-        <div className="relative max-w-5xl mx-auto px-4 md:px-8 pt-6 pb-10">
-          {/* Back */}
-          <button onClick={onBack}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors mb-8 text-sm group">
-            <ArrowLeft size={15} className={`transition-transform group-hover:${isRtl?'translate-x-1':'-translate-x-1'} ${isRtl?'rotate-180':''}`}/>
-            {t('Back to Shop','رجوع للمتجر')}
-          </button>
+          {/* Glow blobs */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+            <div className="absolute -top-20 left-1/3 w-72 h-72 rounded-full blur-3xl" style={{background:'#d9940118'}}/>
+            <div className="absolute top-10 right-10 w-48 h-48 rounded-full blur-3xl" style={{background:'#3b82f610'}}/>
+            <div className="absolute bottom-0 left-10 w-56 h-56 rounded-full blur-3xl" style={{background:'#8b5cf608'}}/>
+          </div>
 
-          <div className="flex flex-col md:flex-row items-start gap-8">
-            {/* Logo */}
-            <div className="relative flex-shrink-0">
-              <div className="w-24 h-24 rounded-3xl bg-white/10 border border-white/15 flex items-center justify-center overflow-hidden shadow-2xl backdrop-blur-sm">
-                {tool.image_url
-                  ? <img src={tool.image_url} alt={tool.name} className="w-16 h-16 object-contain"/>
-                  : <span className="text-3xl font-bold text-white/30">{tool.name.slice(0,2).toUpperCase()}</span>}
-              </div>
-              {/* Glow under logo */}
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-4 blur-xl opacity-40 rounded-full" style={{background:'#d99401'}}/>
-            </div>
+          {/* Subtle grid pattern */}
+          <div className="absolute inset-0 opacity-[0.03] rounded-3xl"
+            style={{backgroundImage:'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',backgroundSize:'40px 40px'}}/>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              {/* Badges row */}
-              <div className="flex items-center gap-2 flex-wrap mb-3">
-                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[11px] font-bold shadow-sm">
-                  <Zap size={9} fill="white"/>{tool.delivery_label||t('INSTANT','فوري')}
-                </span>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold border border-white/15 text-gray-300">
-                  ⏱ {durLabel}
-                </span>
+          <div className="relative px-5 md:px-10 pt-6 pb-8">
+            {/* Back */}
+            <button onClick={onBack}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-200 transition-colors mb-7 text-sm group w-fit">
+              <ArrowLeft size={14} className={`transition-transform group-hover:${isRtl?'translate-x-0.5':'-translate-x-0.5'} ${isRtl?'rotate-180':''}`}/>
+              {t('Back to Shop','رجوع للمتجر')}
+            </button>
+
+            <div className="flex flex-col md:flex-row items-start gap-7">
+              {/* Logo */}
+              <div className="relative flex-shrink-0">
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl"
+                  style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)'}}>
+                  {tool.image_url
+                    ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 md:w-16 md:h-16 object-contain"/>
+                    : <span className="text-3xl font-bold" style={{color:'rgba(255,255,255,0.25)'}}>{tool.name.slice(0,2).toUpperCase()}</span>}
+                </div>
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-12 h-3 blur-lg rounded-full" style={{background:'#d99401', opacity:0.5}}/>
               </div>
 
-              {/* Name */}
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight tracking-tight">{tool.name}</h1>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-3">
+                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                    style={{background:'rgba(16,185,129,0.85)'}}>
+                    <Zap size={9} fill="white"/>{tool.delivery_label||t('INSTANT','فوري')}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-300"
+                    style={{border:'1px solid rgba(255,255,255,0.12)'}}>
+                    ⏱ {durLabel}
+                  </span>
+                </div>
 
-              {/* Stars */}
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="flex items-center gap-0.5">
-                  {[1,2,3,4,5].map(i=>(
-                    <Star key={i} size={15} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#4B5563'}/>
+                <h1 className="text-2xl md:text-4xl font-bold text-white mb-3 leading-tight tracking-tight">{tool.name}</h1>
+
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(i=>(
+                      <Star key={i} size={14} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#374151'}/>
+                    ))}
+                  </div>
+                  <span className="text-sm font-bold text-amber-400">{displayRating.toFixed(1)}</span>
+                  <span className="text-sm text-gray-600">·</span>
+                  <span className="text-sm text-gray-500">{displayCount} {t('reviews','تقييم')}</span>
+                </div>
+
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl md:text-5xl font-extrabold tracking-tight" style={{color:'#d99401'}}>{price}</span>
+                  <span className="text-base md:text-lg text-gray-500 font-medium">/ {durLabel}</span>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="w-full md:w-52 flex-shrink-0 flex flex-col gap-3">
+                {tool.is_out_of_stock
+                  ? <button disabled className="w-full py-3.5 rounded-xl text-gray-400 font-bold cursor-default text-sm"
+                      style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)'}}>
+                      {t('Out of Stock','نفذت الكمية')}
+                    </button>
+                  : <button onClick={()=>{ window.location.href=buyUrl }}
+                      className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      style={{background:'#d99401', boxShadow:'0 6px 20px rgba(217,148,1,0.35)'}}>
+                      🔒 {t('Buy Now','اشتري الآن')}
+                    </button>
+                }
+                <div className="flex flex-col gap-1.5 pt-1">
+                  {[
+                    {icon:'⚡', en:'Instant activation', ar:'تفعيل فوري'},
+                    {icon:'🔒', en:'Secure payment',    ar:'دفع آمن'},
+                    {icon:'💬', en:'24/7 support',      ar:'دعم على مدار الساعة'},
+                  ].map(b=>(
+                    <div key={b.en} className="flex items-center gap-2 text-[11px] text-gray-500">
+                      <span>{b.icon}</span>{isRtl?b.ar:b.en}
+                    </div>
                   ))}
                 </div>
-                <span className="text-sm font-bold text-amber-400">{displayRating.toFixed(1)}</span>
-                <span className="text-sm text-gray-500">·</span>
-                <span className="text-sm text-gray-400">{displayCount} {t('reviews','تقييم')}</span>
-              </div>
-
-              {/* Price */}
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl md:text-5xl font-extrabold tracking-tight" style={{color:'#d99401'}}>{price}</span>
-                <span className="text-lg text-gray-400 font-medium">/ {durLabel}</span>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="w-full md:w-56 flex-shrink-0 flex flex-col gap-3">
-              {tool.is_out_of_stock
-                ? <button disabled className="w-full py-4 rounded-2xl bg-gray-700 text-gray-400 font-bold cursor-default text-base">{t('Out of Stock','نفذت الكمية')}</button>
-                : <button onClick={()=>{ window.location.href=`/u/checkout?tool_id=${tool.id}` }}
-                    className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    style={{background:'linear-gradient(135deg,#d99401,#b87c00)',boxShadow:'0 8px 24px #d9940140'}}>
-                    🔒 {t('Buy Now','اشتري الآن')}
-                  </button>
-              }
-              {/* Trust micro-badges */}
-              <div className="flex flex-col gap-1.5 px-1">
-                {[
-                  {icon:'⚡', en:'Instant activation', ar:'تفعيل فوري'},
-                  {icon:'🔒', en:'Secure payment',    ar:'دفع آمن'},
-                  {icon:'💬', en:'24/7 support',      ar:'دعم على مدار الساعة'},
-                ].map(b=>(
-                  <div key={b.en} className="flex items-center gap-2 text-[11px] text-gray-400">
-                    <span>{b.icon}</span>{isRtl?b.ar:b.en}
-                  </div>
-                ))}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-16">
+      {/* ── Content ── */}
+      <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-14">
 
-        {/* ── Description & features ── */}
-        {(tool.description || tool.features?.length > 0) && (
+        {/* Features list (from tool.features, not description) */}
+        {tool.features?.length > 0 && (
           <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
-            {tool.description && <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-base mb-6">{tool.description}</p>}
-            {tool.features?.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {tool.features.map((f,i)=>(
-                  <div key={i} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                    <span className="text-emerald-500 font-bold flex-shrink-0 mt-0.5">✓</span>{f}
-                  </div>
-                ))}
-              </div>
-            )}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">{t('What\'s included','ماذا يشمل الاشتراك')}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {tool.features.map((f,i)=>(
+                <div key={i} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-bold flex-shrink-0 mt-0.5" style={{color:'#d99401'}}>✓</span>{f}
+                </div>
+              ))}
+            </div>
           </section>
         )}
 
         {/* ── Content Blocks ── */}
-        {blocks.map((block, i)=>{
+        {blocks.map((block)=>{
           const title = isRtl ? (block.title_ar||block.title_en) : (block.title_en||block.title_ar)
           const body  = isRtl ? (block.body_ar||block.body_en)  : (block.body_en||block.body_ar)
-          const imgRight = block.layout === 'image_right'
 
+          /* Features Grid block */
+          if (block.layout === 'features_grid') return (
+            <section key={block.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
+              {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
+              {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-7 leading-relaxed">{body}</p>}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {(block.features||[]).map((f,i)=>(
+                  <div key={i} className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                    <span className="text-2xl">{f.icon}</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{isRtl?f.ar:f.en}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+
+          /* Video block */
+          if (block.layout === 'video') {
+            const vUrl = (block.video_url||'').replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/')
+            return (
+              <section key={block.id}>
+                {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{title}</h2>}
+                {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-5">{body}</p>}
+                {vUrl && (
+                  <div className="rounded-2xl overflow-hidden shadow-xl aspect-video">
+                    <iframe src={vUrl} className="w-full h-full" allowFullScreen frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"/>
+                  </div>
+                )}
+              </section>
+            )
+          }
+
+          /* FAQ block */
+          if (block.layout === 'faq') return (
+            <section key={block.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
+              {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{title}</h2>}
+              {(block.faqs||[]).map((faq,i)=>(
+                <FaqItem key={i}
+                  q={isRtl?(faq.q_ar||faq.q_en):(faq.q_en||faq.q_ar)}
+                  a={isRtl?(faq.a_ar||faq.a_en):(faq.a_en||faq.a_ar)}/>
+              ))}
+            </section>
+          )
+
+          /* Text only */
           if (block.layout === 'text_only') return (
             <section key={block.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-10">
               {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{title}</h2>}
@@ -223,55 +297,56 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             </section>
           )
 
+          /* Image only */
           if (block.layout === 'image_only') return (
-            <section key={block.id} className="rounded-2xl overflow-hidden">
-              {block.image_url && <img src={block.image_url} alt={title||''} className="w-full object-cover max-h-[480px]"/>}
+            <section key={block.id} className="rounded-2xl overflow-hidden shadow-lg">
+              {block.image_url && <img src={block.image_url} alt={title||''} className="w-full object-cover max-h-[500px]"/>}
             </section>
           )
 
+          /* Image + Text (left / right) */
+          const imgRight = block.layout === 'image_right'
           return (
-            <section key={block.id} className={`flex flex-col ${imgRight ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 items-center`}>
+            <section key={block.id} className={`flex flex-col ${imgRight ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 md:gap-12 items-center`}>
               {block.image_url && (
-                <div className="w-full md:w-1/2 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg">
+                <div className="w-full md:w-1/2 rounded-2xl overflow-hidden flex-shrink-0 shadow-xl">
                   <img src={block.image_url} alt={title||''} className="w-full object-cover"/>
                 </div>
               )}
               <div className="flex-1 space-y-4">
                 {title && <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white leading-tight">{title}</h2>}
-                {body  && <p  className="text-gray-600 dark:text-gray-400 leading-relaxed text-base">{body}</p>}
+                {body  && <p  className="text-gray-500 dark:text-gray-400 leading-relaxed text-base">{body}</p>}
               </div>
             </section>
           )
         })}
 
-        {/* ── Reviews section ── */}
+        {/* ── Reviews ── */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','آراء العملاء')}</h2>
 
-          {/* Rating summary */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-6">
+          {/* Summary */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
             <div className="flex flex-col md:flex-row gap-8 items-start">
-              {/* Big number */}
               <div className="flex flex-col items-center flex-shrink-0 w-32">
-                <span className="text-6xl font-bold" style={{color:'#F59E0B'}}>{(avgRating||tool.rating).toFixed(1)}</span>
+                <span className="text-6xl font-bold" style={{color:'#d99401'}}>{displayRating.toFixed(1)}</span>
                 <div className="flex gap-0.5 my-2">
                   {[1,2,3,4,5].map(i=>(
-                    <Star key={i} size={16} fill={i<=Math.round(avgRating||tool.rating)?'#F59E0B':'none'} stroke={i<=Math.round(avgRating||tool.rating)?'#F59E0B':'#D1D5DB'}/>
+                    <Star key={i} size={16} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D1D5DB'}/>
                   ))}
                 </div>
-                <span className="text-sm text-gray-400">{totalReviews||tool.review_count} {t('reviews','تقييم')}</span>
+                <span className="text-sm text-gray-400 text-center">{displayCount} {t('reviews','تقييم')}</span>
               </div>
-              {/* Bars */}
               <div className="flex-1 space-y-2 w-full">
                 {dist.map(d=>(
-                  <RatingBar key={d.stars} label={`${d.stars} ${t('★','★')}`} count={d.count} total={totalReviews}/>
+                  <RatingBar key={d.stars} label={`${d.stars} ★`} count={d.count} total={totalReviews}/>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Write a review */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-6">
+          {/* Write review */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
             <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('Write a Review','اكتب تقييمك')}</h3>
             {submitted ? (
               <div className="flex items-center gap-2 text-emerald-500 font-medium">
@@ -282,10 +357,13 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 <StarPicker value={myStars} onChange={setMyStars}/>
                 <textarea value={myComment} onChange={e=>setMyComment(e.target.value)}
                   rows={3} placeholder={t('Share your experience (optional)','شارك تجربتك (اختياري)')}
-                  className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] resize-none transition-all"/>
+                  className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none resize-none transition-all"
+                  style={{}}
+                  onFocus={e=>e.currentTarget.style.borderColor='#d99401'}
+                  onBlur={e=>e.currentTarget.style.borderColor=''}/>
                 {submitErr && <p className="text-red-500 text-sm">{submitErr}</p>}
                 <button onClick={submitReview} disabled={submitting||!myStars}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 transition-opacity"
                   style={{background:'#d99401'}}>
                   <Send size={14}/>{submitting ? t('Sending...','جاري الإرسال...') : t('Submit Review','إرسال التقييم')}
                 </button>
@@ -295,7 +373,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           {/* Review list */}
           {reviews.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {reviews.map(r=>(
                 <div key={r.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
@@ -316,36 +394,35 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               ))}
             </div>
           )}
-
           {reviews.length === 0 && (
-            <div className="text-center py-12 text-gray-400 text-sm">{t('No reviews yet. Be the first!','لا توجد تقييمات بعد. كن الأول!')}</div>
+            <div className="text-center py-10 text-gray-400 text-sm">
+              {t('No reviews yet. Be the first!','لا توجد تقييمات بعد. كن الأول!')}
+            </div>
           )}
         </section>
 
-        {/* ── Bottom CTA ── */}
-        <div className="text-center pb-6">
-          {tool.is_out_of_stock
-            ? <button disabled className="px-10 py-4 rounded-2xl bg-gray-200 dark:bg-gray-700 text-gray-400 font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
-            : <button onClick={()=>{ window.location.href=`/u/checkout?tool_id=${tool.id}` }}
-                className="px-10 py-4 rounded-2xl text-white font-bold text-lg shadow-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02]"
-                style={{background:'linear-gradient(135deg,#d99401,#b87c00)',boxShadow:'0 8px 24px #d9940140'}}>
-                🔒 {t('Buy Now — ','اشتري الآن — ')}{price}
-              </button>
-          }
+        {/* Bottom CTA */}
+        <div className="text-center pb-8">
+          {!tool.is_out_of_stock && (
+            <button onClick={()=>{ window.location.href=buyUrl }}
+              className="px-10 py-4 rounded-2xl text-white font-bold text-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{background:'#d99401', boxShadow:'0 8px 24px rgba(217,148,1,0.3)'}}>
+              🔒 {t('Buy Now — ','اشتري الآن — ')}{price}
+            </button>
+          )}
         </div>
-
       </div>
 
-      {/* ── Mobile sticky buy bar ── */}
+      {/* Mobile sticky bar */}
       {!tool.is_out_of_stock && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{tool.name}</div>
               <div className="text-sm font-bold" style={{color:'#d99401'}}>{price} / {durLabel}</div>
             </div>
-            <button onClick={()=>{ window.location.href=`/u/checkout?tool_id=${tool.id}` }}
-              className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm flex items-center gap-1.5"
+            <button onClick={()=>{ window.location.href=buyUrl }}
+              className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm"
               style={{background:'#d99401'}}>
               🔒 {t('Buy Now','اشتري الآن')}
             </button>
