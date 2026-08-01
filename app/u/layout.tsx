@@ -31,18 +31,8 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [member,        setMember]   = useState<Member|null>(null)
   const [loading,       setLoading]  = useState(true)
-  const [themeMode, setThemeMode] = useState<'auto'|'dark'|'light'>(() => {
-    if (typeof window === 'undefined') return 'auto'
-    return (localStorage.getItem('pk_theme') as 'auto'|'dark'|'light') || 'auto'
-  })
-  const [dark, setDark] = useState(() => {
-    if (typeof window === 'undefined') return false
-    const m = (localStorage.getItem('pk_theme') || 'auto') as 'auto'|'dark'|'light'
-    if (m === 'dark') return true
-    if (m === 'light') return false
-    const h = new Date().getHours()
-    return h >= 20 || h < 7
-  })
+  const [themeMode, setThemeMode] = useState<'auto'|'dark'|'light'>('auto')
+  const [dark,      setDark]      = useState(false)
   const { lang, currency, setLang, setCurrency } = useLang()
   const ui = useUISettings()
   const [shopOpen,      setShopOpen]   = useState(false)
@@ -72,16 +62,20 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   // close sidebar on route change
   useEffect(()=>{ setSidebar(false) },[pathname])
 
-  // Apply initial dark class + start auto-check interval
+  // Apply theme on mount + auto-check interval
   useEffect(()=>{
-    document.documentElement.classList.toggle('dark', dark)
+    const applyMode = (m: 'auto'|'dark'|'light') => {
+      const h = new Date().getHours()
+      const isDark = m === 'dark' || (m === 'auto' && (h >= 20 || h < 7))
+      setDark(isDark)
+      setThemeMode(m)
+      document.documentElement.classList.toggle('dark', isDark)
+    }
+    const saved = (localStorage.getItem('pk_theme') || 'auto') as 'auto'|'dark'|'light'
+    applyMode(saved)
     const interval = setInterval(()=>{
       const current = (localStorage.getItem('pk_theme') || 'auto') as 'auto'|'dark'|'light'
-      if (current !== 'auto') return
-      const h = new Date().getHours()
-      const isDark = h >= 20 || h < 7
-      setDark(isDark)
-      document.documentElement.classList.toggle('dark', isDark)
+      if (current === 'auto') applyMode('auto')
     }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   },[])
