@@ -104,7 +104,7 @@ if (pathname==='/u/login') return <>{children}</>
             const w = Number(ui.logo_width) || 40
             const h = Number(ui.logo_height) || 40
             return (
-              <div style={{ width:w, height:h, position:'relative', flexShrink:0 }}>
+              <div style={{ width:w, height:h, position:'relative', flexShrink:0, overflow:'hidden' }}>
                 <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
                   style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
                 <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
