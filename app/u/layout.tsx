@@ -97,33 +97,34 @@ if (pathname==='/u/login') return <>{children}</>
     const col = !forMobile && collapsed
     return (
     <>
-      {/* Logo */}
-      <div className={`flex items-center ${col ? 'justify-center px-2' : 'gap-2.5 px-4'} py-4 border-b border-gray-100 dark:border-gray-800`}>
-        {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
-          const w = Number(ui.logo_width) || 40
-          const h = Number(ui.logo_height) || 40
-          return (
-            <div style={{ width:w, height:h, position:'relative', flexShrink:0 }}>
-              <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
-                style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
-              <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
-                style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 1 : 0, transition:'opacity 0.15s' }}/>
-            </div>
-          )
-        })() : (
-          <>
-            <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center shadow-md shadow-red-500/30 flex-shrink-0">
-              <Key size={16} className="text-white"/>
-            </div>
-            {!col && (
+      {/* Logo — hidden when collapsed */}
+      {!col && (
+        <div className="flex items-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+          {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
+            const w = Number(ui.logo_width) || 40
+            const h = Number(ui.logo_height) || 40
+            return (
+              <div style={{ width:w, height:h, position:'relative', flexShrink:0 }}>
+                <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
+                  style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
+                <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
+                  style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 1 : 0, transition:'opacity 0.15s' }}/>
+              </div>
+            )
+          })() : (
+            <>
+              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center shadow-md shadow-red-500/30 flex-shrink-0">
+                <Key size={16} className="text-white"/>
+              </div>
               <div>
                 <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span className="text-red-500">Keys</span></div>
                 <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
               </div>
-            )}
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      )}
+      {col && <div className="h-[57px] border-b border-gray-100 dark:border-gray-800"/>}
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">

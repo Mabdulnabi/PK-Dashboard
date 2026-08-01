@@ -8,15 +8,25 @@ const service = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(req: NextRequest) {
+async function getAdminId(): Promise<string | null> {
   const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   )
+  // Try session first, fall back to getUser (validates JWT server-side)
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  if (session?.user?.id) return session.user.id
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id ?? null
+}
+
+export async function POST(req: NextRequest) {
+  const adminId = await getAdminId()
+  if (!adminId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  // alias for rest of handler
+  const session = { user: { id: adminId } }
 
   const form = await req.formData()
   const file = form.get('file') as File | null
