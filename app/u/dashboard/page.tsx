@@ -363,8 +363,8 @@ export default function UserDashboard() {
       setPurchases(pData.purchases||[])
       setFree(sData.free||[])
       setNotifications(nData.notifications||[])
-      if (vData?.created_at) setMemberCreatedAt(vData.created_at)
-      setHasTicket((tData?.tickets||[]).length > 0)
+      if ((vData as any)?.created_at) setMemberCreatedAt((vData as any).created_at)
+      setHasTicket(((tData as any)?.tickets||[]).length > 0)
       setLoading(false)
     }).catch(()=>setLoading(false))
 
