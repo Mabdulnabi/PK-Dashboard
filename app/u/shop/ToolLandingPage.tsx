@@ -93,55 +93,100 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
   const blocks: Block[] = Array.isArray(tool.landing_blocks) ? tool.landing_blocks : []
 
+  const durLabel = lang==='ar'
+    ? tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة')
+    : tool.duration_label
+
+  const displayRating = avgRating || tool.rating
+  const displayCount  = totalReviews || tool.review_count
+
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'}>
 
       {/* ── Hero ── */}
-      <div style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)'}}>
-        <div className="max-w-5xl mx-auto px-4 md:px-8 py-8">
+      <div className="relative overflow-hidden" style={{background:'linear-gradient(135deg,#0d0d1a 0%,#111827 50%,#0f1f3d 100%)'}}>
+        {/* Background glow blobs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl" style={{background:'#d99401'}}/>
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-8 blur-3xl" style={{background:'#3b82f6'}}/>
+        </div>
+
+        <div className="relative max-w-5xl mx-auto px-4 md:px-8 pt-6 pb-10">
+          {/* Back */}
           <button onClick={onBack}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 text-sm">
-            <ArrowLeft size={16} className={isRtl?'rotate-180':''}/>
+            className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors mb-8 text-sm group">
+            <ArrowLeft size={15} className={`transition-transform group-hover:${isRtl?'translate-x-1':'-translate-x-1'} ${isRtl?'rotate-180':''}`}/>
             {t('Back to Shop','رجوع للمتجر')}
           </button>
 
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden flex-shrink-0">
-              {tool.image_url
-                ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 object-contain"/>
-                : <span className="text-3xl font-bold text-white/40">{tool.name.slice(0,2).toUpperCase()}</span>}
+          <div className="flex flex-col md:flex-row items-start gap-8">
+            {/* Logo */}
+            <div className="relative flex-shrink-0">
+              <div className="w-24 h-24 rounded-3xl bg-white/10 border border-white/15 flex items-center justify-center overflow-hidden shadow-2xl backdrop-blur-sm">
+                {tool.image_url
+                  ? <img src={tool.image_url} alt={tool.name} className="w-16 h-16 object-contain"/>
+                  : <span className="text-3xl font-bold text-white/30">{tool.name.slice(0,2).toUpperCase()}</span>}
+              </div>
+              {/* Glow under logo */}
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-4 blur-xl opacity-40 rounded-full" style={{background:'#d99401'}}/>
             </div>
+
+            {/* Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-bold">
+              {/* Badges row */}
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[11px] font-bold shadow-sm">
                   <Zap size={9} fill="white"/>{tool.delivery_label||t('INSTANT','فوري')}
                 </span>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold border border-white/15 text-gray-300">
+                  ⏱ {durLabel}
+                </span>
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2 leading-tight">{tool.name}</h1>
-              <div className="flex items-center gap-2 mb-4">
+
+              {/* Name */}
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight tracking-tight">{tool.name}</h1>
+
+              {/* Stars */}
+              <div className="flex items-center gap-2.5 mb-5">
                 <div className="flex items-center gap-0.5">
                   {[1,2,3,4,5].map(i=>(
-                    <Star key={i} size={14} fill={i<=Math.round(avgRating||tool.rating)?'#F59E0B':'none'} stroke={i<=Math.round(avgRating||tool.rating)?'#F59E0B':'#6B7280'}/>
+                    <Star key={i} size={15} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#4B5563'}/>
                   ))}
                 </div>
-                <span className="text-sm text-gray-300">{(avgRating||tool.rating).toFixed(1)}</span>
-                <span className="text-sm text-gray-500">({totalReviews||tool.review_count} {t('reviews','تقييم')})</span>
+                <span className="text-sm font-bold text-amber-400">{displayRating.toFixed(1)}</span>
+                <span className="text-sm text-gray-500">·</span>
+                <span className="text-sm text-gray-400">{displayCount} {t('reviews','تقييم')}</span>
               </div>
+
+              {/* Price */}
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold" style={{color:'#d99401'}}>{price}</span>
-                <span className="text-gray-400">/ {lang==='ar'
-                  ? tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة')
-                  : tool.duration_label}</span>
+                <span className="text-4xl md:text-5xl font-extrabold tracking-tight" style={{color:'#d99401'}}>{price}</span>
+                <span className="text-lg text-gray-400 font-medium">/ {durLabel}</span>
               </div>
             </div>
-            <div className="w-full md:w-auto flex-shrink-0">
+
+            {/* CTA */}
+            <div className="w-full md:w-56 flex-shrink-0 flex flex-col gap-3">
               {tool.is_out_of_stock
-                ? <button disabled className="w-full md:w-48 py-4 rounded-2xl bg-gray-600 text-gray-400 font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
+                ? <button disabled className="w-full py-4 rounded-2xl bg-gray-700 text-gray-400 font-bold cursor-default text-base">{t('Out of Stock','نفذت الكمية')}</button>
                 : <button onClick={()=>{ window.location.href=`/u/checkout?tool_id=${tool.id}` }}
-                    className="w-full md:w-48 py-4 rounded-2xl text-white font-bold text-base shadow-lg transition-colors flex items-center justify-center gap-2" style={{background:'#d99401'}}>
+                    className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{background:'linear-gradient(135deg,#d99401,#b87c00)',boxShadow:'0 8px 24px #d9940140'}}>
                     🔒 {t('Buy Now','اشتري الآن')}
                   </button>
               }
+              {/* Trust micro-badges */}
+              <div className="flex flex-col gap-1.5 px-1">
+                {[
+                  {icon:'⚡', en:'Instant activation', ar:'تفعيل فوري'},
+                  {icon:'🔒', en:'Secure payment',    ar:'دفع آمن'},
+                  {icon:'💬', en:'24/7 support',      ar:'دعم على مدار الساعة'},
+                ].map(b=>(
+                  <div key={b.en} className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <span>{b.icon}</span>{isRtl?b.ar:b.en}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -282,13 +327,31 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           {tool.is_out_of_stock
             ? <button disabled className="px-10 py-4 rounded-2xl bg-gray-200 dark:bg-gray-700 text-gray-400 font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
             : <button onClick={()=>{ window.location.href=`/u/checkout?tool_id=${tool.id}` }}
-                className="px-10 py-4 rounded-2xl text-white font-bold text-lg shadow-lg transition-colors flex items-center gap-2 mx-auto" style={{background:'#d99401'}}>
+                className="px-10 py-4 rounded-2xl text-white font-bold text-lg shadow-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02]"
+                style={{background:'linear-gradient(135deg,#d99401,#b87c00)',boxShadow:'0 8px 24px #d9940140'}}>
                 🔒 {t('Buy Now — ','اشتري الآن — ')}{price}
               </button>
           }
         </div>
 
       </div>
+
+      {/* ── Mobile sticky buy bar ── */}
+      {!tool.is_out_of_stock && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{tool.name}</div>
+              <div className="text-sm font-bold" style={{color:'#d99401'}}>{price} / {durLabel}</div>
+            </div>
+            <button onClick={()=>{ window.location.href=`/u/checkout?tool_id=${tool.id}` }}
+              className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm flex items-center gap-1.5"
+              style={{background:'#d99401'}}>
+              🔒 {t('Buy Now','اشتري الآن')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
