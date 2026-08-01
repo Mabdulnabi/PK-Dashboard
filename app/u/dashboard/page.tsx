@@ -46,10 +46,12 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
       href: `/u/checkout?tool_id=${soonest.id}&renew=1`,
     }
   } else if (unreadNotif) {
+    const notifTitle = (lang !== 'ar' && unreadNotif.title_en) ? unreadNotif.title_en : (unreadNotif.title || (lang==='ar' ? 'لديك إشعار جديد' : 'You have a new notification'))
+    const notifSub   = (lang !== 'ar' && unreadNotif.message_en) ? unreadNotif.message_en : (unreadNotif.message || '')
     action = {
       type: 'notif',
-      title: unreadNotif.title || (lang==='ar' ? 'لديك إشعار جديد' : 'You have a new notification'),
-      subtitle: unreadNotif.message || '',
+      title: notifTitle,
+      subtitle: notifSub,
       cta: lang==='ar' ? 'عرض' : 'View',
       href: '/u/helpdesk',
     }
