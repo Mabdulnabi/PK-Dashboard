@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard, ShoppingBag, Clock, HelpCircle, PlayCircle,
-  Key, LogOut, Bell, Sun, Moon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu
+  Key, LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu
 } from 'lucide-react'
 
 interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
@@ -283,12 +283,10 @@ if (pathname==='/u/login') return <>{children}</>
               <span className="xs:hidden">{lang==='en'?'EN':'AR'}</span>
             </button>
             {/* Theme cycle: auto → light → dark */}
-            <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto (time-based)' : themeMode}
-              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
-              {themeMode === 'dark' ? <Moon size={14}/> : themeMode === 'light' ? <Sun size={14}/> : (
-                dark ? <Moon size={14} className="opacity-60"/> : <Sun size={14} className="opacity-60"/>
-              )}
-              {themeMode === 'auto' && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#d99401] border border-white dark:border-gray-900"/>}
+            <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
+              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              style={themeMode === 'auto' ? {color:'#d99401'} : {color: undefined}}>
+              {themeMode === 'light' ? <Sun size={14}/> : themeMode === 'dark' ? <Moon size={14}/> : <SunMoon size={14}/>}
             </button>
             {/* Notifications */}
             <div className="relative">
