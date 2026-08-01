@@ -190,7 +190,7 @@ function QuickStats({ purchases, t, lang, currency, formatPrice, usdRate }: {
   ]
 
   const savingsHint = monthlySavings > 0
-    ? (lang === 'ar' ? 'vs. السعر الرسمي للأدوات' : 'vs. official retail price')
+    ? (lang === 'ar' ? 'مقابل السعر الرسمي' : 'vs. official price')
     : null
 
   return (
@@ -208,12 +208,14 @@ function QuickStats({ purchases, t, lang, currency, formatPrice, usdRate }: {
               </div>
             </div>
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
-            <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>
-            {isSavings && savingsHint && (
-              <div className="text-[10px] font-medium px-2 py-1 rounded-lg w-fit" style={{ background: accent + '15', color: accent }}>
-                ✦ {savingsHint}
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</span>
+              {isSavings && savingsHint && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: accent + '15', color: accent }}>
+                  {savingsHint}
+                </span>
+              )}
+            </div>
           </div>
         )
       })}
