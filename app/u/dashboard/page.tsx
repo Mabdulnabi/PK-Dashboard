@@ -15,13 +15,12 @@ import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X
 function OnboardingChecklist({ createdAt, extReady, hasPurchase, t, lang }:{
   createdAt:string|null; extReady:boolean; hasPurchase:boolean; t:any; lang:string
 }) {
-  const [dismissed, setDismissed] = useState(()=>
-    typeof window !== 'undefined' && !!localStorage.getItem('pk_onboarding_done')
-  )
+  const [dismissed, setDismissed] = useState(false) // TEST MODE: always show
 
-  if (dismissed || !createdAt) return null
-  const hoursOld = (Date.now() - new Date(createdAt).getTime()) / 3600000
-  if (hoursOld > 48) return null
+  if (dismissed) return null
+  // TODO: restore 48h check before production
+  // const hoursOld = (Date.now() - new Date(createdAt).getTime()) / 3600000
+  // if (!createdAt || hoursOld > 48) return null
 
   const steps = [
     {
