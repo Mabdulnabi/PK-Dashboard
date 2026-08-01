@@ -1,5 +1,7 @@
 // app/api/admin/ui-settings/upload/route.ts
-// Uploads logo file to Supabase Storage
+// Uploads logo file to Supabase Storage (supports GIF)
+export const maxDuration = 30
+export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 

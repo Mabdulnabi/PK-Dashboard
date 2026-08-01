@@ -93,7 +93,7 @@ export default function MemberProfilePage() {
 
   if (!profile) return (
     <div className="flex justify-center items-center h-64">
-      <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/>
+      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
     </div>
   )
 
@@ -128,7 +128,7 @@ export default function MemberProfilePage() {
             <div className="flex items-center justify-center gap-2">
               <p className="text-white font-bold text-base">{profile.full_name}</p>
               {profile.member_code && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-500/30">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>
                   {profile.member_code}
                 </span>
               )}

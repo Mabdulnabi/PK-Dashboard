@@ -411,7 +411,7 @@ export default function UserDashboard() {
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 leading-tight">{p.tool_name}</h3>
 
                     {/* Expires line — red */}
-                    <div className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{color:'#d99401'}}>
+                    <div className="flex items-center gap-1.5 text-xs font-medium mb-2 text-red-400">
                       <Clock size={11}/>
                       <span>
                         {p.expires_at

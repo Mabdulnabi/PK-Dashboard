@@ -18,20 +18,20 @@ export default function TutorialsPage() {
     })
   },[])
 
-  const badgeColor:any={'MUST WATCH':'#EF4444','BEST SELLER':'#10B981','PRO SELECTION':'#8B5CF6'}
+  const badgeColor:any={'MUST WATCH':'#d99401','BEST SELLER':'#10B981','PRO SELECTION':'#8B5CF6'}
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
       <div className="rounded-2xl mb-6 p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500"/>
-          <span className="text-sm font-semibold text-red-400 uppercase tracking-wide">{t('Learning Hub','مركز التعلم')}</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4" style={{border:'1px solid #d9940140',background:'#d9940115'}}>
+          <span className="w-1.5 h-1.5 rounded-full" style={{background:'#d99401'}}/>
+          <span className="text-sm font-semibold uppercase tracking-wide" style={{color:'#d99401'}}>{t('Learning Hub','مركز التعلم')}</span>
         </div>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-white mb-2">
-              {t('Guide Videos & ','فيديوهات وأدلة ')}<span className="text-red-400">{t('User Manuals','الاستخدام')}</span>
+              {t('Guide Videos & ','فيديوهات وأدلة ')}<span style={{color:'#d99401'}}>{t('User Manuals','الاستخدام')}</span>
             </h1>
             <p className="text-sm text-gray-300 max-w-lg">
               {t('Watch our step-by-step video guides to safely access your premium accounts.','شاهد أدلة الفيديو خطوة بخطوة للوصول الآمن لحساباتك المميزة.')}
@@ -45,7 +45,7 @@ export default function TutorialsPage() {
         </div>
       </div>
 
-      {loading&&<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
+      {loading&&<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>}
 
       <div className="grid grid-cols-3 gap-6">
         {videos.map(v=>(
@@ -56,7 +56,7 @@ export default function TutorialsPage() {
                 : <div className="w-full h-full flex items-center justify-center bg-gray-800"><Play size={32} className="text-gray-400"/></div>
               }
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{background:'#d99401'}}>
                   <Play size={13} className="text-white ml-1"/>
                 </div>
               </div>
@@ -74,7 +74,7 @@ export default function TutorialsPage() {
               </div>
               <div className="flex gap-2">
                 <button onClick={()=>setPlaying(v.id)}
-                  className="flex-1 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors flex items-center justify-center gap-1">
+                  className="flex-1 py-2 rounded-lg text-white text-sm font-bold transition-colors flex items-center justify-center gap-1" style={{background:'#d99401'}}>
                   <Play size={12}/>▶ {t('Play Video','تشغيل')}
                 </button>
                 {v.video_url&&(

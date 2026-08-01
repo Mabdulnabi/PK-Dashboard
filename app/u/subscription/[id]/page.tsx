@@ -220,7 +220,7 @@ export default function SubscriptionDetailPage() {
 
   if (loading) return (
     <div className="flex justify-center items-center py-32" style={{fontFamily:'Cairo, sans-serif'}}>
-      <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/>
+      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
     </div>
   )
 
@@ -265,16 +265,16 @@ export default function SubscriptionDetailPage() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
-                <Zap size={16} className="text-red-500"/>
+                <Zap size={16} style={{color:'#d99401'}}/>
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Choose a Server & Start','اختر سيرفر وابدأ')}</h2>
               </div>
 
             </div>
 
             {connError && (
-              <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
-                <AlertCircle size={14} className="text-red-500 flex-shrink-0"/>
-                <p className="text-sm text-red-600 dark:text-red-400">{connError}</p>
+              <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl" style={{background:'#d9940110',border:'1px solid #d9940130'}}>
+                <AlertCircle size={14} className="flex-shrink-0" style={{color:'#d99401'}}/>
+                <p className="text-sm" style={{color:'#d99401'}}>{connError}</p>
               </div>
             )}
 
@@ -301,7 +301,7 @@ export default function SubscriptionDetailPage() {
                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 cursor-default'
                             : isFull
                             ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60 cursor-not-allowed'
-                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/5 cursor-pointer'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-[#d9940108] cursor-pointer hover:border-[#d99401]/40'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-3">
@@ -309,7 +309,7 @@ export default function SubscriptionDetailPage() {
                             isActive ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-gray-700'
                           }`}>
                             {isLoading
-                              ? <Loader2 size={14} className="animate-spin text-red-500"/>
+                              ? <Loader2 size={14} className="animate-spin" style={{color:'#d99401'}}/>
                               : isActive
                               ? <CheckCircle size={14} className="text-white"/>
                               : <Wifi size={14} className="text-gray-400"/>
@@ -348,17 +348,17 @@ export default function SubscriptionDetailPage() {
           /* ── Extension not installed — show download section ── */
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <Download size={16} className="text-red-500"/>
+              <Download size={16} style={{color:'#d99401'}}/>
               <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Install Extension to Start','ثبّت الإضافة لتبدأ الاستخدام')}</h2>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <a href={settings?.extension_url_1 || '#'}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
                   <Download size={15}/> Extension 1
                 </a>
                 <a href={settings?.extension_url_2 || '#'}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
                   <Download size={15}/> Extension 2
                 </a>
               </div>
@@ -412,12 +412,12 @@ export default function SubscriptionDetailPage() {
         {purchase.category_slug === 'private' && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <Lock size={16} className="text-red-500"/>
+              <Lock size={16} style={{color:'#d99401'}}/>
               <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Account Credentials','بيانات الدخول')}</h2>
             </div>
             <div className="p-6">
               {deliveryLoading ? (
-                <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>
+                <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
               ) : delivery ? (
                 <div className="space-y-4">
                   {delivery.delivery_type === 'account' ? (
