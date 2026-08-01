@@ -4,6 +4,7 @@ import { LangProvider, useLang } from '@/lib/lang-context'
 import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu } from 'lucide-react'
 import {
   HouseSimple, ShoppingBag, Receipt, Headset, PlayCircle,
@@ -159,11 +160,14 @@ if (pathname==='/u/login') return <>{children}</>
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
-        {nav.map(item=>{
+        {nav.map((item, idx)=>{
           const Icon   = item.icon
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
           if (item.sub) return (
-            <div key={item.href}>
+            <motion.div key={item.href}
+              initial={{opacity:0, x: isRtl ? 12 : -12}}
+              animate={{opacity:1, x:0}}
+              transition={{delay: idx * 0.05, duration:0.25, ease:[0.25,0.46,0.45,0.94]}}>
               <button onClick={()=>!col && setShopOpen(!shopOpen)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
                 className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
@@ -175,13 +179,24 @@ if (pathname==='/u/login') return <>{children}</>
                   <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`} style={{color: item.color}}/>
                 </>}
               </button>
+              <AnimatePresence initial={false}>
               {shopOpen && !col && (
-                <div className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
-                  {item.sub.map((s:any)=>{
+                <motion.div
+                  initial={{opacity:0, height:0}}
+                  animate={{opacity:1, height:'auto'}}
+                  exit={{opacity:0, height:0}}
+                  transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
+                  style={{overflow:'hidden'}}
+                  className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
+                  {item.sub.map((s:any, si:number)=>{
                     const SubIcon = s.icon
                     const subActive = pathname===s.href
                     return (
-                      <Link key={s.href} href={s.href}
+                      <motion.div key={s.href}
+                        initial={{opacity:0, x: isRtl ? 8 : -8}}
+                        animate={{opacity:1, x:0}}
+                        transition={{delay: si * 0.05, duration:0.18}}>
+                      <Link href={s.href}
                         className={`flex items-center gap-2 py-2 px-2 rounded-lg text-[13px] transition-colors ${subActive?'font-semibold':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                         style={subActive ? {color: s.color, background: s.color+'15'} : {}}>
                         <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{background: s.color+'20'}}>
@@ -189,14 +204,20 @@ if (pathname==='/u/login') return <>{children}</>
                         </div>
                         {isRtl?s.ar:s.en}
                       </Link>
+                      </motion.div>
                     )
                   })}
-                </div>
+                </motion.div>
               )}
-            </div>
+              </AnimatePresence>
+            </motion.div>
           )
           return (
-            <Link key={item.href} href={item.href}
+            <motion.div key={item.href}
+              initial={{opacity:0, x: isRtl ? 12 : -12}}
+              animate={{opacity:1, x:0}}
+              transition={{delay: idx * 0.05, duration:0.25, ease:[0.25,0.46,0.45,0.94]}}>
+            <Link href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
               className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               style={active ? {background: item.color+'15'} : {}}>
@@ -205,6 +226,7 @@ if (pathname==='/u/login') return <>{children}</>
               </div>
               {!col && <span style={active ? {color: item.color, fontWeight:600} : {}}>{isRtl?item.ar:item.en}</span>}
             </Link>
+            </motion.div>
           )
         })}
       </nav>
@@ -245,7 +267,7 @@ if (pathname==='/u/login') return <>{children}</>
     <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'}>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
-      <aside className={`hidden md:flex ${collapsed ? 'w-[60px]' : 'w-[200px]'} flex-shrink-0 flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 transition-all duration-200 relative`}>
+      <aside className={`hidden md:flex ${collapsed ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 transition-all duration-200 relative`}>
         <SidebarContent/>
         <button
           onClick={() => setCollapsed(c => !c)}
@@ -272,7 +294,7 @@ if (pathname==='/u/login') return <>{children}</>
       <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950 min-w-0">
 
         {/* Header */}
-        <header className="flex items-center justify-between px-3 md:px-5 bg-white dark:bg-[#111827] border-b border-gray-200 dark:border-gray-800 flex-shrink-0" style={{height:'52px'}}>
+        <header className="flex items-center justify-between px-3 md:px-5 bg-white dark:bg-[#111827] border-b border-gray-200 dark:border-gray-800 flex-shrink-0" style={{height:'58px'}}>
 
           {/* Left: hamburger (mobile) + welcome */}
           <div className="flex items-center gap-2 min-w-0">
