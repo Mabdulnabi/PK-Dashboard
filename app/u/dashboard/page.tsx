@@ -151,58 +151,49 @@ function QuickStats({ purchases, t, lang }: { purchases: Purchase[]; t: any; lan
 
   const cards = [
     {
-      label: lang === 'ar' ? 'الاشتراكات النشطة' : 'Active Subscriptions',
-      value: active.toString(),
-      sub:   lang === 'ar' ? 'اشتراك نشط' : 'active plans',
-      icon:  <LayoutGrid size={18}/>,
-      gradient: 'from-indigo-500 to-blue-500',
-      bg: 'from-indigo-50 to-blue-50 dark:from-indigo-500/10 dark:to-blue-500/10',
-      border: 'border-indigo-100 dark:border-indigo-500/20',
-      text: 'text-indigo-600 dark:text-indigo-400',
+      label:  lang === 'ar' ? 'الاشتراكات النشطة' : 'Active Subscriptions',
+      value:  active,
+      sub:    lang === 'ar' ? 'اشتراك نشط' : 'active plans',
+      Icon:   LayoutGrid,
+      accent: '#6366f1',
     },
     {
-      label: lang === 'ar' ? 'أقرب تجديد' : 'Next Renewal',
-      value: nextDays !== null ? `${nextDays}` : '—',
-      sub:   nextDays !== null ? (lang === 'ar' ? 'يوم متبقي' : 'days left') : (lang === 'ar' ? 'لا يوجد' : 'none'),
-      icon:  <CalendarClock size={18}/>,
-      gradient: 'from-amber-500 to-orange-500',
-      bg: 'from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10',
-      border: 'border-amber-100 dark:border-amber-500/20',
-      text: 'text-amber-600 dark:text-amber-400',
+      label:  lang === 'ar' ? 'أقرب تجديد' : 'Next Renewal',
+      value:  nextDays !== null ? nextDays : '—',
+      sub:    nextDays !== null ? (lang === 'ar' ? 'يوم متبقي' : 'days left') : (lang === 'ar' ? 'لا يوجد' : 'none'),
+      Icon:   CalendarClock,
+      accent: '#f59e0b',
     },
     {
-      label: lang === 'ar' ? 'الإنفاق الشهري' : 'Monthly Spend',
-      value: `${Math.round(monthlySpend).toLocaleString()}`,
-      sub:   lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo',
-      icon:  <Wallet size={18}/>,
-      gradient: 'from-rose-500 to-red-500',
-      bg: 'from-rose-50 to-red-50 dark:from-rose-500/10 dark:to-red-500/10',
-      border: 'border-rose-100 dark:border-rose-500/20',
-      text: 'text-rose-600 dark:text-rose-400',
+      label:  lang === 'ar' ? 'الإنفاق الشهري' : 'Monthly Spend',
+      value:  Math.round(monthlySpend).toLocaleString(),
+      sub:    lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo',
+      Icon:   Wallet,
+      accent: '#ef4444',
     },
     {
-      label: lang === 'ar' ? 'التوفير الشهري' : 'Monthly Savings',
-      value: monthlySavings > 0 ? `${Math.round(monthlySavings).toLocaleString()}` : '—',
-      sub:   monthlySavings > 0 ? (lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo') : (lang === 'ar' ? 'أضف سعر السوق' : 'set market price'),
-      icon:  <TrendingDown size={18}/>,
-      gradient: 'from-emerald-500 to-teal-500',
-      bg: 'from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10',
-      border: 'border-emerald-100 dark:border-emerald-500/20',
-      text: 'text-emerald-600 dark:text-emerald-400',
+      label:  lang === 'ar' ? 'التوفير الشهري' : 'Monthly Savings',
+      value:  monthlySavings > 0 ? Math.round(monthlySavings).toLocaleString() : '—',
+      sub:    monthlySavings > 0 ? (lang === 'ar' ? 'جنيه / شهر' : 'EGP / mo') : (lang === 'ar' ? 'أضف سعر السوق' : 'set market price'),
+      Icon:   TrendingDown,
+      accent: '#10b981',
     },
   ]
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-      {cards.map((c, i) => (
-        <div key={i} className={`relative rounded-2xl border bg-gradient-to-br ${c.bg} ${c.border} p-4 overflow-hidden`}>
-          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${c.gradient} opacity-70`}/>
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${c.gradient} text-white shadow-sm`}>
-            {c.icon}
+      {cards.map(({ label, value, sub, Icon, accent }, i) => (
+        <div key={i} className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm">
+          <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${accent}, transparent 65%)` }}/>
+          <div className="absolute top-0 left-0 right-0 h-[2px] opacity-60" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}/>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{label}</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: accent + '20' }}>
+              <Icon size={15} style={{ color: accent }}/>
+            </div>
           </div>
-          <div className={`text-2xl font-extrabold ${c.text} leading-none mb-1`}>{c.value}</div>
-          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{c.sub}</div>
-          <div className="text-[11px] text-gray-600 dark:text-gray-300 mt-1 font-medium leading-tight">{c.label}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
+          <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>
         </div>
       ))}
     </div>
