@@ -228,8 +228,8 @@ export default function SupportPage() {
                           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
                           .map(m => ({
                             sender: m.sender_type, text: m.message, time: m.created_at, id: m.id,
-                            name:   m.sender_type === 'member' ? member?.full_name : (m.sender_name || 'Support Team'),
-                            avatar: m.sender_type === 'member' ? member?.avatar_url : (m.sender_avatar || undefined),
+                            name:   m.sender_type === 'member' ? member?.full_name : (m.sender_name || adminProfile?.display_name || 'Support Team'),
+                            avatar: m.sender_type === 'member' ? member?.avatar_url : (adminProfile?.avatar_url || m.sender_avatar || undefined),
                           }))
                         ),
                       ]

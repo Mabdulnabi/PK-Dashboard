@@ -52,8 +52,11 @@ export default function AdminProfilePage() {
 
   const uploadAvatar = async (file: File) => {
     setUploading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setUploading(false); setToast({ msg: 'Not authenticated', type: 'err' }); return }
     const fd = new FormData()
     fd.append('file', file)
+    fd.append('admin_id', user.id)
     const res  = await fetch('/api/admin/profile/avatar', { method: 'POST', body: fd })
     const data = await res.json()
     setUploading(false)

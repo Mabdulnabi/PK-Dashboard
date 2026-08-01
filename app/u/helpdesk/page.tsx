@@ -50,11 +50,18 @@ export default function HelpdeskPage() {
   const [files,      setFiles]     = useState<File[]>([])
   const [sending,    setSending]   = useState(false)
   const [msg,        setMsg]       = useState('')
-  const [replyText,  setReplyText] = useState('')
+  const [replyText,    setReplyText]    = useState('')
   const [replySending, setReplySending] = useState(false)
+  const [adminProfile, setAdminProfile] = useState<{ display_name?: string; avatar_url?: string } | null>(null)
   const replyFileRef = useRef<HTMLInputElement>(null)
   const [replyFiles, setReplyFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/profile').then(r => r.json()).then(d => {
+      if (d && !d.error) setAdminProfile(d)
+    }).catch(() => {})
+  }, [])
 
   const load = (silent = false) =>
     fetch('/api/member/tickets').then(r => r.json()).then(d => {
@@ -220,7 +227,11 @@ export default function HelpdeskPage() {
                         ...((ticket.ticket_messages || [])
                           .slice()
                           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                          .map(m => ({ sender: m.sender_type, text: m.message, time: m.created_at, id: m.id, name: m.sender_name, avatar: m.sender_avatar }))
+                          .map(m => ({
+                            sender: m.sender_type, text: m.message, time: m.created_at, id: m.id,
+                            name:   m.sender_type === 'admin' ? (m.sender_name || adminProfile?.display_name || 'Support') : undefined,
+                            avatar: m.sender_type === 'admin' ? (adminProfile?.avatar_url || m.sender_avatar || undefined) : undefined,
+                          }))
                         ),
                       ]
                       return msgs.map(m => (
