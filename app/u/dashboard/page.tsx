@@ -12,8 +12,8 @@ import { useSiteSettings } from '@/lib/use-site-settings'
 import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw } from 'lucide-react'
 
 // ── Onboarding Checklist ──────────────────────────────────
-function OnboardingChecklist({ createdAt, extReady, hasPurchase, hasTicket, t, lang }:{
-  createdAt:string|null; extReady:boolean; hasPurchase:boolean; hasTicket:boolean; t:any; lang:string
+function OnboardingChecklist({ createdAt, extReady, hasPurchase, t, lang }:{
+  createdAt:string|null; extReady:boolean; hasPurchase:boolean; t:any; lang:string
 }) {
   const [dismissed, setDismissed] = useState(()=>
     typeof window !== 'undefined' && !!localStorage.getItem('pk_onboarding_done')
@@ -24,10 +24,42 @@ function OnboardingChecklist({ createdAt, extReady, hasPurchase, hasTicket, t, l
   if (hoursOld > 48) return null
 
   const steps = [
-    { done: true,         label: t('Activate your account','فعّل حسابك'),          icon: CheckCircle },
-    { done: extReady,     label: t('Install the extension','ثبّت الإضافة'),          icon: Download },
-    { done: hasPurchase,  label: t('Subscribe to a tool','اشترك في أول أداة'),       icon: ShoppingBag },
-    { done: hasTicket,    label: t('Try support','جرّب الدعم'),                       icon: MessageSquare },
+    {
+      done: true,
+      emoji: '🎉',
+      en: 'Account activated — you\'re in!',
+      ar: 'تم تفعيل حسابك — أهلاً بك! 🎊',
+    },
+    {
+      done: hasPurchase,
+      emoji: '🛒',
+      en: 'Choose a tool → click "Buy Now" → confirm payment',
+      ar: 'اختار أداة ← اضغط "اشتري الآن" ← أكّد الدفع',
+    },
+    {
+      done: hasPurchase,
+      emoji: '⚡',
+      en: 'Subscription activated instantly! Go to "My Active Subscriptions"',
+      ar: 'اشتراكك اتفعّل فوراً! روح "اشتراكاتي النشطة"',
+    },
+    {
+      done: hasPurchase,
+      emoji: '📋',
+      en: 'Click "View Details" on your subscription card',
+      ar: 'اضغط "عرض التفاصيل" على كارت الاشتراك بتاعك',
+    },
+    {
+      done: extReady,
+      emoji: '🔌',
+      en: 'Install the browser extension (links inside View Details)',
+      ar: 'ثبّت الإضافة من الروابط جوّا صفحة التفاصيل',
+    },
+    {
+      done: extReady && hasPurchase,
+      emoji: '🖥️',
+      en: 'Choose a server → your tool opens automatically! 🚀',
+      ar: 'اختار سيرفر ← الأداة هتفتح تلقائياً! 🚀',
+    },
   ]
   const doneCount = steps.filter(s=>s.done).length
   const pct = Math.round(doneCount/steps.length*100)
@@ -42,33 +74,43 @@ function OnboardingChecklist({ createdAt, extReady, hasPurchase, hasTicket, t, l
     <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-base">🚀</span>
+          <span className="text-lg">🚀</span>
           <div>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Getting Started','ابدأ رحلتك')}</p>
-            <p className="text-[11px] text-gray-400">{doneCount}/{steps.length} {t('completed','مكتمل')}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Getting Started — Welcome!','ابدأ رحلتك — أهلاً بيك!')}</p>
+            <p className="text-[11px] text-gray-400">{doneCount}/{steps.length} {t('steps done','خطوات مكتملة')}</p>
           </div>
         </div>
         <button onClick={dismiss} className="text-gray-300 hover:text-gray-500 transition-colors"><X size={14}/></button>
       </div>
       {/* Progress bar */}
       <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 mb-4 overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`,background:'#d99401'}}/>
+        <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:'linear-gradient(90deg,#d99401,#f5b800)'}}/>
       </div>
-      <div className="space-y-2.5">
-        {steps.map((s,i)=>(
-          <div key={i} className={`flex items-center gap-3 text-sm ${s.done?'text-gray-400 dark:text-gray-600 line-through':'text-gray-700 dark:text-gray-300'}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${s.done?'bg-emerald-100 dark:bg-emerald-500/20':'bg-gray-100 dark:bg-gray-800'}`}>
-              {s.done?<CheckCircle size={12} className="text-emerald-500"/>:<span className="text-[10px] font-bold text-gray-400">{i+1}</span>}
+      <div className="space-y-2">
+        {steps.map((s,i)=>{
+          const label = lang === 'ar' ? s.ar : s.en
+          return (
+            <div key={i} className={`flex items-start gap-3 text-sm py-1.5 px-2 rounded-lg transition-colors ${s.done ? 'opacity-50' : 'bg-gray-50 dark:bg-gray-800/60'}`}>
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${s.done ? 'bg-emerald-100 dark:bg-emerald-500/20' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                {s.done
+                  ? <CheckCircle size={12} className="text-emerald-500"/>
+                  : <span className="text-[10px] font-bold text-gray-400">{i+1}</span>
+                }
+              </div>
+              <span className={s.done ? 'line-through text-gray-400 dark:text-gray-600' : 'text-gray-700 dark:text-gray-300'}>
+                <span className="me-1">{s.emoji}</span>{label}
+              </span>
             </div>
-            {s.label}
-          </div>
-        ))}
+          )
+        })}
       </div>
       {allDone && (
-        <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-xl" style={{background:'#d9940115',border:'1px solid #d9940130'}}>
-          <span>🎉</span>
-          <p className="text-xs font-bold" style={{color:'#d99401'}}>{t("You're all set! Enjoy Pro Keys.","خلصت كل الخطوات! استمتع بـ Pro Keys.")}</p>
-          <button onClick={dismiss} className="ms-auto text-xs underline" style={{color:'#d99401'}}>{t('Dismiss','إغلاق')}</button>
+        <div className="mt-4 flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{background:'#d9940115',border:'1px solid #d9940130'}}>
+          <span className="text-base">🎊</span>
+          <p className="text-xs font-bold" style={{color:'#d99401'}}>
+            {t("All set! You're a Pro Keys pro now 🔥","خلصت كل الخطوات! دلوقتي انت Pro Keys pro 🔥")}
+          </p>
+          <button onClick={dismiss} className="ms-auto text-xs font-bold underline flex-shrink-0" style={{color:'#d99401'}}>{t('Close','إغلاق')}</button>
         </div>
       )}
     </div>
@@ -412,7 +454,7 @@ export default function UserDashboard() {
 
       <OnboardingChecklist
         createdAt={memberCreatedAt} extReady={extReady}
-        hasPurchase={purchases.length>0} hasTicket={hasTicket}
+        hasPurchase={purchases.length>0}
         t={t} lang={lang}
       />
 
