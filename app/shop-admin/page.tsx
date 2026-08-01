@@ -77,7 +77,7 @@ export default function ShopAdminPage() {
   const [toolForm, setToolForm] = useState(emptyTool)
 
   // Category form
-  const emptyCat = { name:'', slug:'', color:'#3B82F6', icon:'🔧', sort_order:'0' }
+  const emptyCat = { name:'', name_ar:'', slug:'', color:'#3B82F6', icon:'🔧', image_url:'', sort_order:'0' }
   const [catForm, setCatForm] = useState(emptyCat)
 
   const load = useCallback(async()=>{
@@ -182,7 +182,7 @@ export default function ShopAdminPage() {
   // ── Category CRUD ──
   const openAddCat  = ()=>{ setCatForm(emptyCat); setEdit(null); setModal('add-cat') }
   const openEditCat = (c:Category)=>{
-    setCatForm({name:c.name,slug:c.slug,color:c.color,icon:c.icon,sort_order:String(c.sort_order)})
+    setCatForm({name:c.name,name_ar:(c as any).name_ar||'',slug:c.slug,color:c.color,icon:c.icon,image_url:(c as any).image_url||'',sort_order:String(c.sort_order)})
     setEdit(c); setModal('edit-cat')
   }
 
@@ -190,7 +190,7 @@ export default function ShopAdminPage() {
     if(!catForm.name) return
     setSaving(true)
     const slug = catForm.slug||catForm.name.toLowerCase().replace(/[^a-z0-9]/g,'_')
-    const payload = {name:catForm.name,slug,color:catForm.color,icon:catForm.icon,sort_order:parseInt(catForm.sort_order)||0}
+    const payload = {name:catForm.name,name_ar:catForm.name_ar||null,slug,color:catForm.color,icon:catForm.icon,image_url:catForm.image_url||null,sort_order:parseInt(catForm.sort_order)||0}
     const res = editItem
       ? await supabase.from('tool_categories').update(payload).eq('id',editItem.id)
       : await supabase.from('tool_categories').insert(payload)
@@ -384,13 +384,16 @@ export default function ShopAdminPage() {
                     <div className="h-1.5" style={{background:c.color}}/>
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:c.color+'15'}}>{c.icon}</div>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl overflow-hidden" style={{background:c.color+'15'}}>
+                          {(c as any).image_url ? <img src={(c as any).image_url} className="w-full h-full object-cover" alt=""/> : c.icon}
+                        </div>
                         <div className="flex items-center gap-1">
                           <button onClick={()=>openEditCat(c)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"><Pencil size={12}/></button>
                           <button onClick={()=>{setDel(c);setDelType('cat')}} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={12}/></button>
                         </div>
                       </div>
                       <div className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-0.5">{c.name}</div>
+                      {(c as any).name_ar && <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5" dir="rtl">{(c as any).name_ar}</div>}
                       <div className="text-[10px] font-mono text-gray-400 mb-3">{c.slug}</div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-400"><span className="font-bold text-gray-700 dark:text-gray-300">{toolCount}</span> tools</span>
@@ -718,7 +721,9 @@ export default function ShopAdminPage() {
             </div>
             <div className="p-5 flex flex-col gap-3">
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{background:catForm.color+'15',border:`1px solid ${catForm.color}30`}}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:catForm.color+'20'}}>{catForm.icon}</div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl overflow-hidden" style={{background:catForm.color+'20'}}>
+                  {catForm.image_url ? <img src={catForm.image_url} className="w-full h-full object-cover" alt=""/> : catForm.icon}
+                </div>
                 <div>
                   <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{catForm.name||'Category Name'}</div>
                   <div className="text-[10px] font-mono text-gray-400">{catForm.slug||'slug'}</div>
@@ -726,13 +731,26 @@ export default function ShopAdminPage() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Name *</label>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Name (EN) *</label>
                   <input value={catForm.name} onChange={e=>setCatForm({...catForm,name:e.target.value,slug:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,'_')})} placeholder="Writing & AI" className={inp}/>
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Icon</label>
                   <input value={catForm.icon} onChange={e=>setCatForm({...catForm,icon:e.target.value})} placeholder="✍️" className={inp+" text-center text-xl"}/>
                 </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">الاسم بالعربي</label>
+                <input value={catForm.name_ar} onChange={e=>setCatForm({...catForm,name_ar:e.target.value})} placeholder="الكتابة والذكاء الاصطناعي" className={inp} dir="rtl"/>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Category Image URL</label>
+                <input value={catForm.image_url} onChange={e=>setCatForm({...catForm,image_url:e.target.value})} placeholder="https://..." className={inp}/>
+                {catForm.image_url && (
+                  <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <img src={catForm.image_url} className="w-full h-full object-cover" alt="preview"/>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Slug</label>

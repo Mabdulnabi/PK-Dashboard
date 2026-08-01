@@ -15,11 +15,11 @@ interface Member { full_name:string; email:string; plan_slug:string; expires_at:
 
 const nav = [
   { en:'Dashboard',       ar:'الرئيسية',  href:'/u/dashboard', icon:HouseSimple,  color:'#6366f1' },
-  { en:'Buy Tools',       ar:'المتجر',     href:'/u/shop',      icon:ShoppingBag,  color:'#d99401', sub:[
+  { en:'Oneclick Access', ar:'بكليك واحد',   href:'/u/shop',      icon:ShoppingBag,  color:'#d99401', sub:[
     { en:'Shared Tools',  ar:'أدوات مشتركة', href:'/u/shop/shared',  icon:Users,    color:'#8b5cf6' },
-    { en:'Private Tools', ar:'أدوات خاصة',   href:'/u/shop/private', icon:LockKey,  color:'#d99401' },
     { en:'Bundle Tools',  ar:'حزم الأدوات',  href:'/u/shop/bundle',  icon:Package,  color:'#10b981' },
   ]},
+  { en:'Private Store',  ar:'المتجر الشخصي', href:'/u/shop/private-store', icon:LockKey, color:'#8b5cf6' },
   { en:'Payment History', ar:'المدفوعات', href:'/u/payments',  icon:Receipt,      color:'#3b82f6' },
   { en:'HelpDesk',        ar:'الدعم',      href:'/u/helpdesk',  icon:Headset,      color:'#f97316' },
   { en:'Tutorial Videos', ar:'الدروس',     href:'/u/tutorials', icon:PlayCircle,   color:'#ec4899' },
