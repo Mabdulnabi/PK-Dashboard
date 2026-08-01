@@ -127,7 +127,6 @@ if (pathname==='/u/login') return <>{children}</>
 
   const SidebarContent = ({ forMobile = false }: { forMobile?: boolean }) => {
     const col = !forMobile && collapsed
-    const pillId = forMobile ? 'nav-pill-mobile' : 'nav-pill-desktop'
     return (
     <>
       {/* Logo — hidden when collapsed */}
@@ -170,8 +169,8 @@ if (pathname==='/u/login') return <>{children}</>
                 onClick={()=>!col && setShopOpen(!shopOpen)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
                 whileHover="hover"
-                className={`w-full relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                {active && <motion.div layoutId={pillId} className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
+                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all duration-200 ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                style={active ? {background: item.color+'15'} : {}}>
                 <motion.div
                   variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                   transition={{type:'spring', stiffness:400, damping:15}}
@@ -220,8 +219,8 @@ if (pathname==='/u/login') return <>{children}</>
             <motion.div key={item.href} whileHover="hover">
             <Link href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-              {active && <motion.div layoutId={pillId} className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
+              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all duration-200 ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              style={active ? {background: item.color+'15'} : {}}>
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                 transition={{type:'spring', stiffness:400, damping:15}}
