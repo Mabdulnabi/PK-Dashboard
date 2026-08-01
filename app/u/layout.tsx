@@ -4,24 +4,25 @@ import { LangProvider, useLang } from '@/lib/lang-context'
 import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu } from 'lucide-react'
 import {
-  LayoutDashboard, ShoppingBag, Clock, HelpCircle, PlayCircle,
-  Key, LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu
-} from 'lucide-react'
+  HouseSimple, ShoppingBag, Receipt, Headset, PlayCircle,
+  UserCircle, Users, LockKey, Package, Key,
+} from '@phosphor-icons/react'
 
 interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
 
 const nav = [
-  { en:'Dashboard',       ar:'الرئيسية',    href:'/u/dashboard', icon:LayoutDashboard },
-  { en:'Buy Tools',       ar:'المتجر',       href:'/u/shop',      icon:ShoppingBag, sub:[
-    { en:'Shared Tools',  ar:'أدوات مشتركة', href:'/u/shop/shared'  },
-    { en:'Private Tools', ar:'أدوات خاصة',   href:'/u/shop/private' },
-    { en:'Bundle Tools',  ar:'حزم الأدوات',  href:'/u/shop/bundle'  },
+  { en:'Dashboard',       ar:'الرئيسية',  href:'/u/dashboard', icon:HouseSimple,  color:'#6366f1' },
+  { en:'Buy Tools',       ar:'المتجر',     href:'/u/shop',      icon:ShoppingBag,  color:'#d99401', sub:[
+    { en:'Shared Tools',  ar:'أدوات مشتركة', href:'/u/shop/shared',  icon:Users,    color:'#8b5cf6' },
+    { en:'Private Tools', ar:'أدوات خاصة',   href:'/u/shop/private', icon:LockKey,  color:'#d99401' },
+    { en:'Bundle Tools',  ar:'حزم الأدوات',  href:'/u/shop/bundle',  icon:Package,  color:'#10b981' },
   ]},
-  { en:'Payment History', ar:'المدفوعات',   href:'/u/payments',  icon:Clock },
-  { en:'HelpDesk',        ar:'الدعم',        href:'/u/helpdesk',  icon:HelpCircle },
-  { en:'Tutorial Videos', ar:'الدروس',       href:'/u/tutorials', icon:PlayCircle },
-  { en:'My Account',      ar:'حسابي',        href:'/u/profile',   icon:Key },
+  { en:'Payment History', ar:'المدفوعات', href:'/u/payments',  icon:Receipt,      color:'#3b82f6' },
+  { en:'HelpDesk',        ar:'الدعم',      href:'/u/helpdesk',  icon:Headset,      color:'#f97316' },
+  { en:'Tutorial Videos', ar:'الدروس',     href:'/u/tutorials', icon:PlayCircle,   color:'#ec4899' },
+  { en:'My Account',      ar:'حسابي',      href:'/u/profile',   icon:UserCircle,   color:'#14b8a6' },
 ]
 
 const PLAN_COLOR:any = { basic:'#3B82F6', vip:'#F59E0B', private:'#8B5CF6' }
@@ -35,7 +36,12 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const [dark,      setDark]      = useState(false)
   const { lang, currency, setLang, setCurrency } = useLang()
   const ui = useUISettings()
-  const [shopOpen,      setShopOpen]   = useState(false)
+  const [shopOpen, setShopOpenState] = useState(()=>{
+    if (typeof window === 'undefined') return true
+    const saved = localStorage.getItem('pk_shop_open')
+    return saved === null ? true : saved === '1'
+  })
+  const setShopOpen = (v: boolean) => { setShopOpenState(v); localStorage.setItem('pk_shop_open', v?'1':'0') }
   const [sidebarOpen,   setSidebar]    = useState(false)
   const [collapsed,     setCollapsed]  = useState(false)
   const [profileOpen,   setProfile]    = useState(false)
@@ -158,23 +164,33 @@ if (pathname==='/u/login') return <>{children}</>
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
           if (item.sub) return (
             <div key={item.href}>
-              <button onClick={()=>!col && setShopOpen(o=>!o)}
+              <button onClick={()=>!col && setShopOpen(!shopOpen)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
-                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115] text-[#d99401]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                <Icon size={16}/>
+                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: active ? item.color+'22' : item.color+'18'}}>
+                  <Icon size={15} weight="duotone" style={{color: item.color}}/>
+                </div>
                 {!col && <>
-                  <span className="flex-1 text-start">{isRtl?item.ar:item.en}</span>
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`}/>
+                  <span className="flex-1 text-start" style={{color: active ? item.color : undefined}}>{isRtl?item.ar:item.en}</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`} style={{color: item.color}}/>
                 </>}
               </button>
               {shopOpen && !col && (
                 <div className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
-                  {item.sub.map(s=>(
-                    <Link key={s.href} href={s.href}
-                      className={`block py-2 px-2 rounded-lg text-[13px] transition-colors ${pathname===s.href?'text-[#d99401] font-semibold bg-[#d9940115]':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
-                      {isRtl?s.ar:s.en}
-                    </Link>
-                  ))}
+                  {item.sub.map((s:any)=>{
+                    const SubIcon = s.icon
+                    const subActive = pathname===s.href
+                    return (
+                      <Link key={s.href} href={s.href}
+                        className={`flex items-center gap-2 py-2 px-2 rounded-lg text-[13px] transition-colors ${subActive?'font-semibold':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                        style={subActive ? {color: s.color, background: s.color+'15'} : {}}>
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{background: s.color+'20'}}>
+                          <SubIcon size={12} weight="duotone" style={{color: s.color}}/>
+                        </div>
+                        {isRtl?s.ar:s.en}
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -182,9 +198,12 @@ if (pathname==='/u/login') return <>{children}</>
           return (
             <Link key={item.href} href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115] text-[#d99401]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-              <Icon size={16}/>
-              {!col && (isRtl?item.ar:item.en)}
+              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              style={active ? {background: item.color+'15'} : {}}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: item.color + (active?'25':'18')}}>
+                <Icon size={15} weight="duotone" style={{color: item.color}}/>
+              </div>
+              {!col && <span style={active ? {color: item.color, fontWeight:600} : {}}>{isRtl?item.ar:item.en}</span>}
             </Link>
           )
         })}
