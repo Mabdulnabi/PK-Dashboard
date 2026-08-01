@@ -140,7 +140,7 @@ export default function HelpdeskPage() {
     setReplySending(false)
   }
 
-  const inp = "w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-red-500"
+  const inp = "w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401]"
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
@@ -153,7 +153,7 @@ export default function HelpdeskPage() {
               <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">{t('Support Center', 'مركز الدعم')}</span>
             </div>
             <h1 className="text-xl font-bold text-white mb-2">
-              {t('Help ', 'المساعدة ')}<span className="text-red-400">{t('Desk', 'والدعم')}</span>
+              {t('Help ', 'المساعدة ')}<span style={{color:'#d99401'}}>{t('Desk', 'والدعم')}</span>
             </h1>
             <p className="text-sm text-gray-300">
               {t('Submit a support ticket or contact us directly on WhatsApp.', 'أرسل تذكرة دعم أو تواصل معنا مباشرة على واتساب.')}
@@ -176,13 +176,13 @@ export default function HelpdeskPage() {
 
       <div className="flex justify-end mb-4">
         <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
           <Plus size={15}/>{t('New Ticket', 'تذكرة جديدة')}
         </button>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>
+        <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
       ) : (
         <div className="flex flex-col gap-3">
           {tickets.length === 0 ? (
@@ -289,7 +289,7 @@ export default function HelpdeskPage() {
                             placeholder={t('Write a follow-up message…', 'اكتب رسالة متابعة…')}
                             rows={2} className={inp + ' resize-none flex-1 py-2.5 text-xs'}/>
                           <button onClick={() => sendMemberReply(ticket.id)} disabled={replySending || !replyText.trim()}
-                            className="px-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-xs font-bold transition-colors flex-shrink-0">
+                            className="px-3 rounded-xl disabled:opacity-40 text-white text-xs font-bold transition-colors flex-shrink-0" style={{background:'#d99401'}}>
                             {replySending ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : t('Send', 'إرسال')}
                           </button>
                         </div>
@@ -387,7 +387,7 @@ export default function HelpdeskPage() {
                 )}
               </div>
               <button onClick={submit} disabled={sending}
-                className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                className="w-full py-3 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
                 {sending ? t('Sending...', 'جاري الإرسال...') : t('Submit Ticket', 'إرسال التذكرة')}
               </button>
             </div>

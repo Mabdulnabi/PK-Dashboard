@@ -333,7 +333,7 @@ export default function UserDashboard() {
 
   if (loading) return (
     <div className="flex justify-center items-center py-32">
-      <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/>
+      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
     </div>
   )
 
@@ -373,7 +373,7 @@ export default function UserDashboard() {
               {t('You have no active subscriptions.','ما عندكش اشتراكات نشطة حالياً.')}
             </p>
             <a href="/u/shop/shared"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
               {t('Browse Shop →','تصفح المتجر →')}
             </a>
           </div>
@@ -387,8 +387,9 @@ export default function UserDashboard() {
               const isConnected  = connectedId  === p.id
 
               return (
-                <div key={p.id} className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:shadow-lg hover:border-red-200 dark:hover:border-red-500/30 transition-all duration-200">
-                  <div className="h-1 w-full bg-gradient-to-r from-red-400 to-red-600"/>
+                <div key={p.id} className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#d99401]/40 dark:hover:border-[#d99401]/30 transition-all duration-200">
+                  <div className="h-1 w-full" style={{background:'linear-gradient(90deg,#d99401,#f5b800)'}}/>
+
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-4">
                       <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -410,7 +411,7 @@ export default function UserDashboard() {
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 leading-tight">{p.tool_name}</h3>
 
                     {/* Expires line — red */}
-                    <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{color:'#d99401'}}>
                       <Clock size={11}/>
                       <span>
                         {p.expires_at
@@ -447,11 +448,8 @@ export default function UserDashboard() {
                           <button
                             onClick={()=>{ if(!isConnecting) quickConnect(p) }}
                             disabled={isConnecting || isConnected}
-                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                              isConnected
-                                ? 'bg-emerald-500 text-white cursor-default'
-                                : 'bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white shadow-sm shadow-red-500/20'
-                            }`}>
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${isConnected?'bg-emerald-500 text-white cursor-default':'disabled:opacity-60 text-white shadow-sm'}`}
+                            style={isConnected?{}:{background:'#d99401'}}>
                             {isConnecting
                               ? <><Loader2 size={12} className="animate-spin"/>{t('Connecting...','جاري...')}</>
                               : isConnected
@@ -463,7 +461,7 @@ export default function UserDashboard() {
                           <button
                             onClick={()=>router.push(`/u/subscription/${p.id}`)}
                             title={t('Install extension first','ثبّت الإضافة أولاً')}
-                            className="flex-1 py-2.5 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 flex items-center justify-center gap-1.5 hover:border-red-300 hover:text-red-400 transition-all">
+                            className="flex-1 py-2.5 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 flex items-center justify-center gap-1.5 hover:border-[#d99401]/50 hover:text-[#d99401] transition-all">
                             <Zap size={12}/>{t('Quick Connect','اتصال سريع')}
                           </button>
                         )
@@ -503,13 +501,13 @@ export default function UserDashboard() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {free.map(tool=>(
                 <a key={tool.id} href={tool.access_url} target="_blank" rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/5 transition-all group">
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-[#d99401]/40 hover:bg-[#d9940108] transition-all group">
                   {tool.image_url
                     ? <img src={tool.image_url} alt={tool.name} className="h-10 w-auto object-contain"/>
                     : <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400">{tool.name.slice(0,2).toUpperCase()}</div>
                   }
                   <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight">{tool.name}</span>
-                  <span className="text-[10px] text-red-500 font-bold group-hover:underline">{t('Free Access →','دخول مجاني →')}</span>
+                  <span className="text-[10px] font-bold group-hover:underline" style={{color:'#d99401'}}>{t('Free Access →','دخول مجاني →')}</span>
                 </a>
               ))}
             </div>

@@ -89,7 +89,7 @@ export default function MemberProfilePage() {
   }
 
   const initials = profile?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
-  const inp = `w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-red-400 transition-all`
+  const inp = `w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] transition-all`
 
   if (!profile) return (
     <div className="flex justify-center items-center h-64">
@@ -108,14 +108,14 @@ export default function MemberProfilePage() {
         {/* Avatar section */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 px-6 py-8 flex flex-col items-center gap-3">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-red-500 flex items-center justify-center ring-4 ring-white/20">
+            <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center ring-4 ring-white/20" style={{background:'#d99401'}}>
               {avatarUrl
                 ? <img src={avatarUrl} className="w-full h-full object-cover" alt="avatar"/>
                 : <span className="text-2xl font-bold text-white">{initials}</span>
               }
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg transition-colors disabled:opacity-60">
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-60" style={{background:'#d99401'}}>
               {uploading
                 ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                 : <Camera size={14} className="text-white"/>
@@ -192,7 +192,7 @@ export default function MemberProfilePage() {
           </div>
 
           <button onClick={save} disabled={saving}
-            className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-bold transition-colors mt-2">
+            className="w-full py-3 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-colors mt-2" style={{background:'#d99401'}}>
             {saving ? t('Saving…', 'جاري الحفظ…') : t('Save Changes', 'حفظ التغييرات')}
           </button>
         </div>

@@ -200,7 +200,7 @@ function CheckoutInner() {
   const waNum = (siteSettings.whatsapp_number || settings.whatsapp_number || '+201068488474').replace(/\D/g,'')
   const wa = `https://wa.me/${waNum}?text=${encodeURIComponent(`طلب جديد: ${tool?.name} — وسيلة: ${method} — مرجع: ${txRef||'N/A'}`)}`
 
-  if (loading) return <div className="flex justify-center items-center py-32" ><div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>
+  if (loading) return <div className="flex justify-center items-center py-32" ><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
   if (!tool)   return <div className="text-center py-32 text-gray-400 text-lg">{t('Tool not found','الأداة غير موجودة')}</div>
 
   // ── Duplicate purchase blocker ──────────────────────────
@@ -234,7 +234,7 @@ function CheckoutInner() {
           </p>
           <div className="flex flex-col gap-3">
             <button onClick={()=>router.push(`/u/subscription/${existingPurchase.id}`)}
-              className="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+              className="w-full py-3.5 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
               {lang==='ar' ? 'عرض اشتراكي الحالي ←' : 'View My Subscription ←'}
             </button>
             <button onClick={()=>router.push('/u/shop')}
@@ -258,7 +258,7 @@ function CheckoutInner() {
           const active= step===s
           return (
             <div key={s} className="flex items-center gap-2 flex-1">
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${done?'bg-emerald-500 text-white':active?'bg-red-500 text-white':'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${done?'bg-emerald-500 text-white':active?'text-white':'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`} style={active&&!done?{background:'#d99401'}:{}}>
                 {done?<Check size={15}/>:<span className="w-5 text-center">{i+1}</span>}
                 <span>{labels[i]}</span>
               </div>
@@ -283,18 +283,18 @@ function CheckoutInner() {
                   <div className="text-base font-bold text-gray-900 dark:text-white">{tool.name}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tool.duration_label}</div>
                 </div>
-                <div className="text-lg font-bold text-red-500">{tool.price_egp.toLocaleString()} EGP</div>
+                <div className="text-lg font-bold" style={{color:'#d99401'}}>{tool.price_egp.toLocaleString()} EGP</div>
               </div>
               <div className="flex flex-col gap-2 mb-5">
                 <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400"><span>{t('Original Price','السعر الأصلي')}</span><span dir="ltr">{formatPrice(tool.price_egp, exchangeRate)}</span></div>
                 {couponResult?.valid && <div className="flex justify-between text-sm text-emerald-500"><span>{t('Discount','خصم')} ({couponResult.value}%)</span><span dir="ltr">-{formatPrice(tool.price_egp*couponResult.value/100, exchangeRate)}</span></div>}
                 <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span>{t('Total','الإجمالي')}</span><span className="text-red-500" dir="ltr">{formatPrice(finalPriceEgp(), exchangeRate)}</span>
+                  <span>{t('Total','الإجمالي')}</span><span dir="ltr" style={{color:'#d99401'}}>{formatPrice(finalPriceEgp(), exchangeRate)}</span>
                 </div>
               </div>
               <div className="flex gap-2 mb-2">
                 <input value={coupon} onChange={e=>setCoupon(e.target.value.toUpperCase())} placeholder={t('Coupon code (optional)','كود الخصم (اختياري)')}
-                  className="flex-1 px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-red-500"/>
+                  className="flex-1 px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401]"/>
                 <button onClick={applyCoupon} className="px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-bold text-gray-700 dark:text-gray-200 transition-colors">{t('Apply','تطبيق')}</button>
               </div>
               {couponResult?.error && <p className="text-sm text-red-400 mt-1 mb-3">{couponResult.error}</p>}
@@ -317,7 +317,7 @@ function CheckoutInner() {
                 } else {
                   setStep('payment')
                 }
-              }} disabled={verifying} className="w-full py-4 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-base font-bold transition-colors mt-4 flex items-center justify-center gap-2">
+              }} disabled={verifying} className="w-full py-4 rounded-xl disabled:opacity-60 text-white text-base font-bold transition-colors mt-4 flex items-center justify-center gap-2" style={{background:'#d99401'}}>
                 {verifying ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>{t('Activating...','جاري التفعيل...')}</> : t('Continue to Payment →','متابعة للدفع ←')}
               </button>
             </div>
@@ -334,13 +334,13 @@ function CheckoutInner() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                   {gateways.map(gw=>(
                     <button key={gw.id} onClick={()=>{ setMethod(gw.id); setTxRef(''); setError('') }}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${method===gw.id?'border-red-500 bg-red-50 dark:bg-red-900/20':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500'}`}>
+                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500'}`}>
                       <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-white">
                         {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-2xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
                       </div>
-                      <span className={`text-sm font-bold ${method===gw.id?'text-red-500':'text-gray-700 dark:text-gray-200'}`}>{lang==='ar'?gw.name_ar:gw.name_en}</span>
+                      <span className={`text-sm font-bold ${method===gw.id?'text-[#d99401]':'text-gray-700 dark:text-gray-200'}`}>{lang==='ar'?gw.name_ar:gw.name_en}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${gw.currency==='EGP'?'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400':'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>{gw.currency}</span>
-                      {method===gw.id && <Check size={14} className="text-red-500"/>}
+                      {method===gw.id && <Check size={14} style={{color:'#d99401'}}/>}
                     </button>
                   ))}
                 </div>
@@ -371,7 +371,7 @@ function CheckoutInner() {
                   )}
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-sm text-gray-500 dark:text-gray-400">{t('Amount Due','المبلغ المطلوب')}</span>
-                    <span className="text-xl font-bold text-red-500">{displayTotal()}</span>
+                    <span className="text-xl font-bold" style={{color:'#d99401'}}>{displayTotal()}</span>
                   </div>
                 </div>
               )}
@@ -393,7 +393,7 @@ function CheckoutInner() {
                   <input value={txRef} onChange={e=>setTxRef(e.target.value)}
                     placeholder={lang==='ar'?(cfg.input_placeholder_ar||'الصق رقم العملية هنا...'):(cfg.input_placeholder_en||'Paste transaction ID here...')}
                     dir="ltr"
-                    className="w-full px-4 py-4 text-base rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-red-500 transition-colors"/>
+                    className="w-full px-4 py-4 text-base rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] transition-colors"/>
                   <p className="text-xs text-gray-400 mt-1.5">{t('After transfer, paste the reference or Transaction ID here','بعد التحويل، الصق الرقم المرجعي أو Transaction ID هنا')}</p>
                 </div>
               )}
@@ -414,7 +414,7 @@ function CheckoutInner() {
                 <button onClick={()=>setStep('details')} className="flex-1 py-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">{t('← Back','← رجوع')}</button>
                 {cfg?.is_dynamic && !polling ? (
                   <button onClick={verify} disabled={verifying}
-                    className="flex-[2] py-4 rounded-xl bg-red-500 hover:bg-red-600 text-white text-base font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors">
+                    className="flex-[2] py-4 rounded-xl text-white text-base font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors" style={{background:'#d99401'}}>
                     {verifying?<Loader2 size={16} className="animate-spin"/>:<>💳 {t('Pay Now','ادفع الآن')}</>}
                   </button>
                 ) : cfg?.is_dynamic && polling ? (
@@ -423,7 +423,7 @@ function CheckoutInner() {
                   </button>
                 ) : (
                   <button onClick={verify} disabled={verifying||(!cfg?.is_dynamic&&!txRef.trim())}
-                    className="flex-[2] py-4 rounded-xl bg-red-500 hover:bg-red-600 text-white text-base font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors">
+                    className="flex-[2] py-4 rounded-xl text-white text-base font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors" style={{background:'#d99401'}}>
                     {verifying?<Loader2 size={16} className="animate-spin"/>:<><Check size={16}/>{t('Verify & Complete','تحقق وأكمل')}</>}
                   </button>
                 )}
@@ -469,7 +469,7 @@ function CheckoutInner() {
               <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400"><span>{t('Price','السعر')}</span><span dir="ltr">{formatPrice(tool.price_egp, exchangeRate)}</span></div>
               {couponResult?.valid && <div className="flex justify-between text-sm text-emerald-500"><span>{t('Discount','خصم')}</span><span dir="ltr">-{formatPrice(tool.price_egp*couponResult.value/100, exchangeRate)}</span></div>}
               <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white mt-1 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <span>{t('Total','الإجمالي')}</span><span className="text-red-500" dir="ltr">{formatPrice(finalPriceEgp(), exchangeRate)}</span>
+                <span>{t('Total','الإجمالي')}</span><span dir="ltr" style={{color:'#d99401'}}>{formatPrice(finalPriceEgp(), exchangeRate)}</span>
               </div>
               {cfg && (
                 <div className="flex justify-between text-sm mt-1 pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -494,7 +494,7 @@ function CheckoutInner() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center py-32" ><div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}>
+    <Suspense fallback={<div className="flex justify-center items-center py-32" ><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>}>
       <CheckoutInner/>
     </Suspense>
   )

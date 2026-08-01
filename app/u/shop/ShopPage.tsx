@@ -72,7 +72,7 @@ export default function ShopPage({ category }: Props) {
       {/* Banner */}
       <div className="rounded-2xl mb-5 px-4 md:px-8 py-6 text-center" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)'}}>
         <h1 className="text-2xl font-bold text-white mb-1.5" dir="ltr">
-          Pro<span className="text-red-400">Keys</span> {meta.title}
+          Pro<span style={{color:'#d99401'}}>Keys</span> {meta.title}
         </h1>
         <p className="text-sm text-gray-300 mb-0.5">{meta.banner}</p>
         <p className="text-sm text-gray-400">
@@ -87,7 +87,7 @@ export default function ShopPage({ category }: Props) {
         <div className="relative flex-1">
           <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools...','ابحث عن أداة...')}
-            className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-red-400 transition-all"/>
+            className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
@@ -118,7 +118,7 @@ export default function ShopPage({ category }: Props) {
         <span className="text-sm text-gray-400">({filtered.length})</span>
       </div>
 
-      {loading&&<div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
+      {loading&&<div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>}
 
       {/* Tool cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
@@ -142,7 +142,7 @@ export default function ShopPage({ category }: Props) {
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2">{tool.description}</p>
               {/* Price - RTL in Arabic, LTR in English */}
               <div className="mb-1" dir={lang==='ar'?'rtl':'ltr'}>
-                <span className="text-2xl font-bold text-red-500">{price(tool)}</span>
+                <span className="text-2xl font-bold" style={{color:'#d99401'}}>{price(tool)}</span>
                 <span className="text-sm text-gray-400 mx-1">/</span>
                 <span className="text-sm text-gray-400">{lang==='ar'?tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة'):tool.duration_label}</span>
               </div>
@@ -158,7 +158,7 @@ export default function ShopPage({ category }: Props) {
             <div className="px-4 pb-4" dir={lang==='ar'?'rtl':'ltr'}>
               {tool.is_out_of_stock
                 ? <button disabled className="w-full py-3 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
-                : <button onClick={()=>buy(tool)} className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md shadow-red-500/20">
+                : <button onClick={()=>buy(tool)} className="w-full py-3 rounded-xl text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md" style={{background:'#d99401'}}>
                     🔒 {t('Buy Now','اشتري الآن')}
                   </button>
               }
@@ -189,7 +189,7 @@ export default function ShopPage({ category }: Props) {
             </div>
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex items-center justify-between px-6 pt-6 pb-3 flex-shrink-0">
-                <span className="text-xs font-bold text-red-500 uppercase tracking-widest">{t('Premium Tool','أداة مميزة')}</span>
+                <span className="text-xs font-bold uppercase tracking-widest" style={{color:'#d99401'}}>{t('Premium Tool','أداة مميزة')}</span>
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-bold">
                     <Zap size={9} fill="white"/>{popup.delivery_label||t('INSTANT','فوري')}
@@ -210,7 +210,7 @@ export default function ShopPage({ category }: Props) {
                 {popup.is_out_of_stock
                   ? <button disabled className="w-full py-3.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 font-bold text-base cursor-default mb-5">{t('Out of Stock','نفذت الكمية')}</button>
                   : <button onClick={()=>{ setPopup(null); buy(popup) }}
-                      className="w-full py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-base transition-colors shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 mb-5">
+                      className="w-full py-3.5 rounded-xl text-white font-bold text-base transition-colors shadow-lg flex items-center justify-center gap-2 mb-5" style={{background:'#d99401'}}>
                       🔒 {t('Buy Now','اشتري الآن')}
                     </button>
                 }

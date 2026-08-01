@@ -181,7 +181,7 @@ if (pathname==='/u/login') return <>{children}</>
                 <div className="flex items-center gap-1.5">
                   <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{member?.full_name}</div>
                   {member?.member_code && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">{member.member_code}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
                   )}
                 </div>
                 <div className="text-[11px] font-semibold capitalize" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
@@ -275,7 +275,7 @@ if (pathname==='/u/login') return <>{children}</>
                 }}
                 className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
                 <Bell size={14}/>
-                {unread>0&&<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full animate-pulse" style={{background:'#d99401'}}/>}
+                {unread>0&&<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
               </button>
               {notifOpen&&(
                 <div className={`absolute ${isRtl?'left-0':'right-0'} top-10 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden`}>
@@ -331,7 +331,7 @@ if (pathname==='/u/login') return <>{children}</>
                 <div className="flex items-center gap-1.5">
                   <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{member?.full_name}</div>
                   {member?.member_code && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">{member.member_code}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
                   )}
                 </div>
                 <div className="text-[11px] text-gray-400 truncate">{member?.email}</div>
