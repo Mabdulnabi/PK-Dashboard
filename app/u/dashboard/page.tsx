@@ -15,12 +15,13 @@ import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X
 function OnboardingChecklist({ createdAt, extReady, hasPurchase, t, lang }:{
   createdAt:string|null; extReady:boolean; hasPurchase:boolean; t:any; lang:string
 }) {
-  const [dismissed, setDismissed] = useState(false) // TEST MODE: always show
+  const [dismissed, setDismissed] = useState(()=>
+    typeof window !== 'undefined' && !!localStorage.getItem('pk_onboarding_done')
+  )
 
-  if (dismissed) return null
-  // TODO: restore 48h check before production
-  // const hoursOld = (Date.now() - new Date(createdAt).getTime()) / 3600000
-  // if (!createdAt || hoursOld > 48) return null
+  if (dismissed || !createdAt) return null
+  const hoursOld = (Date.now() - new Date(createdAt).getTime()) / 3600000
+  if (hoursOld > 48) return null
 
   const steps = [
     {
@@ -552,8 +553,8 @@ export default function UserDashboard() {
                       )
                     })()}
 
-                    {/* Renew button — TEST: always show, prod: days <= 7 */}
-                    {days !== null && (
+                    {/* Renew button — shown when ≤7 days left */}
+                    {days !== null && days <= 7 && (
                       <button
                         onClick={()=>router.push(`/u/checkout?tool_id=${p.tool_id||p.id}&renew=1`)}
                         className="w-full mb-2.5 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-colors"
