@@ -7,25 +7,43 @@ const service = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+async function getSession() {
+  const token = cookies().get('pk_member_token')?.value
+  if (!token) return null
+  const { data } = await service.rpc('verify_member_session', { p_token: token })
+  return data?.valid ? data : null
+}
+
+export async function GET() {
+  const sess = await getSession()
+  if (!sess) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const { data } = await service
+    .from('members')
+    .select('id, full_name, email, phone, whatsapp, avatar_url, member_code, plan_slug, expires_at')
+    .eq('id', sess.member_id)
+    .single()
+
+  return NextResponse.json(data ?? {})
+}
+
 export async function PATCH(req: NextRequest) {
-  const cookieStore = cookies()
-  const token = cookieStore.get('pk_member_token')?.value
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const sess = await getSession()
+  if (!sess) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const sess = await service.rpc('verify_member_session', { p_token: token })
-  if (!sess.data?.valid) return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+  const body = await req.json()
+  const updates: Record<string, any> = {}
 
-  const { email, password } = await req.json()
-  const member_id = sess.data.member_id
-
-  const updates: any = {}
-  if (email?.trim()) updates.email = email.trim().toLowerCase()
-  if (password?.trim()) updates.password_hash = password.trim()
+  if (body.full_name?.trim())        updates.full_name    = body.full_name.trim()
+  if (body.email?.trim())            updates.email        = body.email.trim().toLowerCase()
+  if (body.password?.trim())         updates.password_hash = body.password.trim()
+  if (body.whatsapp !== undefined)   updates.whatsapp     = body.whatsapp?.trim() || null
+  if (body.avatar_url !== undefined) updates.avatar_url   = body.avatar_url || null
 
   if (Object.keys(updates).length === 0)
-    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+    return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
 
-  const { error } = await service.from('members').update(updates).eq('id', member_id)
+  const { error } = await service.from('members').update(updates).eq('id', sess.member_id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })

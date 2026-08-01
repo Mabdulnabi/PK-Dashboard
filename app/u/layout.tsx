@@ -21,6 +21,7 @@ const nav = [
   { en:'Payment History', ar:'المدفوعات',   href:'/u/payments',  icon:Clock },
   { en:'HelpDesk',        ar:'الدعم',        href:'/u/helpdesk',  icon:HelpCircle },
   { en:'Tutorial Videos', ar:'الدروس',       href:'/u/tutorials', icon:PlayCircle },
+  { en:'My Account',      ar:'حسابي',        href:'/u/profile',   icon:Key },
 ]
 
 const PLAN_COLOR:any = { basic:'#3B82F6', vip:'#F59E0B', private:'#8B5CF6' }
