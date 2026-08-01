@@ -16,9 +16,10 @@ export async function POST(req: NextRequest) {
   const sess = await supabase.rpc('verify_member_session', { p_token: token })
   if (!sess.data?.valid) return NextResponse.json({ valid: false }, { status: 401 })
 
-  const { code, plan_slug, tool_id } = await req.json()
-  const { data } = await supabase.rpc('apply_coupon', {
-    p_code: code?.toUpperCase(), p_member_id: sess.data.member_id, p_plan_slug: plan_slug || null, p_tool_id: tool_id || null
+  const { code, tool_id } = await req.json()
+  // validate only — never increments used_count; apply_coupon runs at actual payment
+  const { data } = await supabase.rpc('validate_coupon', {
+    p_code: code?.toUpperCase(), p_tool_id: tool_id || null
   })
   return NextResponse.json(data || { valid: false, error: 'invalid_coupon' })
 }
