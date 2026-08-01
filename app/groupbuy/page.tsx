@@ -440,8 +440,12 @@ export default function GroupBuyPage() {
 
               {/* Session Data */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
-                  Session Data {editId && <span className="font-normal text-gray-500">(اتركه فاضي لو مش هتغير)</span>}
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
+                  Session Data
+                  {editId
+                    ? <span className="font-normal normal-case text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">✓ كوكيز محفوظة — اتركه فاضي لو مش هتغير</span>
+                    : <span className="text-red-400">*</span>
+                  }
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-500 mb-1.5 block">

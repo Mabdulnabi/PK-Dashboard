@@ -65,10 +65,23 @@ export async function GET(req: NextRequest) {
   const serverTierIdx = tierOrder.indexOf(server.tier_required)
   if (memberTierIdx < serverTierIdx) return NextResponse.json({ error: 'Insufficient tier' }, { status: 403 })
 
-  // Parse session data
-  let sessionData = null
+  // Parse + normalize session data
+  // Extension expects: { cookies: [...], localStorage: {}, indexedDB: [] }
+  // Some servers were saved as a bare cookies array — wrap those automatically
+  let sessionData: { cookies: any[]; localStorage: Record<string,any>; indexedDB: any[] } | null = null
   try {
-    sessionData = server.session_data_encrypted ? JSON.parse(server.session_data_encrypted) : null
+    const raw = server.session_data_encrypted ? JSON.parse(server.session_data_encrypted) : null
+    if (raw === null) {
+      sessionData = null
+    } else if (Array.isArray(raw)) {
+      // bare cookies array → normalize to envelope format
+      sessionData = { cookies: raw, localStorage: {}, indexedDB: [] }
+    } else if (raw && typeof raw === 'object' && Array.isArray(raw.cookies)) {
+      // already correct envelope
+      sessionData = raw
+    } else {
+      sessionData = raw
+    }
   } catch {
     return NextResponse.json({ error: 'Invalid session data' }, { status: 500 })
   }
