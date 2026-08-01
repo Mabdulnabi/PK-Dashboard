@@ -86,7 +86,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
 if (pathname==='/u/login') return <>{children}</>
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-gray-50">
-      <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/>
+      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
     </div>
   )
 
@@ -99,7 +99,7 @@ if (pathname==='/u/login') return <>{children}</>
     <>
       {/* Logo — hidden when collapsed */}
       {!col && (
-        <div className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-transparent">
           {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
             const w = Number(ui.logo_width) || 40
             const h = Number(ui.logo_height) || 40
@@ -113,18 +113,18 @@ if (pathname==='/u/login') return <>{children}</>
             )
           })() : (
             <>
-              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center shadow-md shadow-red-500/30 flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#d99401',boxShadow:'0 4px 10px #d9940140'}}>
                 <Key size={16} className="text-white"/>
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span className="text-red-500">Keys</span></div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span style={{color:'#d99401'}}>Keys</span></div>
                 <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
               </div>
             </>
           )}
         </div>
       )}
-      {col && <div className="h-[57px] border-b border-gray-100 dark:border-gray-800"/>}
+      {col && <div className="h-[57px]"/>}
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
@@ -135,7 +135,7 @@ if (pathname==='/u/login') return <>{children}</>
             <div key={item.href}>
               <button onClick={()=>!col && setShopOpen(o=>!o)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
-                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115] text-[#d99401]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                 <Icon size={16}/>
                 {!col && <>
                   <span className="flex-1 text-start">{isRtl?item.ar:item.en}</span>
@@ -146,7 +146,7 @@ if (pathname==='/u/login') return <>{children}</>
                 <div className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
                   {item.sub.map(s=>(
                     <Link key={s.href} href={s.href}
-                      className={`block py-2 px-2 rounded-lg text-[13px] transition-colors ${pathname===s.href?'text-red-500 font-semibold bg-red-50 dark:bg-red-500/10':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                      className={`block py-2 px-2 rounded-lg text-[13px] transition-colors ${pathname===s.href?'text-[#d99401] font-semibold bg-[#d9940115]':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
                       {isRtl?s.ar:s.en}
                     </Link>
                   ))}
@@ -157,7 +157,7 @@ if (pathname==='/u/login') return <>{children}</>
           return (
             <Link key={item.href} href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115] text-[#d99401]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               <Icon size={16}/>
               {!col && (isRtl?item.ar:item.en)}
             </Link>
@@ -170,7 +170,7 @@ if (pathname==='/u/login') return <>{children}</>
         <button onClick={()=>setProfile(o=>!o)}
           title={col ? member?.full_name : undefined}
           className={`w-full flex items-center ${col ? 'justify-center px-0' : 'gap-2.5 px-2'} py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
-          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
             {member?.avatar_url
               ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
               : member?.full_name?.slice(0,1).toUpperCase()}
@@ -238,7 +238,7 @@ if (pathname==='/u/login') return <>{children}</>
             <div className="flex flex-col leading-tight min-w-0">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                 <span className="hidden sm:inline">{isRtl?'أهلاً':'Welcome'} </span>
-                <span className="text-red-500">{member?.full_name}!</span>
+                <span style={{color:'#d99401'}}>{member?.full_name}!</span>
               </span>
               <span className="text-xs text-gray-400 hidden sm:block">{isRtl?'الوصول لجميع الأدوات النشطة':'Access all active tools'}</span>
             </div>
@@ -275,14 +275,14 @@ if (pathname==='/u/login') return <>{children}</>
                 }}
                 className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
                 <Bell size={14}/>
-                {unread>0&&<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
+                {unread>0&&<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full animate-pulse" style={{background:'#d99401'}}/>}
               </button>
               {notifOpen&&(
                 <div className={`absolute ${isRtl?'left-0':'right-0'} top-10 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden`}>
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
-                      {unread>0&&<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white">{unread}</span>}
+                      {unread>0&&<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{background:'#d99401'}}>{unread}</span>}
                     </div>
                     <button onClick={()=>setNotif(false)}><X size={14} className="text-gray-400"/></button>
                   </div>
@@ -307,7 +307,7 @@ if (pathname==='/u/login') return <>{children}</>
             </div>
             {/* Logout */}
             <button onClick={logout}
-              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-[#d99401] hover:bg-[#d9940112] transition-colors">
               <LogOut size={14}/>
             </button>
           </div>
@@ -322,7 +322,7 @@ if (pathname==='/u/login') return <>{children}</>
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-start p-4" onClick={()=>setProfile(false)}>
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-72 overflow-hidden" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
-              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
                 {member?.avatar_url
                   ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
                   : member?.full_name?.slice(0,1).toUpperCase()}
@@ -344,23 +344,23 @@ if (pathname==='/u/login') return <>{children}</>
               <div>
                 <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5 block">{isRtl?'البريد الإلكتروني':'Email'}</label>
                 <input value={newEmail} onChange={e=>setNewEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-red-400 transition-all"/>
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-[#d99401] transition-all"/>
               </div>
               <div>
                 <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5 block">{isRtl?'كلمة مرور جديدة':'New Password'}</label>
                 <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}
                   placeholder={isRtl?'اتركه فارغاً للإبقاء على الحالية':'Leave blank to keep current'}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-red-400 transition-all"/>
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
               </div>
               {profileMsg && (
                 <p className={`text-xs font-medium ${profileMsg.includes('✓')||profileMsg.includes('تم')?'text-emerald-500':'text-red-500'}`}>{profileMsg}</p>
               )}
               <button onClick={saveProfile} disabled={profileSaving}
-                className="w-full py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-sm font-bold transition-colors">
+                className="w-full py-2 rounded-lg disabled:opacity-60 text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
                 {profileSaving?(isRtl?'جاري الحفظ...':'Saving...'):(isRtl?'حفظ التغييرات':'Save Changes')}
               </button>
               <button onClick={logout}
-                className="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center gap-1.5 transition-colors">
+                className="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-[#d99401] hover:border-[#d9940150] flex items-center justify-center gap-1.5 transition-colors">
                 <LogOut size={14}/>{isRtl?'تسجيل الخروج':'Sign Out'}
               </button>
             </div>
