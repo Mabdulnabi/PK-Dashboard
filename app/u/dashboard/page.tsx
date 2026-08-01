@@ -140,7 +140,7 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
       title: lang==='ar' ? `⚠ ${soonest.tool_name} ينتهي بعد ${days} ${days===1?'يوم':'أيام'}` : `⚠ ${soonest.tool_name} expires in ${days} day${days===1?'':'s'}`,
       subtitle: lang==='ar' ? 'جدد الآن لتجنب انقطاع الخدمة' : 'Renew now to avoid interruption',
       cta: lang==='ar' ? 'تجديد الآن' : 'Renew Now',
-      href: `/u/checkout?tool_id=${soonest.id}&renew=1`,
+      href: `/u/checkout?tool_id=${soonest.tool_id||soonest.id}&renew=1`,
     }
   } else if (days !== null && days <= 7 && soonest) {
     action = {
@@ -148,7 +148,7 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
       title: lang==='ar' ? `${soonest.tool_name} ينتهي بعد ${days} أيام` : `${soonest.tool_name} expires in ${days} days`,
       subtitle: lang==='ar' ? 'فكر في التجديد قريباً' : 'Consider renewing soon',
       cta: lang==='ar' ? 'تجديد' : 'Renew',
-      href: `/u/checkout?tool_id=${soonest.id}&renew=1`,
+      href: `/u/checkout?tool_id=${soonest.tool_id||soonest.id}&renew=1`,
     }
   } else if (unreadNotif) {
     const notifTitle = (lang !== 'ar' && unreadNotif.title_en) ? unreadNotif.title_en : (unreadNotif.title || (lang==='ar' ? 'لديك إشعار جديد' : 'You have a new notification'))
@@ -206,7 +206,7 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
 }
 
 interface Purchase {
-  id:string; tool_name:string; tool_image?:string
+  id:string; tool_id?:string; tool_name:string; tool_image?:string
   tool_video?:string; duration_label:string; category_slug?:string
   expires_at?:string; starts_at?:string; payment_method:string
   amount_egp:number; duration_days?:number; retail_price_egp?:number
@@ -555,7 +555,7 @@ export default function UserDashboard() {
                     {/* Renew button — TEST: always show, prod: days <= 7 */}
                     {days !== null && (
                       <button
-                        onClick={()=>router.push(`/u/checkout?tool_id=${p.id}&renew=1`)}
+                        onClick={()=>router.push(`/u/checkout?tool_id=${p.tool_id||p.id}&renew=1`)}
                         className="w-full mb-2.5 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-colors"
                         style={{background: days <= 3 ? '#ef4444' : '#d99401'}}>
                         <RotateCcw size={11}/>
