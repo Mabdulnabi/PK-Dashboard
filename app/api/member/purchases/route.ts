@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
     retail_price_egp:  p.shop_tools?.retail_price_egp ?? 0,
     has_delivery:    deliveryMap[p.id]?.has_delivery  ?? false,
     delivery_viewed: deliveryMap[p.id]?.delivery_viewed ?? false,
+    created_at:      p.created_at,
   }))
 
   return NextResponse.json({ purchases: formatted })

@@ -9,7 +9,116 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star } from 'lucide-react'
+
+// ── Review Prompt ─────────────────────────────────────────
+function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: string }) {
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+  const dismissed = typeof window !== 'undefined'
+    ? JSON.parse(localStorage.getItem('pk_reviewed_tools') || '[]') as string[]
+    : []
+
+  const candidate = purchases.find(p => {
+    if (!p.tool_id || !p.created_at) return false
+    const age = Date.now() - new Date(p.created_at).getTime()
+    return age >= WEEK_MS && !dismissed.includes(p.tool_id)
+  })
+
+  const [visible,    setVisible]    = useState(!!candidate)
+  const [current,   setCurrent]    = useState(candidate)
+  const [stars,     setStars]      = useState(0)
+  const [hover,     setHover]      = useState(0)
+  const [comment,   setComment]    = useState('')
+  const [sent,      setSent]       = useState(false)
+  const [sending,   setSending]    = useState(false)
+
+  useEffect(()=>{
+    if (!candidate) return
+    setCurrent(candidate); setVisible(true); setStars(0); setComment(''); setSent(false)
+  },[candidate?.tool_id])
+
+  const dismiss = (toolId: string) => {
+    const list = JSON.parse(localStorage.getItem('pk_reviewed_tools') || '[]')
+    localStorage.setItem('pk_reviewed_tools', JSON.stringify([...list, toolId]))
+    setVisible(false)
+  }
+
+  const submit = async () => {
+    if (!stars || !current) return
+    setSending(true)
+    await fetch(`/api/tools/${current.tool_id}/reviews`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stars, comment })
+    })
+    setSending(false)
+    setSent(true)
+    setTimeout(() => dismiss(current.tool_id), 2000)
+  }
+
+  if (!visible || !current) return null
+  const isRtl = lang === 'ar'
+
+  return (
+    <div className="mb-5 rounded-2xl border overflow-hidden" dir={isRtl?'rtl':'ltr'}
+      style={{borderColor:'#d9940130', background:'linear-gradient(135deg,#1a1200 0%,#111827 100%)'}}>
+      <div className="flex items-start gap-4 p-4 md:p-5">
+        {/* Tool image */}
+        <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {current.tool_image
+            ? <img src={current.tool_image} alt={current.tool_name} className="w-8 h-8 object-contain"/>
+            : <span className="text-xs font-bold text-white/40">{current.tool_name?.slice(0,2)}</span>}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {sent ? (
+            <div className="flex items-center gap-2 text-emerald-400 font-medium text-sm py-1">
+              <CheckCircle size={16}/>{t('Thank you for your review! 🎉','شكراً على تقييمك! 🎉')}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-semibold text-white">
+                  {t(`How's your experience with `, `كيف تجربتك مع `)}<span style={{color:'#d99401'}}>{current.tool_name}</span>?
+                </p>
+                <button onClick={()=>dismiss(current.tool_id)} className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0 ms-3">
+                  <X size={14}/>
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">{t("You've been using it for a week — share your feedback",'استخدمتها أسبوع — شارك تجربتك')}</p>
+
+              {/* Stars */}
+              <div className="flex gap-1 mb-3">
+                {[1,2,3,4,5].map(i=>(
+                  <button key={i} type="button"
+                    onMouseEnter={()=>setHover(i)} onMouseLeave={()=>setHover(0)}
+                    onClick={()=>setStars(i)}>
+                    <Star size={22}
+                      fill={(hover||stars)>=i?'#F59E0B':'none'}
+                      stroke={(hover||stars)>=i?'#F59E0B':'#374151'}
+                      className="transition-colors"/>
+                  </button>
+                ))}
+              </div>
+
+              {stars > 0 && (
+                <div className="flex gap-2 items-start">
+                  <input value={comment} onChange={e=>setComment(e.target.value)}
+                    placeholder={t('Quick comment (optional)','تعليق سريع (اختياري)')}
+                    className="flex-1 px-3 py-2 text-xs rounded-lg bg-white/5 border border-white/10 text-gray-200 placeholder-gray-600 outline-none focus:border-[#d99401] transition-all"/>
+                  <button onClick={submit} disabled={sending}
+                    className="px-4 py-2 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-50 flex-shrink-0"
+                    style={{background:'#d99401'}}>
+                    {sending ? '...' : t('Send','إرسال')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ── Onboarding Checklist ──────────────────────────────────
 function OnboardingChecklist({ createdAt, extReady, hasPurchase, t, lang }:{
@@ -211,7 +320,7 @@ interface Purchase {
   tool_video?:string; duration_label:string; category_slug?:string
   expires_at?:string; starts_at?:string; payment_method:string
   amount_egp:number; duration_days?:number; retail_price_egp?:number
-  has_delivery?:boolean; delivery_viewed?:boolean
+  has_delivery?:boolean; delivery_viewed?:boolean; created_at?:string
 }
 
 function subProgress(p: Purchase): number | null {
@@ -451,6 +560,8 @@ export default function UserDashboard() {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
+
+      <ReviewPrompt purchases={purchases} t={t} lang={lang}/>
 
       <OnboardingChecklist
         createdAt={memberCreatedAt} extReady={extReady}
