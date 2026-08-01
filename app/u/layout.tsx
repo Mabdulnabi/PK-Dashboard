@@ -32,6 +32,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const [member,        setMember]   = useState<Member|null>(null)
   const [loading,       setLoading]  = useState(true)
   const [dark,          setDark]     = useState(false)
+  const [themeMode,     setThemeMode] = useState<'auto'|'dark'|'light'>('auto')
   const { lang, currency, setLang, setCurrency } = useLang()
   const ui = useUISettings()
   const [shopOpen,      setShopOpen]   = useState(false)
@@ -61,9 +62,35 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   // close sidebar on route change
   useEffect(()=>{ setSidebar(false) },[pathname])
 
-  const toggleDark = ()=>{
-    const next = !dark; setDark(next)
-    document.documentElement.classList.toggle('dark',next)
+  // Theme: auto-switch based on time, respect manual preference
+  useEffect(()=>{
+    const saved = localStorage.getItem('pk_theme') as 'auto'|'dark'|'light'|null
+    const mode = saved || 'auto'
+    setThemeMode(mode)
+    const applyTheme = (m: 'auto'|'dark'|'light') => {
+      const h = new Date().getHours()
+      const isDark = m === 'dark' || (m === 'auto' && (h >= 20 || h < 7))
+      setDark(isDark)
+      document.documentElement.classList.toggle('dark', isDark)
+    }
+    applyTheme(mode)
+    // Re-check every 5 minutes when in auto mode
+    const interval = setInterval(()=>{
+      const current = (localStorage.getItem('pk_theme') || 'auto') as 'auto'|'dark'|'light'
+      if (current === 'auto') applyTheme('auto')
+    }, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  },[])
+
+  const cycleTheme = ()=>{
+    // auto → light → dark → auto
+    const next = themeMode === 'auto' ? 'light' : themeMode === 'light' ? 'dark' : 'auto'
+    setThemeMode(next)
+    localStorage.setItem('pk_theme', next)
+    const h = new Date().getHours()
+    const isDark = next === 'dark' || (next === 'auto' && (h >= 20 || h < 7))
+    setDark(isDark)
+    document.documentElement.classList.toggle('dark', isDark)
   }
 
   const logout = async()=>{
@@ -257,10 +284,13 @@ if (pathname==='/u/login') return <>{children}</>
               <Globe size={12}/><span className="hidden xs:inline">{lang==='en'?'EN':'عربي'}</span>
               <span className="xs:hidden">{lang==='en'?'EN':'AR'}</span>
             </button>
-            {/* Dark */}
-            <button onClick={toggleDark}
-              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              {dark?<Sun size={14}/>:<Moon size={14}/>}
+            {/* Theme cycle: auto → light → dark */}
+            <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto (time-based)' : themeMode}
+              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+              {themeMode === 'dark' ? <Moon size={14}/> : themeMode === 'light' ? <Sun size={14}/> : (
+                dark ? <Moon size={14} className="opacity-60"/> : <Sun size={14} className="opacity-60"/>
+              )}
+              {themeMode === 'auto' && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#d99401] border border-white dark:border-gray-900"/>}
             </button>
             {/* Notifications */}
             <div className="relative">

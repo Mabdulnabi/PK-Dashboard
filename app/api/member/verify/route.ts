@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
   // Enrich with member_code
   const { data: member } = await service
     .from('members')
-    .select('member_code, avatar_url')
+    .select('member_code, avatar_url, created_at')
     .eq('id', data.member_id)
     .single()
 
-  return NextResponse.json({ ...data, member_code: member?.member_code ?? null, avatar_url: member?.avatar_url ?? null })
+  return NextResponse.json({ ...data, member_code: member?.member_code ?? null, avatar_url: member?.avatar_url ?? null, created_at: member?.created_at ?? null })
 }
 
 export async function DELETE() {

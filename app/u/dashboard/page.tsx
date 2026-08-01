@@ -9,7 +9,71 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw } from 'lucide-react'
+
+// ── Onboarding Checklist ──────────────────────────────────
+function OnboardingChecklist({ createdAt, extReady, hasPurchase, hasTicket, t, lang }:{
+  createdAt:string|null; extReady:boolean; hasPurchase:boolean; hasTicket:boolean; t:any; lang:string
+}) {
+  const [dismissed, setDismissed] = useState(()=>
+    typeof window !== 'undefined' && !!localStorage.getItem('pk_onboarding_done')
+  )
+
+  if (dismissed || !createdAt) return null
+  const hoursOld = (Date.now() - new Date(createdAt).getTime()) / 3600000
+  if (hoursOld > 48) return null
+
+  const steps = [
+    { done: true,         label: t('Activate your account','فعّل حسابك'),          icon: CheckCircle },
+    { done: extReady,     label: t('Install the extension','ثبّت الإضافة'),          icon: Download },
+    { done: hasPurchase,  label: t('Subscribe to a tool','اشترك في أول أداة'),       icon: ShoppingBag },
+    { done: hasTicket,    label: t('Try support','جرّب الدعم'),                       icon: MessageSquare },
+  ]
+  const doneCount = steps.filter(s=>s.done).length
+  const pct = Math.round(doneCount/steps.length*100)
+  const allDone = doneCount === steps.length
+
+  const dismiss = () => {
+    localStorage.setItem('pk_onboarding_done','1')
+    setDismissed(true)
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🚀</span>
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Getting Started','ابدأ رحلتك')}</p>
+            <p className="text-[11px] text-gray-400">{doneCount}/{steps.length} {t('completed','مكتمل')}</p>
+          </div>
+        </div>
+        <button onClick={dismiss} className="text-gray-300 hover:text-gray-500 transition-colors"><X size={14}/></button>
+      </div>
+      {/* Progress bar */}
+      <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 mb-4 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`,background:'#d99401'}}/>
+      </div>
+      <div className="space-y-2.5">
+        {steps.map((s,i)=>(
+          <div key={i} className={`flex items-center gap-3 text-sm ${s.done?'text-gray-400 dark:text-gray-600 line-through':'text-gray-700 dark:text-gray-300'}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${s.done?'bg-emerald-100 dark:bg-emerald-500/20':'bg-gray-100 dark:bg-gray-800'}`}>
+              {s.done?<CheckCircle size={12} className="text-emerald-500"/>:<span className="text-[10px] font-bold text-gray-400">{i+1}</span>}
+            </div>
+            {s.label}
+          </div>
+        ))}
+      </div>
+      {allDone && (
+        <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-xl" style={{background:'#d9940115',border:'1px solid #d9940130'}}>
+          <span>🎉</span>
+          <p className="text-xs font-bold" style={{color:'#d99401'}}>{t("You're all set! Enjoy Pro Keys.","خلصت كل الخطوات! استمتع بـ Pro Keys.")}</p>
+          <button onClick={dismiss} className="ms-auto text-xs underline" style={{color:'#d99401'}}>{t('Dismiss','إغلاق')}</button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Smart Next Action ──────────────────────────────────────
 type ActionType = 'urgent'|'warning'|'notif'|'new_member'
@@ -238,6 +302,8 @@ export default function UserDashboard() {
   const [connectingId, setConnectingId] = useState<string|null>(null)
   const [connectedId,  setConnectedId]  = useState<string|null>(null)
   const [quickError,   setQuickError]   = useState<string|null>(null)
+  const [memberCreatedAt, setMemberCreatedAt] = useState<string|null>(null)
+  const [hasTicket,    setHasTicket]    = useState(false)
   const activeRef = useRef<string|null>(null)
 
   const fetchPurchases = () => {
@@ -249,10 +315,14 @@ export default function UserDashboard() {
       fetch('/api/member/purchases').then(r=>r.ok?r.json():{purchases:[]}),
       fetch('/api/member/shop').then(r=>r.ok?r.json():{free:[]}),
       fetch('/api/member/notifications').then(r=>r.ok?r.json():{notifications:[]}),
-    ]).then(([pData,sData,nData])=>{
+      fetch('/api/member/verify').then(r=>r.ok?r.json():{}),
+      fetch('/api/member/tickets').then(r=>r.ok?r.json():{tickets:[]}),
+    ]).then(([pData,sData,nData,vData,tData])=>{
       setPurchases(pData.purchases||[])
       setFree(sData.free||[])
       setNotifications(nData.notifications||[])
+      if (vData?.created_at) setMemberCreatedAt(vData.created_at)
+      setHasTicket((tData?.tickets||[]).length > 0)
       setLoading(false)
     }).catch(()=>setLoading(false))
 
@@ -339,6 +409,12 @@ export default function UserDashboard() {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
+
+      <OnboardingChecklist
+        createdAt={memberCreatedAt} extReady={extReady}
+        hasPurchase={purchases.length>0} hasTicket={hasTicket}
+        t={t} lang={lang}
+      />
 
       <SmartNextAction purchases={purchases} notifications={notifications} loading={loading} t={t} lang={lang}/>
 
@@ -434,6 +510,20 @@ export default function UserDashboard() {
                         </div>
                       )
                     })()}
+
+                    {/* Renew button — shown when ≤7 days left */}
+                    {days !== null && days <= 7 && (
+                      <button
+                        onClick={()=>router.push(`/u/checkout?tool_id=${p.id}&renew=1`)}
+                        className="w-full mb-2.5 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-colors"
+                        style={{background: days <= 3 ? '#ef4444' : '#d99401'}}>
+                        <RotateCcw size={11}/>
+                        {days <= 3
+                          ? t(`⚠ Renew Now — ${days}d left`, `⚠ جدّد الآن — ${days} ${days===1?'يوم':'أيام'} متبقية`)
+                          : t(`Renew — ${days}d left`, `جدّد — ${days} ${days===1?'يوم':'أيام'} متبقية`)
+                        }
+                      </button>
+                    )}
 
                     {/* Buttons row */}
                     <div className="flex gap-2">
