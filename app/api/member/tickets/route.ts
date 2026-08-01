@@ -21,7 +21,7 @@ export async function GET() {
 
   const { data } = await service
     .from('support_tickets')
-    .select('*, ticket_attachments(*)')
+    .select('*, ticket_attachments(*), ticket_messages(id, sender_type, message, created_at)')
     .eq('member_id', session.member_id)
     .order('created_at', { ascending: false })
 
@@ -48,10 +48,12 @@ export async function POST(req: NextRequest) {
 
   // Notify member: ticket received confirmation
   service.from('member_notifications').insert({
-    member_id: session.member_id,
-    title:     'تذكرة دعم مُستلمة 📩',
-    message:   `تذكرتك "${subject}" وصلت لفريق الدعم وهيردوا عليك قريباً.`,
-    type:      'info',
+    member_id:   session.member_id,
+    title:       'تذكرة دعم مُستلمة 📩',
+    title_en:    'Support ticket received 📩',
+    message:     `تذكرتك "${subject}" وصلت لفريق الدعم وهيردوا عليك قريباً.`,
+    message_en:  `Your ticket "${subject}" has been received. We'll reply soon.`,
+    type:        'info',
   }).then(() => {})
 
   return NextResponse.json({ success: true, ticket_id: ticket?.id })

@@ -259,12 +259,12 @@ if (pathname==='/u/login') return <>{children}</>
                     {notifications.length===0
                       ? <p className="text-center py-8 text-sm text-gray-400">{isRtl?'لا توجد إشعارات':'No notifications'}</p>
                       : notifications.map((n,i)=>{
-                          const iconMap:Record<string,string> = { success:'✅', info:'💬', warning:'⚠️', error:'❌' }
-                          const icon = iconMap[n.type] || '🔔'
+                          const displayTitle   = (!isRtl && n.title_en)   ? n.title_en   : n.title
+                          const displayMessage = (!isRtl && n.message_en) ? n.message_en : n.message
                           return (
                             <div key={i} className={`px-4 py-3 ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''}`}>
-                              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{n.title}</div>
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.message}</div>
+                              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{displayTitle}</div>
+                              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{displayMessage}</div>
                               <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleDateString(isRtl?'ar-EG':'en-GB')}</div>
                             </div>
                           )

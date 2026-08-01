@@ -39,22 +39,28 @@ export async function GET(req: NextRequest) {
   const inserts: any[] = []
 
   for (const p of expiring || []) {
-    const name = (p as any).shop_tools?.name || 'الأداة'
+    const name    = (p as any).shop_tools?.name || 'الأداة'
+    const dateAr  = new Date(p.expires_at!).toLocaleDateString('ar-EG')
+    const dateEn  = new Date(p.expires_at!).toLocaleDateString('en-GB')
     inserts.push({
-      member_id: p.member_id,
-      title:     `اشتراكك ينتهي خلال 3 أيام ⚠️`,
-      message:   `اشتراكك في ${name} سينتهي بتاريخ ${new Date(p.expires_at!).toLocaleDateString('ar-EG')}. جدد الآن لتجنب انقطاع الخدمة.`,
-      type:      'warning',
+      member_id:   p.member_id,
+      title:       `اشتراكك ينتهي خلال 3 أيام ⚠️`,
+      title_en:    `Your subscription expires in 3 days ⚠️`,
+      message:     `اشتراكك في ${name} سينتهي بتاريخ ${dateAr}. جدد الآن لتجنب انقطاع الخدمة.`,
+      message_en:  `Your ${name} subscription expires on ${dateEn}. Renew now to avoid interruption.`,
+      type:        'warning',
     })
   }
 
   for (const p of expired || []) {
     const name = (p as any).shop_tools?.name || 'الأداة'
     inserts.push({
-      member_id: p.member_id,
-      title:     `انتهى اشتراكك في ${name} ❌`,
-      message:   `اشتراكك في ${name} انتهى اليوم. ادخل على المتجر وجدد للاستمرار.`,
-      type:      'error',
+      member_id:   p.member_id,
+      title:       `انتهى اشتراكك في ${name} ❌`,
+      title_en:    `Your ${name} subscription has expired ❌`,
+      message:     `اشتراكك في ${name} انتهى اليوم. ادخل على المتجر وجدد للاستمرار.`,
+      message_en:  `Your ${name} subscription expired today. Visit the shop to renew.`,
+      type:        'error',
     })
   }
 

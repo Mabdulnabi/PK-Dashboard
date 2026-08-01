@@ -27,12 +27,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Notify member
+  // Insert into conversation thread
+  service.from('ticket_messages').insert({
+    ticket_id:   params.id,
+    sender_type: 'admin',
+    message:     reply,
+  }).then(() => {})
+
+  // Notify member (bilingual)
   service.from('member_notifications').insert({
-    member_id: ticket.member_id,
-    title:     'رد جديد على تذكرتك 💬',
-    message:   `تم الرد على تذكرتك "${ticket.subject}". ادخل على Help Desk لعرض الرد.`,
-    type:      'info',
+    member_id:   ticket.member_id,
+    title:       'رد جديد على تذكرتك 💬',
+    title_en:    'New reply on your ticket 💬',
+    message:     `تم الرد على تذكرتك "${ticket.subject}". افتح Help Desk لعرض الرد.`,
+    message_en:  `Your ticket "${ticket.subject}" has a new reply. Open Help Desk to view it.`,
+    type:        'info',
   }).then(() => {})
 
   return NextResponse.json({ ok: true })

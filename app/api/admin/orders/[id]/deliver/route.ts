@@ -43,13 +43,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Notify member
-  const toolName = (purchase as any).shop_tools?.name || 'الأداة'
-  const label    = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'
+  const toolName   = (purchase as any).shop_tools?.name || 'الأداة'
+  const label      = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'
+  const label_en   = delivery_type === 'key' ? 'activation key'  : 'account credentials'
   service.from('member_notifications').insert({
-    member_id: (purchase as any).member_id,
-    title:     `تم تسليم ${label} 🎉`,
-    message:   `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
-    type:      'success',
+    member_id:   (purchase as any).member_id,
+    title:       `تم تسليم ${label} 🎉`,
+    title_en:    `Your ${label_en} has been delivered 🎉`,
+    message:     `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
+    message_en:  `Your ${label_en} for ${toolName} is ready. Go to My Subscriptions to view it.`,
+    type:        'success',
   }).then(() => {})
 
   return NextResponse.json({ ok: true })

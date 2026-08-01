@@ -6,11 +6,13 @@ import Topbar from '@/components/layout/Topbar'
 import { MessageSquare, Check, X, AlertCircle, ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText } from 'lucide-react'
 
 type Attachment = { id: string; file_path: string; file_name: string; file_type: string; uploaded_by: string }
+type TMsg = { id: string; sender_type: 'member' | 'admin'; message: string; created_at: string }
 interface Ticket {
   id: string; member_id?: string; subject: string; message: string
   status: string; priority: string; category?: string
   reply?: string; replied_at?: string; created_at: string
   ticket_attachments?: Attachment[]
+  ticket_messages?: TMsg[]
 }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'ok' | 'err'; onClose: () => void }) {
@@ -55,14 +57,21 @@ export default function SupportPage() {
   const [fStatus,   setFStatus]   = useState('all')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     const { data } = await supabase
       .from('support_tickets')
-      .select('*, ticket_attachments(*)')
+      .select('*, ticket_attachments(*), ticket_messages(id, sender_type, message, created_at)')
       .order('created_at', { ascending: false })
     if (data) setTickets(data)
-    setLoading(false)
+    if (!silent) setLoading(false)
   }, [])
+
+  // Realtime: poll every 8s when a ticket is expanded
+  useEffect(() => {
+    if (!expanded) return
+    const id = setInterval(() => load(true), 8000)
+    return () => clearInterval(id)
+  }, [expanded, load])
 
   useEffect(() => { load() }, [load])
 
@@ -73,7 +82,7 @@ export default function SupportPage() {
     const res = await fetch(`/api/admin/tickets/${t.id}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reply: replyText, status: 'resolved', admin_id: user?.id }),
+      body: JSON.stringify({ reply: replyText, status: 'in_progress', admin_id: user?.id }),
     })
     if (!res.ok) { setSaving(false); setToast({ msg: 'Failed to send reply', type: 'err' }); return }
 
@@ -158,32 +167,45 @@ export default function SupportPage() {
 
                 {expanded === t.id && (
                   <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3 bg-gray-50 dark:bg-gray-800/40 space-y-3">
-                    {/* Member message */}
-                    <div>
-                      <div className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Member message</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-800">{t.message}</div>
-                      {memberAtts.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {memberAtts.map(a => <FileChip key={a.id} att={a}/>)}
+                    {/* Chronological conversation thread */}
+                    {(() => {
+                      const msgs = [
+                        { sender: 'member' as const, text: t.message, time: t.created_at, id: 'orig' },
+                        ...((t.ticket_messages || [])
+                          .slice()
+                          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                          .map(m => ({ sender: m.sender_type, text: m.message, time: m.created_at, id: m.id }))
+                        ),
+                      ]
+                      return msgs.map(m => (
+                        <div key={m.id} className={`flex flex-col gap-0.5 ${m.sender === 'admin' ? 'items-end' : ''}`}>
+                          <span className={`text-[10px] font-semibold uppercase ${m.sender === 'admin' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                            {m.sender === 'admin' ? 'You (Admin)' : 'Member'}
+                          </span>
+                          <div className={`rounded-lg p-2.5 text-xs whitespace-pre-wrap max-w-[90%] ${
+                            m.sender === 'admin'
+                              ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400'
+                          }`}>{m.text}</div>
+                          <span className="text-[9px] text-gray-300 dark:text-gray-600">{new Date(m.time).toLocaleString()}</span>
                         </div>
-                      )}
-                    </div>
+                      ))
+                    })()}
 
-                    {/* Previous reply (if any) */}
-                    {t.reply && (
-                      <div>
-                        <div className="text-[10px] font-semibold text-emerald-600 uppercase mb-1">Your previous reply</div>
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-lg p-3 text-xs text-emerald-700 dark:text-emerald-400 whitespace-pre-wrap">{t.reply}</div>
-                        {adminAtts.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {adminAtts.map(a => <FileChip key={a.id} att={a}/>)}
-                          </div>
-                        )}
+                    {/* Attachments */}
+                    {memberAtts.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {memberAtts.map(a => <FileChip key={a.id} att={a}/>)}
+                      </div>
+                    )}
+                    {adminAtts.length > 0 && (
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {adminAtts.map(a => <FileChip key={a.id} att={a}/>)}
                       </div>
                     )}
 
                     {/* Status buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-1">
                       {['open', 'in_progress', 'resolved', 'closed'].map(s => (
                         <button key={s} onClick={() => updateStatus(t.id, s)}
                           className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${t.status === s ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}
@@ -193,11 +215,9 @@ export default function SupportPage() {
                       ))}
                     </div>
 
-                    {/* Reply box (always shown) */}
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-semibold text-gray-400 uppercase">
-                        {t.reply ? 'Send another reply' : 'Reply'}
-                      </div>
+                    {/* Reply box */}
+                    <div className="space-y-2 pt-1">
+                      <div className="text-[10px] font-semibold text-gray-400 uppercase">Reply to member</div>
                       <div className="flex gap-2">
                         <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
                           placeholder="Type your reply..." className={inp + ' resize-none h-16 flex-1'}/>
@@ -206,7 +226,6 @@ export default function SupportPage() {
                           {saving ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Send'}
                         </button>
                       </div>
-                      {/* File attach */}
                       <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.txt" className="hidden"
                         onChange={e => setReplyFiles(Array.from(e.target.files || []))}/>
                       <button type="button" onClick={() => fileRef.current?.click()}

@@ -8,10 +8,12 @@ import {
 } from 'lucide-react'
 
 type Attachment = { id: string; file_path: string; file_name: string; file_size: number; file_type: string; uploaded_by: string }
+type TMsg      = { id: string; sender_type: 'member' | 'admin'; message: string; created_at: string }
 type Ticket = {
   id: string; subject: string; message: string; status: string; priority: string
   category: string; reply?: string; replied_at?: string; created_at: string
   ticket_attachments: Attachment[]
+  ticket_messages: TMsg[]
 }
 
 const CATEGORY_LABELS: Record<string, [string, string]> = {
@@ -40,23 +42,34 @@ function FileChip({ att }: { att: Attachment }) {
 export default function HelpdeskPage() {
   const settings = useSiteSettings()
   const { t, lang, dir } = useLang()
-  const [tickets,  setTickets]  = useState<Ticket[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [form,     setForm]     = useState({ subject: '', message: '', priority: 'normal', category: 'general' })
-  const [files,    setFiles]    = useState<File[]>([])
-  const [sending,  setSending]  = useState(false)
-  const [msg,      setMsg]      = useState('')
+  const [tickets,    setTickets]   = useState<Ticket[]>([])
+  const [loading,    setLoading]   = useState(true)
+  const [expanded,   setExpanded]  = useState<string | null>(null)
+  const [showForm,   setShowForm]  = useState(false)
+  const [form,       setForm]      = useState({ subject: '', message: '', priority: 'normal', category: 'general' })
+  const [files,      setFiles]     = useState<File[]>([])
+  const [sending,    setSending]   = useState(false)
+  const [msg,        setMsg]       = useState('')
+  const [replyText,  setReplyText] = useState('')
+  const [replySending, setReplySending] = useState(false)
+  const replyFileRef = useRef<HTMLInputElement>(null)
+  const [replyFiles, setReplyFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const load = () =>
+  const load = (silent = false) =>
     fetch('/api/member/tickets').then(r => r.json()).then(d => {
       setTickets(d.tickets || [])
-      setLoading(false)
+      if (!silent) setLoading(false)
     })
 
   useEffect(() => { load() }, [])
+
+  // Realtime: poll every 8s when a ticket is expanded
+  useEffect(() => {
+    if (!expanded) return
+    const id = setInterval(() => load(true), 8000)
+    return () => clearInterval(id)
+  }, [expanded])
 
   const statusIcon = (s:string) =>
     s==='open'?<AlertCircle size={13} className="text-amber-500"/>:
@@ -94,6 +107,30 @@ export default function HelpdeskPage() {
     setForm({ subject: '', message: '', priority: 'normal', category: 'general' })
     setFiles([])
     load()
+  }
+
+  const sendMemberReply = async (ticketId: string) => {
+    if (!replyText.trim()) return
+    setReplySending(true)
+    const res = await fetch(`/api/member/tickets/${ticketId}/reply`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: replyText }),
+    })
+    if (res.ok) {
+      // Upload any reply attachments
+      if (replyFiles.length > 0) {
+        for (const file of replyFiles) {
+          const fd = new FormData()
+          fd.append('file', file)
+          fd.append('ticket_id', ticketId)
+          await fetch('/api/member/tickets/upload', { method: 'POST', body: fd })
+        }
+      }
+      setReplyText('')
+      setReplyFiles([])
+      load(true)
+    }
+    setReplySending(false)
   }
 
   const inp = "w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-red-500"
@@ -172,45 +209,94 @@ export default function HelpdeskPage() {
                   </div>
                 </div>
 
-                {/* Expanded: conversation */}
+                {/* Expanded: conversation thread */}
                 {isOpen && (
-                  <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-4 space-y-4">
-                    {/* Member message */}
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-semibold text-gray-400 uppercase">{t('Your message', 'رسالتك')}</span>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3.5 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{ticket.message}</div>
-                      {memberAtts.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {memberAtts.map(a => <FileChip key={a.id} att={a}/>)}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Admin reply */}
-                    {ticket.reply ? (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-semibold text-emerald-500 uppercase">{t('Support reply', 'رد الدعم')}</span>
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3.5 text-xs text-emerald-800 dark:text-emerald-300 whitespace-pre-wrap">{ticket.reply}</div>
-                        {adminAtts.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            {adminAtts.map(a => <FileChip key={a.id} att={a}/>)}
-                          </div>
-                        )}
-                        {ticket.replied_at && (
-                          <span className="text-[10px] text-gray-400">
-                            {new Date(ticket.replied_at).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB')}
+                  <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-4 space-y-3">
+                    {/* Build chronological message list:
+                        Start with original message, then ticket_messages in order */}
+                    {(() => {
+                      const msgs: { sender: 'member' | 'admin'; text: string; time: string; id: string }[] = [
+                        { sender: 'member', text: ticket.message, time: ticket.created_at, id: 'orig' },
+                        ...((ticket.ticket_messages || [])
+                          .slice()
+                          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                          .map(m => ({ sender: m.sender_type, text: m.message, time: m.created_at, id: m.id }))
+                        ),
+                      ]
+                      return msgs.map(m => (
+                        <div key={m.id} className={`flex flex-col gap-0.5 ${m.sender === 'member' ? '' : 'items-end'}`}>
+                          <span className={`text-[10px] font-semibold uppercase ${m.sender === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
+                            {m.sender === 'member' ? t('You', 'أنت') : t('Support', 'الدعم')}
                           </span>
-                        )}
+                          <div className={`rounded-xl p-3.5 text-xs whitespace-pre-wrap max-w-[90%] ${
+                            m.sender === 'member'
+                              ? 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                              : 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                          }`}>{m.text}</div>
+                          <span className="text-[10px] text-gray-300 dark:text-gray-600">
+                            {new Date(m.time).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB')}
+                          </span>
+                        </div>
+                      ))
+                    })()}
+
+                    {/* Attachments */}
+                    {memberAtts.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {memberAtts.map(a => <FileChip key={a.id} att={a}/>)}
                       </div>
-                    ) : (
+                    )}
+                    {adminAtts.length > 0 && (
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {adminAtts.map(a => <FileChip key={a.id} att={a}/>)}
+                      </div>
+                    )}
+
+                    {/* No messages yet — awaiting */}
+                    {!ticket.reply && (ticket.ticket_messages || []).length === 0 && (
                       <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-xl px-3.5 py-2.5">
                         <Clock size={12}/>
                         {t('Awaiting support reply…', 'في انتظار رد فريق الدعم…')}
                       </div>
                     )}
 
+                    {/* Member reply box — hidden only if closed */}
+                    {ticket.status !== 'closed' && (
+                      <div className="pt-1 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                        <div className="flex gap-2">
+                          <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
+                            placeholder={t('Write a follow-up message…', 'اكتب رسالة متابعة…')}
+                            rows={2} className={inp + ' resize-none flex-1 py-2.5 text-xs'}/>
+                          <button onClick={() => sendMemberReply(ticket.id)} disabled={replySending || !replyText.trim()}
+                            className="px-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-xs font-bold transition-colors flex-shrink-0">
+                            {replySending ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : t('Send', 'إرسال')}
+                          </button>
+                        </div>
+                        {/* Attach for reply */}
+                        <input ref={replyFileRef} type="file" multiple accept="image/*,.pdf,.txt" className="hidden"
+                          onChange={e => setReplyFiles(Array.from(e.target.files || []))}/>
+                        <button type="button" onClick={() => replyFileRef.current?.click()}
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                          <Paperclip size={12}/>{t('Attach', 'إرفاق ملف')}
+                          {replyFiles.length > 0 && <span className="text-red-500 font-semibold">{replyFiles.length} {t('file(s)', 'ملف')}</span>}
+                        </button>
+                        {replyFiles.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {replyFiles.map((f, i) => (
+                              <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs text-gray-500">
+                                {f.name}<button onClick={() => setReplyFiles(p => p.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500"><X size={9}/></button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {ticket.status === 'closed' && (
+                      <p className="text-[11px] text-gray-400 text-center pt-1">{t('This ticket is closed.', 'هذه التذكرة مغلقة.')}</p>
+                    )}
+
                     {/* Meta */}
-                    <div className="flex items-center justify-between text-xs text-gray-400">
+                    <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
                       <span className={`px-2 py-0.5 rounded-full font-semibold ${ticket.priority === 'urgent' ? 'bg-red-50 text-red-500' : ticket.priority === 'high' ? 'bg-orange-50 text-orange-500' : 'bg-gray-100 text-gray-500'}`}>
                         {ticket.priority === 'urgent' ? t('Urgent', 'عاجل') : ticket.priority === 'high' ? t('High', 'عالي') : t('Normal', 'عادي')}
                       </span>

@@ -55,11 +55,16 @@ export async function POST(req: NextRequest) {
 
     // Notify member: subscription activated
     const { data: tool } = await service.from('shop_tools').select('name').eq('id', tool_id).single()
+    const toolName   = tool?.name || 'الأداة'
+    const expiryAr   = expires.toLocaleDateString('ar-EG')
+    const expiryEn   = expires.toLocaleDateString('en-GB')
     service.from('member_notifications').insert({
       member_id,
-      title:   `تم تفعيل اشتراكك ✅`,
-      message: `اشتراكك في ${tool?.name || 'الأداة'} فعال حتى ${expires.toLocaleDateString('ar-EG')}.`,
-      type:    'success',
+      title:       `تم تفعيل اشتراكك ✅`,
+      title_en:    `Subscription activated ✅`,
+      message:     `اشتراكك في ${toolName} فعال حتى ${expiryAr}.`,
+      message_en:  `Your ${toolName} subscription is active until ${expiryEn}.`,
+      type:        'success',
     }).then(() => {})
 
     return NextResponse.json({ ok: true, payment_id: pay.id })
