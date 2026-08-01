@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, X, Check, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, X, Check, AlertCircle, Pencil } from 'lucide-react'
 
 interface Tool { id: string; name: string; image_url: string | null }
 interface Usage { id: string; member_id: string; tool_id: string | null; used_at: string; members: { full_name: string; email: string } | null }
@@ -30,6 +30,7 @@ export default function CouponsPage() {
   const [form,      setForm]      = useState({ ...EMPTY_FORM })
   const [saving,    setSaving]    = useState(false)
   const [expanded,  setExpanded]  = useState<string | null>(null)
+  const [editId,    setEditId]    = useState<string | null>(null)
   const [formError, setFormError] = useState('')
   const [toast,     setToast]     = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
 
@@ -53,14 +54,33 @@ export default function CouponsPage() {
   const toggleTool = (id: string) =>
     setForm(f => ({ ...f, tool_ids: f.tool_ids.includes(id) ? f.tool_ids.filter(x => x !== id) : [...f.tool_ids, id] }))
 
+  const openEdit = (c: Coupon) => {
+    setEditId(c.id)
+    setForm({
+      code:        c.code,
+      description: c.description || '',
+      type:        c.type,
+      value:       String(c.value),
+      max_uses:    String(c.max_uses),
+      expires_at:  c.expires_at ? c.expires_at.slice(0, 10) : '',
+      tool_ids:    c.tool_ids || [],
+      is_active:   c.is_active,
+    })
+    setFormError('')
+    setShowForm(true)
+  }
+
   const save = async () => {
     setFormError(''); setSaving(true)
-    const res  = await fetch('/api/coupons', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-    const data = await res.json()
+    const isEdit = !!editId
+    const url    = isEdit ? `/api/coupons/${editId}` : '/api/coupons'
+    const method = isEdit ? 'PATCH' : 'POST'
+    const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    const data   = await res.json()
     setSaving(false)
     if (!res.ok) { setFormError(data.error || 'Error'); return }
-    setShowForm(false); setForm({ ...EMPTY_FORM })
-    setToast({ msg: `Coupon "${data.coupon?.code}" created`, type: 'ok' })
+    setShowForm(false); setForm({ ...EMPTY_FORM }); setEditId(null)
+    setToast({ msg: isEdit ? `Coupon "${form.code}" updated` : `Coupon "${data.coupon?.code}" created`, type: 'ok' })
     load()
   }
 
@@ -89,7 +109,7 @@ export default function CouponsPage() {
           {/* Header row */}
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-gray-500 dark:text-gray-400">{coupons.length} coupon{coupons.length !== 1 ? 's' : ''}</p>
-            <button onClick={() => { setShowForm(true); setForm({ ...EMPTY_FORM }); setFormError('') }}
+            <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM }); setFormError('') }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
               <Plus size={16}/> New Coupon
             </button>
@@ -99,8 +119,8 @@ export default function CouponsPage() {
           {showForm && (
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-sm">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-bold text-gray-900 dark:text-white">New Coupon</h2>
-                <button onClick={() => setShowForm(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">{editId ? `Edit Coupon — ${form.code}` : 'New Coupon'}</h2>
+                <button onClick={() => { setShowForm(false); setEditId(null) }} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   <X size={14}/>
                 </button>
               </div>
@@ -178,7 +198,7 @@ export default function CouponsPage() {
                 <button onClick={() => setShowForm(false)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
                 <button onClick={save} disabled={saving || !form.code || !form.value}
                   className="flex-[2] py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-bold transition-colors">
-                  {saving ? 'Saving...' : 'Create Coupon'}
+                  {saving ? 'Saving...' : editId ? 'Save Changes' : 'Create Coupon'}
                 </button>
               </div>
             </div>
@@ -229,6 +249,10 @@ export default function CouponsPage() {
                           {c.is_active
                             ? <ToggleRight size={22} className="text-emerald-500 hover:opacity-80 transition-opacity"/>
                             : <ToggleLeft  size={22} className="text-gray-400 hover:text-gray-600 transition-colors"/>}
+                        </button>
+                        <button onClick={() => openEdit(c)} title="Edit"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                          <Pencil size={15}/>
                         </button>
                         <button onClick={() => del(c.id)}
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
