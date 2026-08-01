@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Key, Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { useUISettings } from '@/lib/use-ui-settings'
+import { getFingerprint } from '@/lib/use-fingerprint'
 
 export default function UserLoginPage() {
   const router = useRouter()
@@ -16,9 +17,10 @@ export default function UserLoginPage() {
   const login = async () => {
     if (!email || !password) { setError('Please fill in all fields'); return }
     setLoading(true); setError('')
+    const fp   = await getFingerprint()
     const res  = await fetch('/api/member/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, device_fingerprint: fp })
     })
     const data = await res.json()
     setLoading(false)
@@ -27,6 +29,7 @@ export default function UserLoginPage() {
         invalid_credentials:  'Incorrect email or password.',
         subscription_expired: 'Your subscription has expired. Contact support.',
         member_inactive:      'Your account is suspended. Contact support.',
+        too_many_attempts:    `Too many attempts. Try again in ${data.retryAfter ?? 60}s.`,
       }
       setError(msgs[data.error] || 'Login failed. Try again.')
       return
