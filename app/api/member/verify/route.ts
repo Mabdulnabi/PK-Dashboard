@@ -20,7 +20,15 @@ export async function GET(req: NextRequest) {
   )
   const { data } = await supabase.rpc('verify_member_session', { p_token: token })
   if (!data?.valid) return NextResponse.json({ valid: false }, { status: 401 })
-  return NextResponse.json(data)
+
+  // Enrich with member_code
+  const { data: member } = await service
+    .from('members')
+    .select('member_code, avatar_url')
+    .eq('id', data.member_id)
+    .single()
+
+  return NextResponse.json({ ...data, member_code: member?.member_code ?? null, avatar_url: member?.avatar_url ?? null })
 }
 
 export async function DELETE() {

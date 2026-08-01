@@ -37,11 +37,12 @@ const nav = [
     { label: 'Payments',    href: '/payment-gateways', icon: Gauge },
   ]},
   { section: 'System', items: [
-    { label: 'Alerts',       href: '/alerts',       icon: Bell },
-    { label: 'Site Settings',href: '/site-settings',icon: Globe },
-    { label: 'Import',       href: '/import',       icon: Upload },
-    { label: 'Settings',     href: '/settings',     icon: Settings },
-    { label: 'UI Settings',  href: '/ui-settings',  icon: SlidersHorizontal },
+    { label: 'Alerts',       href: '/alerts',        icon: Bell },
+    { label: 'Site Settings',href: '/site-settings', icon: Globe },
+    { label: 'Import',       href: '/import',        icon: Upload },
+    { label: 'Settings',     href: '/settings',      icon: Settings },
+    { label: 'UI Settings',  href: '/ui-settings',   icon: SlidersHorizontal },
+    { label: 'My Profile',   href: '/admin-profile', icon: UserCircle },
   ]},
 ]
 

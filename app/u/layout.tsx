@@ -9,7 +9,7 @@ import {
   Key, LogOut, Bell, Sun, Moon, ChevronDown, Globe, DollarSign, X, Menu
 } from 'lucide-react'
 
-interface Member { full_name:string; email:string; plan_slug:string; expires_at:string }
+interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
 
 const nav = [
   { en:'Dashboard',       ar:'الرئيسية',    href:'/u/dashboard', icon:LayoutDashboard },
@@ -157,11 +157,18 @@ if (pathname==='/u/login') return <>{children}</>
       <div className="border-t border-gray-100 dark:border-gray-800 p-3">
         <button onClick={()=>setProfile(o=>!o)}
           className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-            {member?.full_name?.slice(0,1).toUpperCase()}
+          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
+            {member?.avatar_url
+              ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
+              : member?.full_name?.slice(0,1).toUpperCase()}
           </div>
           <div className="flex-1 text-left min-w-0">
-            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{member?.full_name}</div>
+            <div className="flex items-center gap-1.5">
+              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{member?.full_name}</div>
+              {member?.member_code && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">{member.member_code}</span>
+              )}
+            </div>
             <div className="text-[11px] font-semibold capitalize" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
               {member?.plan_slug} {isRtl?'باقة':'plan'}
             </div>
@@ -291,11 +298,18 @@ if (pathname==='/u/login') return <>{children}</>
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-start p-4" onClick={()=>setProfile(false)}>
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-72 overflow-hidden" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
-              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                {member?.full_name?.slice(0,1).toUpperCase()}
+              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                {member?.avatar_url
+                  ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
+                  : member?.full_name?.slice(0,1).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{member?.full_name}</div>
+                <div className="flex items-center gap-1.5">
+                  <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{member?.full_name}</div>
+                  {member?.member_code && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0">{member.member_code}</span>
+                  )}
+                </div>
                 <div className="text-[11px] text-gray-400 truncate">{member?.email}</div>
                 <div className="text-[11px] font-semibold capitalize mt-0.5" style={{color:PLAN_COLOR[member?.plan_slug||'basic']}}>
                   {member?.plan_slug} · exp {member?.expires_at?new Date(member.expires_at).toLocaleDateString('en-GB'):'—'}

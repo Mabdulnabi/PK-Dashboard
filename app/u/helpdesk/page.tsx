@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 
 type Attachment = { id: string; file_path: string; file_name: string; file_size: number; file_type: string; uploaded_by: string }
-type TMsg      = { id: string; sender_type: 'member' | 'admin'; message: string; created_at: string }
+type TMsg      = { id: string; sender_type: 'member' | 'admin'; message: string; sender_name?: string; sender_avatar?: string; created_at: string }
 type Ticket = {
   id: string; subject: string; message: string; status: string; priority: string
   category: string; reply?: string; replied_at?: string; created_at: string
@@ -215,27 +215,37 @@ export default function HelpdeskPage() {
                     {/* Build chronological message list:
                         Start with original message, then ticket_messages in order */}
                     {(() => {
-                      const msgs: { sender: 'member' | 'admin'; text: string; time: string; id: string }[] = [
+                      const msgs: { sender: 'member' | 'admin'; text: string; time: string; id: string; name?: string; avatar?: string }[] = [
                         { sender: 'member', text: ticket.message, time: ticket.created_at, id: 'orig' },
                         ...((ticket.ticket_messages || [])
                           .slice()
                           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                          .map(m => ({ sender: m.sender_type, text: m.message, time: m.created_at, id: m.id }))
+                          .map(m => ({ sender: m.sender_type, text: m.message, time: m.created_at, id: m.id, name: m.sender_name, avatar: m.sender_avatar }))
                         ),
                       ]
                       return msgs.map(m => (
-                        <div key={m.id} className={`flex flex-col gap-0.5 ${m.sender === 'member' ? '' : 'items-end'}`}>
-                          <span className={`text-[10px] font-semibold uppercase ${m.sender === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
-                            {m.sender === 'member' ? t('You', 'أنت') : t('Support', 'الدعم')}
-                          </span>
-                          <div className={`rounded-xl p-3.5 text-xs whitespace-pre-wrap max-w-[90%] ${
-                            m.sender === 'member'
-                              ? 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                              : 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
-                          }`}>{m.text}</div>
-                          <span className="text-[10px] text-gray-300 dark:text-gray-600">
-                            {new Date(m.time).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB')}
-                          </span>
+                        <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                          {/* Avatar */}
+                          {m.sender === 'admin' && (
+                            m.avatar
+                              ? <img src={m.avatar} className="w-6 h-6 rounded-full object-cover flex-shrink-0" alt=""/>
+                              : <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
+                                  {(m.name || 'S').charAt(0).toUpperCase()}
+                                </div>
+                          )}
+                          <div className={`flex flex-col gap-0.5 max-w-[85%] ${m.sender === 'admin' ? 'items-end' : ''}`}>
+                            <span className={`text-[10px] font-semibold ${m.sender === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
+                              {m.sender === 'member' ? t('You', 'أنت') : (m.name || t('Support', 'الدعم'))}
+                            </span>
+                            <div className={`rounded-xl p-3.5 text-xs whitespace-pre-wrap ${
+                              m.sender === 'member'
+                                ? 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                : 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                            }`}>{m.text}</div>
+                            <span className="text-[10px] text-gray-300 dark:text-gray-600">
+                              {new Date(m.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                            </span>
+                          </div>
                         </div>
                       ))
                     })()}

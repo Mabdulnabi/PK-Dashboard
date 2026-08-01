@@ -21,7 +21,7 @@ export async function GET() {
 
   const { data } = await service
     .from('support_tickets')
-    .select('*, ticket_attachments(*), ticket_messages(id, sender_type, message, created_at)')
+    .select('*, ticket_attachments(*), ticket_messages(id, sender_type, message, sender_name, sender_avatar, created_at)')
     .eq('member_id', session.member_id)
     .order('created_at', { ascending: false })
 

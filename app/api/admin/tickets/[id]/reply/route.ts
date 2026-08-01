@@ -7,7 +7,7 @@ const service = createClient(
 )
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { reply, status = 'resolved', admin_id } = await req.json()
+  const { reply, status = 'in_progress', admin_id } = await req.json()
   if (!reply?.trim()) return NextResponse.json({ error: 'reply required' }, { status: 400 })
 
   const { data: ticket } = await service
@@ -18,6 +18,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (!ticket) return NextResponse.json({ error: 'ticket not found' }, { status: 404 })
 
+  // Fetch admin profile for display name
+  let adminName   = 'Support Team'
+  let adminAvatar: string | null = null
+  if (admin_id) {
+    const { data: profile } = await service
+      .from('admin_profiles')
+      .select('display_name, avatar_url')
+      .eq('id', admin_id)
+      .single()
+    if (profile) {
+      adminName   = profile.display_name || 'Support Team'
+      adminAvatar = profile.avatar_url   || null
+    }
+  }
+
   const { error } = await service.from('support_tickets').update({
     reply,
     status,
@@ -27,18 +42,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Insert into conversation thread
+  // Insert into conversation thread with admin identity
   service.from('ticket_messages').insert({
-    ticket_id:   params.id,
-    sender_type: 'admin',
-    message:     reply,
+    ticket_id:     params.id,
+    sender_type:   'admin',
+    message:       reply,
+    sender_name:   adminName,
+    sender_avatar: adminAvatar,
   }).then(() => {})
 
   // Notify member (bilingual)
   service.from('member_notifications').insert({
     member_id:   ticket.member_id,
-    title:       'رد جديد على تذكرتك 💬',
-    title_en:    'New reply on your ticket 💬',
+    title:       `رد من ${adminName} على تذكرتك 💬`,
+    title_en:    `Reply from ${adminName} on your ticket 💬`,
     message:     `تم الرد على تذكرتك "${ticket.subject}". افتح Help Desk لعرض الرد.`,
     message_en:  `Your ticket "${ticket.subject}" has a new reply. Open Help Desk to view it.`,
     type:        'info',
