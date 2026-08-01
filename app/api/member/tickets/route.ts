@@ -21,7 +21,7 @@ export async function GET() {
 
   const { data } = await service
     .from('support_tickets')
-    .select('*')
+    .select('*, ticket_attachments(*)')
     .eq('member_id', session.member_id)
     .order('created_at', { ascending: false })
 
@@ -32,16 +32,18 @@ export async function POST(req: NextRequest) {
   const session = await getMemberSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { subject, message, priority } = await req.json()
+  const { subject, message, priority, category } = await req.json()
   if (!subject || !message) return NextResponse.json({ error: 'missing fields' }, { status: 400 })
 
-  const { error } = await service.from('support_tickets').insert({
+  const { data: ticket, error } = await service.from('support_tickets').insert({
     member_id: session.member_id,
     subject,
     message,
-    priority: priority || 'normal',
-    status:   'open',
-  })
+    priority:  priority || 'normal',
+    category:  category || 'general',
+    status:    'open',
+  }).select('id').single()
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Notify member: ticket received confirmation
@@ -52,5 +54,5 @@ export async function POST(req: NextRequest) {
     type:      'info',
   }).then(() => {})
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, ticket_id: ticket?.id })
 }
