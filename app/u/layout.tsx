@@ -265,7 +265,7 @@ if (pathname==='/u/login') return <>{children}</>
                             <div key={i} className={`px-4 py-3 ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''}`}>
                               <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{displayTitle}</div>
                               <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{displayMessage}</div>
-                              <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleDateString(isRtl?'ar-EG':'en-GB')}</div>
+                              <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</div>
                             </div>
                           )
                         })
