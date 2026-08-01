@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useUISettings } from '@/lib/use-ui-settings'
+import { useAdminTheme } from '@/lib/admin-theme'
 
 const nav = [
   { section: 'Overview', items: [
@@ -48,9 +49,12 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
   const pathname = usePathname()
   const router   = useRouter()
   const ui       = useUISettings()
+  const { dark } = useAdminTheme()
   const signOut  = async () => { await supabase.auth.signOut(); router.push('/auth/login') }
 
-  const adminLogo = ui.admin_logo_dark_url || ''
+  const adminLogo = dark
+    ? (ui.admin_logo_dark_url  || ui.admin_logo_light_url || '')
+    : (ui.admin_logo_light_url || ui.admin_logo_dark_url  || '')
 
   return (
     <aside className="w-[210px] flex-shrink-0 flex flex-col h-screen sticky top-0 bg-white dark:bg-[#0D1117] border-r border-gray-200 dark:border-[#1a2233]">
