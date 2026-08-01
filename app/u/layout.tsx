@@ -164,21 +164,23 @@ if (pathname==='/u/login') return <>{children}</>
           const Icon   = item.icon
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
           if (item.sub) return (
-            <motion.div key={item.href}
-              initial={{opacity:0, x: isRtl ? 12 : -12}}
-              animate={{opacity:1, x:0}}
-              transition={{delay: idx * 0.05, duration:0.25, ease:[0.25,0.46,0.45,0.94]}}>
-              <button onClick={()=>!col && setShopOpen(!shopOpen)}
+            <div key={item.href}>
+              <motion.button
+                onClick={()=>!col && setShopOpen(!shopOpen)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
+                whileHover="hover"
                 className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: active ? item.color+'22' : item.color+'18'}}>
+                <motion.div
+                  variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
+                  transition={{type:'spring', stiffness:400, damping:15}}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: active ? item.color+'22' : item.color+'18'}}>
                   <Icon size={15} weight="duotone" style={{color: item.color}}/>
-                </div>
+                </motion.div>
                 {!col && <>
                   <span className="flex-1 text-start" style={{color: active ? item.color : undefined}}>{isRtl?item.ar:item.en}</span>
                   <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`} style={{color: item.color}}/>
                 </>}
-              </button>
+              </motion.button>
               <AnimatePresence initial={false}>
               {shopOpen && !col && (
                 <motion.div
@@ -188,20 +190,20 @@ if (pathname==='/u/login') return <>{children}</>
                   transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
                   style={{overflow:'hidden'}}
                   className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
-                  {item.sub.map((s:any, si:number)=>{
+                  {item.sub.map((s:any)=>{
                     const SubIcon = s.icon
                     const subActive = pathname===s.href
                     return (
-                      <motion.div key={s.href}
-                        initial={{opacity:0, x: isRtl ? 8 : -8}}
-                        animate={{opacity:1, x:0}}
-                        transition={{delay: si * 0.05, duration:0.18}}>
+                      <motion.div key={s.href} whileHover="hover">
                       <Link href={s.href}
                         className={`flex items-center gap-2 py-2 px-2 rounded-lg text-[13px] transition-colors ${subActive?'font-semibold':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                         style={subActive ? {color: s.color, background: s.color+'15'} : {}}>
-                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{background: s.color+'20'}}>
+                        <motion.div
+                          variants={{hover:{scale:1.2, rotate: isRtl ? -10 : 10}}}
+                          transition={{type:'spring', stiffness:450, damping:14}}
+                          className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{background: s.color+'20'}}>
                           <SubIcon size={12} weight="duotone" style={{color: s.color}}/>
-                        </div>
+                        </motion.div>
                         {isRtl?s.ar:s.en}
                       </Link>
                       </motion.div>
@@ -210,20 +212,20 @@ if (pathname==='/u/login') return <>{children}</>
                 </motion.div>
               )}
               </AnimatePresence>
-            </motion.div>
+            </div>
           )
           return (
-            <motion.div key={item.href}
-              initial={{opacity:0, x: isRtl ? 12 : -12}}
-              animate={{opacity:1, x:0}}
-              transition={{delay: idx * 0.05, duration:0.25, ease:[0.25,0.46,0.45,0.94]}}>
+            <motion.div key={item.href} whileHover="hover">
             <Link href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
               className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               style={active ? {background: item.color+'15'} : {}}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: item.color + (active?'25':'18')}}>
+              <motion.div
+                variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
+                transition={{type:'spring', stiffness:400, damping:15}}
+                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: item.color + (active?'25':'18')}}>
                 <Icon size={15} weight="duotone" style={{color: item.color}}/>
-              </div>
+              </motion.div>
               {!col && <span style={active ? {color: item.color, fontWeight:600} : {}}>{isRtl?item.ar:item.en}</span>}
             </Link>
             </motion.div>
