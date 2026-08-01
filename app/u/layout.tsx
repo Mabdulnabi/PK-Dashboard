@@ -127,6 +127,7 @@ if (pathname==='/u/login') return <>{children}</>
 
   const SidebarContent = ({ forMobile = false }: { forMobile?: boolean }) => {
     const col = !forMobile && collapsed
+    const pillId = forMobile ? 'nav-pill-mobile' : 'nav-pill-desktop'
     return (
     <>
       {/* Logo — hidden when collapsed */}
@@ -170,7 +171,7 @@ if (pathname==='/u/login') return <>{children}</>
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
                 whileHover="hover"
                 className={`w-full relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
+                {active && <motion.div layoutId={pillId} className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
                 <motion.div
                   variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                   transition={{type:'spring', stiffness:400, damping:15}}
@@ -220,7 +221,7 @@ if (pathname==='/u/login') return <>{children}</>
             <Link href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
               className={`relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-              {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
+              {active && <motion.div layoutId={pillId} className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                 transition={{type:'spring', stiffness:400, damping:15}}
@@ -384,14 +385,14 @@ if (pathname==='/u/login') return <>{children}</>
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto relative">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={pathname}
-              initial={{opacity:0, y:10}}
+              initial={{opacity:0, y:16}}
               animate={{opacity:1, y:0}}
-              exit={{opacity:0, y:-6}}
-              transition={{duration:0.18, ease:[0.25,0.46,0.45,0.94]}}
-              className="h-full">
+              exit={{opacity:0, y:-10}}
+              transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
+              style={{position:'absolute', inset:0, overflowY:'auto'}}>
               {children}
             </motion.div>
           </AnimatePresence>
