@@ -189,22 +189,34 @@ function QuickStats({ purchases, t, lang, currency, formatPrice, usdRate }: {
     },
   ]
 
+  const savingsHint = monthlySavings > 0
+    ? (lang === 'ar' ? 'vs. السعر الرسمي للأدوات' : 'vs. official retail price')
+    : null
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-      {cards.map(({ label, value, sub, Icon, accent }, i) => (
-        <div key={i} className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm">
-          <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${accent}, transparent 65%)` }}/>
-          <div className="absolute top-0 left-0 right-0 h-[2px] opacity-60" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}/>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{label}</span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: accent + '20' }}>
-              <Icon size={15} style={{ color: accent }}/>
+      {cards.map(({ label, value, sub, Icon, accent }, i) => {
+        const isSavings = i === 3
+        return (
+          <div key={i} className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm">
+            <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${accent}, transparent 65%)` }}/>
+            <div className="absolute top-0 left-0 right-0 h-[2px] opacity-60" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}/>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{label}</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: accent + '20' }}>
+                <Icon size={15} style={{ color: accent }}/>
+              </div>
             </div>
+            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
+            <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>
+            {isSavings && savingsHint && (
+              <div className="text-[10px] font-medium px-2 py-1 rounded-lg w-fit" style={{ background: accent + '15', color: accent }}>
+                ✦ {savingsHint}
+              </div>
+            )}
           </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
-          <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
