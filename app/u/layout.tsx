@@ -169,7 +169,8 @@ if (pathname==='/u/login') return <>{children}</>
                 onClick={()=>!col && setShopOpen(!shopOpen)}
                 title={col ? (isRtl ? item.ar : item.en) : undefined}
                 whileHover="hover"
-                className={`w-full flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'bg-[#d9940115]':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                className={`w-full relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
                 <motion.div
                   variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                   transition={{type:'spring', stiffness:400, damping:15}}
@@ -218,8 +219,8 @@ if (pathname==='/u/login') return <>{children}</>
             <motion.div key={item.href} whileHover="hover">
             <Link href={item.href}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-              style={active ? {background: item.color+'15'} : {}}>
+              className={`relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:380,damping:30}}/>}
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                 transition={{type:'spring', stiffness:400, damping:15}}
@@ -383,7 +384,18 @@ if (pathname==='/u/login') return <>{children}</>
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={pathname}
+              initial={{opacity:0, y:10}}
+              animate={{opacity:1, y:0}}
+              exit={{opacity:0, y:-6}}
+              transition={{duration:0.18, ease:[0.25,0.46,0.45,0.94]}}
+              className="h-full">
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
 
       {/* ── Profile popup ──────────────────────────── */}
