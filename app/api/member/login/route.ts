@@ -32,21 +32,45 @@ export async function POST(req: NextRequest) {
   const { email, password, device_fingerprint } = body
   if (!email || !password) return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
 
+  // Authenticate first
   const { data, error } = await supabase.rpc('member_login', {
     p_email: email.toLowerCase().trim(), p_password: password, p_ip: ip, p_ua: ua,
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!data.success) return NextResponse.json({ error: data.error }, { status: 401 })
 
-  // Persist fingerprint on member record (fire-and-forget)
+  // Device fingerprint enforcement: reject if a different device is already registered
   if (device_fingerprint && data.member_id) {
+    const { data: memberRow } = await service
+      .from('members')
+      .select('device_fingerprint')
+      .eq('id', data.member_id)
+      .single()
+
+    const storedFp = memberRow?.device_fingerprint
+
+    if (storedFp && storedFp !== device_fingerprint) {
+      // Different device — reject
+      service.from('server_usage_logs').insert({
+        member_id:          data.member_id,
+        action:             'connect',
+        ip_address:         ip,
+        user_agent:         ua,
+        device_fingerprint: device_fingerprint,
+        meta:               { event: 'login_blocked_device_mismatch', email: email.toLowerCase().trim() },
+      }).then(() => {})
+
+      return NextResponse.json({ error: 'device_locked' }, { status: 403 })
+    }
+
+    // Same device or first login — store/refresh fingerprint
     service.from('members')
       .update({ device_fingerprint })
       .eq('id', data.member_id)
       .then(() => {})
   }
 
-  // Audit: login event
+  // Audit: successful login
   service.from('server_usage_logs').insert({
     member_id:          data.member_id ?? null,
     action:             'connect',

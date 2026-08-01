@@ -30,6 +30,7 @@ export default function UserLoginPage() {
         subscription_expired: 'Your subscription has expired. Contact support.',
         member_inactive:      'Your account is suspended. Contact support.',
         too_many_attempts:    `Too many attempts. Try again in ${data.retryAfter ?? 60}s.`,
+        device_locked:        'This account is logged in on another device. Please logout from that device first.',
       }
       setError(msgs[data.error] || 'Login failed. Try again.')
       return
