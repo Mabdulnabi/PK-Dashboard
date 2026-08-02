@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { title, description, start_at, end_at, all_day, color, remind_at, board_id } = await req.json()
+  const { title, description, start_at, end_at, all_day, color, remind_at, board_id, recurrence } = await req.json()
 
   if (!title?.trim()) return NextResponse.json({ error: 'title required' }, { status: 400 })
   if (!start_at)      return NextResponse.json({ error: 'start_at required' }, { status: 400 })
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       all_day:     all_day || false,
       color:       color || '#06b6d4',
       remind_at:   remind_at || null,
+      recurrence:  recurrence || 'none',
     })
     .select()
     .single()
@@ -90,7 +91,7 @@ export async function PATCH(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { id, title, description, start_at, end_at, all_day, color, remind_at } = await req.json()
+  const { id, title, description, start_at, end_at, all_day, color, remind_at, recurrence } = await req.json()
   const updates: any = {}
   if (title       !== undefined) updates.title       = title
   if (description !== undefined) updates.description = description
@@ -99,6 +100,7 @@ export async function PATCH(req: NextRequest) {
   if (all_day     !== undefined) updates.all_day     = all_day
   if (color       !== undefined) updates.color       = color
   if (remind_at   !== undefined) updates.remind_at   = remind_at
+  if (recurrence  !== undefined) updates.recurrence  = recurrence
 
   const { error } = await service
     .from('focus_calendar')

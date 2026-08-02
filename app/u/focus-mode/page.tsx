@@ -5,8 +5,15 @@ import {
   Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight,
   ArrowLeft, FileText, BookOpen, X, Calendar, AlarmClock, ChevronDown, ChevronLeft, ChevronRight,
   Highlighter, Palette, Bookmark, FolderPlus, Folder, Edit3, Calculator,
-  Users, UserPlus, Share2, Lock, Globe, Mail,
+  Users, UserPlus, Share2, Lock, Globe, Mail, GripVertical, RefreshCw,
 } from 'lucide-react'
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 // Convert a datetime-local string (local time) to UTC ISO string
@@ -158,11 +165,19 @@ function PomodoroStrip() {
   const beep = useCallback(() => {
     try {
       if (!actxRef.current) actxRef.current = new AudioContext()
-      const ctx=actxRef.current; const osc=ctx.createOscillator(); const g=ctx.createGain()
-      osc.connect(g); g.connect(ctx.destination)
-      osc.frequency.value=880; g.gain.setValueAtTime(0.3,ctx.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8)
-      osc.start(); osc.stop(ctx.currentTime+0.8)
+      const ctx = actxRef.current; const t = ctx.currentTime
+      // Premium 3-note chime: C5 → E5 → G5
+      const notes = [523.25, 659.25, 783.99]
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const g = ctx.createGain()
+        osc.connect(g); g.connect(ctx.destination)
+        osc.type = 'sine'; osc.frequency.value = freq
+        const start = t + i * 0.18
+        g.gain.setValueAtTime(0, start)
+        g.gain.linearRampToValueAtTime(0.28, start + 0.04)
+        g.gain.exponentialRampToValueAtTime(0.001, start + 0.9)
+        osc.start(start); osc.stop(start + 0.9)
+      })
     } catch {}
   }, [])
 
@@ -191,52 +206,67 @@ function PomodoroStrip() {
     <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-900"
       style={{border:`1px solid ${m.color}28`,boxShadow:`0 4px 24px ${m.color}18,0 1px 3px rgba(0,0,0,0.06)`}}>
       <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{background:`linear-gradient(90deg,transparent,${m.color},transparent)`}}/>
-      <div className="relative flex items-center gap-4 px-5 py-4">
+      <div className="relative flex items-start gap-5 px-5 py-5">
         {/* Ring */}
-        <div className="relative flex-shrink-0" style={{width:164,height:164}}>
+        <div className="relative flex-shrink-0" style={{width:168,height:168}}>
           <div className="absolute rounded-full opacity-15 blur-2xl pointer-events-none" style={{inset:'-8px',background:m.color}}/>
-          <svg width={164} height={164} viewBox="0 0 164 164">
-            <circle cx={82} cy={82} r={r} fill="none" strokeWidth={8} stroke={`${m.color}18`}/>
+          <svg width={168} height={168} viewBox="0 0 168 168">
+            <circle cx={84} cy={84} r={r} fill="none" strokeWidth={8} stroke={`${m.color}18`}/>
             {Array.from({length:60}).map((_,i)=>{
               const angle=(i/60)*Math.PI*2-Math.PI/2; const isMajor=i%5===0
               const inner=r+4; const outer=r+(isMajor?11:7)
-              return <line key={i} x1={82+inner*Math.cos(angle)} y1={82+inner*Math.sin(angle)} x2={82+outer*Math.cos(angle)} y2={82+outer*Math.sin(angle)} strokeWidth={isMajor?2:1} strokeLinecap="round" stroke={isMajor?m.color+'99':m.color+'33'}/>
+              return <line key={i} x1={84+inner*Math.cos(angle)} y1={84+inner*Math.sin(angle)} x2={84+outer*Math.cos(angle)} y2={84+outer*Math.sin(angle)} strokeWidth={isMajor?2:1} strokeLinecap="round" stroke={isMajor?m.color+'99':m.color+'33'}/>
             })}
-            <circle cx={82} cy={82} r={r} fill="none" strokeWidth={8} stroke={m.color}
+            <circle cx={84} cy={84} r={r} fill="none" strokeWidth={8} stroke={m.color}
               strokeDasharray={circ} strokeDashoffset={circ*(1-progress)} strokeLinecap="round"
-              transform="rotate(-90 82 82)"
+              transform="rotate(-90 84 84)"
               style={{transition:running?'stroke-dashoffset 1s linear':'stroke-dashoffset 0.4s ease',filter:`drop-shadow(0 0 6px ${m.color}88)`}}/>
-            {progress>0.01&&dotAngle(progress,r,82,m.color)}
+            {progress>0.01&&dotAngle(progress,r,84,m.color)}
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
-            <span className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white leading-none" style={{fontVariantNumeric:'tabular-nums'}}>{mm}:{ss}</span>
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] px-2 py-0.5 rounded-full" style={{color:m.color,background:`${m.color}16`}}>{m.label}</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 pointer-events-none">
+            <span className="text-[34px] font-black tracking-tight text-gray-900 dark:text-white leading-none" style={{fontVariantNumeric:'tabular-nums'}}>{mm}:{ss}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] px-2.5 py-1 rounded-full" style={{color:m.color,background:`${m.color}18`}}>{m.label}</span>
           </div>
         </div>
         {/* Right panel */}
-        <div className="flex-1 flex flex-col gap-3 min-w-0">
-          <div className="flex gap-1 p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-xl self-start">
+        <div className="flex-1 flex flex-col gap-4 min-w-0 pt-1">
+          {/* Mode tabs — full width */}
+          <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-full">
             {(Object.keys(MODES) as PMode[]).map(k=>(
-              <button key={k} onClick={()=>switchMode(k)} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${mode===k?'text-white shadow-md':'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
-                style={mode===k?{background:MODES[k].color,boxShadow:`0 2px 10px ${MODES[k].color}55`}:{}}>{MODES[k].label}</button>
+              <button key={k} onClick={()=>switchMode(k)}
+                className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all truncate ${mode===k?'text-white shadow-md':'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                style={mode===k?{background:MODES[k].color,boxShadow:`0 2px 10px ${MODES[k].color}55`}:{}}>
+                {k==='work'?'Focus':k==='short'?'Short':' Long '}
+              </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={reset} className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><RotateCcw size={14}/></button>
-            <button onClick={()=>setRunning(r=>!r)} className="w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all active:scale-95 hover:scale-105"
-              style={{background:`linear-gradient(135deg,${m.color},${m.color}cc)`,boxShadow:`0 8px 24px ${m.color}55`}}>
-              {running?<Pause size={22} fill="white"/>:<Play size={22} fill="white"/>}
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            <button onClick={reset}
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+              <RotateCcw size={15}/>
             </button>
-            <button onClick={()=>{setDraft({...cfg});setShowCfg(true)}} className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><Settings size={14}/></button>
+            <button onClick={()=>setRunning(rv=>!rv)}
+              className="flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 text-white font-bold text-sm transition-all active:scale-95 hover:opacity-90"
+              style={{background:`linear-gradient(135deg,${m.color},${m.color}bb)`,boxShadow:`0 6px 20px ${m.color}44`}}>
+              {running?<><Pause size={18} fill="white"/> Pause</>:<><Play size={18} fill="white"/> Start</>}
+            </button>
+            <button onClick={()=>{setDraft({...cfg});setShowCfg(true)}}
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+              <Settings size={15}/>
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5">
+          {/* Session dots */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex gap-1.5 items-center">
               {Array.from({length:cfg.sessionsBeforeLong}).map((_,i)=>(
-                <div key={i} className="w-2 h-2 rounded-full transition-all duration-500"
-                  style={{background:i<sessions%cfg.sessionsBeforeLong?m.color:'rgba(0,0,0,0.12)',boxShadow:i<sessions%cfg.sessionsBeforeLong?`0 0 8px ${m.color}99`:'none',transform:i<sessions%cfg.sessionsBeforeLong?'scale(1.2)':'scale(1)'}}/>
+                <div key={i} className="w-2.5 h-2.5 rounded-full transition-all duration-500"
+                  style={{background:i<sessions%cfg.sessionsBeforeLong?m.color:'rgba(0,0,0,0.1)',
+                          boxShadow:i<sessions%cfg.sessionsBeforeLong?`0 0 8px ${m.color}99`:'none',
+                          transform:i<sessions%cfg.sessionsBeforeLong?'scale(1.15)':'scale(1)'}}/>
               ))}
             </div>
-            <span className="text-[11px] text-gray-400 font-medium">{sessions} session{sessions!==1?'s':''} today</span>
+            <span className="text-xs text-gray-400 font-medium">{sessions} session{sessions!==1?'s':''} today</span>
           </div>
         </div>
       </div>
@@ -352,23 +382,38 @@ function BookmarksPanel({ boardId, memberId }: { boardId:string|null; memberId:s
         ):(
           <div className="grid gap-1.5" style={{gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))'}}>
             {displayed.map(item=>(
-              <div key={item.id}
-                onContextMenu={e=>{e.preventDefault();e.stopPropagation();setCtxMenu({x:e.clientX,y:e.clientY,item})}}
-                onClick={()=>{ if(item.type==='folder'){setOpenFolder(item);setView('folder')} else window.open(item.url!,'_blank','noopener') }}
-                className="cursor-pointer rounded-xl p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 active:scale-95 transition-all flex flex-col items-center gap-1 select-none">
-                <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 flex items-center justify-center overflow-hidden">
-                  {item.type==='folder'?(
-                    <div className="w-full h-full grid grid-cols-2 gap-0.5 p-1.5">
-                      {items.filter(x=>x.folder_id===item.id).slice(0,4).map((b,i)=>(
-                        <img key={i} src={faviconUrl(b.url||'')} alt="" className="w-full h-full object-contain rounded-sm" onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
-                      ))}
-                      {items.filter(x=>x.folder_id===item.id).length===0&&<div className="col-span-2 row-span-2 flex items-center justify-center"><Folder size={18} className="text-gray-400"/></div>}
-                    </div>
-                  ):(
-                    <img src={faviconUrl(item.url||'')} alt={item.name} className="w-8 h-8 object-contain" onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
-                  )}
+              <div key={item.id} className="relative group select-none">
+                <div
+                  onContextMenu={e=>{e.preventDefault();e.stopPropagation();setCtxMenu({x:e.clientX,y:e.clientY,item})}}
+                  onClick={()=>{ if(item.type==='folder'){setOpenFolder(item);setView('folder')} else window.open(item.url!,'_blank','noopener') }}
+                  className="cursor-pointer rounded-xl p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 active:scale-95 transition-all flex flex-col items-center gap-1">
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 flex items-center justify-center overflow-hidden">
+                    {item.type==='folder'?(
+                      <div className="w-full h-full grid grid-cols-2 gap-0.5 p-1.5">
+                        {items.filter(x=>x.folder_id===item.id).slice(0,4).map((b,i)=>(
+                          <img key={i} src={faviconUrl(b.url||'')} alt="" className="w-full h-full object-contain rounded-sm" onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
+                        ))}
+                        {items.filter(x=>x.folder_id===item.id).length===0&&<div className="col-span-2 row-span-2 flex items-center justify-center"><Folder size={18} className="text-gray-400"/></div>}
+                      </div>
+                    ):(
+                      <img src={faviconUrl(item.url||'')} alt={item.name} className="w-8 h-8 object-contain" onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full leading-tight">{item.name}</span>
                 </div>
-                <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full leading-tight">{item.name}</span>
+                {/* Hover action buttons — only for creator */}
+                {canEdit(item)&&(
+                  <div className="absolute -top-1 -right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={e=>{e.stopPropagation();setEditItem({...item})}}
+                      className="w-5 h-5 rounded-md bg-white dark:bg-gray-700 shadow border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 hover:text-blue-500 transition-colors">
+                      <Edit3 size={9}/>
+                    </button>
+                    <button onClick={e=>{e.stopPropagation();deleteItem(item)}}
+                      className="w-5 h-5 rounded-md bg-white dark:bg-gray-700 shadow border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors">
+                      <Trash2 size={9}/>
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -599,6 +644,8 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
   const [showForm, setShowForm] = useState(false)
   const [adding, setAdding]   = useState(false)
   const [form, setForm]       = useState({title:'',deadline:'',priority:'medium' as 'low'|'medium'|'high',remind_at:''})
+  const [editTask, setEditTask] = useState<Task|null>(null)
+  const [editForm, setEditForm] = useState({title:'',deadline:'',priority:'medium' as 'low'|'medium'|'high',remind_at:''})
 
   const qs = boardId ? `?board_id=${boardId}` : ''
 
@@ -628,6 +675,30 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
   const deleteTask=async(id:string)=>{
     setTasks(ts=>ts.filter(t=>t.id!==id))
     await fetch(`/api/member/focus-tasks?id=${id}`,{method:'DELETE'})
+  }
+
+  const openEditTask=(task:Task)=>{
+    setEditForm({
+      title:task.title,
+      deadline:task.deadline?task.deadline.slice(0,10):'',
+      priority:task.priority as 'low'|'medium'|'high',
+      remind_at:task.remind_at?utcToLocal(task.remind_at):'',
+    })
+    setEditTask(task)
+  }
+
+  const saveTaskEdit=async()=>{
+    if(!editTask||!editForm.title.trim()) return
+    const updates={
+      id:editTask.id,
+      title:editForm.title,
+      deadline:editForm.deadline||null,
+      priority:editForm.priority,
+      remind_at:editForm.remind_at?localToUTC(editForm.remind_at):null,
+    }
+    setTasks(ts=>ts.map(t=>t.id===editTask.id?{...t,...updates,remind_at:updates.remind_at??null,deadline:updates.deadline??null}:t))
+    await fetch('/api/member/focus-tasks',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)})
+    setEditTask(null)
   }
 
   const visible   = tasks.filter(t=>filter==='all'?true:filter==='active'?!t.done:t.done)
@@ -672,6 +743,39 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
           </button>
         ))}
       </div>
+      {/* Edit task modal */}
+      {editTask&&(
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={()=>setEditTask(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700 overflow-hidden" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <span className="font-bold text-gray-900 dark:text-gray-100">Edit Task</span>
+              <button onClick={()=>setEditTask(null)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500"><X size={14}/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Title</label>
+                <input value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} autoFocus
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-violet-400 transition-colors"/></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Deadline</label>
+                  <input type="date" value={editForm.deadline} onChange={e=>setEditForm(f=>({...f,deadline:e.target.value}))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-violet-400"/></div>
+                <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Priority</label>
+                  <select value={editForm.priority} onChange={e=>setEditForm(f=>({...f,priority:e.target.value as any}))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-violet-400 font-semibold">
+                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+                  </select></div>
+              </div>
+              <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5 flex items-center gap-1"><AlarmClock size={9}/> Reminder (your local time)</label>
+                <input type="datetime-local" value={editForm.remind_at} onChange={e=>setEditForm(f=>({...f,remind_at:e.target.value}))}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-violet-400 transition-colors"/></div>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button onClick={()=>setEditTask(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 transition-colors">Cancel</button>
+              <button onClick={saveTaskEdit} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#8b5cf6'}}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
         {visible.length===0?(
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-4"><Check size={18} className="text-gray-300"/><p className="text-sm text-gray-400">{filter==='completed'?'No completed tasks yet':'All clear!'}</p></div>
@@ -688,7 +792,10 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
                 {task.remind_at&&<span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-500"><AlarmClock size={9}/>{new Date(task.remind_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}</span>}
               </div>
             </div>
-            {canDelete(task)&&<button onClick={()=>deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5"><Trash2 size={11}/></button>}
+            <div className="opacity-0 group-hover:opacity-100 flex gap-1 flex-shrink-0 mt-0.5">
+              {canDelete(task)&&<button onClick={()=>openEditTask(task)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"><Edit3 size={11}/></button>}
+              {canDelete(task)&&<button onClick={()=>deleteTask(task.id)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"><Trash2 size={11}/></button>}
+            </div>
           </div>
         ))}
       </div>
@@ -697,7 +804,7 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
 }
 
 // ─── Calendar ──────────────────────────────────────────────────────────────────
-interface CalEvent { id:string; title:string; start_at:string; end_at:string|null; all_day:boolean; color:string; description:string|null; remind_at:string|null; created_by:string }
+interface CalEvent { id:string; title:string; start_at:string; end_at:string|null; all_day:boolean; color:string; description:string|null; remind_at:string|null; created_by:string; recurrence?:string }
 const EVENT_COLORS=['#06b6d4','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6366f1','#d99401']
 
 function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:string }) {
@@ -707,14 +814,15 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
   const [selDay, setSelDay]     = useState<Date|null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editEvt, setEditEvt]   = useState<CalEvent|null>(null)
-  const [form, setForm]         = useState({title:'',description:'',date:today.toISOString().slice(0,10),startTime:'09:00',endTime:'10:00',allDay:false,color:'#06b6d4',remind_at:''})
+  const [form, setForm]         = useState({title:'',description:'',date:today.toISOString().slice(0,10),startTime:'09:00',endTime:'10:00',allDay:false,color:'#06b6d4',remind_at:'',recurrence:'none'})
 
   const year=cur.getFullYear(); const month=cur.getMonth()
   const daysInMonth=new Date(year,month+1,0).getDate()
   const firstDow=new Date(year,month,1).getDay()
 
   const fetchEvents=useCallback(()=>{
-    const from=new Date(year,month,1).toISOString()
+    // Fetch 1 year back so recurring events whose base date is in a prior month are included
+    const from=new Date(year-1,month,1).toISOString()
     const to=new Date(year,month+1,0,23,59).toISOString()
     const qs=boardId?`&board_id=${boardId}`:''
     fetch(`/api/member/focus-calendar?from=${from}&to=${to}${qs}`).then(r=>r.json()).then(d=>setEvents(d.events||[]))
@@ -723,7 +831,16 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
   useEffect(()=>{ fetchEvents() },[fetchEvents])
 
   const eventsForDay=(d:Date)=>events.filter(e=>{
-    const ed=new Date(e.start_at); return ed.getDate()===d.getDate()&&ed.getMonth()===d.getMonth()&&ed.getFullYear()===d.getFullYear()
+    const ed=new Date(e.start_at)
+    // Direct match
+    if(ed.getDate()===d.getDate()&&ed.getMonth()===d.getMonth()&&ed.getFullYear()===d.getFullYear()) return true
+    // Recurring: only show on dates after (or equal to) the base event date
+    if(!e.recurrence||e.recurrence==='none') return false
+    if(d<ed) return false
+    if(e.recurrence==='weekly')  return ed.getDay()===d.getDay()
+    if(e.recurrence==='monthly') return ed.getDate()===d.getDate()
+    if(e.recurrence==='yearly')  return ed.getDate()===d.getDate()&&ed.getMonth()===d.getMonth()
+    return false
   })
 
   const openAdd=(day:Date)=>{ setSelDay(day);setForm(f=>({...f,date:day.toISOString().slice(0,10)}));setEditEvt(null);setShowForm(true) }
@@ -736,11 +853,11 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
     const start_at=localToUTC(startLocal)
     const end_at  =endLocal?localToUTC(endLocal):null
     const body={title:form.title,description:form.description||null,start_at,end_at,all_day:form.allDay,color:form.color,
-                remind_at:form.remind_at?localToUTC(form.remind_at):null,board_id:boardId}
+                remind_at:form.remind_at?localToUTC(form.remind_at):null,board_id:boardId,recurrence:form.recurrence||'none'}
     if(editEvt) await fetch('/api/member/focus-calendar',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editEvt.id,...body})})
     else        await fetch('/api/member/focus-calendar',{method:'POST', headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     fetchEvents();setShowForm(false);setEditEvt(null)
-    setForm({title:'',description:'',date:today.toISOString().slice(0,10),startTime:'09:00',endTime:'10:00',allDay:false,color:'#06b6d4',remind_at:''})
+    setForm({title:'',description:'',date:today.toISOString().slice(0,10),startTime:'09:00',endTime:'10:00',allDay:false,color:'#06b6d4',remind_at:'',recurrence:'none'})
   }
 
   const deleteEvent=async(id:string)=>{
@@ -756,7 +873,8 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
       startTime:`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
       endTime:evt.end_at?(()=>{const ed=new Date(evt.end_at!);return `${String(ed.getHours()).padStart(2,'0')}:${String(ed.getMinutes()).padStart(2,'0')}`})():'10:00',
       allDay:evt.all_day,color:evt.color,
-      remind_at:evt.remind_at?utcToLocal(evt.remind_at):''
+      remind_at:evt.remind_at?utcToLocal(evt.remind_at):'',
+      recurrence:evt.recurrence||'none'
     })
     setEditEvt(evt);setShowForm(true)
   }
@@ -785,18 +903,25 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
             {DAYS.map(d=><div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-wide py-1">{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-px bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden">
-            {Array.from({length:firstDow}).map((_,i)=><div key={`e${i}`} className="bg-white dark:bg-gray-900 h-14"/>)}
+            {Array.from({length:firstDow}).map((_,i)=><div key={`e${i}`} className="bg-white dark:bg-gray-900 h-20"/>)}
             {Array.from({length:daysInMonth}).map((_,i)=>{
               const day=new Date(year,month,i+1)
               const isToday=day.toDateString()===today.toDateString()
               const isSel=selDay?.toDateString()===day.toDateString()
               const dayEvts=eventsForDay(day)
               return (
-                <div key={i} onClick={()=>setSelDay(isSel?null:day)} className={`bg-white dark:bg-gray-900 h-14 p-1 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 ${isSel?'ring-2 ring-inset ring-cyan-400':''}`}>
+                <div key={i} onClick={()=>setSelDay(isSel?null:day)} className={`bg-white dark:bg-gray-900 h-20 p-1 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 overflow-hidden ${isSel?'ring-2 ring-inset ring-cyan-400':''}`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mb-0.5 transition-colors ${isToday?'text-white':'text-gray-700 dark:text-gray-300'}`} style={isToday?{background:'#06b6d4'}:{}}>{i+1}</div>
-                  <div className="flex flex-wrap gap-0.5">
-                    {dayEvts.slice(0,3).map(e=><div key={e.id} className="w-1.5 h-1.5 rounded-full" style={{background:e.color}}/>)}
-                    {dayEvts.length>3&&<div className="text-[8px] text-gray-400 font-bold">+{dayEvts.length-3}</div>}
+                  <div className="flex flex-col gap-0.5">
+                    {dayEvts.slice(0,2).map(e=>(
+                      <button key={e.id} onClick={ev=>{ev.stopPropagation();startEdit(e)}}
+                        className="w-full text-left rounded px-1 leading-tight truncate hover:brightness-95 transition-all"
+                        style={{background:e.color+'22',borderLeft:`2px solid ${e.color}`}}>
+                        <span className="text-[9px] font-semibold" style={{color:e.color}}>{e.title}</span>
+                        {!e.all_day&&<span className="text-[8px] text-gray-400 ml-0.5">{new Date(e.start_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}</span>}
+                      </button>
+                    ))}
+                    {dayEvts.length>2&&<div className="text-[8px] text-gray-400 font-bold px-1">+{dayEvts.length-2} more</div>}
                   </div>
                 </div>
               )
@@ -865,6 +990,16 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
               <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5 flex items-center gap-1"><AlarmClock size={9}/> Reminder (your local time)</label>
                 <input type="datetime-local" value={form.remind_at} onChange={e=>setForm(f=>({...f,remind_at:e.target.value}))}
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400 transition-colors"/></div>
+              <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5 flex items-center gap-1"><RefreshCw size={9}/> Recurrence</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {(['none','weekly','monthly','yearly'] as const).map(r=>(
+                    <button key={r} type="button" onClick={()=>setForm(f=>({...f,recurrence:r}))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all capitalize ${form.recurrence===r?'text-white border-transparent':'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-cyan-400'}`}
+                      style={form.recurrence===r?{background:'#06b6d4'}:{}}>
+                      {r==='none'?'No repeat':r}
+                    </button>
+                  ))}
+                </div></div>
               <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Description</label>
                 <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={2} placeholder="Optional notes…"
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400 transition-colors resize-none"/></div>
@@ -999,7 +1134,24 @@ function SearchBar() {
   )
 }
 
+// ─── Sortable panel wrapper ────────────────────────────────────────────────────
+function SortablePanel({ id, children }: { id:string; children:React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div ref={setNodeRef} style={{transform:CSS.Transform.toString(transform),transition,opacity:isDragging?0.5:1}} className="flex flex-col">
+      <div className="flex items-center gap-1 mb-1 pl-1">
+        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 transition-colors p-0.5 rounded" title="Drag to reorder">
+          <GripVertical size={13}/>
+        </button>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
+type PanelId = 'pomodoro'|'bookmarks'|'notes'|'tasks'|'calendar'
+
 export default function FocusModePage() {
   const [showCalc, setShowCalc]           = useState(false)
   const [showInvite, setShowInvite]       = useState(false)
@@ -1008,19 +1160,56 @@ export default function FocusModePage() {
   const [invitedBoards, setInvitedBoards] = useState<SharedBoard[]>([])
   const [selectedBoardId, setSelectedBoardId] = useState<string|null>(null)
   const [memberId, setMemberId]           = useState<string>('')
+  const [panelOrder, setPanelOrder]       = useState<PanelId[]>(()=>{
+    try {
+      const saved=localStorage.getItem('focus_panel_order')
+      if(saved) return JSON.parse(saved) as PanelId[]
+    } catch {}
+    return ['pomodoro','bookmarks','notes','tasks','calendar']
+  })
+
+  const sensors=useSensors(
+    useSensor(PointerSensor,{activationConstraint:{distance:5}}),
+    useSensor(KeyboardSensor,{coordinateGetter:sortableKeyboardCoordinates})
+  )
+
+  const handleDragEnd=(event:DragEndEvent)=>{
+    const {active,over}=event
+    if(over&&active.id!==over.id){
+      setPanelOrder(order=>{
+        const oldIdx=order.indexOf(active.id as PanelId)
+        const newIdx=order.indexOf(over.id as PanelId)
+        const next=arrayMove(order,oldIdx,newIdx)
+        try { localStorage.setItem('focus_panel_order',JSON.stringify(next)) } catch {}
+        return next
+      })
+    }
+  }
 
   useEffect(()=>{
     fetch('/api/member/shared-boards').then(r=>r.json()).then(d=>{
       if(d.myBoard)       setMyBoard(d.myBoard)
       if(d.invitedBoards) setInvitedBoards(d.invitedBoards)
     })
-    // Grab memberId from any task endpoint
     fetch('/api/member/focus-tasks').then(r=>r.json()).then(d=>{
       if(d.tasks?.[0]?.member_id) setMemberId(d.tasks[0].member_id)
     })
   },[])
 
   const activeBoardId = boardMode==='shared' ? selectedBoardId : null
+
+  const PANEL_MAP: Record<PanelId, React.ReactNode> = {
+    pomodoro:  <PomodoroStrip/>,
+    bookmarks: <BookmarksPanel boardId={activeBoardId} memberId={memberId}/>,
+    notes:     <NotesPanel boardId={activeBoardId} memberId={memberId}/>,
+    tasks:     <TasksPanel boardId={activeBoardId} memberId={memberId}/>,
+    calendar:  <CalendarPanel boardId={activeBoardId} memberId={memberId}/>,
+  }
+
+  // Row 0: first two; Row 1: next two; Row 2: last one
+  const row0=panelOrder.slice(0,2)
+  const row1=panelOrder.slice(2,4)
+  const row2=panelOrder.slice(4)
 
   return (
     <div className="min-h-full p-4 md:p-5 flex flex-col gap-4">
@@ -1046,20 +1235,17 @@ export default function FocusModePage() {
         )}
       </div>
 
-      {/* Pomodoro + Bookmarks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <PomodoroStrip/>
-        <BookmarksPanel boardId={activeBoardId} memberId={memberId}/>
-      </div>
-
-      {/* Notes + Tasks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-        <NotesPanel boardId={activeBoardId} memberId={memberId}/>
-        <TasksPanel boardId={activeBoardId} memberId={memberId}/>
-      </div>
-
-      {/* Calendar */}
-      <CalendarPanel boardId={activeBoardId} memberId={memberId}/>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {row0.map(id=><SortablePanel key={id} id={id}>{PANEL_MAP[id]}</SortablePanel>)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+            {row1.map(id=><SortablePanel key={id} id={id}>{PANEL_MAP[id]}</SortablePanel>)}
+          </div>
+          {row2.map(id=><SortablePanel key={id} id={id}>{PANEL_MAP[id]}</SortablePanel>)}
+        </SortableContext>
+      </DndContext>
 
       {showCalc   && <ScientificCalculator onClose={()=>setShowCalc(false)}/>}
       {showInvite && <InviteModal onClose={()=>setShowInvite(false)}/>}
