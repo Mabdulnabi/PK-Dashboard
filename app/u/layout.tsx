@@ -15,7 +15,7 @@ interface Member { full_name:string; email:string; plan_slug:string; expires_at:
 
 const NAV_BASE = [
   { en:'Dashboard',       ar:'الرئيسية',      href:'/u/dashboard',            icon:HouseSimple,  color:'#6366f1' },
-  { en:'Focus Mode',      ar:'وضع التركيز',   href:'/u/academic-workspace',   icon:GraduationCap,color:'#06b6d4' },
+  { en:'Focus Mode',      ar:'وضع التركيز',   href:'/u/focus-mode',           icon:GraduationCap,color:'#06b6d4' },
   { en:'Oneclick Access', ar:'بكليك واحد',    href:'/u/shop',                 icon:ShoppingBag,  color:'#d99401', sub:[
     { en:'Shared Tools',  ar:'أدوات مشتركة',  href:'/u/shop/shared',          icon:Users,        color:'#8b5cf6' },
     { en:'Bundle Tools',  ar:'حزم الأدوات',   href:'/u/shop/bundle',          icon:Package,      color:'#10b981' },
