@@ -938,7 +938,8 @@ function CalendarPanel({ boardId, memberId }: { boardId:string|null; memberId:st
               {selDayEvents.length===0?(
                 <p className="text-xs text-gray-400 text-center py-4">No events</p>
               ):selDayEvents.map(evt=>(
-                <div key={evt.id} className="rounded-lg p-2 group relative" style={{background:evt.color+'18',borderLeft:`3px solid ${evt.color}`}}>
+                <div key={evt.id} className="rounded-lg p-2 group relative overflow-hidden" style={{background:evt.color+'18'}}>
+                  <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-lg" style={{background:evt.color}}/>
                   <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight">{evt.title}</p>
                   {!evt.all_day&&<p className="text-[10px] text-gray-400 mt-0.5">{new Date(evt.start_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}</p>}
                   {evt.description&&<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">{evt.description}</p>}
