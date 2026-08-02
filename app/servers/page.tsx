@@ -6,7 +6,6 @@ import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import { Plus, Pencil, Trash2, X, Check, Server, Users, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 
-const TOOL_OPTIONS = ['QuillBot','Grammarly','Canva Pro','Turnitin','Perplexity','SciSpace','Gamma Pro','Semrush','Ahrefs','Envato']
 const TIER_OPTIONS = ['basic','vip','private']
 const STATUS_OPTIONS = ['active','maintenance','full','disabled']
 
@@ -33,7 +32,7 @@ interface ServerRow {
 }
 
 const EMPTY: any = {
-  tool_name: 'QuillBot',
+  tool_name: '',
   server_label: '',
   session_data_encrypted: '',
   tier_required: 'basic',
@@ -45,8 +44,11 @@ const EMPTY: any = {
   status: 'active',
 }
 
+interface Product { id: string; name: string; image_url: string | null; category_slug: string }
+
 export default function ServersPage() {
   const [servers,  setServers]  = useState<ServerRow[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading,  setLoading]  = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editId,   setEditId]   = useState<string|null>(null)
@@ -64,7 +66,12 @@ export default function ServersPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchServers() }, [fetchServers])
+  useEffect(() => {
+    fetchServers()
+    fetch('/api/admin/products').then(r => r.json()).then(d => {
+      setProducts(d.products || [])
+    })
+  }, [fetchServers])
 
   const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }))
 
@@ -89,6 +96,7 @@ export default function ServersPage() {
   }
 
   async function save() {
+    if (!form.tool_name) { setMsg({ type:'error', text:'اختر الأداة أولاً' }); return }
     if (!form.server_label.trim()) { setMsg({ type:'error', text:'Server label مطلوب' }); return }
     if (form.session_data_encrypted) {
       try { JSON.parse(form.session_data_encrypted) } catch { setJsonErr('Session Data مش JSON صالح'); return }
@@ -220,10 +228,10 @@ export default function ServersPage() {
                               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${s.status==='active'?'bg-emerald-500':'bg-gray-600'}`}>
                               <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${s.status==='active'?'translate-x-4':'translate-x-0.5'}`}/>
                             </button>
-                            <button onClick={()=>openEdit(s)} className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                            <button onClick={()=>openEdit(s)} className="p-1.5 rounded-lg text-blue-300 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                               <Pencil size={14}/>
                             </button>
-                            <button onClick={()=>del(s.id)} className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                            <button onClick={()=>del(s.id)} className="p-1.5 rounded-lg text-red-300 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                               <Trash2 size={14}/>
                             </button>
                           </div>
@@ -257,7 +265,12 @@ export default function ServersPage() {
                 <div>
                   <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">الأداة</label>
                   <select value={form.tool_name} onChange={e=>set('tool_name',e.target.value)} className={inp}>
-                    {TOOL_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
+                    <option value="">— اختر منتج —</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.name}>
+                        {p.name}{p.category_slug ? ` (${p.category_slug})` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
