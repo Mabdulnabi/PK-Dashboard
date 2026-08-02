@@ -28,11 +28,17 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const { title, deadline, priority } = await req.json()
+  const { title, deadline, priority, remind_at } = await req.json()
   if (!title?.trim()) return NextResponse.json({ error: 'title required' }, { status: 400 })
   const { data, error } = await service
     .from('focus_tasks')
-    .insert({ member_id: session.member_id, title: title.trim(), deadline: deadline || null, priority: priority || 'medium' })
+    .insert({
+      member_id: session.member_id,
+      title: title.trim(),
+      deadline: deadline || null,
+      priority: priority || 'medium',
+      remind_at: remind_at || null,
+    })
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -42,12 +48,13 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const { id, done, title, deadline, priority } = await req.json()
+  const { id, done, title, deadline, priority, remind_at } = await req.json()
   const updates: any = {}
-  if (done !== undefined) updates.done = done
-  if (title !== undefined) updates.title = title
-  if (deadline !== undefined) updates.deadline = deadline
-  if (priority !== undefined) updates.priority = priority
+  if (done      !== undefined) updates.done      = done
+  if (title     !== undefined) updates.title     = title
+  if (deadline  !== undefined) updates.deadline  = deadline
+  if (priority  !== undefined) updates.priority  = priority
+  if (remind_at !== undefined) updates.remind_at = remind_at
   const { error } = await service
     .from('focus_tasks')
     .update(updates)

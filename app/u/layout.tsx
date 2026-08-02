@@ -1,11 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LangProvider, useLang } from '@/lib/lang-context'
 import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu } from 'lucide-react'
+import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock } from 'lucide-react'
 import {
   HouseSimple, ShoppingBag, Receipt, Headset, PlayCircle,
   UserCircle, Users, LockKey, Package, Key, GraduationCap,
@@ -15,6 +15,7 @@ interface Member { full_name:string; email:string; plan_slug:string; expires_at:
 
 const nav = [
   { en:'Dashboard',       ar:'الرئيسية',  href:'/u/dashboard', icon:HouseSimple,  color:'#6366f1' },
+  { en:'Academic Workspace', ar:'بيئة الأكاديمي', href:'/u/academic-workspace', icon:GraduationCap, color:'#06b6d4' },
   { en:'Oneclick Access', ar:'بكليك واحد',   href:'/u/shop',      icon:ShoppingBag,  color:'#d99401', sub:[
     { en:'Shared Tools',  ar:'أدوات مشتركة', href:'/u/shop/shared',  icon:Users,    color:'#8b5cf6' },
     { en:'Bundle Tools',  ar:'حزم الأدوات',  href:'/u/shop/bundle',  icon:Package,  color:'#10b981' },
@@ -23,7 +24,6 @@ const nav = [
   { en:'Payment History', ar:'المدفوعات', href:'/u/payments',  icon:Receipt,      color:'#3b82f6' },
   { en:'HelpDesk',        ar:'الدعم',      href:'/u/helpdesk',  icon:Headset,      color:'#f97316' },
   { en:'Tutorial Videos', ar:'الدروس',     href:'/u/tutorials', icon:PlayCircle,   color:'#ec4899' },
-  { en:'Academic Workspace', ar:'بيئة الأكاديمي', href:'/u/academic-workspace', icon:GraduationCap, color:'#06b6d4' },
   { en:'My Account',      ar:'حسابي',      href:'/u/profile',   icon:UserCircle,   color:'#14b8a6' },
 ]
 
@@ -48,6 +48,8 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const [profileOpen,   setProfile]    = useState(false)
   const [notifOpen,     setNotif]      = useState(false)
   const [notifications, setNotifs]     = useState<any[]>([])
+  const [taskAlert,     setTaskAlert]  = useState<{id:string; title:string} | null>(null)
+  const dismissedReminders = useRef(new Set<string>())
   const [newEmail,      setNewEmail]   = useState('')
   const [newPassword,   setNewPassword] = useState('')
   const [profileSaving, setProfileSaving] = useState(false)
@@ -64,6 +66,21 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(()=>{
     if (!member) return
     fetch('/api/member/notifications').then(r=>r.json()).then(d=>setNotifs(d.notifications||[]))
+  },[member])
+
+  useEffect(()=>{
+    if (!member) return
+    const check = async () => {
+      try {
+        const r = await fetch('/api/member/focus-reminders')
+        const d = await r.json()
+        const due = (d.reminders||[]).find((x:any) => !dismissedReminders.current.has(x.id))
+        if (due) setTaskAlert(due)
+      } catch {}
+    }
+    check()
+    const t = setInterval(check, 60_000)
+    return () => clearInterval(t)
   },[member])
 
   // close sidebar on route change
@@ -379,6 +396,18 @@ if (pathname==='/u/login') return <>{children}</>
             </button>
           </div>
         </header>
+
+        {/* Task reminder banner */}
+        {taskAlert && (
+          <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-white flex-shrink-0 z-40" style={{background:'linear-gradient(90deg,#d99401,#f59e0b)'}}>
+            <AlarmClock size={15} className="flex-shrink-0 animate-pulse"/>
+            <span className="flex-1">{isRtl ? 'تذكير: ' : 'Reminder: '}{taskAlert.title}</span>
+            <button onClick={()=>{ dismissedReminders.current.add(taskAlert.id); setTaskAlert(null) }}
+              className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors flex-shrink-0">
+              <X size={12}/>
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <main className="flex-1 overflow-auto relative">
