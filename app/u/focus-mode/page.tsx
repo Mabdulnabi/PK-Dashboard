@@ -373,7 +373,7 @@ function BookmarksPanel({ boardId, memberId }: { boardId:string|null; memberId:s
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={()=>setShowAddF(true)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><FolderPlus size={11}/> Folder</button>
-          <button onClick={()=>setShowAdd(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-white" style={{background:'#06b6d4'}}><Plus size={11}/> Add</button>
+          <button onClick={()=>{setScForm(f=>({...f,folderId:openFolder?.id||''}));setShowAdd(true)}} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-white" style={{background:'#06b6d4'}}><Plus size={11}/> Add</button>
         </div>
       </div>
       <div className="flex-1 overflow-hidden p-3">
