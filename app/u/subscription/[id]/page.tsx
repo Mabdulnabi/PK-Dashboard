@@ -9,6 +9,7 @@ import { useSiteSettings } from '@/lib/use-site-settings'
 
 interface Purchase {
   id: string
+  tool_id?: string
   tool_name: string
   tool_image?: string
   tool_video?: string
@@ -31,6 +32,7 @@ interface Delivery {
 
 interface ServerInfo {
   id: string
+  tool_name: string
   server_label: string
   tier_required: string
   max_concurrent_users: number
@@ -119,10 +121,14 @@ export default function SubscriptionDetailPage() {
   useEffect(() => {
     if (!purchase?.tool_name) return
 
-    const fetchServers = () =>
-      fetch(`/api/member/servers?tool=${encodeURIComponent(purchase.tool_name)}`, { credentials: 'include' })
+    const fetchServers = () => {
+      const param = purchase.tool_id
+        ? `tool_id=${encodeURIComponent(purchase.tool_id)}`
+        : `tool=${encodeURIComponent(purchase.tool_name)}`
+      return fetch(`/api/member/servers?${param}`, { credentials: 'include' })
         .then(r => r.json())
         .then(d => setServers(d.servers || []))
+    }
 
     fetchServers()
 
@@ -209,7 +215,7 @@ export default function SubscriptionDetailPage() {
 
     window.postMessage({
       type: 'PK_INJECT_REQUEST',
-      toolName:    purchase.tool_name,
+      toolName:    server.tool_name || purchase.tool_name,
       sessionData: data.session_data,
       serverId:    server.id,
       proxy:       data.proxy || null,
@@ -429,7 +435,7 @@ export default function SubscriptionDetailPage() {
                           <div className="text-sm font-mono text-gray-900 dark:text-white truncate" dir="ltr">{delivery.email}</div>
                         </div>
                         <button onClick={()=>copyText(delivery.email!,'email')}
-                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='email'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='email'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
                           {copied==='email'?<CheckIcon size={14}/>:<Copy size={14}/>}
                         </button>
                       </div>
@@ -447,7 +453,7 @@ export default function SubscriptionDetailPage() {
                             {showPass?<EyeOff size={14}/>:<Eye size={14}/>}
                           </button>
                           <button onClick={()=>copyText(delivery.password!,'pass')}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
                             {copied==='pass'?<CheckIcon size={14}/>:<Copy size={14}/>}
                           </button>
                         </div>
@@ -468,7 +474,7 @@ export default function SubscriptionDetailPage() {
                           {showPass?<EyeOff size={14}/>:<Eye size={14}/>}
                         </button>
                         <button onClick={()=>copyText(delivery.key!,'pass')}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
                           {copied==='pass'?<CheckIcon size={14}/>:<Copy size={14}/>}
                         </button>
                       </div>

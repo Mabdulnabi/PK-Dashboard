@@ -16,23 +16,32 @@ export async function GET(req: NextRequest) {
   const { data: session } = await service.rpc('verify_member_session', { p_token: token })
   if (!session?.valid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
+  const toolId   = req.nextUrl.searchParams.get('tool_id')
   const toolName = req.nextUrl.searchParams.get('tool')
-  if (!toolName) return NextResponse.json({ error: 'tool required' }, { status: 400 })
+  if (!toolId && !toolName) return NextResponse.json({ error: 'tool_id or tool required' }, { status: 400 })
 
-  const toolKeyword = toolName.split(' ')[0]
-  const tierOrder   = ['basic','vip','private']
-  const memberTierIdx = tierOrder.indexOf(session.plan_slug || 'basic')
+  const tierOrder      = ['basic','vip','private']
+  const memberTierIdx  = tierOrder.indexOf(session.plan_slug || 'basic')
 
-  const { data: servers } = await service
+  let query = service
     .from('tool_servers')
-    .select('id, server_label, tier_required, max_concurrent_users, proxy_host, proxy_port, status')
-    .ilike('tool_name', `%${toolKeyword}%`)
+    .select('id, tool_name, shop_tool_id, server_label, tier_required, max_concurrent_users, proxy_host, proxy_port, status')
     .eq('status', 'active')
     .order('server_label')
 
+  if (toolId) {
+    // Exact match by product UUID — most reliable
+    query = query.eq('shop_tool_id', toolId)
+  } else {
+    // Fallback: keyword match on tool_name (first word)
+    const keyword = (toolName as string).split(' ')[0]
+    query = query.ilike('tool_name', `%${keyword}%`)
+  }
+
+  const { data: servers } = await query
   if (!servers) return NextResponse.json({ servers: [] })
 
-  // Count active sessions per server from DB (source of truth)
+  // Count active sessions per server
   const serverIds = servers.map(s => s.id)
   const { data: sessions } = await service
     .from('user_server_sessions')
@@ -47,18 +56,15 @@ export async function GET(req: NextRequest) {
   })
 
   const accessible = servers
-    .filter(s => {
-      const sIdx = tierOrder.indexOf(s.tier_required)
-      return memberTierIdx >= sIdx
-    })
+    .filter(s => memberTierIdx >= tierOrder.indexOf(s.tier_required))
     .map(s => ({
       id:                   s.id,
+      tool_name:            s.tool_name,
       server_label:         s.server_label,
       tier_required:        s.tier_required,
       max_concurrent_users: s.max_concurrent_users,
       current_active_users: sessionCounts[s.id] || 0,
       proxy_host:           s.proxy_host,
-      proxy_port:           s.proxy_port,
       status:               s.status,
       is_full:              (sessionCounts[s.id] || 0) >= s.max_concurrent_users,
     }))

@@ -18,6 +18,7 @@ const STATUS_COLORS: Record<string,string> = {
 
 interface ServerRow {
   id: string
+  shop_tool_id: string | null
   tool_name: string
   server_label: string
   session_data_encrypted: string | null
@@ -32,6 +33,7 @@ interface ServerRow {
 }
 
 const EMPTY: any = {
+  shop_tool_id: '',
   tool_name: '',
   server_label: '',
   session_data_encrypted: '',
@@ -81,6 +83,7 @@ export default function ServersPage() {
 
   function openEdit(s: ServerRow) {
     setForm({
+      shop_tool_id: s.shop_tool_id || '',
       tool_name: s.tool_name,
       server_label: s.server_label,
       session_data_encrypted: s.session_data_encrypted || '',
@@ -104,6 +107,7 @@ export default function ServersPage() {
     setSaving(true); setMsg(null)
 
     const payload = {
+      shop_tool_id: form.shop_tool_id || null,
       tool_name: form.tool_name,
       server_label: form.server_label.trim(),
       session_data_encrypted: form.session_data_encrypted || null,
@@ -264,10 +268,17 @@ export default function ServersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">الأداة</label>
-                  <select value={form.tool_name} onChange={e=>set('tool_name',e.target.value)} className={inp}>
+                  <select
+                    value={form.shop_tool_id || ''}
+                    onChange={e => {
+                      const p = products.find(x => x.id === e.target.value)
+                      setForm((prev: any) => ({ ...prev, shop_tool_id: e.target.value, tool_name: p?.name || '' }))
+                    }}
+                    className={inp}
+                  >
                     <option value="">— اختر منتج —</option>
                     {products.map(p => (
-                      <option key={p.id} value={p.name}>
+                      <option key={p.id} value={p.id}>
                         {p.name}{p.category_slug ? ` (${p.category_slug})` : ''}
                       </option>
                     ))}
