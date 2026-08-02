@@ -354,7 +354,7 @@ function BookmarksPanel({ boardId, memberId }: { boardId:string|null; memberId:s
             {displayed.map(item=>(
               <div key={item.id}
                 onContextMenu={e=>{e.preventDefault();e.stopPropagation();setCtxMenu({x:e.clientX,y:e.clientY,item})}}
-                onClick={()=>item.type==='folder'?(setOpenFolder(item);setView('folder')):window.open(item.url!,'_blank','noopener')}
+                onClick={()=>{ if(item.type==='folder'){setOpenFolder(item);setView('folder')} else window.open(item.url!,'_blank','noopener') }}
                 className="cursor-pointer rounded-xl p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 active:scale-95 transition-all flex flex-col items-center gap-1 select-none">
                 <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 flex items-center justify-center overflow-hidden">
                   {item.type==='folder'?(
