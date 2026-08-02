@@ -128,30 +128,25 @@ export default function PrivateStorePage() {
                   const toolCount = tools.filter(t => t.category_id === cat.id).length
                   return (
                     <button key={cat.id} onClick={()=>setSelectedCat(cat)}
-                      className="group relative rounded-2xl overflow-hidden border-2 border-transparent hover:border-purple-400 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl text-start"
-                      style={{background:`linear-gradient(145deg, ${cat.color}22, ${cat.color}08)`}}>
-                      {/* Category image */}
-                      <div className="aspect-square relative overflow-hidden rounded-xl m-2 mb-0"
-                        style={{background:`linear-gradient(135deg,${cat.color}33,${cat.color}11)`}}>
+                      className="group flex flex-col rounded-2xl overflow-hidden border-2 border-transparent hover:border-purple-400 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl text-start bg-white dark:bg-gray-900">
+                      {/* Image area */}
+                      <div className="aspect-square w-full relative overflow-hidden"
+                        style={{background:`linear-gradient(145deg,${cat.color}28,${cat.color}10)`}}>
                         {cat.image_url ? (
                           <img src={cat.image_url} alt={cat.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                            className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300 drop-shadow-md"/>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-5xl">
                             {cat.icon}
                           </div>
                         )}
-                        {/* Overlay label */}
-                        <div className="absolute bottom-0 inset-x-0 px-3 py-2 text-center"
-                          style={{background:`linear-gradient(to top, ${cat.color}ee, transparent)`}}>
-                          <span className="text-white text-sm font-bold leading-tight drop-shadow-sm">
-                            {isRtl && cat.name_ar ? cat.name_ar : cat.name}
-                          </span>
-                        </div>
                       </div>
-                      {/* Bottom info */}
-                      <div className="px-3 py-2.5">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {/* Name + count — always below image, never overlapping */}
+                      <div className="px-3 py-2.5 border-t border-gray-100 dark:border-gray-800">
+                        <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-tight truncate">
+                          {isRtl && cat.name_ar ? cat.name_ar : cat.name}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
                           {toolCount} {isRtl?'منتج':'products'}
                         </p>
                       </div>
