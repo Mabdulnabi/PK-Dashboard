@@ -134,11 +134,17 @@ async function injectSession(toolName, sessionData, proxy) {
   // 5. Open/reload the tool tab — it opens WITH cookies already in store
   const toolUrl = TOOL_URLS[toolName] || `https://${domain}/`
   const existingTabs = await chrome.tabs.query({ url: `https://*.${parentDomain}/*` })
+  let toolTabId
   if (existingTabs.length > 0) {
     await chrome.tabs.update(existingTabs[0].id, { active: true, url: toolUrl })
+    toolTabId = existingTabs[0].id
   } else {
-    await chrome.tabs.create({ url: toolUrl })
+    const tab = await chrome.tabs.create({ url: toolUrl })
+    toolTabId = tab.id
   }
+
+  // Track which tab is the active tool tab for instant disconnect on close/navigate
+  await setState({ tool_tab_id: toolTabId })
 
   return { success: true }
 }
@@ -165,7 +171,7 @@ async function disconnect(toolName) {
   }
   chrome.proxy.settings.clear({ scope: 'regular' })
   chrome.alarms.clear('heartbeat')
-  await setState({ active_tool: null, session_data: null, session_id: null, server_id: null, pending_inject: null })
+  await setState({ active_tool: null, session_data: null, session_id: null, server_id: null, pending_inject: null, tool_tab_id: null })
   chrome.action.setBadgeText({ text: '' })
 }
 
@@ -301,6 +307,31 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         storeId,
       }).catch(() => {})
     }
+  }
+})
+
+// Instant disconnect when user closes the tool tab
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const state = await getState()
+  if (!state.active_tool || state.tool_tab_id !== tabId) return
+  console.log('Tool tab closed — disconnecting')
+  await disconnect(state.active_tool)
+})
+
+// Instant disconnect when user navigates away from the tool domain
+chrome.tabs.onUpdated.addListener(async (tabId, info) => {
+  if (info.status !== 'complete') return
+  const state = await getState()
+  if (!state.active_tool || state.tool_tab_id !== tabId) return
+  const domain = getDomain(state.active_tool)
+  if (!domain) return
+  const parentDomain = domain.split('.').slice(-2).join('.')
+  const tab = await chrome.tabs.get(tabId).catch(() => null)
+  if (!tab?.url) return
+  // Only disconnect if navigated completely off the tool domain
+  if (!tab.url.includes(parentDomain)) {
+    console.log('Navigated away from tool domain — disconnecting')
+    await disconnect(state.active_tool)
   }
 })
 
