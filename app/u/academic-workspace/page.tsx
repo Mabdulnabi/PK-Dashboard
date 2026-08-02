@@ -4,7 +4,7 @@ import {
   Search, Plus, Trash2, Check, Settings, RotateCcw, Play, Pause,
   Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight,
   ArrowLeft, FileText, BookOpen, X, Calendar, AlarmClock, ChevronDown,
-  ALargeSmall, Highlighter, Palette,
+  ALargeSmall, Highlighter, Palette, Bookmark, FolderPlus, Folder, Edit3,
 } from 'lucide-react'
 
 // ─── Search engines ────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ const ENGINES = [
     ) },
 ]
 
-// ─── Pomodoro (horizontal) ─────────────────────────────────────────────────────
+// ─── Pomodoro ──────────────────────────────────────────────────────────────────
 const MODES = {
   work:  { label:'Focus',       color:'#06b6d4', defaultMin:25 },
   short: { label:'Short Break', color:'#10b981', defaultMin:5  },
@@ -114,84 +114,102 @@ function PomodoroStrip() {
   const r = 72; const circ = 2 * Math.PI * r
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-6 px-5 py-4">
+    <div className="relative rounded-2xl overflow-hidden shadow-md"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(248,250,252,0.97) 100%)',
+        border: `1px solid ${m.color}28`,
+        boxShadow: `0 4px 24px ${m.color}18, 0 1px 3px rgba(0,0,0,0.06)`,
+      }}>
+      {/* Accent top stripe */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl transition-all duration-700" style={{background: `linear-gradient(90deg, transparent, ${m.color}, transparent)`}}/>
 
-        {/* ── Circular ring + digital time ── */}
+      {/* Dark mode override */}
+      <div className="dark:hidden"/>
+      <style>{`
+        @media (prefers-color-scheme: dark) { .pomo-card { background: linear-gradient(135deg, rgb(17 24 39 / 0.97) 0%, rgb(15 23 42 / 0.97) 100%) !important; } }
+        :root[data-theme="dark"] .pomo-card { background: linear-gradient(135deg, rgb(17 24 39 / 0.97) 0%, rgb(15 23 42 / 0.97) 100%) !important; }
+      `}</style>
+
+      <div className="flex items-center gap-5 px-5 py-5">
+        {/* ── Circular ring ── */}
         <div className="relative flex-shrink-0" style={{width:172, height:172}}>
-          {/* Glow layer */}
-          <div className="absolute inset-0 rounded-full opacity-20 blur-xl transition-all duration-700"
-            style={{background: m.color, transform:'scale(0.85)'}}/>
-          <svg width={172} height={172} viewBox="0 0 172 172" className="absolute inset-0">
+          {/* Ambient glow */}
+          <div className="absolute rounded-full opacity-15 blur-2xl transition-all duration-700 pointer-events-none"
+            style={{inset:'-10px', background: m.color}}/>
+          <svg width={172} height={172} viewBox="0 0 172 172">
             {/* Track */}
-            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={10}
-              className="stroke-gray-100 dark:stroke-gray-800"/>
+            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={8} stroke="rgba(0,0,0,0.06)"/>
+            {/* Dark track */}
+            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={8} stroke={`${m.color}18`}/>
             {/* Tick marks */}
             {Array.from({length:60}).map((_,i)=>{
               const angle = (i/60)*Math.PI*2 - Math.PI/2
               const isMajor = i%5===0
-              const inner = r + 6; const outer = r + (isMajor?13:9)
+              const inner = r + 5; const outer = r + (isMajor?12:8)
               return (
                 <line key={i}
                   x1={86+inner*Math.cos(angle)} y1={86+inner*Math.sin(angle)}
                   x2={86+outer*Math.cos(angle)} y2={86+outer*Math.sin(angle)}
                   strokeWidth={isMajor?2:1} strokeLinecap="round"
-                  stroke={isMajor ? m.color+'88' : m.color+'33'}/>
+                  stroke={isMajor ? m.color+'99' : m.color+'33'}/>
               )
             })}
             {/* Progress arc */}
-            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={10}
+            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={8}
               stroke={m.color}
               strokeDasharray={circ}
               strokeDashoffset={circ * (1 - progress)}
               strokeLinecap="round"
               transform="rotate(-90 86 86)"
-              style={{transition: running ? 'stroke-dashoffset 1s linear' : 'stroke-dashoffset 0.4s ease'}}/>
-            {/* Pulsing dot at tip */}
-            {running && (() => {
+              style={{transition: running ? 'stroke-dashoffset 1s linear' : 'stroke-dashoffset 0.4s ease',
+                      filter:`drop-shadow(0 0 6px ${m.color}88)`}}/>
+            {/* Tip dot */}
+            {(progress > 0.01) && (() => {
               const angle = progress * Math.PI * 2 - Math.PI / 2
               return (
                 <circle
                   cx={86 + r * Math.cos(angle)}
                   cy={86 + r * Math.sin(angle)}
-                  r={5} fill={m.color} className="drop-shadow-sm"/>
+                  r={6} fill={m.color}
+                  style={{filter:`drop-shadow(0 0 8px ${m.color})`}}/>
               )
             })()}
           </svg>
-          {/* Center content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-            <span className="text-3xl font-black tabular-nums tracking-tight text-gray-900 dark:text-white"
-              style={{fontVariantNumeric:'tabular-nums'}}>{mm}:{ss}</span>
-            <span className="text-[11px] font-bold uppercase tracking-widest" style={{color: m.color}}>{m.label}</span>
+          {/* Center */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
+            <span className="text-4xl font-black tabular-nums tracking-tighter text-gray-900 dark:text-white leading-none"
+              style={{fontVariantNumeric:'tabular-nums', letterSpacing:'-0.04em'}}>{mm}:{ss}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] px-2 py-0.5 rounded-full"
+              style={{color: m.color, background: `${m.color}16`}}>{m.label}</span>
           </div>
         </div>
 
         {/* ── Right panel ── */}
         <div className="flex-1 flex flex-col gap-4 min-w-0">
           {/* Mode tabs */}
-          <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl self-start">
+          <div className="flex gap-1 p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-xl self-start backdrop-blur-sm">
             {(Object.keys(MODES) as PMode[]).map(k => (
               <button key={k} onClick={() => switchMode(k)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode===k?'text-white shadow-sm':'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                style={mode===k?{background:MODES[k].color}:{}}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${mode===k?'text-white shadow-md':'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                style={mode===k?{background:MODES[k].color, boxShadow:`0 2px 10px ${MODES[k].color}55`}:{}}>
                 {MODES[k].label}
               </button>
             ))}
           </div>
 
-          {/* Controls row */}
-          <div className="flex items-center gap-2">
+          {/* Controls */}
+          <div className="flex items-center gap-2.5">
             <button onClick={reset}
-              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
               <RotateCcw size={14}/>
             </button>
             <button onClick={() => setRunning(r=>!r)}
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-all active:scale-95"
-              style={{background: m.color, boxShadow:`0 6px 20px ${m.color}55`}}>
-              {running ? <Pause size={22} fill="white"/> : <Play size={22} fill="white"/>}
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white transition-all active:scale-95 hover:scale-105"
+              style={{background: `linear-gradient(135deg, ${m.color}, ${m.color}cc)`, boxShadow:`0 8px 24px ${m.color}55`}}>
+              {running ? <Pause size={24} fill="white"/> : <Play size={24} fill="white"/>}
             </button>
             <button onClick={() => { setDraft({...cfg}); setShowCfg(true) }}
-              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
               <Settings size={14}/>
             </button>
           </div>
@@ -200,12 +218,15 @@ function PomodoroStrip() {
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
               {Array.from({length: cfg.sessionsBeforeLong}).map((_,i) => (
-                <div key={i} className="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                  style={{background: i < sessions % cfg.sessionsBeforeLong ? m.color : '#e5e7eb',
-                          boxShadow: i < sessions % cfg.sessionsBeforeLong ? `0 0 6px ${m.color}88` : 'none'}}/>
+                <div key={i} className="w-2.5 h-2.5 rounded-full transition-all duration-500"
+                  style={{
+                    background: i < sessions % cfg.sessionsBeforeLong ? m.color : 'rgba(0,0,0,0.1)',
+                    boxShadow: i < sessions % cfg.sessionsBeforeLong ? `0 0 8px ${m.color}99` : 'none',
+                    transform: i < sessions % cfg.sessionsBeforeLong ? 'scale(1.15)' : 'scale(1)',
+                  }}/>
               ))}
             </div>
-            <span className="text-xs text-gray-400">{sessions} session{sessions!==1?'s':''}</span>
+            <span className="text-[11px] text-gray-400 font-medium">{sessions} session{sessions!==1?'s':''} today</span>
           </div>
         </div>
       </div>
@@ -219,7 +240,7 @@ function PomodoroStrip() {
               <button onClick={()=>setShowCfg(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500"><X size={14}/></button>
             </div>
             <div className="p-5 grid grid-cols-2 gap-4">
-              {([['Work Duration (minutes)','work'],['Break Duration (minutes)','short'],['Long Break Duration (minutes)','long'],['Sessions Before Long Break','sessionsBeforeLong']] as [string, keyof typeof draft][]).map(([label,key])=>(
+              {([['Work (min)','work'],['Short Break (min)','short'],['Long Break (min)','long'],['Sessions → Long','sessionsBeforeLong']] as [string, keyof typeof draft][]).map(([label,key])=>(
                 <div key={key}>
                   <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
                   <input type="number" min={1} max={key==='sessionsBeforeLong'?10:120}
@@ -244,6 +265,345 @@ function PomodoroStrip() {
               <button onClick={()=>{ setCfg({...draft}); setSecs(draft[mode]*60); setRunning(false); setShowCfg(false) }}
                 className="w-full py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#06b6d4'}}>
                 Apply Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Bookmarks ─────────────────────────────────────────────────────────────────
+interface BFolder   { id: string; name: string }
+interface BBookmark { id: string; url: string; name: string; folderId: string | null }
+interface BState    { folders: BFolder[]; bookmarks: BBookmark[] }
+
+const BK_KEY = 'pk_bookmarks_v1'
+
+function faviconUrl(url: string) {
+  try {
+    const domain = new URL(url.startsWith('http') ? url : 'https://' + url).hostname
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+  } catch { return '' }
+}
+function normalizeUrl(raw: string) {
+  if (!raw) return ''
+  return raw.startsWith('http') ? raw : 'https://' + raw
+}
+function domainLabel(url: string) {
+  try { return new URL(url).hostname.replace('www.', '') } catch { return url }
+}
+
+function BookmarksPanel() {
+  const [data, setData]               = useState<BState>({ folders: [], bookmarks: [] })
+  const [view, setView]               = useState<'root'|'folder'>('root')
+  const [openFolder, setOpenFolder]   = useState<BFolder|null>(null)
+  const [showAddShortcut, setShowAddShortcut] = useState(false)
+  const [showAddFolder, setShowAddFolder]     = useState(false)
+  const [ctxMenu, setCtxMenu]         = useState<{x:number;y:number;type:'bookmark'|'folder';id:string}|null>(null)
+  const [editMode, setEditMode]       = useState<{type:'bookmark'|'folder';id:string}|null>(null)
+  const [scForm, setScForm]           = useState({ url:'', name:'', folderId:'' })
+  const [folderName, setFolderName]   = useState('')
+  const [editForm, setEditForm]       = useState({ url:'', name:'', folderId:'' })
+  const [editFolderName, setEditFolderName] = useState('')
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(BK_KEY)
+      if (raw) setData(JSON.parse(raw))
+    } catch {}
+  }, [])
+
+  const persist = (next: BState) => {
+    setData(next)
+    localStorage.setItem(BK_KEY, JSON.stringify(next))
+  }
+
+  const addBookmark = () => {
+    const url = normalizeUrl(scForm.url.trim())
+    if (!url) return
+    const name = scForm.name.trim() || domainLabel(url)
+    persist({ ...data, bookmarks: [...data.bookmarks, { id: crypto.randomUUID(), url, name, folderId: scForm.folderId || null }] })
+    setScForm({ url:'', name:'', folderId:'' }); setShowAddShortcut(false)
+  }
+
+  const addFolder = () => {
+    if (!folderName.trim()) return
+    persist({ ...data, folders: [...data.folders, { id: crypto.randomUUID(), name: folderName.trim() }] })
+    setFolderName(''); setShowAddFolder(false)
+  }
+
+  const saveEdit = () => {
+    if (!editMode) return
+    if (editMode.type === 'folder') {
+      persist({ ...data, folders: data.folders.map(f => f.id === editMode.id ? { ...f, name: editFolderName.trim() || f.name } : f) })
+    } else {
+      const url = normalizeUrl(editForm.url.trim())
+      persist({ ...data, bookmarks: data.bookmarks.map(b => b.id === editMode.id ? { ...b, url, name: editForm.name.trim() || b.name, folderId: editForm.folderId || null } : b) })
+    }
+    setEditMode(null)
+  }
+
+  const deleteItem = (type: 'bookmark'|'folder', id: string) => {
+    if (type === 'bookmark') {
+      persist({ ...data, bookmarks: data.bookmarks.filter(b => b.id !== id) })
+    } else {
+      persist({ folders: data.folders.filter(f => f.id !== id), bookmarks: data.bookmarks.filter(b => b.folderId !== id) })
+      if (openFolder?.id === id) { setView('root'); setOpenFolder(null) }
+    }
+    setCtxMenu(null)
+  }
+
+  const openCtx = (e: React.MouseEvent, type: 'bookmark'|'folder', id: string) => {
+    e.preventDefault(); e.stopPropagation()
+    setCtxMenu({ x: e.clientX, y: e.clientY, type, id })
+  }
+
+  useEffect(() => {
+    if (!ctxMenu) return
+    const hide = () => setCtxMenu(null)
+    document.addEventListener('click', hide)
+    return () => document.removeEventListener('click', hide)
+  }, [ctxMenu])
+
+  const startEdit = (type: 'bookmark'|'folder', id: string) => {
+    setCtxMenu(null)
+    if (type === 'folder') {
+      const f = data.folders.find(x => x.id === id)!
+      setEditFolderName(f.name)
+    } else {
+      const b = data.bookmarks.find(x => x.id === id)!
+      setEditForm({ url: b.url, name: b.name, folderId: b.folderId || '' })
+    }
+    setEditMode({ type, id })
+  }
+
+  const displayed = view === 'root'
+    ? [...data.folders.map(f => ({ kind: 'folder' as const, item: f })), ...data.bookmarks.filter(b => !b.folderId).map(b => ({ kind: 'bookmark' as const, item: b }))]
+    : data.bookmarks.filter(b => b.folderId === openFolder?.id).map(b => ({ kind: 'bookmark' as const, item: b }))
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col overflow-hidden" style={{minHeight:282}}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          {view === 'folder' && (
+            <button onClick={() => { setView('root'); setOpenFolder(null) }}
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <ArrowLeft size={13}/>
+            </button>
+          )}
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'#06b6d410'}}>
+            <Bookmark size={14} style={{color:'#06b6d4'}}/>
+          </div>
+          <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+            {view === 'root' ? 'Shortcuts' : <><span className="text-gray-400 font-medium">Shortcuts /</span> {openFolder?.name}</>}
+          </span>
+          {view === 'root' && (
+            <span className="text-xs text-gray-400">{data.folders.length + data.bookmarks.filter(b=>!b.folderId).length}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setShowAddFolder(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <FolderPlus size={11}/> Folder
+          </button>
+          <button onClick={() => setShowAddShortcut(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-white transition-colors"
+            style={{background:'#06b6d4'}}>
+            <Plus size={11}/> Shortcut
+          </button>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="flex-1 overflow-y-auto p-3">
+        {displayed.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <Bookmark size={18} className="text-gray-300"/>
+            </div>
+            <p className="text-xs text-gray-400">
+              {view === 'folder' ? 'No shortcuts in this folder yet.' : 'Add shortcuts or folders to get started.'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-1.5" style={{gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))'}}>
+            {displayed.map(({ kind, item }) => {
+              if (kind === 'folder') {
+                const folder = item as BFolder
+                const fBms = data.bookmarks.filter(b => b.folderId === folder.id)
+                return (
+                  <div key={folder.id}
+                    onContextMenu={e => openCtx(e, 'folder', folder.id)}
+                    onClick={() => { setOpenFolder(folder); setView('folder') }}
+                    className="cursor-pointer rounded-xl p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 active:scale-95 transition-all flex flex-col items-center gap-1 select-none">
+                    <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 grid grid-cols-2 gap-0.5 p-1.5 overflow-hidden">
+                      {fBms.length === 0 ? (
+                        <div className="col-span-2 row-span-2 flex items-center justify-center">
+                          <Folder size={20} className="text-gray-400"/>
+                        </div>
+                      ) : fBms.slice(0,4).map((b, i) => (
+                        <img key={i} src={faviconUrl(b.url)} alt="" className="w-full h-full object-contain rounded-sm"
+                          onError={e => { (e.target as HTMLImageElement).style.display='none' }}/>
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full leading-tight">{folder.name}</span>
+                    {fBms.length > 0 && (
+                      <span className="text-[9px] text-gray-400 -mt-0.5">{fBms.length}</span>
+                    )}
+                  </div>
+                )
+              } else {
+                const bm = item as BBookmark
+                return (
+                  <div key={bm.id}
+                    onContextMenu={e => openCtx(e, 'bookmark', bm.id)}
+                    onClick={() => window.open(bm.url, '_blank', 'noopener')}
+                    className="cursor-pointer rounded-xl p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 active:scale-95 transition-all flex flex-col items-center gap-1 select-none">
+                    <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 flex items-center justify-center overflow-hidden">
+                      <img src={faviconUrl(bm.url)} alt={bm.name} className="w-8 h-8 object-contain"
+                        onError={e => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22></svg>' }}/>
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full leading-tight">{bm.name}</span>
+                  </div>
+                )
+              }
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Context menu */}
+      {ctxMenu && (
+        <div className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden py-1"
+          style={{top: ctxMenu.y, left: ctxMenu.x, minWidth:130}}
+          onClick={e => e.stopPropagation()}>
+          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2.5 transition-colors"
+            onClick={() => startEdit(ctxMenu.type, ctxMenu.id)}>
+            <Edit3 size={12} className="text-gray-400"/> Edit
+          </button>
+          <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2"/>
+          <button className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2.5 transition-colors"
+            onClick={() => deleteItem(ctxMenu.type, ctxMenu.id)}>
+            <Trash2 size={12}/> Delete
+          </button>
+        </div>
+      )}
+
+      {/* Add Shortcut modal */}
+      {showAddShortcut && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddShortcut(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <span className="font-bold text-gray-900 dark:text-gray-100">Add Shortcut</span>
+              <button onClick={() => setShowAddShortcut(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500"><X size={14}/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              {[{label:'URL',key:'url',ph:'google.com'},{label:'Name',key:'name',ph:'Google'}].map(({label,key,ph})=>(
+                <div key={key}>
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
+                  <input value={(scForm as any)[key]} onChange={e => setScForm(f => ({...f,[key]:e.target.value}))}
+                    placeholder={ph}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400 transition-colors"/>
+                </div>
+              ))}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Folder</label>
+                <select value={scForm.folderId} onChange={e => setScForm(f => ({...f,folderId:e.target.value}))}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 outline-none focus:border-cyan-400 transition-colors">
+                  <option value="">No folder (root)</option>
+                  {data.folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button onClick={() => setShowAddShortcut(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+              </button>
+              <button onClick={addBookmark}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#06b6d4'}}>
+                Add Shortcut
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Folder modal */}
+      {showAddFolder && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddFolder(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xs border border-gray-200 dark:border-gray-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <span className="font-bold text-gray-900 dark:text-gray-100">Add Folder</span>
+              <button onClick={() => setShowAddFolder(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500"><X size={14}/></button>
+            </div>
+            <div className="p-5">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Folder Name</label>
+              <input value={folderName} onChange={e => setFolderName(e.target.value)}
+                onKeyDown={e => e.key==='Enter' && addFolder()}
+                placeholder="Research" autoFocus
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400 transition-colors"/>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button onClick={() => setShowAddFolder(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+              </button>
+              <button onClick={addFolder}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#06b6d4'}}>
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editMode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditMode(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <span className="font-bold text-gray-900 dark:text-gray-100">Edit {editMode.type === 'folder' ? 'Folder' : 'Shortcut'}</span>
+              <button onClick={() => setEditMode(null)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500"><X size={14}/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              {editMode.type === 'folder' ? (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Folder Name</label>
+                  <input value={editFolderName} onChange={e => setEditFolderName(e.target.value)} autoFocus
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400 transition-colors"/>
+                </div>
+              ) : (
+                <>
+                  {[{label:'URL',key:'url'},{label:'Name',key:'name'}].map(({label,key})=>(
+                    <div key={key}>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
+                      <input value={(editForm as any)[key]} onChange={e => setEditForm(f => ({...f,[key]:e.target.value}))} autoFocus={key==='url'}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400 transition-colors"/>
+                    </div>
+                  ))}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Folder</label>
+                    <select value={editForm.folderId} onChange={e => setEditForm(f => ({...f,folderId:e.target.value}))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 outline-none focus:border-cyan-400">
+                      <option value="">No folder (root)</option>
+                      {data.folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button onClick={() => setEditMode(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+              </button>
+              <button onClick={saveEdit}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#06b6d4'}}>
+                Save
               </button>
             </div>
           </div>
@@ -323,16 +683,12 @@ function NotesPanel() {
   const textColor  = useRef<HTMLInputElement>(null)
   const hlColor    = useRef<HTMLInputElement>(null)
 
-  const activeNote = notes.find(n=>n.id===activeId)
-
   const stripHtml = (html: string) => {
     const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''
   }
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col overflow-hidden h-full" style={{minHeight:480}}>
-
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         <div className="flex items-center gap-2">
           {view==='edit' && (
@@ -355,7 +711,6 @@ function NotesPanel() {
         </button>
       </div>
 
-      {/* List view */}
       {view==='list' && (
         <div className="flex-1 overflow-y-auto">
           {notes.length===0
@@ -387,12 +742,9 @@ function NotesPanel() {
         </div>
       )}
 
-      {/* Edit view */}
       {view==='edit' && (
         <>
-          {/* Rich toolbar */}
           <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-100 dark:border-gray-800 flex-wrap flex-shrink-0 bg-gray-50 dark:bg-gray-800/40">
-            {/* Style */}
             {[{icon:Bold,c:'bold'},{icon:Italic,c:'italic'},{icon:Underline,c:'underline'}].map(({icon:Icon,c})=>(
               <button key={c} onMouseDown={e=>{e.preventDefault();cmd(c)}}
                 className="w-7 h-7 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
@@ -400,7 +752,6 @@ function NotesPanel() {
               </button>
             ))}
             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5"/>
-            {/* Alignment */}
             {[{icon:AlignLeft,c:'justifyLeft'},{icon:AlignCenter,c:'justifyCenter'},{icon:AlignRight,c:'justifyRight'}].map(({icon:Icon,c})=>(
               <button key={c} onMouseDown={e=>{e.preventDefault();cmd(c)}}
                 className="w-7 h-7 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -408,7 +759,6 @@ function NotesPanel() {
               </button>
             ))}
             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5"/>
-            {/* Lists */}
             {[{icon:List,c:'insertUnorderedList'},{icon:ListOrdered,c:'insertOrderedList'}].map(({icon:Icon,c})=>(
               <button key={c} onMouseDown={e=>{e.preventDefault();cmd(c)}}
                 className="w-7 h-7 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -416,7 +766,6 @@ function NotesPanel() {
               </button>
             ))}
             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5"/>
-            {/* Font size */}
             <div className="relative">
               <select value={fontSize} onChange={e=>applyFontSize(e.target.value)}
                 className="h-7 px-1 pr-5 rounded-md text-xs bg-transparent border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 outline-none focus:border-amber-400 appearance-none cursor-pointer">
@@ -425,14 +774,12 @@ function NotesPanel() {
               <ChevronDown size={9} className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             </div>
             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5"/>
-            {/* Text color */}
             <label className="w-7 h-7 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer relative" title="Text color">
               <Palette size={12}/>
               <input ref={textColor} type="color" defaultValue="#000000"
                 onChange={e=>cmd('foreColor',e.target.value)}
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"/>
             </label>
-            {/* Highlight */}
             <label className="w-7 h-7 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer relative" title="Highlight">
               <Highlighter size={12}/>
               <input ref={hlColor} type="color" defaultValue="#fef08a"
@@ -440,18 +787,13 @@ function NotesPanel() {
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"/>
             </label>
           </div>
-
-          {/* Title */}
           <input value={title} onChange={e=>{setTitle(e.target.value);triggerSave()}}
             placeholder="Note title…"
             className="px-4 pt-3 pb-1 text-base font-bold text-gray-900 dark:text-gray-100 bg-transparent outline-none placeholder-gray-300 dark:placeholder-gray-700 flex-shrink-0"/>
-
-          {/* Content */}
           <div ref={editorRef} contentEditable suppressContentEditableWarning
             onInput={triggerSave}
             className="flex-1 px-4 py-2 outline-none text-sm text-gray-700 dark:text-gray-300 overflow-y-auto leading-relaxed"
-            data-placeholder="Start writing…"
-          />
+            data-placeholder="Start writing…"/>
         </>
       )}
     </div>
@@ -495,7 +837,6 @@ function TasksPanel() {
 
   const visible = tasks.filter(t => filter==='all'?true:filter==='active'?!t.done:t.done)
   const isOverdue = (t:Task) => !t.done && t.deadline && new Date(t.deadline) < new Date()
-  const hasReminder = (t:Task) => !!t.remind_at
 
   const fmtRemind = (dt: string) => {
     const d = new Date(dt)
@@ -504,8 +845,6 @@ function TasksPanel() {
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col overflow-hidden h-full" style={{minHeight:480}}>
-
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'#8b5cf610'}}>
@@ -521,7 +860,6 @@ function TasksPanel() {
         </button>
       </div>
 
-      {/* Add form */}
       {showForm && (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 space-y-2 flex-shrink-0">
           <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
@@ -544,7 +882,6 @@ function TasksPanel() {
               </select>
             </div>
           </div>
-          {/* Reminder */}
           <div>
             <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1 flex items-center gap-1">
               <AlarmClock size={9}/> Alarm / Reminder
@@ -567,7 +904,6 @@ function TasksPanel() {
         </div>
       )}
 
-      {/* Filters */}
       <div className="flex gap-1 px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         {(['all','active','completed'] as const).map(f=>(
           <button key={f} onClick={()=>setFilter(f)}
@@ -581,7 +917,6 @@ function TasksPanel() {
         ))}
       </div>
 
-      {/* List */}
       <div className="flex-1 overflow-y-auto">
         {visible.length===0
           ? (
@@ -654,12 +989,9 @@ function SearchBar() {
         border: `1.5px solid ${engine.color}55`,
         boxShadow: `0 2px 12px ${engine.color}18`,
       }}>
-
-      {/* Engine icon buttons */}
       <div className="flex items-center gap-0.5 flex-shrink-0">
         {ENGINES.map(e => (
-          <button key={e.id} type="button"
-            title={e.label}
+          <button key={e.id} type="button" title={e.label}
             onClick={()=>{ setEngine(e); inputRef.current?.focus() }}
             className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${engine.id===e.id?'shadow-sm':'opacity-35 hover:opacity-70'}`}
             style={engine.id===e.id?{background:e.color+'22', outline:`2px solid ${e.color}55`}:{}}>
@@ -667,17 +999,10 @@ function SearchBar() {
           </button>
         ))}
       </div>
-
-      {/* Divider */}
       <div className="w-px h-5 flex-shrink-0 mx-1" style={{background: engine.color+'44'}}/>
-
-      {/* Input */}
       <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)}
         placeholder={`Search on ${engine.label}…`}
-        className="flex-1 text-sm text-gray-900 dark:text-gray-100 bg-transparent outline-none min-w-0"
-        style={{'--tw-placeholder-color': engine.color+'88'} as any}/>
-
-      {/* Submit */}
+        className="flex-1 text-sm text-gray-900 dark:text-gray-100 bg-transparent outline-none min-w-0"/>
       <button type="submit"
         className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95"
         style={{background: engine.color, boxShadow: `0 2px 8px ${engine.color}55`}}>
@@ -691,7 +1016,7 @@ function SearchBar() {
 export default function AcademicWorkspacePage() {
   return (
     <div className="min-h-full p-4 md:p-5 flex flex-col gap-4">
-      {/* Header + Search — one row */}
+      {/* Header + Search */}
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
           <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight whitespace-nowrap">Focus Mode</h1>
@@ -702,10 +1027,13 @@ export default function AcademicWorkspacePage() {
         </div>
       </div>
 
-      {/* Pomodoro strip */}
-      <PomodoroStrip/>
+      {/* Pomodoro (half) + Bookmarks (half) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <PomodoroStrip/>
+        <BookmarksPanel/>
+      </div>
 
-      {/* Notes + Tasks 50/50 */}
+      {/* Notes + Tasks */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
         <NotesPanel/>
         <TasksPanel/>
