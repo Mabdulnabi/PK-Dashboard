@@ -1,398 +1,561 @@
 'use client'
-// app/servers/page.tsx
-
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, X, Check, Server, Users, ChevronDown, ChevronUp, AlertCircle, Cookie, Database, LayoutList } from 'lucide-react'
+import {
+  Plus, Server, Users, Activity, Shield, Wifi, WifiOff,
+  Wrench, Ban, Check, X, AlertCircle, Eye, EyeOff,
+  Trash2, Pencil, Zap, Clock
+} from 'lucide-react'
 
-const TIER_OPTIONS = ['basic','vip','private']
-const STATUS_OPTIONS = ['active','maintenance','full','disabled']
+interface Product { id: string; name: string; category_slug: string | null }
 
-const STATUS_COLORS: Record<string,string> = {
-  active:      'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
-  maintenance: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-  full:        'bg-blue-500/10 text-blue-400 border border-blue-500/30',
-  disabled:    'bg-gray-500/10 text-gray-400 border border-gray-700',
+interface ToolServer {
+  id: string; tool_name: string; shop_tool_id?: string | null; server_label: string
+  tier_required: string; max_concurrent_users: number
+  current_active_users: number; status: string
+  proxy_host?: string; proxy_port?: number; last_verified_at?: string
+  free_slots?: number; load_percent?: number
+}
+interface LiveSession {
+  id: string; user_email: string; user_name: string; tool_name: string
+  server_label: string; started_at: string
+  last_active_at: string; expires_at: string
+  inactive_minutes: number; device_fingerprint: string; status: string
 }
 
-interface ServerRow {
-  id: string
-  shop_tool_id: string | null
-  tool_name: string
-  server_label: string
-  session_data_encrypted: string | null
-  tier_required: string
-  max_concurrent_users: number
-  current_active_users: number
-  proxy_host: string | null
-  proxy_port: number | null
-  proxy_username: string | null
-  proxy_password_encrypted: string | null
-  status: string
+const TIERS    = ['basic','vip','private']
+const STATUSES = ['active','maintenance','banned']
+
+function Toast({ msg, type, onClose }: { msg:string; type:'ok'|'err'; onClose:()=>void }) {
+  useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t)},[onClose])
+  return (
+    <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${type==='ok'?'bg-emerald-500':'bg-red-500'}`}>
+      {type==='ok'?<Check size={15}/>:<AlertCircle size={15}/>}{msg}
+    </div>
+  )
 }
 
-const EMPTY: any = {
-  shop_tool_id: '',
-  tool_name: '',
-  server_label: '',
-  session_data_encrypted: '',
-  tier_required: 'basic',
-  max_concurrent_users: 5,
-  proxy_host: '',
-  proxy_port: '',
-  proxy_username: '',
-  proxy_password_encrypted: '',
-  status: 'active',
-}
+const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 transition-all"
 
-interface Product { id: string; name: string; image_url: string | null; category_slug: string }
+const statusIcon = (s: string) =>
+  s==='active'      ? <Wifi size={13} className="text-emerald-500"/> :
+  s==='maintenance' ? <Wrench size={13} className="text-amber-500"/> :
+                      <Ban size={13} className="text-red-500"/>
+
+const tierColor = (t: string) =>
+  t==='vip'     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+  t==='private' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                  'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
 
 export default function ServersPage() {
-  const [servers,  setServers]  = useState<ServerRow[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editId,   setEditId]   = useState<string|null>(null)
-  const [form,     setForm]     = useState<any>({ ...EMPTY })
-  const [saving,   setSaving]   = useState(false)
-  const [msg,      setMsg]      = useState<{type:'success'|'error';text:string}|null>(null)
-  const [expanded, setExpanded] = useState<string|null>(null)
-  const [jsonErr,  setJsonErr]  = useState('')
+  const [tab, setTab]             = useState<'servers'|'sessions'|'log'>('servers')
+  const [servers, setServers]     = useState<ToolServer[]>([])
+  const [sessions, setSessions]   = useState<LiveSession[]>([])
+  const [logs, setLogs]           = useState<any[]>([])
+  const [products, setProducts]   = useState<Product[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [toast, setToast]         = useState<{msg:string;type:'ok'|'err'}|null>(null)
+  const [saving, setSaving]       = useState(false)
+  const [modal, setModal]         = useState<'add'|'edit'|null>(null)
+  const [editId, setEditId]       = useState<string|null>(null)
+  const [showPass, setShowPass]   = useState(false)
+  const [delConfirm, setDel]      = useState<ToolServer|null>(null)
 
-  const fetchServers = useCallback(async () => {
-    setLoading(true)
-    const res = await fetch('/api/admin/servers')
-    const data = await res.json()
-    setServers(data.servers || [])
+  const emptyForm = {
+    shop_tool_id:'', tool_name:'', server_label:'', session_data_encrypted:'',
+    tier_required:'basic', max_concurrent_users:5,
+    proxy_host:'', proxy_port:'', proxy_username:'', proxy_password_encrypted:'',
+    status:'active'
+  }
+  const [form, setForm] = useState(emptyForm)
+
+  const load = useCallback(async () => {
+    const [srvRes, sesRes, logRes] = await Promise.all([
+      supabase.from('tool_servers').select('*').order('tool_name'),
+      supabase.from('live_sessions').select('*').order('last_active_at', { ascending:false }),
+      supabase.from('user_server_sessions')
+        .select('id, status, started_at, last_active_at, expires_at, device_fingerprint, members(email,full_name), tool_servers(tool_name,server_label)')
+        .order('started_at', { ascending:false })
+        .limit(100),
+    ])
+    if (srvRes.data) setServers(srvRes.data)
+    if (sesRes.data) setSessions(sesRes.data)
+    if (logRes.data) setLogs(logRes.data)
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    fetchServers()
-    fetch('/api/admin/products').then(r => r.json()).then(d => {
-      setProducts(d.products || [])
-    })
-  }, [fetchServers])
+    load()
+    supabase.from('shop_tools').select('id, name, category_slug').order('name')
+      .then(({ data }) => setProducts(data || []))
+    const ch = supabase.channel('live-sessions')
+      .on('postgres_changes', { event:'*', schema:'public', table:'user_server_sessions' }, load)
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [load])
 
-  const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }))
-
-  function openNew() {
-    setForm({ ...EMPTY }); setEditId(null); setJsonErr(''); setShowForm(true)
-  }
-
-  function openEdit(s: ServerRow) {
+  const openAdd  = () => { setForm(emptyForm); setEditId(null); setModal('add') }
+  const openEdit = (s: ToolServer) => {
     setForm({
       shop_tool_id: s.shop_tool_id || '',
-      tool_name: s.tool_name,
-      server_label: s.server_label,
-      session_data_encrypted: s.session_data_encrypted || '',
+      tool_name: s.tool_name, server_label: s.server_label,
+      session_data_encrypted:'',
       tier_required: s.tier_required,
       max_concurrent_users: s.max_concurrent_users,
-      proxy_host: s.proxy_host || '',
-      proxy_port: s.proxy_port || '',
-      proxy_username: s.proxy_username || '',
-      proxy_password_encrypted: s.proxy_password_encrypted || '',
-      status: s.status,
+      proxy_host: s.proxy_host||'', proxy_port: String(s.proxy_port||''),
+      proxy_username:'', proxy_password_encrypted:'', status: s.status
     })
-    setEditId(s.id); setJsonErr(''); setShowForm(true)
+    setEditId(s.id); setModal('edit')
   }
 
-  async function save() {
-    if (!form.tool_name) { setMsg({ type:'error', text:'اختر الأداة أولاً' }); return }
-    if (!form.server_label.trim()) { setMsg({ type:'error', text:'Server label مطلوب' }); return }
-    if (form.session_data_encrypted) {
-      try { JSON.parse(form.session_data_encrypted) } catch { setJsonErr('Session Data مش JSON صالح'); return }
+  const save = async () => {
+    if (!form.server_label || !form.shop_tool_id) {
+      setToast({ msg: 'اختر الأداة واسم السيرفر', type:'err' }); return
     }
-    setSaving(true); setMsg(null)
+    setSaving(true)
+    const selectedProduct = products.find(p => p.id === form.shop_tool_id)
+    const payload: any = {
+      shop_tool_id:          form.shop_tool_id || null,
+      tool_name:             selectedProduct?.name || form.tool_name,
+      server_label:          form.server_label,
+      tier_required:         form.tier_required,
+      max_concurrent_users:  form.max_concurrent_users,
+      proxy_host:            form.proxy_host || null,
+      proxy_port:            form.proxy_port ? parseInt(form.proxy_port) : null,
+      proxy_username:        form.proxy_username || null,
+      status:                form.status,
+    }
+    if (form.session_data_encrypted) payload.session_data_encrypted = form.session_data_encrypted
+    if (form.proxy_password_encrypted) payload.proxy_password_encrypted = form.proxy_password_encrypted
 
-    const payload = {
-      shop_tool_id: form.shop_tool_id || null,
-      tool_name: form.tool_name,
-      server_label: form.server_label.trim(),
-      session_data_encrypted: form.session_data_encrypted || null,
-      tier_required: form.tier_required,
-      max_concurrent_users: parseInt(form.max_concurrent_users) || 5,
-      proxy_host: form.proxy_host || null,
-      proxy_port: form.proxy_port ? parseInt(form.proxy_port) : null,
-      proxy_username: form.proxy_username || null,
-      proxy_password_encrypted: form.proxy_password_encrypted || null,
-      status: form.status,
+    if (!editId && !form.session_data_encrypted) {
+      setToast({ msg:'Cookies JSON required', type:'err' })
+      setSaving(false); return
     }
 
     const res = editId
-      ? await fetch('/api/admin/servers', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: editId, ...payload }) })
-      : await fetch('/api/admin/servers', { method:'POST',  headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      ? await supabase.from('tool_servers').update(payload).eq('id', editId)
+      : await supabase.from('tool_servers').insert(payload)
 
-    const data = await res.json()
     setSaving(false)
-
-    if (!res.ok) { setMsg({ type:'error', text: data.error }); return }
-    setMsg({ type:'success', text: editId ? 'تم التعديل ✓' : 'تم الإضافة ✓' })
-    setShowForm(false); setEditId(null); fetchServers()
+    if (res.error) { setToast({ msg:res.error.message, type:'err' }); return }
+    setToast({ msg:editId?'Server updated':'Server added', type:'ok' })
+    setModal(null); load()
   }
 
-  async function del(id: string) {
-    if (!confirm('مؤكد الحذف؟')) return
-    await fetch('/api/admin/servers', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) })
-    fetchServers()
+  const updateStatus = async (id: string, status: string) => {
+    await supabase.from('tool_servers').update({ status }).eq('id', id)
+    setToast({ msg:`Server ${status}`, type:'ok' }); load()
   }
 
-  async function toggleStatus(s: ServerRow) {
-    const next = s.status === 'active' ? 'disabled' : 'active'
-    await fetch('/api/admin/servers', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: s.id, status: next }) })
-    fetchServers()
+  const kickSession = async (sessionId: string) => {
+    await supabase.from('user_server_sessions').update({ status:'kicked' }).eq('id', sessionId)
+    const ses = sessions.find(s=>s.id===sessionId)
+    if (ses) {
+      const srv = servers.find(s=>s.server_label===ses.server_label&&s.tool_name===ses.tool_name)
+      if (srv) await supabase.from('tool_servers').update({ current_active_users: Math.max(0, srv.current_active_users-1) }).eq('id', srv.id)
+    }
+    setToast({ msg:'Session kicked', type:'ok' }); load()
   }
 
-  const grouped = servers.reduce((acc, s) => {
-    if (!acc[s.tool_name]) acc[s.tool_name] = []
-    acc[s.tool_name].push(s)
-    return acc
-  }, {} as Record<string,ServerRow[]>)
+  const delServer = async () => {
+    if (!delConfirm) return
+    const res = await supabase.from('tool_servers').delete().eq('id', delConfirm.id)
+    if (res.error) { setToast({ msg:'Cannot delete — has active sessions', type:'err' }); setDel(null); return }
+    setToast({ msg:'Server deleted', type:'ok' }); setDel(null); load()
+  }
 
-  const inp = "w-full bg-[#1F2937] text-white text-sm rounded-lg px-3 py-2.5 border border-[#374151] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+  // Parse cookies preview from session JSON
+  const cookiesPreview = (() => {
+    if (!form.session_data_encrypted) return null
+    try {
+      const parsed = JSON.parse(form.session_data_encrypted)
+      const cookies: any[] = Array.isArray(parsed) ? parsed : (parsed?.cookies || [])
+      if (!cookies.length) return null
+      return cookies
+    } catch { return null }
+  })()
+
+  const loadColor = (pct: number) =>
+    pct >= 80 ? 'bg-red-500' : pct >= 50 ? 'bg-amber-500' : 'bg-emerald-500'
+
+  const actionColor = (a: string) =>
+    a==='connect'    ? 'text-emerald-500' :
+    a==='disconnect' ? 'text-gray-400' :
+    a==='kick'       ? 'text-red-500' :
+    a==='failed'     ? 'text-red-400' : 'text-blue-400'
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background:'#111827' }}>
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117]">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Topbar title="السيرفرات" subtitle="إدارة سيرفرات الأدوات وبيانات الجلسات" />
+        <Topbar title="Servers" subtitle="Manage shared servers & live sessions" />
 
-        <div className="flex-1 overflow-auto p-6">
+        {/* Tabs + Add */}
+        <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            {([
+              { id:'servers',  label:'Servers',       icon:Server },
+              { id:'sessions', label:`Live (${sessions.length})`, icon:Activity },
+              { id:'log',      label:'Activity Log',  icon:Shield },
+            ] as const).map(t => {
+              const Icon = t.icon
+              return (
+                <button key={t.id} onClick={()=>setTab(t.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    tab===t.id ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                  <Icon size={12}/>{t.label}
+                </button>
+              )
+            })}
+          </div>
+          {tab==='servers' && (
+            <button onClick={openAdd}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors">
+              <Plus size={13}/>Add Server
+            </button>
+          )}
+        </div>
 
-          {msg && (
-            <div className={`mb-5 px-4 py-3 rounded-lg text-sm border ${
-              msg.type==='success'
-                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                : 'bg-red-500/10 text-red-300 border-red-500/20'
-            }`}>{msg.text}</div>
+        <div className="flex-1 overflow-auto p-5">
+
+          {/* ══ SERVERS TAB ══ */}
+          {tab==='servers' && (
+            <div className="grid grid-cols-2 gap-4">
+              {loading && <div className="col-span-2 flex justify-center py-20"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
+              {!loading && servers.length===0 && (
+                <div className="col-span-2 text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl">
+                  <Server size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
+                  <p className="text-sm text-gray-400 mb-3">No servers yet</p>
+                  <button onClick={openAdd} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600">
+                    <Plus size={13}/>Add First Server
+                  </button>
+                </div>
+              )}
+              {servers.map(s => {
+                const load = Math.round((s.current_active_users / s.max_concurrent_users) * 100) || 0
+                return (
+                  <div key={s.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {statusIcon(s.status)}
+                        <div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{s.server_label}</div>
+                          <div className="text-[10px] text-gray-400">{s.tool_name}</div>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tierColor(s.tier_required)}`}>
+                        {s.tier_required.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+                        <span>{s.current_active_users}/{s.max_concurrent_users} users</span>
+                        <span>{load}% load</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${loadColor(load)}`} style={{ width:`${load}%` }}/>
+                      </div>
+                    </div>
+                    {s.proxy_host && (
+                      <div className="text-[10px] text-gray-400 mb-3 flex items-center gap-1">
+                        <Wifi size={10}/>Proxy: {s.proxy_host}:{s.proxy_port}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button onClick={()=>openEdit(s)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                        <Pencil size={10}/>Edit
+                      </button>
+                      {s.status!=='active' && (
+                        <button onClick={()=>updateStatus(s.id,'active')}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">
+                          <Wifi size={10}/>Activate
+                        </button>
+                      )}
+                      {s.status==='active' && (
+                        <button onClick={()=>updateStatus(s.id,'maintenance')}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors">
+                          <Wrench size={10}/>Maintenance
+                        </button>
+                      )}
+                      <button onClick={()=>updateStatus(s.id,'banned')}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
+                        <Ban size={10}/>Ban
+                      </button>
+                      <button onClick={()=>setDel(s)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors ml-auto">
+                        <Trash2 size={10}/>Delete
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
 
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-gray-500 text-sm">{servers.length} سيرفر</span>
-            <button onClick={openNew}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors">
-              <Plus size={15}/> إضافة سيرفر
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"/>
-            </div>
-          ) : Object.keys(grouped).length === 0 ? (
-            <div className="text-center py-20 text-gray-600">
-              <Server size={40} className="mx-auto mb-3 opacity-30"/>
-              <p className="text-sm mb-3">مفيش سيرفرات لحد دلوقتي</p>
-              <button onClick={openNew} className="text-blue-400 text-sm underline">أضف أول سيرفر</button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {Object.entries(grouped).map(([toolName, toolServers]) => (
-                <div key={toolName} style={{ background:'#1F2937', border:'1px solid #374151' }} className="rounded-xl overflow-hidden">
-                  <button
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors"
-                    onClick={() => setExpanded(expanded===toolName ? null : toolName)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base" style={{ background:'#374151' }}>🔧</div>
-                      <span className="text-white font-bold text-sm">{toolName}</span>
-                      <span className="text-xs text-gray-500">{toolServers.length} سيرفر</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <Users size={12}/>
-                        {toolServers.reduce((a,s)=>a+s.current_active_users,0)} / {toolServers.reduce((a,s)=>a+s.max_concurrent_users,0)}
-                      </div>
-                      {expanded===toolName
-                        ? <ChevronUp size={15} className="text-gray-500"/>
-                        : <ChevronDown size={15} className="text-gray-500"/>
-                      }
-                    </div>
-                  </button>
-
-                  {expanded===toolName && (
-                    <div style={{ borderTop:'1px solid #374151' }}>
-                      {toolServers.map(s => (
-                        <div key={s.id} className="flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors" style={{ borderBottom:'1px solid #374151' }}>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="text-sm font-semibold text-white">{s.server_label}</span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${STATUS_COLORS[s.status]}`}>{s.status}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">{s.tier_required}</span>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span className="flex items-center gap-1"><Users size={10}/>{s.current_active_users}/{s.max_concurrent_users}</span>
-                              {s.proxy_host && <span>🌐 {s.proxy_host}:{s.proxy_port}</span>}
-                              {s.session_data_encrypted && <span className="text-emerald-400">✓ Session data</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <button onClick={()=>toggleStatus(s)}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${s.status==='active'?'bg-emerald-500':'bg-gray-600'}`}>
-                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${s.status==='active'?'translate-x-4':'translate-x-0.5'}`}/>
-                            </button>
-                            <button onClick={()=>openEdit(s)} className="p-1.5 rounded-lg text-blue-300 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
-                              <Pencil size={14}/>
-                            </button>
-                            <button onClick={()=>del(s.id)} className="p-1.5 rounded-lg text-red-300 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                              <Trash2 size={14}/>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+          {/* ══ LIVE SESSIONS TAB ══ */}
+          {tab==='sessions' && (
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+              {sessions.length===0 ? (
+                <div className="text-center py-16">
+                  <Activity size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
+                  <p className="text-sm text-gray-400">No active sessions</p>
                 </div>
-              ))}
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50">
+                      {['User','Server','Tool','Started','Last Active','Status','Action'].map(h=>(
+                        <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessions.map(s=>(
+                      <tr key={s.id} className={`border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${s.status!=='active'?'opacity-60':''}`}>
+                        <td className="px-4 py-2.5">
+                          <div className="text-xs font-medium text-gray-800 dark:text-gray-200">{s.user_name||s.user_email}</div>
+                          <div className="text-[10px] text-gray-400">{s.user_email}</div>
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-gray-500">{s.server_label}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-500">{s.tool_name}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(s.started_at).toLocaleTimeString()}</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] font-semibold ${(s.inactive_minutes??0) > 10 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                            {(s.inactive_minutes??0) < 1 ? 'Just now' : `${Math.round(s.inactive_minutes??0)}m ago`}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            s.status==='active' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
+                            s.status==='kicked' ? 'bg-red-100 dark:bg-red-900/30 text-red-500' :
+                            'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                          }`}>{s.status}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {s.status==='active' && (
+                            <button onClick={()=>kickSession(s.id)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors">
+                              <Zap size={10}/>Kick
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* ══ ACTIVITY LOG TAB ══ */}
+          {tab==='log' && (
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+              {logs.length===0 ? (
+                <div className="text-center py-16">
+                  <Shield size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
+                  <p className="text-sm text-gray-400">No session history</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50">
+                      {['Status','User','Tool','Server','Device','Time'].map(h=>(
+                        <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.map((l:any)=>(
+                      <tr key={l.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            l.status==='active'  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
+                            l.status==='kicked'  ? 'bg-red-100 dark:bg-red-900/30 text-red-500' :
+                            l.status==='expired' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-500' :
+                            'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                          }`}>{l.status||'—'}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{l.members?.full_name||'—'}</div>
+                          <div className="text-[10px] text-gray-400">{l.members?.email||''}</div>
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-gray-500">{l.tool_servers?.tool_name||'—'}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-500">{l.tool_servers?.server_label||'—'}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">{l.device_fingerprint?.slice(0,12)||'—'}</td>
+                        <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(l.started_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>
       </main>
 
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={()=>setShowForm(false)}/>
-          <div className="relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-            style={{ background:'#1F2937', border:'1px solid #374151' }}>
-
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom:'1px solid #374151' }}>
-              <h2 className="text-white font-bold">{editId ? 'تعديل سيرفر' : 'إضافة سيرفر جديد'}</h2>
-              <button onClick={()=>setShowForm(false)} className="text-gray-400 hover:text-white transition-colors">
-                <X size={18}/>
-              </button>
+      {/* ── Add/Edit Server Modal ── */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                {modal==='add'?'Add Server':'Edit Server'}
+              </h3>
+              <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
             </div>
+            <div className="p-5 flex flex-col gap-3">
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">الأداة</label>
-                  <select
-                    value={form.shop_tool_id || ''}
-                    onChange={e => {
-                      const p = products.find(x => x.id === e.target.value)
-                      setForm((prev: any) => ({ ...prev, shop_tool_id: e.target.value, tool_name: p?.name || '' }))
-                    }}
-                    className={inp}
-                  >
-                    <option value="">— اختر منتج —</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}{p.category_slug ? ` (${p.category_slug})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">اسم السيرفر</label>
-                  <input value={form.server_label} onChange={e=>set('server_label',e.target.value)}
-                    placeholder="مثال: Server 1 — Egypt" className={inp}/>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">Tier المطلوب</label>
-                  <select value={form.tier_required} onChange={e=>set('tier_required',e.target.value)} className={inp}>
-                    {TIER_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">أقصى مستخدمين</label>
-                  <input type="number" value={form.max_concurrent_users} onChange={e=>set('max_concurrent_users',e.target.value)} className={inp}/>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">الحالة</label>
-                  <select value={form.status} onChange={e=>set('status',e.target.value)} className={inp}>
-                    {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
-                  </select>
+              {/* Basic info */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Server Info</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Tool *</label>
+                    <select
+                      value={form.shop_tool_id}
+                      onChange={e => {
+                        const p = products.find(x => x.id === e.target.value)
+                        setForm(f => ({ ...f, shop_tool_id: e.target.value, tool_name: p?.name || '' }))
+                      }}
+                      className={inp}
+                    >
+                      <option value="">— اختر منتج —</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Server Label *</label>
+                    <input value={form.server_label} onChange={e=>setForm({...form,server_label:e.target.value})}
+                      placeholder="e.g. Server 1 (VIP)" className={inp}/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Tier</label>
+                    <select value={form.tier_required} onChange={e=>setForm({...form,tier_required:e.target.value})} className={inp}>
+                      {TIERS.map(t=><option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Max Users</label>
+                    <input type="number" value={form.max_concurrent_users}
+                      onChange={e=>setForm({...form,max_concurrent_users:parseInt(e.target.value)})} className={inp}/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Status</label>
+                    <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} className={inp}>
+                      {STATUSES.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">Session Data (JSON)</label>
+              {/* Session Data */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
+                  Session Data
+                  {editId
+                    ? <span className="font-normal normal-case text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">✓ كوكيز محفوظة — اتركه فاضي لو مش هتغير</span>
+                    : <span className="text-red-400">*</span>
+                  }
+                </div>
                 <textarea
                   value={form.session_data_encrypted}
-                  onChange={e=>{ set('session_data_encrypted',e.target.value); setJsonErr('') }}
-                  rows={8} dir="ltr"
-                  placeholder={'{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com", "path": "/" }\n  ],\n  "localStorage": {},\n  "indexedDB": {}\n}'}
-                  className={`${inp} font-mono text-xs resize-none`}
+                  onChange={e=>setForm({...form,session_data_encrypted:e.target.value})}
+                  placeholder={`{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com", "path": "/", "httpOnly": false, "expirationDate": 1999999999 }\n  ],\n  "localStorage": {},\n  "indexedDB": []\n}`}
+                  className={inp+" resize-y h-36 font-mono text-[10px] leading-relaxed"}
+                  dir="ltr"
+                  spellCheck={false}
                 />
-                {jsonErr && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{jsonErr}</p>}
-                <p className="text-[11px] text-gray-600 mt-1">Admin Extension → Sessions tab → سحب تلقائي → نسخ JSON</p>
 
                 {/* Cookies Preview */}
-                {(() => {
-                  if (!form.session_data_encrypted) return null
-                  let parsed: any = null
-                  try { parsed = JSON.parse(form.session_data_encrypted) } catch { return null }
-                  const cookies: any[] = Array.isArray(parsed) ? parsed : (parsed?.cookies || [])
-                  const lsKeys = Object.keys(parsed?.localStorage || {}).length
-                  const idbCount = (parsed?.indexedDB || []).length
-                  if (!cookies.length && !lsKeys && !idbCount) return null
-                  return (
-                    <div className="mt-3 rounded-xl overflow-hidden" style={{ border: '1px solid #374151' }}>
-                      {/* Summary bar */}
-                      <div className="flex items-center gap-4 px-4 py-2.5 text-xs" style={{ background: '#111827', borderBottom: '1px solid #374151' }}>
-                        <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                          <Cookie size={12}/> {cookies.length} cookie
-                        </span>
-                        {lsKeys > 0 && <span className="flex items-center gap-1.5 text-blue-400 font-semibold"><LayoutList size={12}/> {lsKeys} localStorage</span>}
-                        {idbCount > 0 && <span className="flex items-center gap-1.5 text-purple-400 font-semibold"><Database size={12}/> {idbCount} IDB</span>}
-                      </div>
-                      {/* Cookie rows */}
-                      <div className="max-h-48 overflow-y-auto">
-                        {cookies.map((c: any, i: number) => (
-                          <div key={i} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-white/5" style={{ borderBottom: i < cookies.length - 1 ? '1px solid #1F2937' : undefined }}>
-                            <span className="font-mono font-semibold text-amber-300 truncate min-w-0 flex-shrink-0" style={{ maxWidth: 160 }}>{c.name}</span>
-                            <span className="font-mono text-gray-400 truncate flex-1 min-w-0">{c.value}</span>
-                            <span className="text-gray-600 flex-shrink-0">{(c.domain || '').replace(/^\./, '')}</span>
-                            {c.httpOnly && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 flex-shrink-0">httpOnly</span>}
-                            {c.secure && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 flex-shrink-0">secure</span>}
-                          </div>
-                        ))}
-                      </div>
+                {cookiesPreview && (
+                  <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                      ✓ {cookiesPreview.length} cookies detected
                     </div>
-                  )
-                })()}
+                    <div className="max-h-40 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+                      {cookiesPreview.map((c: any, i: number) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[10px]">
+                          <span className="font-mono font-semibold text-amber-600 dark:text-amber-400 truncate" style={{maxWidth:130}}>{c.name}</span>
+                          <span className="font-mono text-gray-400 truncate flex-1">{c.value}</span>
+                          <span className="text-gray-400 flex-shrink-0">{(c.domain||'').replace(/^\./,'')}</span>
+                          {c.httpOnly && <span className="px-1 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">H</span>}
+                          {c.secure   && <span className="px-1 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">S</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <p className="text-xs text-gray-400 font-bold uppercase tracking-wide mb-3 pt-4" style={{ borderTop:'1px solid #374151' }}>Proxy (اختياري)</p>
-                <div className="grid grid-cols-2 gap-3">
+              {/* Proxy */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Proxy (optional)</div>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Host</label>
-                    <input value={form.proxy_host} onChange={e=>set('proxy_host',e.target.value)} placeholder="proxy.example.com" className={inp} dir="ltr"/>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Host</label>
+                    <input value={form.proxy_host} onChange={e=>setForm({...form,proxy_host:e.target.value})}
+                      placeholder="1.2.3.4" className={inp}/>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Port</label>
-                    <input type="number" value={form.proxy_port} onChange={e=>set('proxy_port',e.target.value)} placeholder="8080" className={inp}/>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Port</label>
+                    <input value={form.proxy_port} onChange={e=>setForm({...form,proxy_port:e.target.value})}
+                      placeholder="3128" className={inp}/>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Username</label>
-                    <input value={form.proxy_username} onChange={e=>set('proxy_username',e.target.value)} className={inp} dir="ltr"/>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Username</label>
+                    <input value={form.proxy_username} onChange={e=>setForm({...form,proxy_username:e.target.value})} className={inp}/>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Password</label>
-                    <input type="password" value={form.proxy_password_encrypted} onChange={e=>set('proxy_password_encrypted',e.target.value)} className={inp} dir="ltr"/>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Password</label>
+                    <div className="relative">
+                      <input type={showPass?'text':'password'} value={form.proxy_password_encrypted}
+                        onChange={e=>setForm({...form,proxy_password_encrypted:e.target.value})} className={inp}/>
+                      <button onClick={()=>setShowPass(!showPass)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                        {showPass?<EyeOff size={12}/>:<Eye size={12}/>}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 px-6 py-4" style={{ borderTop:'1px solid #374151' }}>
-              <button onClick={()=>setShowForm(false)}
-                className="px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors"
-                style={{ border:'1px solid #374151' }}>
-                إلغاء
-              </button>
+            <div className="flex gap-2 px-5 pb-5">
+              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
               <button onClick={save} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
-                {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Check size={15}/>}
-                {editId ? 'حفظ التعديلات' : 'إضافة السيرفر'}
+                className="flex-[2] py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+                {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><Check size={13}/>{modal==='add'?'Add Server':'Save'}</>}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── Delete Confirm ── */}
+      {delConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+            <div className="w-11 h-11 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={18} className="text-red-500"/>
+            </div>
+            <h3 className="font-bold text-center mb-1">Delete Server?</h3>
+            <p className="text-xs text-center text-gray-400 mb-5">
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{delConfirm.server_label}</span> will be deleted permanently.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={()=>setDel(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
+              <button onClick={delServer} className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
   )
 }

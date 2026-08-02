@@ -30,7 +30,7 @@ const nav = [
     { label: 'Stock',      href: '/stock',      icon: Archive },
   ]},
   { section: 'Shared Tools', items: [
-    { label: 'Servers',    href: '/groupbuy',  icon: Server },
+    { label: 'Servers',    href: '/servers',   icon: Server },
   ]},
   { section: 'Finance', items: [
     { label: 'Analytics',   href: '/analytics',        icon: BarChart3 },
