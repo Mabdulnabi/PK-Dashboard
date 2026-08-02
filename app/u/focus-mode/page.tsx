@@ -124,6 +124,11 @@ function ScientificCalculator({ onClose }: { onClose: () => void }) {
   )
 }
 
+function dotAngle(progress: number, r: number, cx: number, color: string) {
+  const angle = progress * Math.PI * 2 - Math.PI / 2
+  return <circle cx={cx + r * Math.cos(angle)} cy={cx + r * Math.sin(angle)} r={5} fill={color} style={{filter:`drop-shadow(0 0 8px ${color})`}}/>
+}
+
 // ─── Pomodoro ──────────────────────────────────────────────────────────────────
 const MODES = {
   work:  { label:'Focus',       color:'#06b6d4', defaultMin:25 },
@@ -201,7 +206,7 @@ function PomodoroStrip() {
               strokeDasharray={circ} strokeDashoffset={circ*(1-progress)} strokeLinecap="round"
               transform="rotate(-90 82 82)"
               style={{transition:running?'stroke-dashoffset 1s linear':'stroke-dashoffset 0.4s ease',filter:`drop-shadow(0 0 6px ${m.color}88)`}}/>
-            {progress>0.01&&(()=>{const angle=progress*Math.PI*2-Math.PI/2;return <circle cx={82+r*Math.cos(angle)} cy={82+r*Math.sin(angle)} r={5} fill={m.color} style={{filter:`drop-shadow(0 0 8px ${m.color})`}}/>})()}
+            {progress>0.01&&dotAngle(progress,r,82,m.color)}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
             <span className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white leading-none" style={{fontVariantNumeric:'tabular-nums'}}>{mm}:{ss}</span>
