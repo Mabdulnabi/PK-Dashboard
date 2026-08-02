@@ -115,7 +115,10 @@ async function injectSession(toolName, sessionData, proxy) {
   //    Tab will open ALREADY authenticated, no redirect dance needed
   const stores = await chrome.cookies.getAllCookieStores()
   const storeId = stores[0]?.id
-  const { ok, fail } = await setCookies(sessionData.cookies || [], storeId)
+  // Skip Cloudflare cookies — they are IP-bound and break sessions on other devices
+  const SKIP_COOKIES = new Set(['cf_clearance', '__cf_bm', '__cflb', '__cf_mitigated'])
+  const cookiesToInject = (sessionData.cookies || []).filter(c => !SKIP_COOKIES.has(c.name))
+  const { ok, fail } = await setCookies(cookiesToInject, storeId)
   console.log(`SET: ${ok} ok, ${fail} failed out of ${(sessionData.cookies||[]).length}`)
 
   const saved = await chrome.cookies.getAll({ domain: parentDomain })
