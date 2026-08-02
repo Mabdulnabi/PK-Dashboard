@@ -639,7 +639,7 @@ export default function AcademicWorkspacePage() {
       {/* Header + Search — one row */}
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
-          <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight whitespace-nowrap">Academic Workspace</h1>
+          <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight whitespace-nowrap">Focus Mode</h1>
         </div>
         <div className="flex-1">
           <SearchBar/>

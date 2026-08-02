@@ -5,7 +5,7 @@ import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock } from 'lucide-react'
+import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp } from 'lucide-react'
 import {
   HouseSimple, ShoppingBag, Receipt, Headset, PlayCircle,
   UserCircle, Users, LockKey, Package, Key, GraduationCap,
@@ -13,18 +13,18 @@ import {
 
 interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
 
-const nav = [
-  { en:'Dashboard',       ar:'الرئيسية',  href:'/u/dashboard', icon:HouseSimple,  color:'#6366f1' },
-  { en:'Academic Workspace', ar:'بيئة الأكاديمي', href:'/u/academic-workspace', icon:GraduationCap, color:'#06b6d4' },
-  { en:'Oneclick Access', ar:'بكليك واحد',   href:'/u/shop',      icon:ShoppingBag,  color:'#d99401', sub:[
-    { en:'Shared Tools',  ar:'أدوات مشتركة', href:'/u/shop/shared',  icon:Users,    color:'#8b5cf6' },
-    { en:'Bundle Tools',  ar:'حزم الأدوات',  href:'/u/shop/bundle',  icon:Package,  color:'#10b981' },
+const NAV_BASE = [
+  { en:'Dashboard',       ar:'الرئيسية',      href:'/u/dashboard',            icon:HouseSimple,  color:'#6366f1' },
+  { en:'Focus Mode',      ar:'وضع التركيز',   href:'/u/academic-workspace',   icon:GraduationCap,color:'#06b6d4' },
+  { en:'Oneclick Access', ar:'بكليك واحد',    href:'/u/shop',                 icon:ShoppingBag,  color:'#d99401', sub:[
+    { en:'Shared Tools',  ar:'أدوات مشتركة',  href:'/u/shop/shared',          icon:Users,        color:'#8b5cf6' },
+    { en:'Bundle Tools',  ar:'حزم الأدوات',   href:'/u/shop/bundle',          icon:Package,      color:'#10b981' },
   ]},
-  { en:'Private Store',  ar:'المتجر الشخصي', href:'/u/shop/private-store', icon:LockKey, color:'#8b5cf6' },
-  { en:'Payment History', ar:'المدفوعات', href:'/u/payments',  icon:Receipt,      color:'#3b82f6' },
-  { en:'HelpDesk',        ar:'الدعم',      href:'/u/helpdesk',  icon:Headset,      color:'#f97316' },
-  { en:'Tutorial Videos', ar:'الدروس',     href:'/u/tutorials', icon:PlayCircle,   color:'#ec4899' },
-  { en:'My Account',      ar:'حسابي',      href:'/u/profile',   icon:UserCircle,   color:'#14b8a6' },
+  { en:'Private Store',   ar:'المتجر الشخصي', href:'/u/shop/private-store',   icon:LockKey,      color:'#8b5cf6' },
+  { en:'Payment History', ar:'المدفوعات',     href:'/u/payments',             icon:Receipt,      color:'#3b82f6' },
+  { en:'HelpDesk',        ar:'الدعم',         href:'/u/helpdesk',             icon:Headset,      color:'#f97316' },
+  { en:'Tutorial Videos', ar:'الدروس',        href:'/u/tutorials',            icon:PlayCircle,   color:'#ec4899' },
+  { en:'My Account',      ar:'حسابي',         href:'/u/profile',              icon:UserCircle,   color:'#14b8a6' },
 ]
 
 
@@ -50,6 +50,24 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifs]     = useState<any[]>([])
   const [taskAlert,     setTaskAlert]  = useState<{id:string; title:string} | null>(null)
   const dismissedReminders = useRef(new Set<string>())
+  const [navOrder, setNavOrder] = useState<number[]>(()=>{
+    if (typeof window === 'undefined') return NAV_BASE.map((_,i)=>i)
+    try {
+      const s = localStorage.getItem('pk_nav_order')
+      if (s) { const p = JSON.parse(s); if (Array.isArray(p) && p.length === NAV_BASE.length) return p }
+    } catch {}
+    return NAV_BASE.map((_,i)=>i)
+  })
+  const nav = navOrder.map(i => NAV_BASE[i])
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [dragIdx,     setDragIdx]     = useState<number|null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number|null>(null)
+  const reorderNav = (from: number, to: number) => {
+    if (from === to) return
+    const o = [...navOrder]; const [item] = o.splice(from, 1); o.splice(to, 0, item)
+    setNavOrder(o); localStorage.setItem('pk_nav_order', JSON.stringify(o))
+  }
+  const resetNav = () => { const o = NAV_BASE.map((_,i)=>i); setNavOrder(o); localStorage.removeItem('pk_nav_order') }
   const [newEmail,      setNewEmail]   = useState('')
   const [newPassword,   setNewPassword] = useState('')
   const [profileSaving, setProfileSaving] = useState(false)
@@ -250,6 +268,14 @@ if (pathname==='/u/login') return <>{children}</>
           )
         })}
       </nav>
+
+      {/* Customize sidebar button */}
+      {!col && (
+        <button onClick={()=>setCustomizeOpen(true)}
+          className="mx-3 mb-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-[calc(100%-24px)]">
+          <SlidersHorizontal size={12}/><span>Customize sidebar</span>
+        </button>
+      )}
 
       {/* User */}
       <div className="border-t border-gray-100 dark:border-gray-800 p-3">
@@ -466,6 +492,74 @@ if (pathname==='/u/login') return <>{children}</>
               <button onClick={logout}
                 className="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-[#d99401] hover:border-[#d9940150] flex items-center justify-center gap-1.5 transition-colors">
                 <LogOut size={14}/>{isRtl?'تسجيل الخروج':'Sign Out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Customize sidebar modal ─────────────────── */}
+      {customizeOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={()=>setCustomizeOpen(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-80 overflow-hidden border border-gray-200 dark:border-gray-700" onClick={e=>e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div>
+                <p className="font-bold text-sm text-gray-900 dark:text-gray-100">{isRtl ? 'تخصيص الشريط الجانبي' : 'Customize Sidebar'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{isRtl ? 'اسحب لإعادة الترتيب' : 'Drag items to reorder'}</p>
+              </div>
+              <button onClick={()=>setCustomizeOpen(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><X size={14}/></button>
+            </div>
+
+            {/* Draggable list */}
+            <div className="p-3 space-y-1 max-h-[60vh] overflow-y-auto">
+              {nav.map((item, idx) => {
+                const Icon = item.icon
+                const isDragging = dragIdx === idx
+                const isOver     = dragOverIdx === idx && dragIdx !== idx
+                return (
+                  <div key={item.href}
+                    draggable
+                    onDragStart={()=>setDragIdx(idx)}
+                    onDragOver={e=>{ e.preventDefault(); setDragOverIdx(idx) }}
+                    onDrop={()=>{ reorderNav(dragIdx!, idx); setDragIdx(null); setDragOverIdx(null) }}
+                    onDragEnd={()=>{ setDragIdx(null); setDragOverIdx(null) }}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing select-none transition-all border-2 ${isDragging ? 'opacity-40 scale-[0.97]' : ''} ${isOver ? 'scale-[1.01]' : ''}`}
+                    style={{
+                      background: isDragging ? 'transparent' : isOver ? item.color+'08' : undefined,
+                      borderColor: isOver ? item.color+'66' : 'transparent',
+                      borderStyle: isOver ? 'dashed' : 'solid',
+                    }}>
+                    <GripVertical size={14} className="text-gray-300 dark:text-gray-600 flex-shrink-0"/>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: item.color+'20'}}>
+                      <Icon size={14} weight="duotone" style={{color: item.color}}/>
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">{isRtl ? item.ar : item.en}</span>
+                    {/* Up / Down arrows */}
+                    <div className="flex flex-col gap-0.5">
+                      <button onClick={()=>reorderNav(idx, idx-1)} disabled={idx===0}
+                        className="w-5 h-4 rounded flex items-center justify-center text-gray-300 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-20 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <ChevronUp size={11}/>
+                      </button>
+                      <button onClick={()=>reorderNav(idx, idx+1)} disabled={idx===nav.length-1}
+                        className="w-5 h-4 rounded flex items-center justify-center text-gray-300 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-20 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <ChevronDown size={11}/>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <button onClick={resetNav} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                {isRtl ? 'إعادة الترتيب الافتراضي' : 'Reset to default'}
+              </button>
+              <button onClick={()=>setCustomizeOpen(false)}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-colors"
+                style={{background:'#d99401'}}>
+                {isRtl ? 'تم' : 'Done'}
               </button>
             </div>
           </div>
