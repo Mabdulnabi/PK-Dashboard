@@ -9,21 +9,47 @@ import {
 
 // ─── Search engines ────────────────────────────────────────────────────────────
 const ENGINES = [
-  { id:'google',     label:'Google',     color:'#4285F4', bg:'#4285F415',
+  { id:'google',     label:'Google',     color:'#4285F4',
     url:'https://www.google.com/search?q=',
-    icon: <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> },
-  { id:'youtube',    label:'YouTube',    color:'#FF0000', bg:'#FF000015',
+    logo: (
+      <svg viewBox="0 0 48 48" className="w-5 h-5">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+    ) },
+  { id:'youtube',    label:'YouTube',    color:'#FF0000',
     url:'https://www.youtube.com/results?search_query=',
-    icon: <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="#FF0000" d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.56 3.5 12 3.5 12 3.5s-7.56 0-9.38.55A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14C4.44 20.5 12 20.5 12 20.5s7.56 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81z"/><path fill="#fff" d="M9.75 15.02V8.98L15.5 12z"/></svg> },
-  { id:'chatgpt',    label:'ChatGPT',    color:'#10a37f', bg:'#10a37f15',
+    logo: (
+      <svg viewBox="0 0 48 48" className="w-5 h-5">
+        <path fill="#FF0000" d="M47.52 13.27A6.02 6.02 0 0 0 43.3 9.01C39.56 8 24 8 24 8S8.44 8 4.7 9.01a6.02 6.02 0 0 0-4.22 4.26C.48 17.05 0 21.52 0 24s.48 6.95.48 6.95A6.02 6.02 0 0 0 4.7 35.21C8.44 36.22 24 36.22 24 36.22s15.56 0 19.3-1.01a6.02 6.02 0 0 0 4.22-4.26C48 26.95 48 24 48 24s0-6.95-.48-10.73z"/>
+        <path fill="#fff" d="M19 30.5v-13l12.5 6.5z"/>
+      </svg>
+    ) },
+  { id:'chatgpt',    label:'ChatGPT',    color:'#10a37f',
     url:'https://chatgpt.com/?q=',
-    icon: <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="#10a37f"><path d="M22.28 9.22a5.86 5.86 0 0 0-.5-4.8 6 6 0 0 0-6.44-2.87 5.86 5.86 0 0 0-4.41-2A5.98 5.98 0 0 0 5.2 3.38a5.87 5.87 0 0 0-3.93 2.84 5.99 5.99 0 0 0 .74 7.03 5.86 5.86 0 0 0 .5 4.8 6 6 0 0 0 6.44 2.87 5.87 5.87 0 0 0 4.41 1.99 5.98 5.98 0 0 0 5.73-4.14 5.87 5.87 0 0 0 3.93-2.84 5.99 5.99 0 0 0-.74-7.71zm-8.9 12.48a4.44 4.44 0 0 1-2.85-1.02l.14-.08 4.73-2.73a.78.78 0 0 0 .4-.68v-6.67l2 1.16a.07.07 0 0 1 .04.05v5.52a4.47 4.47 0 0 1-4.46 4.45zM3.42 17.7a4.45 4.45 0 0 1-.53-2.99l.14.08 4.73 2.73a.78.78 0 0 0 .78 0l5.78-3.34v2.31a.08.08 0 0 1-.03.06l-4.79 2.76a4.47 4.47 0 0 1-6.08-1.61zm-1.17-10.3a4.44 4.44 0 0 1 2.33-1.96v5.62a.78.78 0 0 0 .39.67l5.76 3.33-2 1.15a.08.08 0 0 1-.07 0L3.86 13.5a4.47 4.47 0 0 1-1.61-6.1zm16.44 3.83-5.78-3.34 2-1.15a.08.08 0 0 1 .07 0l4.8 2.77a4.47 4.47 0 0 1-.69 8.06v-5.62a.78.78 0 0 0-.4-.72zm1.99-3.01-.14-.08-4.73-2.73a.78.78 0 0 0-.78 0L9.25 8.74V6.43a.08.08 0 0 1 .03-.06l4.79-2.76a4.47 4.47 0 0 1 6.61 4.62zm-12.54 4.13-2-1.15a.07.07 0 0 1-.04-.05V5.63a4.47 4.47 0 0 1 7.33-3.43l-.14.08-4.73 2.73a.78.78 0 0 0-.4.68l-.02 6.66zm1.09-2.34 2.57-1.48 2.57 1.48v2.96l-2.57 1.48-2.57-1.48V9.99z"/></svg> },
-  { id:'claude',     label:'Claude',     color:'#cc785c', bg:'#cc785c15',
+    logo: (
+      <svg viewBox="0 0 41 41" className="w-5 h-5" fill="none">
+        <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-7.505-3.337 10.079 10.079 0 0 0-9.61 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 7.504 3.336 10.079 10.079 0 0 0 9.617-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.243-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.747-10.24zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l8.048 4.648a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.647-1.13zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929l-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.5v4.999l-4.331 2.5-4.331-2.5V18z" fill="#10a37f"/>
+      </svg>
+    ) },
+  { id:'claude',     label:'Claude',     color:'#D4A27F',
     url:'https://claude.ai/new?q=',
-    icon: <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="#cc785c"><path d="M4.709 15.955l4.72-2.647.08-.23-.08-.222-4.72-2.647v-1.087l6.025 3.38v1.155L4.709 17.04v-1.085zm5.73 2.617L8.434 19.8l-5.024-8.69 1.005-.58 6.024 8.042zm3.573-10.272L12.003 7l-5.024 8.69 1.005.58 6.028-8.97zM14.29 8.045l4.72 2.647.08.222-.08.23-4.72 2.647v1.087l6.025-3.38v-1.155L14.29 6.96v1.085zm-5.73-2.617L10.566 4.2l5.024 8.69-1.005.58-6.025-8.042zm3.573 10.272L14.007 17l5.024-8.69-1.005-.58-6.028 8.97z"/></svg> },
-  { id:'perplexity', label:'Perplexity', color:'#20b2aa', bg:'#20b2aa15',
+    logo: (
+      <svg viewBox="0 0 46 46" className="w-5 h-5" fill="none">
+        <path d="M31.32 6.18L22.7 27.4l-8.63-21.22H6.9L18.44 34.5h8.5L38.48 6.18z" fill="#D4A27F"/>
+        <path d="M35.2 6.18l-8.26 21.22 4.25 7.1 12.14-28.32z" fill="#CC7F4B"/>
+      </svg>
+    ) },
+  { id:'perplexity', label:'Perplexity', color:'#20B2AA',
     url:'https://www.perplexity.ai/search?q=',
-    icon: <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="#20b2aa"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> },
+    logo: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+        <path d="M12 2.5L3 7.5V16.5L12 21.5L21 16.5V7.5L12 2.5Z" stroke="#20B2AA" strokeWidth="1.5" fill="none"/>
+        <path d="M12 2.5V21.5M3 7.5L21 16.5M21 7.5L3 16.5" stroke="#20B2AA" strokeWidth="1.5"/>
+      </svg>
+    ) },
 ]
 
 // ─── Pomodoro (horizontal) ─────────────────────────────────────────────────────
@@ -558,9 +584,8 @@ function TasksPanel() {
 
 // ─── Search bar ────────────────────────────────────────────────────────────────
 function SearchBar() {
-  const [engine, setEngine]   = useState(ENGINES[0])
-  const [query, setQuery]     = useState('')
-  const [showPicker, setShowPicker] = useState(false)
+  const [engine, setEngine] = useState(ENGINES[0])
+  const [query, setQuery]   = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const go = (e?: React.FormEvent) => {
@@ -572,37 +597,38 @@ function SearchBar() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Engine pills */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+    <form onSubmit={go}
+      className="flex items-center gap-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm px-2 py-1.5 transition-colors"
+      style={{borderColor: query ? engine.color+'88' : undefined}}>
+
+      {/* Engine icon buttons */}
+      <div className="flex items-center gap-0.5 flex-shrink-0">
         {ENGINES.map(e => (
-          <button key={e.id} onClick={()=>{ setEngine(e); inputRef.current?.focus() }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border ${engine.id===e.id?'border-transparent text-white':'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900'}`}
-            style={engine.id===e.id?{background:e.color,boxShadow:`0 2px 8px ${e.color}33`}:{}}>
-            {e.icon}
-            {e.label}
+          <button key={e.id} type="button"
+            title={e.label}
+            onClick={()=>{ setEngine(e); inputRef.current?.focus() }}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${engine.id===e.id?'shadow-sm':'opacity-40 hover:opacity-80'}`}
+            style={engine.id===e.id?{background:e.color+'18', outline:`2px solid ${e.color}44`}:{}}>
+            {e.logo}
           </button>
         ))}
       </div>
+
+      {/* Divider */}
+      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1"/>
+
       {/* Input */}
-      <form onSubmit={go} className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 flex-shrink-0">{engine.icon}</div>
-          <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)}
-            placeholder={`Search on ${engine.label}…`}
-            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none transition-colors shadow-sm"
-            style={{borderColor: query ? engine.color+'88' : undefined}}
-            onFocus={e=>e.target.style.borderColor=engine.color+'88'}
-            onBlur={e=>e.target.style.borderColor=''}
-          />
-        </div>
-        <button type="submit"
-          className="px-5 py-2.5 rounded-xl text-sm font-bold text-white flex-shrink-0 transition-all active:scale-95"
-          style={{background:engine.color, boxShadow:`0 2px 10px ${engine.color}44`}}>
-          Search
-        </button>
-      </form>
-    </div>
+      <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)}
+        placeholder={`Search on ${engine.label}…`}
+        className="flex-1 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-transparent outline-none min-w-0"/>
+
+      {/* Submit */}
+      <button type="submit"
+        className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95"
+        style={{background: engine.color}}>
+        <Search size={13}/>
+      </button>
+    </form>
   )
 }
 
@@ -610,13 +636,12 @@ function SearchBar() {
 export default function AcademicWorkspacePage() {
   return (
     <div className="min-h-full p-4 md:p-5 flex flex-col gap-4">
-      {/* Header + Search */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+      {/* Header + Search — one row */}
+      <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
-          <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Academic Workspace</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Focus. Write. Track. Repeat.</p>
+          <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight whitespace-nowrap">Academic Workspace</h1>
         </div>
-        <div className="flex-1 lg:max-w-2xl">
+        <div className="flex-1">
           <SearchBar/>
         </div>
       </div>
