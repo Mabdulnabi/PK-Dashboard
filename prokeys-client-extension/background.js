@@ -175,6 +175,19 @@ async function disconnect(toolName) {
   await setState({ active_tool: null, session_data: null, session_id: null, server_id: null, pending_inject: null, tool_tab_id: null })
   chrome.action.setBadgeText({ text: '' })
 
+  // Push updated cookies back to server so next member gets the latest session
+  if (state.server_id && state.dashboard_url && state.session_data?.cookies?.length) {
+    fetch(`${state.dashboard_url}/api/member/servers/session/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        server_id:       state.server_id,
+        updated_cookies: state.session_data.cookies,
+      })
+    }).catch(() => {})
+  }
+
   // Notify the dashboard tab so it updates instantly without waiting for a poll
   if (state.dashboard_url) {
     const dashTabs = await chrome.tabs.query({ url: `${state.dashboard_url}/*` }).catch(() => [])
