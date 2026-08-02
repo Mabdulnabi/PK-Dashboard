@@ -668,6 +668,11 @@ export default function UserDashboard() {
           setTimeout(()=>setQuickError(null), 4000)
         }
       }
+      if (d.type==='PK_DISCONNECT_RESULT') {
+        setConnectedId(null)
+        setConnectingId(null)
+        activeRef.current = null
+      }
     }
     window.addEventListener('message', handler)
     let attempts = 0
