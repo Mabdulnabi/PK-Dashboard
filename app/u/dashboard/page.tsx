@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star, Eye, EyeOff, Copy } from 'lucide-react'
 
 // ── Review Prompt ─────────────────────────────────────────
 function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: string }) {
@@ -337,6 +337,172 @@ function daysLeft(expiresAt?:string) {
   return Math.ceil((new Date(expiresAt).getTime()-Date.now())/86400000)
 }
 
+// ── Credentials Modal ─────────────────────────────────────
+function CredentialsModal({ purchase, onClose, t, lang, settings }: {
+  purchase: Purchase; onClose: ()=>void; t: any; lang: string; settings: any
+}) {
+  const [delivery, setDelivery]   = useState<any>(null)
+  const [loading,  setLoading]    = useState(true)
+  const [showPass, setShowPass]   = useState(false)
+  const [copied,   setCopied]     = useState<string|null>(null)
+  const isRtl = lang === 'ar'
+
+  useEffect(()=>{
+    fetch(`/api/member/delivery?purchase_id=${purchase.id}`)
+      .then(r=>r.json())
+      .then(d=>setDelivery(d.delivery||null))
+      .finally(()=>setLoading(false))
+  },[purchase.id])
+
+  const copy = async (text:string, field:string) => {
+    await navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(()=>setCopied(null), 2000)
+  }
+
+  const days = daysLeft(purchase.expires_at)
+  const isAccount = delivery?.delivery_type === 'account'
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
+        onClick={e=>e.stopPropagation()} dir={isRtl?'rtl':'ltr'}>
+
+        {/* Header */}
+        <div className="relative px-6 pt-6 pb-5"
+          style={{background:'linear-gradient(135deg,#0d0f14 0%,#1a1200 100%)'}}>
+          <div className="absolute inset-0 opacity-20"
+            style={{backgroundImage:'radial-gradient(circle at 80% 20%, #d9940140, transparent 60%)'}}/>
+          <button onClick={onClose}
+            className="absolute top-4 end-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-colors">
+            <X size={14}/>
+          </button>
+          <div className="relative flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {purchase.tool_image
+                ? <img src={purchase.tool_image} className="w-9 h-9 object-contain" alt=""/>
+                : <span className="text-white font-bold text-sm">{purchase.tool_name.slice(0,2)}</span>}
+            </div>
+            <div>
+              <div className="text-white font-bold text-base leading-tight">{purchase.tool_name}</div>
+              <div className="flex items-center gap-2 mt-1">
+                {days !== null && (
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${days<=3?'bg-red-500/20 text-red-300':days<=7?'bg-amber-500/20 text-amber-300':'bg-emerald-500/20 text-emerald-300'}`}>
+                    {isRtl?`ينتهي بعد ${days} يوم`:`${days}d left`}
+                  </span>
+                )}
+                <span className="text-[11px] text-white/40">{purchase.duration_label}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-5">
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
+            </div>
+          ) : !delivery ? (
+            <div className="text-center py-8">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mx-auto mb-3">
+                <Clock size={24} className="text-amber-400"/>
+              </div>
+              <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-1">{t('Account Being Prepared','جاري تجهيز حسابك')}</p>
+              <p className="text-xs text-gray-400 mb-4">{t('Credentials will be delivered shortly','سيتم تسليم البيانات قريباً')}</p>
+              <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}?text=${encodeURIComponent(`متى سيتم تسليم حساب ${purchase.tool_name}؟`)}`}
+                target="_blank"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold bg-green-500 hover:bg-green-600 transition-colors">
+                💬 {t('Ask on WhatsApp','استفسر على WhatsApp')}
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-3">
+
+              {isAccount ? (<>
+                {/* Email row */}
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">{t('Email','البريد الإلكتروني')}</div>
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
+                    <span className="flex-1 text-sm font-mono text-gray-900 dark:text-gray-100 truncate" dir="ltr">{delivery.email}</span>
+                    <button onClick={()=>copy(delivery.email,'email')}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${copied==='email'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                      {copied==='email'?<CheckCircle size={13}/>:<Copy size={13}/>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Password row */}
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">{t('Password','كلمة المرور')}</div>
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
+                    <span className="flex-1 text-sm font-mono text-gray-900 dark:text-gray-100" dir="ltr">
+                      {showPass ? delivery.password : '••••••••••••'}
+                    </span>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button onClick={()=>setShowPass(s=>!s)}
+                        className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                        {showPass?<EyeOff size={13}/>:<Eye size={13}/>}
+                      </button>
+                      <button onClick={()=>copy(delivery.password,'pass')}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                        {copied==='pass'?<CheckCircle size={13}/>:<Copy size={13}/>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>) : (
+                /* Key row */
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">{t('License Key','مفتاح الترخيص')}</div>
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
+                    <span className="flex-1 text-sm font-mono text-gray-900 dark:text-gray-100 break-all" dir="ltr">
+                      {showPass ? delivery.key : '••••-••••-••••-••••'}
+                    </span>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button onClick={()=>setShowPass(s=>!s)}
+                        className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                        {showPass?<EyeOff size={13}/>:<Eye size={13}/>}
+                      </button>
+                      <button onClick={()=>copy(delivery.key,'pass')}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copied==='pass'?'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600':'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                        {copied==='pass'?<CheckCircle size={13}/>:<Copy size={13}/>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {delivery.notes && (
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1">{t('Notes','ملاحظات')}</div>
+                  <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed">{delivery.notes}</p>
+                </div>
+              )}
+
+              {/* Delivered at */}
+              <p className="text-[11px] text-gray-400 text-center pt-1">
+                {t('Delivered','تم التسليم')} {new Date(delivery.delivered_at).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB')}
+              </p>
+
+              {/* Renew CTA if expiring soon */}
+              {days !== null && days <= 7 && (
+                <a href={`/u/checkout?tool_id=${purchase.tool_id}`}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-black text-sm font-bold mt-1"
+                  style={{background:'linear-gradient(90deg,#d99401,#f59e0b)'}}>
+                  ⚡ {t('Renew Now','جدد الآن')}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StatusBadge({ days, t }:{ days:number|null; t:any }) {
   if (days===null) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">{t('Lifetime','مدى الحياة')}</span>
   if (days<=3) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 dark:bg-red-500/10 text-red-600 animate-pulse">⚠ {days} {t('d','ي')}</span>
@@ -455,6 +621,7 @@ export default function UserDashboard() {
   const [quickError,   setQuickError]   = useState<string|null>(null)
   const [memberCreatedAt, setMemberCreatedAt] = useState<string|null>(null)
   const [hasTicket,    setHasTicket]    = useState(false)
+  const [credPurchase, setCredPurchase] = useState<Purchase|null>(null)
   const activeRef = useRef<string|null>(null)
 
   const fetchPurchases = () => {
@@ -712,12 +879,13 @@ export default function UserDashboard() {
 
                       {isPrivate && (
                         p.has_delivery ? (
-                          <button onClick={()=>router.push(`/u/subscription/${p.id}`)}
-                            className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-all flex items-center justify-center gap-1.5 relative">
+                          <button onClick={()=>setCredPurchase(p)}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 relative"
+                            style={{background:'linear-gradient(90deg,#d99401,#f59e0b)',boxShadow:'0 3px 10px #d9940130'}}>
                             {!p.delivery_viewed && (
                               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 animate-pulse"/>
                             )}
-                            <CheckCircle size={12}/>{t('View Credentials','بيانات الدخول')}
+                            <Eye size={12}/>{t('View Credentials','بيانات الدخول')}
                           </button>
                         ) : (
                           <span className="flex-1 py-2.5 rounded-xl border border-dashed border-amber-300 dark:border-amber-700 text-xs font-bold text-amber-500 flex items-center justify-center gap-1.5">
@@ -756,6 +924,15 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Credentials Modal */}
+      {credPurchase && (
+        <CredentialsModal
+          purchase={credPurchase}
+          onClose={()=>setCredPurchase(null)}
+          t={t} lang={lang} settings={settings}
+        />
       )}
     </div>
   )
