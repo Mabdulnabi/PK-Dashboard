@@ -22,9 +22,9 @@ const ENGINES = [
   { id:'youtube',    label:'YouTube',    color:'#FF0000',
     url:'https://www.youtube.com/results?search_query=',
     logo: (
-      <svg viewBox="0 0 48 48" className="w-5 h-5">
-        <path fill="#FF0000" d="M47.52 13.27A6.02 6.02 0 0 0 43.3 9.01C39.56 8 24 8 24 8S8.44 8 4.7 9.01a6.02 6.02 0 0 0-4.22 4.26C.48 17.05 0 21.52 0 24s.48 6.95.48 6.95A6.02 6.02 0 0 0 4.7 35.21C8.44 36.22 24 36.22 24 36.22s15.56 0 19.3-1.01a6.02 6.02 0 0 0 4.22-4.26C48 26.95 48 24 48 24s0-6.95-.48-10.73z"/>
-        <path fill="#fff" d="M19 30.5v-13l12.5 6.5z"/>
+      <svg viewBox="0 0 90 63" className="w-5 h-5">
+        <rect x="0" y="0" width="90" height="63" rx="14" fill="#FF0000"/>
+        <polygon points="33,12 33,51 65,31.5" fill="white"/>
       </svg>
     ) },
   { id:'chatgpt',    label:'ChatGPT',    color:'#10a37f',
@@ -34,20 +34,40 @@ const ENGINES = [
         <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-7.505-3.337 10.079 10.079 0 0 0-9.61 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 7.504 3.336 10.079 10.079 0 0 0 9.617-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.243-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.747-10.24zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l8.048 4.648a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.647-1.13zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929l-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.5v4.999l-4.331 2.5-4.331-2.5V18z" fill="#10a37f"/>
       </svg>
     ) },
-  { id:'claude',     label:'Claude',     color:'#D4A27F',
+  { id:'claude',     label:'Claude',     color:'#CC7858',
     url:'https://claude.ai/new?q=',
     logo: (
-      <svg viewBox="0 0 46 46" className="w-5 h-5" fill="none">
-        <path d="M31.32 6.18L22.7 27.4l-8.63-21.22H6.9L18.44 34.5h8.5L38.48 6.18z" fill="#D4A27F"/>
-        <path d="M35.2 6.18l-8.26 21.22 4.25 7.1 12.14-28.32z" fill="#CC7F4B"/>
+      <svg viewBox="0 0 100 100" className="w-5 h-5">
+        {[0,27,55,82,110,138,165,192,220,248,275,302,330].map((a,i) => (
+          <rect key={i} x="45.5" y="5" width="9" height="43" rx="4.5"
+            fill="#CC7858" transform={`rotate(${a} 50 50)`}/>
+        ))}
       </svg>
     ) },
-  { id:'perplexity', label:'Perplexity', color:'#20B2AA',
+  { id:'perplexity', label:'Perplexity', color:'#20C8D8',
     url:'https://www.perplexity.ai/search?q=',
     logo: (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
-        <path d="M12 2.5L3 7.5V16.5L12 21.5L21 16.5V7.5L12 2.5Z" stroke="#20B2AA" strokeWidth="1.5" fill="none"/>
-        <path d="M12 2.5V21.5M3 7.5L21 16.5M21 7.5L3 16.5" stroke="#20B2AA" strokeWidth="1.5"/>
+      <svg viewBox="0 0 110 126" className="w-5 h-5" fill="none"
+        stroke="#20C8D8" strokeWidth="7.5" strokeLinejoin="miter" strokeLinecap="square">
+        {/* Top left triangle */}
+        <path d="M55 4 L16 34 L55 34 Z"/>
+        {/* Top right triangle */}
+        <path d="M55 4 L94 34 L55 34 Z"/>
+        {/* Left vertical */}
+        <line x1="16" y1="34" x2="16" y2="88"/>
+        {/* Right vertical */}
+        <line x1="94" y1="34" x2="94" y2="60"/>
+        {/* Right L horizontal extension */}
+        <line x1="94" y1="60" x2="110" y2="60"/>
+        {/* Center horizontal bars */}
+        <line x1="16" y1="34" x2="94" y2="34"/>
+        <line x1="16" y1="88" x2="94" y2="88"/>
+        {/* Center X diagonals */}
+        <line x1="16" y1="34" x2="94" y2="88"/>
+        <line x1="94" y1="34" x2="16" y2="88"/>
+        {/* Bottom V */}
+        <line x1="16" y1="88" x2="55" y2="122"/>
+        <line x1="94" y1="88" x2="55" y2="122"/>
       </svg>
     ) },
 ]
@@ -648,8 +668,12 @@ function SearchBar() {
 
   return (
     <form onSubmit={go}
-      className="flex items-center gap-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm px-2 py-1.5 transition-colors"
-      style={{borderColor: query ? engine.color+'88' : undefined}}>
+      className="flex items-center gap-1.5 rounded-2xl shadow-sm px-2 py-1.5 transition-all duration-300"
+      style={{
+        background: engine.color + '12',
+        border: `1.5px solid ${engine.color}55`,
+        boxShadow: `0 2px 12px ${engine.color}18`,
+      }}>
 
       {/* Engine icon buttons */}
       <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -657,25 +681,26 @@ function SearchBar() {
           <button key={e.id} type="button"
             title={e.label}
             onClick={()=>{ setEngine(e); inputRef.current?.focus() }}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${engine.id===e.id?'shadow-sm':'opacity-40 hover:opacity-80'}`}
-            style={engine.id===e.id?{background:e.color+'18', outline:`2px solid ${e.color}44`}:{}}>
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${engine.id===e.id?'shadow-sm':'opacity-35 hover:opacity-70'}`}
+            style={engine.id===e.id?{background:e.color+'22', outline:`2px solid ${e.color}55`}:{}}>
             {e.logo}
           </button>
         ))}
       </div>
 
       {/* Divider */}
-      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1"/>
+      <div className="w-px h-5 flex-shrink-0 mx-1" style={{background: engine.color+'44'}}/>
 
       {/* Input */}
       <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)}
         placeholder={`Search on ${engine.label}…`}
-        className="flex-1 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-transparent outline-none min-w-0"/>
+        className="flex-1 text-sm text-gray-900 dark:text-gray-100 bg-transparent outline-none min-w-0"
+        style={{'--tw-placeholder-color': engine.color+'88'} as any}/>
 
       {/* Submit */}
       <button type="submit"
         className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all active:scale-95"
-        style={{background: engine.color}}>
+        style={{background: engine.color, boxShadow: `0 2px 8px ${engine.color}55`}}>
         <Search size={13}/>
       </button>
     </form>
