@@ -588,7 +588,7 @@ function NotesPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{stripHtml(note.content).slice(0,60)||'No content'}</p>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{new Date(note.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
                 </div>
-                {canDelete(note)&&<button onClick={e=>deleteNote(note.id,e)} className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5"><Trash2 size={11}/></button>}
+                {canDelete(note)&&<button onClick={e=>deleteNote(note.id,e)} className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5"><Trash2 size={11}/></button>}
               </div>
             </button>
           ))}
@@ -802,8 +802,8 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
               {task.description&&<p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-snug line-clamp-2">{task.description}</p>}
             </div>
             <div className="opacity-0 group-hover:opacity-100 flex gap-1 flex-shrink-0 mt-0.5">
-              {canDelete(task)&&<button onClick={()=>openEditTask(task)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"><Edit3 size={11}/></button>}
-              {canDelete(task)&&<button onClick={()=>deleteTask(task.id)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"><Trash2 size={11}/></button>}
+              {canDelete(task)&&<button onClick={()=>openEditTask(task)} className="w-6 h-6 rounded-md flex items-center justify-center text-blue-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"><Edit3 size={11}/></button>}
+              {canDelete(task)&&<button onClick={()=>deleteTask(task.id)} className="w-6 h-6 rounded-md flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"><Trash2 size={11}/></button>}
             </div>
           </div>
         ))}
