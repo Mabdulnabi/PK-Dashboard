@@ -246,11 +246,9 @@ if (pathname==='/u/login') return <>{children}</>
           {!col && (
             <>
               <div className="flex-1 text-left min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{member?.full_name}</div>
-                  {member?.member_code && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
-                  )}
+                <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
+                <div className="mt-0.5">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>PK</span>
                 </div>
               </div>
               <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
