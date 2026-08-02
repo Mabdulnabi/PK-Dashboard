@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu } from 'lucide-react'
 import {
   HouseSimple, ShoppingBag, Receipt, Headset, PlayCircle,
-  UserCircle, Users, LockKey, Package, Key,
+  UserCircle, Users, LockKey, Package, Key, GraduationCap,
 } from '@phosphor-icons/react'
 
 interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
@@ -23,6 +23,7 @@ const nav = [
   { en:'Payment History', ar:'المدفوعات', href:'/u/payments',  icon:Receipt,      color:'#3b82f6' },
   { en:'HelpDesk',        ar:'الدعم',      href:'/u/helpdesk',  icon:Headset,      color:'#f97316' },
   { en:'Tutorial Videos', ar:'الدروس',     href:'/u/tutorials', icon:PlayCircle,   color:'#ec4899' },
+  { en:'Academic Workspace', ar:'بيئة الأكاديمي', href:'/u/academic-workspace', icon:GraduationCap, color:'#06b6d4' },
   { en:'My Account',      ar:'حسابي',      href:'/u/profile',   icon:UserCircle,   color:'#14b8a6' },
 ]
 
