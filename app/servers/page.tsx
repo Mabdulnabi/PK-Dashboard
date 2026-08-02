@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, X, Check, Server, Users, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, Server, Users, ChevronDown, ChevronUp, AlertCircle, Cookie, Database, LayoutList } from 'lucide-react'
 
 const TIER_OPTIONS = ['basic','vip','private']
 const STATUS_OPTIONS = ['active','maintenance','full','disabled']
@@ -318,6 +318,41 @@ export default function ServersPage() {
                 />
                 {jsonErr && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{jsonErr}</p>}
                 <p className="text-[11px] text-gray-600 mt-1">Admin Extension → Sessions tab → سحب تلقائي → نسخ JSON</p>
+
+                {/* Cookies Preview */}
+                {(() => {
+                  if (!form.session_data_encrypted) return null
+                  let parsed: any = null
+                  try { parsed = JSON.parse(form.session_data_encrypted) } catch { return null }
+                  const cookies: any[] = Array.isArray(parsed) ? parsed : (parsed?.cookies || [])
+                  const lsKeys = Object.keys(parsed?.localStorage || {}).length
+                  const idbCount = (parsed?.indexedDB || []).length
+                  if (!cookies.length && !lsKeys && !idbCount) return null
+                  return (
+                    <div className="mt-3 rounded-xl overflow-hidden" style={{ border: '1px solid #374151' }}>
+                      {/* Summary bar */}
+                      <div className="flex items-center gap-4 px-4 py-2.5 text-xs" style={{ background: '#111827', borderBottom: '1px solid #374151' }}>
+                        <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                          <Cookie size={12}/> {cookies.length} cookie
+                        </span>
+                        {lsKeys > 0 && <span className="flex items-center gap-1.5 text-blue-400 font-semibold"><LayoutList size={12}/> {lsKeys} localStorage</span>}
+                        {idbCount > 0 && <span className="flex items-center gap-1.5 text-purple-400 font-semibold"><Database size={12}/> {idbCount} IDB</span>}
+                      </div>
+                      {/* Cookie rows */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {cookies.map((c: any, i: number) => (
+                          <div key={i} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-white/5" style={{ borderBottom: i < cookies.length - 1 ? '1px solid #1F2937' : undefined }}>
+                            <span className="font-mono font-semibold text-amber-300 truncate min-w-0 flex-shrink-0" style={{ maxWidth: 160 }}>{c.name}</span>
+                            <span className="font-mono text-gray-400 truncate flex-1 min-w-0">{c.value}</span>
+                            <span className="text-gray-600 flex-shrink-0">{(c.domain || '').replace(/^\./, '')}</span>
+                            {c.httpOnly && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 flex-shrink-0">httpOnly</span>}
+                            {c.secure && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 flex-shrink-0">secure</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               <div>
