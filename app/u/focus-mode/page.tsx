@@ -6,6 +6,7 @@ import {
   ArrowLeft, FileText, BookOpen, X, Calendar, AlarmClock, ChevronDown, ChevronLeft, ChevronRight,
   Highlighter, Palette, Bookmark, FolderPlus, Folder, Edit3, Calculator,
   Users, UserPlus, Share2, Lock, Globe, Mail, GripVertical, RefreshCw,
+  Upload, Download, AlertTriangle,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
@@ -1168,6 +1169,11 @@ type PanelId = 'pomodoro'|'bookmarks'|'notes'|'tasks'|'calendar'
 export default function FocusModePage() {
   const [showCalc, setShowCalc]           = useState(false)
   const [showInvite, setShowInvite]       = useState(false)
+  const [importModal, setImportModal]     = useState<{file:File;payload:any}|null>(null)
+  const [importMode, setImportMode]       = useState<'merge'|'replace'>('merge')
+  const [importStatus, setImportStatus]   = useState<'idle'|'loading'|'done'|'error'>('idle')
+  const [importStats, setImportStats]     = useState<{bookmarks:number;notes:number;tasks:number;events:number}|null>(null)
+  const importInputRef                    = useRef<HTMLInputElement>(null)
   const [boardMode, setBoardMode]         = useState<BoardMode>('private')
   const [myBoard, setMyBoard]             = useState<SharedBoard|null>(null)
   const [invitedBoards, setInvitedBoards] = useState<SharedBoard[]>([])
@@ -1219,6 +1225,54 @@ export default function FocusModePage() {
     } catch {}
   },[])
 
+  const handleExport = async () => {
+    const res = await fetch('/api/member/focus-export')
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `focus-mode-${new Date().toISOString().slice(0,10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const payload = JSON.parse(ev.target?.result as string)
+        setImportModal({ file, payload })
+        setImportMode('merge')
+        setImportStatus('idle')
+        setImportStats(null)
+      } catch {
+        alert('Invalid JSON file.')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  const confirmImport = async () => {
+    if (!importModal) return
+    setImportStatus('loading')
+    const res  = await fetch('/api/member/focus-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: importModal.payload, mode: importMode }),
+    })
+    const d = await res.json()
+    if (d.success) {
+      setImportStatus('done')
+      setImportStats(d.stats)
+    } else {
+      setImportStatus('error')
+    }
+  }
+
   const seenReminders = useRef<Set<string>>(new Set())
 
   useEffect(()=>{
@@ -1269,6 +1323,18 @@ export default function FocusModePage() {
           style={{background:'#06b6d410'}} title="Scientific Calculator">
           <Calculator size={16} style={{color:'#06b6d4'}}/>
         </button>
+        {/* Export / Import */}
+        <button onClick={handleExport} title="Export all data"
+          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:opacity-80"
+          style={{background:'#10b98110'}}>
+          <Download size={15} style={{color:'#10b981'}}/>
+        </button>
+        <button onClick={()=>importInputRef.current?.click()} title="Import data from JSON"
+          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:opacity-80"
+          style={{background:'#f59e0b10'}}>
+          <Upload size={15} style={{color:'#f59e0b'}}/>
+        </button>
+        <input ref={importInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileSelect}/>
         <div className="flex-1"><SearchBar/></div>
       </div>
 
@@ -1308,6 +1374,113 @@ export default function FocusModePage() {
 
       {showCalc   && <ScientificCalculator onClose={()=>setShowCalc(false)}/>}
       {showInvite && <InviteModal onClose={()=>setShowInvite(false)}/>}
+
+      {/* ── Import modal ───────────────────────────────────────────────────── */}
+      {importModal&&(
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={()=>{ if(importStatus!=='loading') setImportModal(null) }}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 overflow-hidden"
+            onClick={e=>e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <Upload size={15} style={{color:'#f59e0b'}}/>
+                <span className="font-bold text-gray-900 dark:text-gray-100">Import Focus Mode Data</span>
+              </div>
+              {importStatus!=='loading'&&<button onClick={()=>setImportModal(null)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500"><X size={14}/></button>}
+            </div>
+
+            <div className="p-5 space-y-4">
+              {importStatus==='done'?(
+                /* Success */
+                <div className="text-center py-4 space-y-3">
+                  <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{background:'#10b98120'}}>
+                    <Check size={22} style={{color:'#10b981'}}/>
+                  </div>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">Import Complete!</p>
+                  {importStats&&(
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      {[['Bookmarks',importStats.bookmarks,'#06b6d4'],['Notes',importStats.notes,'#8b5cf6'],['Tasks',importStats.tasks,'#10b981'],['Events',importStats.events,'#f59e0b']].map(([label,count,color])=>(
+                        <div key={label as string} className="rounded-xl p-2" style={{background:`${color}12`}}>
+                          <p className="text-lg font-black" style={{color:color as string}}>{count as number}</p>
+                          <p className="text-[10px] text-gray-500">{label as string}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={()=>{ setImportModal(null); window.location.reload() }}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white mt-2" style={{background:'#10b981'}}>
+                    Done — Reload Page
+                  </button>
+                </div>
+              ):importStatus==='error'?(
+                /* Error */
+                <div className="text-center py-4 space-y-3">
+                  <AlertTriangle size={28} className="mx-auto text-red-400"/>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Something went wrong. Please try again.</p>
+                  <button onClick={()=>setImportStatus('idle')} className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">Try Again</button>
+                </div>
+              ):(
+                <>
+                  {/* File summary */}
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">File</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{importModal.file.name}</p>
+                    <div className="flex gap-3 mt-2 flex-wrap">
+                      {[
+                        ['Bookmarks',(importModal.payload.bookmarks||[]).length,'#06b6d4'],
+                        ['Notes',(importModal.payload.notes||[]).length,'#8b5cf6'],
+                        ['Tasks',(importModal.payload.tasks||[]).length,'#10b981'],
+                        ['Events',(importModal.payload.calendar_events||[]).length,'#f59e0b'],
+                      ].map(([label,count,color])=>(
+                        <span key={label as string} className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{background:`${color}18`,color:color as string}}>
+                          {count as number} {label as string}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Import mode</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={()=>setImportMode('merge')}
+                        className={`rounded-xl p-3 text-left border-2 transition-all ${importMode==='merge'?'border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20':'border-gray-200 dark:border-gray-700'}`}>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Merge</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Add to existing data without deleting anything</p>
+                      </button>
+                      <button onClick={()=>setImportMode('replace')}
+                        className={`rounded-xl p-3 text-left border-2 transition-all ${importMode==='replace'?'border-red-400 bg-red-50 dark:bg-red-900/20':'border-gray-200 dark:border-gray-700'}`}>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Replace all</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Delete current data, then import</p>
+                      </button>
+                    </div>
+                    {importMode==='replace'&&(
+                      <div className="flex items-start gap-2 mt-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                        <AlertTriangle size={13} className="text-red-500 flex-shrink-0 mt-0.5"/>
+                        <p className="text-[11px] text-red-600 dark:text-red-400">All your current private bookmarks, notes, tasks and calendar events will be permanently deleted.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={()=>setImportModal(null)}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={confirmImport} disabled={importStatus==='loading'}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-all"
+                      style={{background:importMode==='replace'?'#ef4444':'#06b6d4'}}>
+                      {importStatus==='loading'?'Importing…':importMode==='replace'?'Replace & Import':'Import'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
