@@ -111,52 +111,102 @@ function PomodoroStrip() {
   const progress = (total(mode) - secs) / total(mode)
   const m = MODES[mode]
 
+  const r = 72; const circ = 2 * Math.PI * r
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-      {/* Progress bar */}
-      <div className="h-1 bg-gray-100 dark:bg-gray-800">
-        <div className="h-full rounded-full transition-all duration-1000" style={{width:`${progress*100}%`, background: m.color}}/>
-      </div>
-      <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
-        {/* Mode tabs */}
-        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0">
-          {(Object.keys(MODES) as PMode[]).map(k => (
-            <button key={k} onClick={() => switchMode(k)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode===k?'text-white shadow-sm':'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
-              style={mode===k?{background:MODES[k].color}:{}}>
-              {MODES[k].label}
+      <div className="flex items-center gap-6 px-5 py-4">
+
+        {/* ── Circular ring + digital time ── */}
+        <div className="relative flex-shrink-0" style={{width:172, height:172}}>
+          {/* Glow layer */}
+          <div className="absolute inset-0 rounded-full opacity-20 blur-xl transition-all duration-700"
+            style={{background: m.color, transform:'scale(0.85)'}}/>
+          <svg width={172} height={172} viewBox="0 0 172 172" className="absolute inset-0">
+            {/* Track */}
+            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={10}
+              className="stroke-gray-100 dark:stroke-gray-800"/>
+            {/* Tick marks */}
+            {Array.from({length:60}).map((_,i)=>{
+              const angle = (i/60)*Math.PI*2 - Math.PI/2
+              const isMajor = i%5===0
+              const inner = r + 6; const outer = r + (isMajor?13:9)
+              return (
+                <line key={i}
+                  x1={86+inner*Math.cos(angle)} y1={86+inner*Math.sin(angle)}
+                  x2={86+outer*Math.cos(angle)} y2={86+outer*Math.sin(angle)}
+                  strokeWidth={isMajor?2:1} strokeLinecap="round"
+                  stroke={isMajor ? m.color+'88' : m.color+'33'}/>
+              )
+            })}
+            {/* Progress arc */}
+            <circle cx={86} cy={86} r={r} fill="none" strokeWidth={10}
+              stroke={m.color}
+              strokeDasharray={circ}
+              strokeDashoffset={circ * (1 - progress)}
+              strokeLinecap="round"
+              transform="rotate(-90 86 86)"
+              style={{transition: running ? 'stroke-dashoffset 1s linear' : 'stroke-dashoffset 0.4s ease'}}/>
+            {/* Pulsing dot at tip */}
+            {running && (() => {
+              const angle = progress * Math.PI * 2 - Math.PI / 2
+              return (
+                <circle
+                  cx={86 + r * Math.cos(angle)}
+                  cy={86 + r * Math.sin(angle)}
+                  r={5} fill={m.color} className="drop-shadow-sm"/>
+              )
+            })()}
+          </svg>
+          {/* Center content */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+            <span className="text-3xl font-black tabular-nums tracking-tight text-gray-900 dark:text-white"
+              style={{fontVariantNumeric:'tabular-nums'}}>{mm}:{ss}</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest" style={{color: m.color}}>{m.label}</span>
+          </div>
+        </div>
+
+        {/* ── Right panel ── */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
+          {/* Mode tabs */}
+          <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl self-start">
+            {(Object.keys(MODES) as PMode[]).map(k => (
+              <button key={k} onClick={() => switchMode(k)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode===k?'text-white shadow-sm':'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                style={mode===k?{background:MODES[k].color}:{}}>
+                {MODES[k].label}
+              </button>
+            ))}
+          </div>
+
+          {/* Controls row */}
+          <div className="flex items-center gap-2">
+            <button onClick={reset}
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <RotateCcw size={14}/>
             </button>
-          ))}
-        </div>
+            <button onClick={() => setRunning(r=>!r)}
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-all active:scale-95"
+              style={{background: m.color, boxShadow:`0 6px 20px ${m.color}55`}}>
+              {running ? <Pause size={22} fill="white"/> : <Play size={22} fill="white"/>}
+            </button>
+            <button onClick={() => { setDraft({...cfg}); setShowCfg(true) }}
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <Settings size={14}/>
+            </button>
+          </div>
 
-        {/* Timer */}
-        <div className="text-3xl font-black tabular-nums tracking-tight flex-shrink-0" style={{color: m.color}}>{mm}:{ss}</div>
-
-        <div className="flex-1 hidden sm:block"/>
-
-        {/* Session dots */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {Array.from({length: cfg.sessionsBeforeLong}).map((_,i) => (
-            <div key={i} className="w-2 h-2 rounded-full transition-all"
-              style={{background: i < sessions % cfg.sessionsBeforeLong ? m.color : '#e5e7eb'}}/>
-          ))}
-          <span className="text-xs text-gray-400 ml-1">{sessions}s</span>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={reset} className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            <RotateCcw size={13}/>
-          </button>
-          <button onClick={() => setRunning(r=>!r)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md transition-all active:scale-95"
-            style={{background: m.color, boxShadow:`0 4px 16px ${m.color}44`}}>
-            {running ? <Pause size={16} fill="white"/> : <Play size={16} fill="white"/>}
-          </button>
-          <button onClick={() => { setDraft({...cfg}); setShowCfg(true) }}
-            className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            <Settings size={13}/>
-          </button>
+          {/* Session dots */}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              {Array.from({length: cfg.sessionsBeforeLong}).map((_,i) => (
+                <div key={i} className="w-2.5 h-2.5 rounded-full transition-all duration-300"
+                  style={{background: i < sessions % cfg.sessionsBeforeLong ? m.color : '#e5e7eb',
+                          boxShadow: i < sessions % cfg.sessionsBeforeLong ? `0 0 6px ${m.color}88` : 'none'}}/>
+              ))}
+            </div>
+            <span className="text-xs text-gray-400">{sessions} session{sessions!==1?'s':''}</span>
+          </div>
         </div>
       </div>
 
@@ -640,6 +690,7 @@ export default function AcademicWorkspacePage() {
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
           <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight whitespace-nowrap">Focus Mode</h1>
+          <p className="text-xs text-gray-400 mt-0.5 whitespace-nowrap">Focus. Write. Track. Repeat.</p>
         </div>
         <div className="flex-1">
           <SearchBar/>
