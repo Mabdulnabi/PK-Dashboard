@@ -41,6 +41,7 @@ export async function GET() {
   return NextResponse.json({
     myBoard: myBoard ? { ...myBoard, role: 'owner' } : null,
     invitedBoards,
+    memberId: session.member_id,
   })
 }
 

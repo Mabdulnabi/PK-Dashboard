@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { title, deadline, priority, remind_at, board_id } = await req.json()
+  const { title, deadline, priority, remind_at, board_id, description } = await req.json()
   if (!title?.trim()) return NextResponse.json({ error: 'title required' }, { status: 400 })
 
   if (board_id && !await canAccessBoard(session.member_id, board_id))
@@ -58,13 +58,14 @@ export async function POST(req: NextRequest) {
   const { data, error } = await service
     .from('focus_tasks')
     .insert({
-      member_id:  session.member_id,
-      board_id:   board_id || null,
-      created_by: session.member_id,
-      title:      title.trim(),
-      deadline:   deadline || null,
-      priority:   priority || 'medium',
-      remind_at:  remind_at || null,
+      member_id:   session.member_id,
+      board_id:    board_id || null,
+      created_by:  session.member_id,
+      title:       title.trim(),
+      deadline:    deadline || null,
+      priority:    priority || 'medium',
+      remind_at:   remind_at || null,
+      description: description || null,
     })
     .select().single()
 
@@ -76,7 +77,7 @@ export async function PATCH(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { id, done, title, deadline, priority, remind_at } = await req.json()
+  const { id, done, title, deadline, priority, remind_at, description } = await req.json()
 
   const { data: task } = await service
     .from('focus_tasks').select('board_id, member_id, created_by').eq('id', id).single()
@@ -90,11 +91,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   const updates: any = {}
-  if (done      !== undefined) updates.done      = done
-  if (title     !== undefined) updates.title     = title
-  if (deadline  !== undefined) updates.deadline  = deadline
-  if (priority  !== undefined) updates.priority  = priority
-  if (remind_at !== undefined) updates.remind_at = remind_at
+  if (done        !== undefined) updates.done        = done
+  if (title       !== undefined) updates.title       = title
+  if (deadline    !== undefined) updates.deadline    = deadline
+  if (priority    !== undefined) updates.priority    = priority
+  if (remind_at   !== undefined) updates.remind_at   = remind_at
+  if (description !== undefined) updates.description = description
 
   const { error } = await service.from('focus_tasks').update(updates).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

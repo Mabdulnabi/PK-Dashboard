@@ -11,7 +11,7 @@ import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
+  arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -362,7 +362,7 @@ function BookmarksPanel({ boardId, memberId }: { boardId:string|null; memberId:s
   const displayed=view==='root'?items.filter(i=>!i.folder_id):items.filter(i=>i.folder_id===openFolder?.id&&i.type==='bookmark')
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col overflow-hidden" style={{minHeight:282}}>
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col overflow-hidden h-full">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         <div className="flex items-center gap-2">
           {view==='folder'&&<button onClick={()=>{setView('root');setOpenFolder(null)}} className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><ArrowLeft size={13}/></button>}
@@ -376,11 +376,11 @@ function BookmarksPanel({ boardId, memberId }: { boardId:string|null; memberId:s
           <button onClick={()=>setShowAdd(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-white" style={{background:'#06b6d4'}}><Plus size={11}/> Add</button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-hidden p-3">
         {displayed.length===0?(
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center"><Bookmark size={18} className="text-gray-300"/><p className="text-xs text-gray-400">{view==='folder'?'Empty folder':'Add bookmarks or folders'}</p></div>
         ):(
-          <div className="grid gap-1.5" style={{gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))'}}>
+          <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1">
             {displayed.map(item=>(
               <div key={item.id} className="relative group select-none">
                 <div
@@ -634,7 +634,7 @@ function NotesPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
 }
 
 // ─── Tasks ─────────────────────────────────────────────────────────────────────
-interface Task { id:string; title:string; deadline:string|null; priority:'low'|'medium'|'high'; done:boolean; created_at:string; remind_at:string|null; created_by:string }
+interface Task { id:string; title:string; deadline:string|null; priority:'low'|'medium'|'high'; done:boolean; created_at:string; remind_at:string|null; created_by:string; description?:string|null }
 const PC = { low:'#10b981', medium:'#f59e0b', high:'#ef4444' }
 const PL = { low:'Low', medium:'Med', high:'High' }
 
@@ -643,9 +643,9 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
   const [filter, setFilter]   = useState<'all'|'active'|'completed'>('all')
   const [showForm, setShowForm] = useState(false)
   const [adding, setAdding]   = useState(false)
-  const [form, setForm]       = useState({title:'',deadline:'',priority:'medium' as 'low'|'medium'|'high',remind_at:''})
+  const [form, setForm]       = useState({title:'',deadline:'',priority:'medium' as 'low'|'medium'|'high',remind_at:'',description:''})
   const [editTask, setEditTask] = useState<Task|null>(null)
-  const [editForm, setEditForm] = useState({title:'',deadline:'',priority:'medium' as 'low'|'medium'|'high',remind_at:''})
+  const [editForm, setEditForm] = useState({title:'',deadline:'',priority:'medium' as 'low'|'medium'|'high',remind_at:'',description:''})
 
   const qs = boardId ? `?board_id=${boardId}` : ''
 
@@ -658,12 +658,12 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
         title:form.title,
         deadline:form.deadline||null,
         priority:form.priority,
-        // Convert local datetime to UTC ISO before storing
         remind_at:form.remind_at?localToUTC(form.remind_at):null,
+        description:form.description||null,
         board_id:boardId
       })})
     const d=await res.json()
-    if(d.task){setTasks(t=>[d.task,...t]);setForm({title:'',deadline:'',priority:'medium',remind_at:''});setShowForm(false)}
+    if(d.task){setTasks(t=>[d.task,...t]);setForm({title:'',deadline:'',priority:'medium',remind_at:'',description:''});setShowForm(false)}
     setAdding(false)
   }
 
@@ -683,6 +683,7 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
       deadline:task.deadline?task.deadline.slice(0,10):'',
       priority:task.priority as 'low'|'medium'|'high',
       remind_at:task.remind_at?utcToLocal(task.remind_at):'',
+      description:task.description||'',
     })
     setEditTask(task)
   }
@@ -695,6 +696,7 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
       deadline:editForm.deadline||null,
       priority:editForm.priority,
       remind_at:editForm.remind_at?localToUTC(editForm.remind_at):null,
+      description:editForm.description||null,
     }
     setTasks(ts=>ts.map(t=>t.id===editTask.id?{...t,...updates,remind_at:updates.remind_at??null,deadline:updates.deadline??null}:t))
     await fetch('/api/member/focus-tasks',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)})
@@ -730,6 +732,9 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
           <div><label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1 flex items-center gap-1"><AlarmClock size={9}/> Reminder (your local time)</label>
             <input type="datetime-local" value={form.remind_at} onChange={e=>setForm(f=>({...f,remind_at:e.target.value}))}
               className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 outline-none focus:border-violet-400 transition-colors"/></div>
+          <div><label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Details</label>
+            <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={2} placeholder="Optional notes…"
+              className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 outline-none focus:border-violet-400 transition-colors resize-none"/></div>
           <div className="flex gap-2 pt-0.5">
             <button onClick={addTask} disabled={adding||!form.title.trim()} className="flex-1 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{background:'#8b5cf6'}}>{adding?'Adding…':'Add Task'}</button>
             <button onClick={()=>setShowForm(false)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
@@ -768,6 +773,9 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
               <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5 flex items-center gap-1"><AlarmClock size={9}/> Reminder (your local time)</label>
                 <input type="datetime-local" value={editForm.remind_at} onChange={e=>setEditForm(f=>({...f,remind_at:e.target.value}))}
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-violet-400 transition-colors"/></div>
+              <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Details</label>
+                <textarea value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} rows={3} placeholder="Optional notes…"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-violet-400 transition-colors resize-none"/></div>
             </div>
             <div className="px-5 pb-5 flex gap-2">
               <button onClick={()=>setEditTask(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 transition-colors">Cancel</button>
@@ -791,6 +799,7 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
                 {task.deadline&&<span className={`flex items-center gap-0.5 text-[10px] font-medium ${isOverdue(task)?'text-red-500':'text-gray-400'}`}><Calendar size={9}/>{new Date(task.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'})}{isOverdue(task)&&' · Overdue'}</span>}
                 {task.remind_at&&<span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-500"><AlarmClock size={9}/>{new Date(task.remind_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}</span>}
               </div>
+              {task.description&&<p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-snug line-clamp-2">{task.description}</p>}
             </div>
             <div className="opacity-0 group-hover:opacity-100 flex gap-1 flex-shrink-0 mt-0.5">
               {canDelete(task)&&<button onClick={()=>openEditTask(task)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"><Edit3 size={11}/></button>}
@@ -1136,16 +1145,19 @@ function SearchBar() {
 }
 
 // ─── Sortable panel wrapper ────────────────────────────────────────────────────
-function SortablePanel({ id, children }: { id:string; children:React.ReactNode }) {
+function SortablePanel({ id, children, spanFull }: { id:string; children:React.ReactNode; spanFull?:boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   return (
-    <div ref={setNodeRef} style={{transform:CSS.Transform.toString(transform),transition,opacity:isDragging?0.5:1}} className="flex flex-col">
+    <div ref={setNodeRef}
+      style={{transform:CSS.Transform.toString(transform),transition,opacity:isDragging?0.45:1}}
+      className={`flex flex-col${spanFull?' md:col-span-2':''}`}>
       <div className="flex items-center gap-1 mb-1 pl-1">
-        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 transition-colors p-0.5 rounded" title="Drag to reorder">
+        <button {...attributes} {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 transition-colors p-0.5 rounded" title="Drag to reorder">
           <GripVertical size={13}/>
         </button>
       </div>
-      {children}
+      <div className="flex-1 h-full">{children}</div>
     </div>
   )
 }
@@ -1161,6 +1173,8 @@ export default function FocusModePage() {
   const [invitedBoards, setInvitedBoards] = useState<SharedBoard[]>([])
   const [selectedBoardId, setSelectedBoardId] = useState<string|null>(null)
   const [memberId, setMemberId]           = useState<string>('')
+  const [reminderToast, setReminderToast] = useState<{title:string;type:string}|null>(null)
+  const reminderCtxRef = useRef<AudioContext|null>(null)
   const [panelOrder, setPanelOrder]       = useState<PanelId[]>(()=>{
     try {
       const saved=localStorage.getItem('focus_panel_order')
@@ -1187,13 +1201,48 @@ export default function FocusModePage() {
     }
   }
 
+  const playReminderChime = useCallback(()=>{
+    try {
+      if(!reminderCtxRef.current) reminderCtxRef.current=new AudioContext()
+      const ctx=reminderCtxRef.current; const t=ctx.currentTime
+      const notes=[523.25,659.25,783.99]
+      notes.forEach((freq,i)=>{
+        const osc=ctx.createOscillator(); const g=ctx.createGain()
+        osc.connect(g); g.connect(ctx.destination)
+        osc.type='sine'; osc.frequency.value=freq
+        const start=t+i*0.18
+        g.gain.setValueAtTime(0,start)
+        g.gain.linearRampToValueAtTime(0.28,start+0.04)
+        g.gain.exponentialRampToValueAtTime(0.001,start+0.9)
+        osc.start(start); osc.stop(start+0.9)
+      })
+    } catch {}
+  },[])
+
+  const seenReminders = useRef<Set<string>>(new Set())
+
+  useEffect(()=>{
+    const poll=()=>{
+      fetch('/api/member/focus-reminders').then(r=>r.json()).then(d=>{
+        const fresh=(d.reminders||[]).filter((r:any)=>!seenReminders.current.has(r.id))
+        if(fresh.length>0){
+          fresh.forEach((r:any)=>seenReminders.current.add(r.id))
+          playReminderChime()
+          setReminderToast({title:fresh[0].title,type:fresh[0].type})
+          setTimeout(()=>setReminderToast(null),6000)
+        }
+      }).catch(()=>{})
+    }
+    poll()
+    const iv=setInterval(poll,60_000)
+    return ()=>clearInterval(iv)
+  },[playReminderChime])
+
   useEffect(()=>{
     fetch('/api/member/shared-boards').then(r=>r.json()).then(d=>{
       if(d.myBoard)       setMyBoard(d.myBoard)
       if(d.invitedBoards) setInvitedBoards(d.invitedBoards)
-    })
-    fetch('/api/member/focus-tasks').then(r=>r.json()).then(d=>{
-      if(d.tasks?.[0]?.member_id) setMemberId(d.tasks[0].member_id)
+      if(d.memberId)      setMemberId(d.memberId)
     })
   },[])
 
@@ -1207,11 +1256,6 @@ export default function FocusModePage() {
     calendar:  <CalendarPanel boardId={activeBoardId} memberId={memberId}/>,
   }
 
-  // Row 0: first two; Row 1: next two; Row 2: last one
-  const row0=panelOrder.slice(0,2)
-  const row1=panelOrder.slice(2,4)
-  const row2=panelOrder.slice(4)
-
   return (
     <div className="min-h-full p-4 md:p-5 flex flex-col gap-4">
       {/* Header */}
@@ -1221,9 +1265,9 @@ export default function FocusModePage() {
           <p className="text-xs text-gray-400 mt-0.5">Focus. Write. Track. Repeat.</p>
         </div>
         <button onClick={()=>setShowCalc(true)}
-          className="flex-shrink-0 w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-all"
-          title="Scientific Calculator">
-          <Calculator size={16}/>
+          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:opacity-80"
+          style={{background:'#06b6d410'}} title="Scientific Calculator">
+          <Calculator size={16} style={{color:'#06b6d4'}}/>
         </button>
         <div className="flex-1"><SearchBar/></div>
       </div>
@@ -1237,16 +1281,30 @@ export default function FocusModePage() {
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
+        <SortableContext items={panelOrder} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {row0.map(id=><SortablePanel key={id} id={id}>{PANEL_MAP[id]}</SortablePanel>)}
+            {panelOrder.map((id,idx)=>{
+              const isLastOdd=panelOrder.length%2===1&&idx===panelOrder.length-1
+              return <SortablePanel key={id} id={id} spanFull={isLastOdd}>{PANEL_MAP[id]}</SortablePanel>
+            })}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-            {row1.map(id=><SortablePanel key={id} id={id}>{PANEL_MAP[id]}</SortablePanel>)}
-          </div>
-          {row2.map(id=><SortablePanel key={id} id={id}>{PANEL_MAP[id]}</SortablePanel>)}
         </SortableContext>
       </DndContext>
+
+      {/* Reminder toast */}
+      {reminderToast&&(
+        <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl px-4 py-3 max-w-xs animate-in slide-in-from-bottom-2">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'#06b6d410'}}>
+            <AlarmClock size={15} style={{color:'#06b6d4'}}/>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Reminder</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{reminderToast.title}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5 capitalize">{reminderToast.type}</p>
+          </div>
+          <button onClick={()=>setReminderToast(null)} className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"><X size={13}/></button>
+        </div>
+      )}
 
       {showCalc   && <ScientificCalculator onClose={()=>setShowCalc(false)}/>}
       {showInvite && <InviteModal onClose={()=>setShowInvite(false)}/>}
