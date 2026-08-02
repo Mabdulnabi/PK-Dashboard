@@ -173,6 +173,14 @@ async function disconnect(toolName) {
   chrome.alarms.clear('heartbeat')
   await setState({ active_tool: null, session_data: null, session_id: null, server_id: null, pending_inject: null, tool_tab_id: null })
   chrome.action.setBadgeText({ text: '' })
+
+  // Notify the dashboard tab so it updates instantly without waiting for a poll
+  if (state.dashboard_url) {
+    const dashTabs = await chrome.tabs.query({ url: `${state.dashboard_url}/*` }).catch(() => [])
+    for (const tab of dashTabs) {
+      chrome.tabs.sendMessage(tab.id, { type: 'PK_AUTO_DISCONNECTED' }).catch(() => {})
+    }
+  }
 }
 
 // onUpdated only handles localStorage + IDB injection (cookies already set before tab opened)

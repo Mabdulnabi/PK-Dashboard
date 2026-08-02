@@ -50,6 +50,13 @@ if (isDashboard) {
       })
     }
   })
+
+  // Background sends this when tab is closed or navigated away — relay to React page
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'PK_AUTO_DISCONNECTED') {
+      window.postMessage({ type: 'PK_DISCONNECT_RESULT', success: true }, '*')
+    }
+  })
 }
 
 // ── Tool pages injection ─────────────────────────────────────
