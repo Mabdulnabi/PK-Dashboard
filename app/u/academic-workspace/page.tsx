@@ -47,28 +47,8 @@ const ENGINES = [
   { id:'perplexity', label:'Perplexity', color:'#20C8D8',
     url:'https://www.perplexity.ai/search?q=',
     logo: (
-      <svg viewBox="0 0 110 126" className="w-5 h-5" fill="none"
-        stroke="#20C8D8" strokeWidth="7.5" strokeLinejoin="miter" strokeLinecap="square">
-        {/* Top left triangle */}
-        <path d="M55 4 L16 34 L55 34 Z"/>
-        {/* Top right triangle */}
-        <path d="M55 4 L94 34 L55 34 Z"/>
-        {/* Left vertical */}
-        <line x1="16" y1="34" x2="16" y2="88"/>
-        {/* Right vertical */}
-        <line x1="94" y1="34" x2="94" y2="60"/>
-        {/* Right L horizontal extension */}
-        <line x1="94" y1="60" x2="110" y2="60"/>
-        {/* Center horizontal bars */}
-        <line x1="16" y1="34" x2="94" y2="34"/>
-        <line x1="16" y1="88" x2="94" y2="88"/>
-        {/* Center X diagonals */}
-        <line x1="16" y1="34" x2="94" y2="88"/>
-        <line x1="94" y1="34" x2="16" y2="88"/>
-        {/* Bottom V */}
-        <line x1="16" y1="88" x2="55" y2="122"/>
-        <line x1="94" y1="88" x2="55" y2="122"/>
-      </svg>
+      <img src="https://mluqxggjbumtmyfldaon.supabase.co/storage/v1/object/public/site-assets/perplexity.webp"
+        alt="Perplexity" className="w-5 h-5 object-contain"/>
     ) },
 ]
 
@@ -393,11 +373,11 @@ function NotesPanel() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{note.title||'Untitled'}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{stripHtml(note.content).slice(0,60)||'No content'}</p>
-                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(note.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{stripHtml(note.content).slice(0,60)||'No content'}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{new Date(note.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
                   </div>
                   <button onClick={e=>deleteNote(note.id,e)}
-                    className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5">
+                    className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5">
                     <Trash2 size={11}/>
                   </button>
                 </div>
@@ -641,7 +621,7 @@ function TasksPanel() {
                 </div>
               </div>
               <button onClick={()=>deleteTask(task.id)}
-                className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5">
+                className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0 mt-0.5">
                 <Trash2 size={11}/>
               </button>
             </div>
