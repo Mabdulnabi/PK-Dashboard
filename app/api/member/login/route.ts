@@ -1,17 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { writeAuditLog } from '@/lib/audit'
+import { getClientIp, getUserAgent } from '@/lib/request'
+import { badRequest, forbidden, serverError } from '@/lib/responses'
+import { MEMBER_COOKIE, COOKIE_MAX_AGE, AUDIT_ACTIONS } from '@/lib/constants'
 import { rateLimit } from '@/lib/rate-limit'
 
-const service = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
-  const ua = req.headers.get('user-agent') || ''
+  const ip = getClientIp(req)
+  const ua = getUserAgent(req)
 
   const rl = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000)
   if (!rl.ok) {
@@ -30,18 +29,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const { email, password, device_fingerprint } = body
-  if (!email || !password) return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
+  if (!email || !password) return badRequest('missing_fields')
 
-  // Authenticate first
   const { data, error } = await supabase.rpc('member_login', {
     p_email: email.toLowerCase().trim(), p_password: password, p_ip: ip, p_ua: ua,
   })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError(error.message)
   if (!data.success) return NextResponse.json({ error: data.error }, { status: 401 })
 
-  // Device fingerprint enforcement: reject if a different device is already registered
+  // Device fingerprint enforcement
   if (device_fingerprint && data.member_id) {
-    const { data: memberRow } = await service
+    const { data: memberRow } = await db
       .from('members')
       .select('device_fingerprint')
       .eq('id', data.member_id)
@@ -50,39 +48,30 @@ export async function POST(req: NextRequest) {
     const storedFp = memberRow?.device_fingerprint
 
     if (storedFp && storedFp !== device_fingerprint) {
-      // Different device — reject
-      service.from('server_usage_logs').insert({
-        member_id:          data.member_id,
-        action:             'connect',
-        ip_address:         ip,
-        user_agent:         ua,
-        device_fingerprint: device_fingerprint,
-        meta:               { event: 'login_blocked_device_mismatch', email: email.toLowerCase().trim() },
-      }).then(() => {})
-
-      return NextResponse.json({ error: 'device_locked' }, { status: 403 })
+      void writeAuditLog({
+        member_id: data.member_id,
+        action: AUDIT_ACTIONS.CONNECT,
+        ip_address: ip, user_agent: ua,
+        device_fingerprint,
+        meta: { event: 'login_blocked_device_mismatch', email: email.toLowerCase().trim() },
+      })
+      return forbidden('device_locked')
     }
 
-    // Same device or first login — store/refresh fingerprint
-    service.from('members')
-      .update({ device_fingerprint })
-      .eq('id', data.member_id)
-      .then(() => {})
+    void db.from('members').update({ device_fingerprint }).eq('id', data.member_id)
   }
 
-  // Audit: successful login
-  service.from('server_usage_logs').insert({
-    member_id:          data.member_id ?? null,
-    action:             'connect',
-    ip_address:         ip,
-    user_agent:         ua,
+  void writeAuditLog({
+    member_id: data.member_id ?? null,
+    action: AUDIT_ACTIONS.CONNECT,
+    ip_address: ip, user_agent: ua,
     device_fingerprint: device_fingerprint ?? null,
-    meta:               { event: 'login', email: email.toLowerCase().trim() },
-  }).then(() => {})
+    meta: { event: 'login', email: email.toLowerCase().trim() },
+  })
 
   const res = NextResponse.json({ success: true, member: data })
-  res.cookies.set('pk_member_token', data.token, {
-    httpOnly: true, secure: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30, path: '/',
+  res.cookies.set(MEMBER_COOKIE, data.token, {
+    httpOnly: true, secure: true, sameSite: 'lax', maxAge: COOKIE_MAX_AGE, path: '/',
   })
   return res
 }

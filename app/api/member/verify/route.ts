@@ -1,67 +1,56 @@
-// app/api/member/verify/route.ts
-import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { requireMember, AuthError } from '@/lib/auth'
+import { writeAuditLog } from '@/lib/audit'
+import { unauthorized } from '@/lib/responses'
+import { MEMBER_COOKIE, SESSION_STATUS, AUDIT_ACTIONS } from '@/lib/constants'
 
-const service = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+export async function GET(_req: NextRequest) {
+  let session
+  try { session = await requireMember() } catch (e) {
+    return e instanceof AuthError ? e.response : unauthorized()
+  }
 
-export async function GET(req: NextRequest) {
-  const cookieStore = cookies()
-  const token = cookieStore.get('pk_member_token')?.value
-  if (!token) return NextResponse.json({ valid: false }, { status: 401 })
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-  )
-  const { data } = await supabase.rpc('verify_member_session', { p_token: token })
-  if (!data?.valid) return NextResponse.json({ valid: false }, { status: 401 })
-
-  // Enrich with member_code
-  const { data: member } = await service
+  const { data: member } = await db
     .from('members')
     .select('member_code, avatar_url, created_at')
-    .eq('id', data.member_id)
+    .eq('id', session.member_id)
     .single()
 
-  return NextResponse.json({ ...data, member_code: member?.member_code ?? null, avatar_url: member?.avatar_url ?? null, created_at: member?.created_at ?? null })
+  return NextResponse.json({
+    ...session,
+    member_code: member?.member_code ?? null,
+    avatar_url:  member?.avatar_url  ?? null,
+    created_at:  member?.created_at  ?? null,
+  })
 }
 
 export async function DELETE() {
-  const cookieStore = cookies()
-  const token = cookieStore.get('pk_member_token')?.value
-
-  if (token) {
-    const { data: session } = await service.rpc('verify_member_session', { p_token: token })
-
-    if (session?.valid && session.member_id) {
-      await Promise.all([
-        // Clear device lock — next login from any device is allowed
-        service.from('members')
-          .update({ device_fingerprint: null })
-          .eq('id', session.member_id),
-
-        // Expire all active server sessions
-        service.from('user_server_sessions')
-          .update({ status: 'expired', expires_at: new Date().toISOString() })
-          .eq('user_id', session.member_id)
-          .eq('status', 'active'),
-
-        // Audit
-        service.from('server_usage_logs').insert({
-          member_id: session.member_id,
-          action:    'disconnect',
-          meta:      { event: 'logout' },
-        }),
-      ])
-    }
+  let session
+  try { session = await requireMember() } catch {
+    const res = NextResponse.json({ success: true })
+    res.cookies.delete(MEMBER_COOKIE)
+    return res
   }
 
+  await Promise.all([
+    db.from('members')
+      .update({ device_fingerprint: null })
+      .eq('id', session.member_id),
+
+    db.from('user_server_sessions')
+      .update({ status: SESSION_STATUS.EXPIRED, expires_at: new Date().toISOString() })
+      .eq('user_id', session.member_id)
+      .eq('status', SESSION_STATUS.ACTIVE),
+
+    writeAuditLog({
+      member_id: session.member_id,
+      action: AUDIT_ACTIONS.DISCONNECT,
+      meta: { event: 'logout' },
+    }),
+  ])
+
   const res = NextResponse.json({ success: true })
-  res.cookies.delete('pk_member_token')
+  res.cookies.delete(MEMBER_COOKIE)
   return res
 }

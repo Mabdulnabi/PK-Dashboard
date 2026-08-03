@@ -1,152 +1,105 @@
-// app/api/member/servers/session/route.ts
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { requireMember, AuthError } from '@/lib/auth'
+import { canAccess } from '@/lib/tiers'
+import { normalizeSessionData } from '@/lib/session-data'
+import { writeAuditLog } from '@/lib/audit'
+import { getClientIp, getUserAgent } from '@/lib/request'
+import { badRequest, notFound, forbidden, serverError, unauthorized } from '@/lib/responses'
+import { SESSION_TTL_MS, SESSION_STATUS, AUDIT_ACTIONS } from '@/lib/constants'
 
-const service = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function writeAuditLog(fields: {
-  member_id: string; server_id: string; action: string
-  ip: string; ua: string; device_fingerprint?: string | null
-  tool_name?: string; server_label?: string; session_id?: string | null
-  meta?: Record<string, unknown>
-}) {
-  await service.from('server_usage_logs').insert({
-    member_id:          fields.member_id,
-    server_id:          fields.server_id,
-    action:             fields.action,
-    ip_address:         fields.ip,
-    user_agent:         fields.ua,
-    device_fingerprint: fields.device_fingerprint ?? null,
-    tool_name:          fields.tool_name ?? null,
-    server_label:       fields.server_label ?? null,
-    session_id:         fields.session_id ?? null,
-    meta:               fields.meta ?? {},
-  })
+function sessionExpiry() {
+  return new Date(Date.now() + SESSION_TTL_MS).toISOString()
 }
 
 export async function GET(req: NextRequest) {
-  const cookieStore = cookies()
-  const token = cookieStore.get('pk_member_token')?.value
-  if (!token) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-
-  const { data: session } = await service.rpc('verify_member_session', { p_token: token })
-  if (!session?.valid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  let session
+  try { session = await requireMember() } catch (e) {
+    return e instanceof AuthError ? e.response : unauthorized()
+  }
 
   const serverId = req.nextUrl.searchParams.get('server_id')
-  if (!serverId) return NextResponse.json({ error: 'server_id required' }, { status: 400 })
+  if (!serverId) return badRequest('server_id required')
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
-  const ua = req.headers.get('user-agent') || ''
+  const ip = getClientIp(req)
+  const ua = getUserAgent(req)
 
-  // Read stored fingerprint from member record
-  const { data: memberRow } = await service
+  // Fetch member's stored device fingerprint
+  const { data: memberRow } = await db
     .from('members')
     .select('device_fingerprint')
     .eq('id', session.member_id)
     .single()
   const storedFp = memberRow?.device_fingerprint ?? null
 
-  const { data: server } = await service
+  // Fetch server
+  const { data: server } = await db
     .from('tool_servers')
     .select('id, tool_name, server_label, session_data_encrypted, proxy_host, proxy_port, proxy_username, proxy_password_encrypted, status, tier_required')
     .eq('id', serverId)
     .single()
 
-  if (!server) return NextResponse.json({ error: 'Server not found' }, { status: 404 })
-  if (server.status !== 'active') return NextResponse.json({ error: 'Server not available' }, { status: 400 })
+  if (!server) return notFound('Server not found')
+  if (server.status !== SESSION_STATUS.ACTIVE) return badRequest('Server not available')
+  if (!canAccess(session.plan_slug, server.tier_required)) return forbidden('Insufficient tier')
 
-  // Tier check
-  const tierOrder     = ['basic', 'vip', 'private']
-  const memberTierIdx = tierOrder.indexOf(session.plan_slug || 'basic')
-  const serverTierIdx = tierOrder.indexOf(server.tier_required)
-  if (memberTierIdx < serverTierIdx) return NextResponse.json({ error: 'Insufficient tier' }, { status: 403 })
+  const sessionData = normalizeSessionData(server.session_data_encrypted)
+  if (!sessionData) return serverError('Invalid session data')
 
-  // Parse + normalize session data
-  // Extension expects: { cookies: [...], localStorage: {}, indexedDB: [] }
-  // Some servers were saved as a bare cookies array — wrap those automatically
-  let sessionData: { cookies: any[]; localStorage: Record<string,any>; indexedDB: any[] } | null = null
-  try {
-    const raw = server.session_data_encrypted ? JSON.parse(server.session_data_encrypted) : null
-    if (raw === null) {
-      sessionData = null
-    } else if (Array.isArray(raw)) {
-      // bare cookies array → normalize to envelope format
-      sessionData = { cookies: raw, localStorage: {}, indexedDB: [] }
-    } else if (raw && typeof raw === 'object' && Array.isArray(raw.cookies)) {
-      // already correct envelope
-      sessionData = raw
-    } else {
-      sessionData = raw
-    }
-  } catch {
-    return NextResponse.json({ error: 'Invalid session data' }, { status: 500 })
-  }
-
-  // Expire other active sessions
-  await service
+  // Expire other active sessions for this member
+  await db
     .from('user_server_sessions')
-    .update({ status: 'expired' })
+    .update({ status: SESSION_STATUS.EXPIRED })
     .eq('user_id', session.member_id)
-    .eq('status', 'active')
+    .eq('status', SESSION_STATUS.ACTIVE)
     .neq('server_id', serverId)
 
-  // Upsert active session for this server
-  const { data: existing } = await service
+  // Upsert session for this server
+  const { data: existing } = await db
     .from('user_server_sessions')
     .select('id')
     .eq('user_id', session.member_id)
     .eq('server_id', serverId)
-    .eq('status', 'active')
+    .eq('status', SESSION_STATUS.ACTIVE)
     .single()
 
-  let upsertedId: string | null = null
+  let sessionId: string | null
 
   if (!existing) {
-    const { data: inserted } = await service.from('user_server_sessions').insert({
-      user_id:            session.member_id,
-      server_id:          serverId,
-      status:             'active',
-      started_at:         new Date().toISOString(),
-      last_active_at:     new Date().toISOString(),
-      expires_at:         new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      device_fingerprint: storedFp,
-    }).select('id').single()
-    upsertedId = inserted?.id ?? null
+    const { data: inserted } = await db
+      .from('user_server_sessions')
+      .insert({
+        user_id:            session.member_id,
+        server_id:          serverId,
+        status:             SESSION_STATUS.ACTIVE,
+        started_at:         new Date().toISOString(),
+        last_active_at:     new Date().toISOString(),
+        expires_at:         sessionExpiry(),
+        device_fingerprint: storedFp,
+      })
+      .select('id')
+      .single()
+    sessionId = inserted?.id ?? null
 
-    // Audit: new connect
-    writeAuditLog({
-      member_id:          session.member_id,
-      server_id:          serverId,
-      action:             'connect',
-      ip, ua,
-      device_fingerprint: storedFp,
-      tool_name:          server.tool_name,
-      server_label:       server.server_label,
-      session_id:         upsertedId,
+    void writeAuditLog({
+      member_id: session.member_id, server_id: serverId,
+      action: AUDIT_ACTIONS.CONNECT, ip_address: ip, user_agent: ua,
+      device_fingerprint: storedFp, tool_name: server.tool_name,
+      server_label: server.server_label, session_id: sessionId,
     })
   } else {
-    await service.from('user_server_sessions')
-      .update({
-        last_active_at: new Date().toISOString(),
-        expires_at:     new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      })
+    await db
+      .from('user_server_sessions')
+      .update({ last_active_at: new Date().toISOString(), expires_at: sessionExpiry() })
       .eq('id', existing.id)
-    upsertedId = existing.id
+    sessionId = existing.id
 
-    // Audit: session reuse (heartbeat)
-    writeAuditLog({
-      member_id:          session.member_id,
-      server_id:          serverId,
-      action:             'session_reuse',
-      ip, ua,
-      device_fingerprint: storedFp,
-      tool_name:          server.tool_name,
-      server_label:       server.server_label,
-      session_id:         existing.id,
+    void writeAuditLog({
+      member_id: session.member_id, server_id: serverId,
+      action: AUDIT_ACTIONS.SESSION_REUSE, ip_address: ip, user_agent: ua,
+      device_fingerprint: storedFp, tool_name: server.tool_name,
+      server_label: server.server_label, session_id: existing.id,
     })
   }
 
