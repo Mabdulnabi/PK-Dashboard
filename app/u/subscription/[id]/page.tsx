@@ -251,7 +251,7 @@ export default function SubscriptionDetailPage() {
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           <button onClick={() => router.push('/u/dashboard')}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0">
-            <ArrowLeft size={16}/>
+            {dir === 'rtl' ? <ArrowLeft size={16} className="rotate-180"/> : <ArrowLeft size={16}/>}
           </button>
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {purchase.tool_image && (
@@ -272,7 +272,7 @@ export default function SubscriptionDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
 
         {/* ── Servers Section (shown when extension ready) ── */}
         {extReady ? (
@@ -310,7 +310,7 @@ export default function SubscriptionDetailPage() {
                       <button key={s.id}
                         onClick={() => !isFull && !connecting && connectServer(s)}
                         disabled={isFull || connecting}
-                        className={`relative p-4 rounded-2xl border-2 text-right transition-all ${
+                        className={`relative p-4 rounded-2xl border-2 text-end transition-all ${
                           isActive
                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 cursor-default'
                             : isFull
@@ -366,7 +366,7 @@ export default function SubscriptionDetailPage() {
               <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('Install Extension to Start','ثبّت الإضافة لتبدأ الاستخدام')}</h2>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                 <a href={settings?.extension_url_1 || '#'}
                   className="flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
                   <Download size={15}/> Extension 1
@@ -377,7 +377,7 @@ export default function SubscriptionDetailPage() {
                 </a>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-2 mb-3">
                     <Monitor size={15} className="text-blue-500"/>

@@ -306,9 +306,9 @@ function CheckoutInner() {
           const active= step===s
           return (
             <div key={s} className="flex items-center gap-2 flex-1">
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${done?'bg-emerald-500 text-white':active?'text-white':'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`} style={active&&!done?{background:'#d99401'}:{}}>
-                {done?<Check size={15}/>:<span className="w-5 text-center">{i+1}</span>}
-                <span>{labels[i]}</span>
+              <div className={`flex items-center gap-1.5 px-2 py-2 md:px-4 rounded-xl text-xs md:text-sm font-bold transition-all ${done?'bg-emerald-500 text-white':active?'text-white':'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`} style={active&&!done?{background:'#d99401'}:{}}>
+                {done?<Check size={13}/>:<span className="w-4 text-center text-xs">{i+1}</span>}
+                <span className="hidden sm:inline">{labels[i]}</span>
               </div>
               {i<2 && <div className={`flex-1 h-0.5 rounded ${done?'bg-emerald-400':'bg-gray-200 dark:bg-gray-700'}`}/>}
             </div>
@@ -449,7 +449,7 @@ function CheckoutInner() {
                     </div>
                   )}
                   {cfg.instructions_ar && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4" dir="rtl">{lang==='ar'?cfg.instructions_ar:cfg.instructions_en}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4" dir={dir}>{lang==='ar'?cfg.instructions_ar:cfg.instructions_en}</p>
                   )}
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-sm text-gray-500 dark:text-gray-400">{t('Amount Due','المبلغ المطلوب')}</span>
@@ -465,7 +465,7 @@ function CheckoutInner() {
                     <div className="text-sm font-bold text-blue-700 dark:text-blue-300">{t('Waiting for payment confirmation...','جاري انتظار تأكيد الدفع...')}</div>
                     <div className="text-xs text-blue-500 mt-0.5">{t('We\'ll confirm automatically after payment on EasyKash','بعد الدفع على صفحة EasyKash هنأكد تلقائياً')}</div>
                   </div>
-                  {easykashUrl && <a href={easykashUrl} target="_blank" className="mr-auto text-xs text-blue-500 underline flex-shrink-0">{t('Open link again','فتح الرابط مرة أخرى')}</a>}
+                  {easykashUrl && <a href={easykashUrl} target="_blank" className="ms-auto text-xs text-blue-500 underline flex-shrink-0">{t('Open link again','فتح الرابط مرة أخرى')}</a>}
                 </div>
               )}
 

@@ -11,7 +11,7 @@ interface Profile {
 function Toast({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [onClose])
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-medium text-white ${ok ? 'bg-emerald-500' : 'bg-red-500'}`}>
+    <div className={`fixed bottom-6 end-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-medium text-white ${ok ? 'bg-emerald-500' : 'bg-red-500'}`}>
       {ok ? <Check size={15}/> : <AlertCircle size={15}/>}{msg}
     </div>
   )
@@ -115,7 +115,7 @@ export default function MemberProfilePage() {
               }
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-60" style={{background:'#d99401'}}>
+              className="absolute bottom-0 end-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-60" style={{background:'#d99401'}}>
               {uploading
                 ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                 : <Camera size={14} className="text-white"/>
@@ -183,9 +183,9 @@ export default function MemberProfilePage() {
               <input value={password} onChange={e => setPassword(e.target.value)}
                 type={showPass ? 'text' : 'password'}
                 placeholder={t('Leave blank to keep current', 'اتركها فارغة للإبقاء على الحالية')}
-                className={inp + ' pr-10'}/>
+                className={inp + ' pe-10'}/>
               <button type="button" onClick={() => setShowPass(p => !p)}
-                className="absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 hover:text-gray-600">
+                className="absolute top-1/2 -translate-y-1/2 end-3 text-gray-400 hover:text-gray-600">
                 {showPass ? <EyeOff size={15}/> : <Eye size={15}/>}
               </button>
             </div>

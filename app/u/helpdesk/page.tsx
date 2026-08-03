@@ -145,8 +145,8 @@ export default function HelpdeskPage() {
   return (
     <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
-      <div className="rounded-2xl mb-6 p-8" style={{ background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)' }}>
-        <div className="flex items-start justify-between gap-4">
+      <div className="rounded-2xl mb-6 p-5 md:p-8" style={{ background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)' }}>
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400"/>
@@ -162,7 +162,7 @@ export default function HelpdeskPage() {
           <a href={`https://wa.me/${settings.whatsapp_number?.replace(/\D/g, '')}`} target="_blank"
             className="bg-green-500/20 border border-green-500/30 rounded-xl px-5 py-3 flex items-center gap-3 hover:bg-green-500/30 transition-colors flex-shrink-0">
             <MessageCircle size={20} className="text-green-400"/>
-            <div className="text-right">
+            <div className="text-end">
               <p className="text-xs text-gray-400">{t('WhatsApp Support', 'دعم واتساب')}</p>
               <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number || '+20 100 000 0000'}</p>
             </div>
@@ -235,7 +235,7 @@ export default function HelpdeskPage() {
                         ),
                       ]
                       return msgs.map(m => (
-                        <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                        <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : 'flex-row'}`} style={{direction:'ltr'}}>
                           {/* Avatar */}
                           {m.sender === 'admin' && (
                             m.avatar
@@ -244,7 +244,7 @@ export default function HelpdeskPage() {
                                   {(m.name || 'S').charAt(0).toUpperCase()}
                                 </div>
                           )}
-                          <div className={`flex flex-col gap-0.5 max-w-[85%] ${m.sender === 'admin' ? 'items-end' : ''}`}>
+                          <div className={`flex flex-col gap-0.5 max-w-[85%] ${m.sender === 'admin' ? 'items-end' : 'items-start'}`} style={{direction: dir}}>
                             <span className={`text-[10px] font-semibold ${m.sender === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
                               {m.sender === 'member' ? t('You', 'أنت') : (m.name || t('Support', 'الدعم'))}
                             </span>

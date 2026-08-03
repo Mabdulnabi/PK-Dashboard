@@ -215,8 +215,8 @@ export default function PrivateStorePage() {
             {filtered.map(tool => (
               <div key={tool.id}
                 className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                <div className="p-5 pb-3 relative" dir="ltr">
-                  <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
+                <div className="p-5 pb-3 relative">
+                  <span className="absolute top-4 end-4 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
                     <Zap size={10} fill="white"/>{lang==='ar'?'فوري':(tool.delivery_label||'INSTANT')}
                   </span>
                   <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-4 overflow-hidden shadow-sm">
@@ -224,7 +224,7 @@ export default function PrivateStorePage() {
                       ? <img src={tool.image_url} alt={tool.name} className="w-10 h-10 object-contain"/>
                       : <span className="text-xl font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>}
                   </div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pr-16 leading-tight">{tool.name}</h3>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pe-16 leading-tight">{tool.name}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2">{tool.description}</p>
                   <div className="mb-1" dir={isRtl?'rtl':'ltr'}>
                     <span className="text-2xl font-bold" style={{color:'#8b5cf6'}}>{price(tool)}</span>
@@ -289,7 +289,7 @@ export default function PrivateStorePage() {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto px-6 pb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight" dir="ltr">{popup.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight">{popup.name}</h2>
                 <div className="mb-4"><Stars rating={popup.rating} count={popup.review_count}/></div>
                 <div className="mb-5">
                   <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{price(popup)}</span>
@@ -304,7 +304,7 @@ export default function PrivateStorePage() {
                     </button>
                 }
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4" dir="ltr">{popup.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">{popup.description}</p>
                   {popup.features?.length > 0 && (
                     <div className="flex flex-col gap-2">
                       {popup.features.map((f,i) => (

@@ -32,7 +32,7 @@ function Stars({ rating, count }: { rating:number; count:number }) {
 }
 
 export default function ShopPage({ category }: Props) {
-  const { t, lang, currency, formatPrice } = useLang()
+  const { t, lang, dir, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
   const [tools,     setTools]     = useState<Tool[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -79,7 +79,7 @@ export default function ShopPage({ category }: Props) {
   if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)}/>
 
   return (
-    <div className="p-3 md:p-6">
+    <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
       <div className="rounded-2xl mb-5 px-4 md:px-8 py-6 text-center" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)'}}>
         <h1 className="text-2xl font-bold text-white mb-1.5" dir="ltr">
@@ -136,9 +136,9 @@ export default function ShopPage({ category }: Props) {
         {filtered.map(tool=>(
           <div key={tool.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
             {/* Card body - always LTR for layout, content direction handled per element */}
-            <div className="p-5 pb-3 relative" dir="ltr">
-              {/* Badge - always top-right */}
-              <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
+            <div className="p-5 pb-3 relative">
+              {/* Badge */}
+              <span className="absolute top-4 end-4 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
                 <Zap size={10} fill="white"/>{lang==='ar'?'فوري':(tool.delivery_label||'INSTANT')}
               </span>
               {/* Logo - always LTR */}
@@ -149,7 +149,7 @@ export default function ShopPage({ category }: Props) {
                 }
               </div>
               {/* Name & description - always LTR */}
-              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pr-16 leading-tight">{tool.name}</h3>
+              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pe-16 leading-tight">{tool.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2">{tool.description}</p>
               {/* Price - RTL in Arabic, LTR in English */}
               <div className="mb-1" dir={lang==='ar'?'rtl':'ltr'}>
@@ -212,7 +212,7 @@ export default function ShopPage({ category }: Props) {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto px-6 pb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight" dir="ltr">{popup.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight">{popup.name}</h2>
                 <div className="mb-4"><Stars rating={popup.rating} count={popup.review_count}/></div>
                 <div className="mb-5">
                   <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{price(popup)}</span>
@@ -226,7 +226,7 @@ export default function ShopPage({ category }: Props) {
                     </button>
                 }
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4" dir="ltr">{popup.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">{popup.description}</p>
                   {popup.features?.length>0 && (
                     <div className="flex flex-col gap-2">
                       {popup.features.map((f,i)=>(

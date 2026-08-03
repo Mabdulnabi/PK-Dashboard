@@ -23,12 +23,12 @@ export default function TutorialsPage() {
   return (
     <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
-      <div className="rounded-2xl mb-6 p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+      <div className="rounded-2xl mb-6 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4" style={{border:'1px solid #d9940140',background:'#d9940115'}}>
           <span className="w-1.5 h-1.5 rounded-full" style={{background:'#d99401'}}/>
           <span className="text-sm font-semibold uppercase tracking-wide" style={{color:'#d99401'}}>{t('Learning Hub','مركز التعلم')}</span>
         </div>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-white mb-2">
               {t('Guide Videos & ','فيديوهات وأدلة ')}<span style={{color:'#d99401'}}>{t('User Manuals','الاستخدام')}</span>
@@ -38,7 +38,7 @@ export default function TutorialsPage() {
             </p>
           </div>
           <a href={`https://wa.me/${settings.whatsapp_number?.replace(/\D/g,'')}`} target="_blank"
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-right flex-shrink-0 hover:bg-white/20 transition-colors">
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 flex-shrink-0 hover:bg-white/20 transition-colors text-end">
             <p className="text-xs text-gray-400">{t('Facing issues? Message on WhatsApp','واجه مشكلة؟ راسلنا على واتساب')}</p>
             <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</p>
           </a>
@@ -47,7 +47,8 @@ export default function TutorialsPage() {
 
       {loading&&<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>}
 
-      <div className="grid grid-cols-3 gap-6">
+      {/* Responsive grid: 1 col mobile → 2 col sm → 3 col lg */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {videos.map(v=>(
           <div key={v.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
             <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 cursor-pointer group" onClick={()=>setPlaying(v.id)}>
@@ -57,11 +58,11 @@ export default function TutorialsPage() {
               }
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{background:'#d99401'}}>
-                  <Play size={13} className="text-white ml-1"/>
+                  <Play size={13} className="text-white ms-0.5"/>
                 </div>
               </div>
-              {v.duration&&<span className="absolute bottom-2 right-2 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded">{v.duration}</span>}
-              {v.badge&&<span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{background:badgeColor[v.badge]||'#6B7280'}}>● {v.badge}</span>}
+              {v.duration&&<span className="absolute bottom-2 end-2 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded">{v.duration}</span>}
+              {v.badge&&<span className="absolute top-2 end-2 text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{background:badgeColor[v.badge]||'#6B7280'}}>● {v.badge}</span>}
             </div>
             <div className="p-4">
               <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 line-clamp-2">{v.title}</h3>
@@ -70,17 +71,17 @@ export default function TutorialsPage() {
                 {[1,2,3,4,5].map(i=>(
                   <Star key={i} size={12} fill={i<=Math.round(v.rating)?'#F59E0B':'none'} stroke={i<=Math.round(v.rating)?'#F59E0B':'#D1D5DB'}/>
                 ))}
-                <span className="text-xs text-gray-400 ml-1">{v.rating} ({v.review_count>=1000?`${(v.review_count/1000).toFixed(1)}k+`:v.review_count})</span>
+                <span className="text-xs text-gray-400 ms-1">{v.rating} ({v.review_count>=1000?`${(v.review_count/1000).toFixed(1)}k+`:v.review_count})</span>
               </div>
               <div className="flex gap-2">
                 <button onClick={()=>setPlaying(v.id)}
                   className="flex-1 py-2 rounded-lg text-white text-sm font-bold transition-colors flex items-center justify-center gap-1" style={{background:'#d99401'}}>
-                  <Play size={12}/>▶ {t('Play Video','تشغيل')}
+                  <Play size={12}/>{t('Play Video','تشغيل')}
                 </button>
                 {v.video_url&&(
                   <button onClick={()=>navigator.clipboard.writeText(v.video_url)}
                     className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 transition-colors text-sm font-semibold flex items-center gap-1">
-                    <LinkIcon size={12}/>{t('Copy Link','نسخ')}
+                    <LinkIcon size={12}/>{t('Copy','نسخ')}
                   </button>
                 )}
               </div>
@@ -88,7 +89,7 @@ export default function TutorialsPage() {
           </div>
         ))}
         {!loading&&videos.length===0&&(
-          <div className="col-span-3 text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl">
+          <div className="col-span-full text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl">
             <Play size={24} className="text-gray-200 mx-auto mb-3"/>
             <p className="text-sm text-gray-400">{t('No tutorial videos yet','لا توجد فيديوهات بعد')}</p>
           </div>
