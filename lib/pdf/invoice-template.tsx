@@ -11,7 +11,6 @@ Font.register({
 })
 
 const GOLD   = '#C9A84C'
-const GOLD2  = '#E8C96A'
 const INK    = '#1A1A1A'
 const MUTED  = '#888888'
 const LIGHT  = '#F5F0E8'
@@ -20,73 +19,71 @@ const WHITE  = '#FFFFFF'
 const GREEN  = '#2D7A4F'
 const GREENB = '#E6F4ED'
 
-const f = { xs: 7, sm: 8, md: 9.5, lg: 12, xl: 16, xxl: 28 }
+const f = { xs: 7, sm: 8, md: 9.5, lg: 12, xxl: 26 }
 
 const s = StyleSheet.create({
   page: { fontFamily: 'Inter', backgroundColor: WHITE, fontSize: f.md, color: INK },
 
   // ── HEADER ──
   header:       { paddingHorizontal: 48, paddingTop: 38, paddingBottom: 0 },
-  headerTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  logoImg:      { width: 52, height: 52, borderRadius: 6 },
-  logoMark:     { width: 52, height: 52, borderRadius: 6, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' },
-  logoLetter:   { color: WHITE, fontSize: 18, fontWeight: 700 },
-  brandName:    { fontSize: f.xl, fontWeight: 700, color: INK, marginBottom: 2 },
-  brandTag:     { fontSize: f.xs, color: MUTED, letterSpacing: 1 },
+  headerRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  logoImg:      { height: 44, maxWidth: 180, objectFit: 'contain' },
+
   invBlock:     { alignItems: 'flex-end' },
   invWord:      { fontSize: f.xs, fontWeight: 700, color: GOLD, letterSpacing: 3, marginBottom: 5 },
-  invNum:       { fontSize: f.xl, fontWeight: 700, color: INK, marginBottom: 3 },
+  invNum:       { fontSize: f.lg, fontWeight: 700, color: INK, marginBottom: 3 },
   invDate:      { fontSize: f.xs, color: MUTED },
 
-  // gold divider line
-  dividerOuter: { paddingHorizontal: 48, marginVertical: 16 },
-  divider:      { height: 1.5, backgroundColor: GOLD },
-  dividerThin:  { height: 0.5, backgroundColor: BORDER, marginTop: 3 },
+  // gold rule
+  ruleWrap:     { paddingHorizontal: 48, marginBottom: 24 },
+  ruleLine:     { height: 1.5, backgroundColor: GOLD },
+  ruleThin:     { height: 0.5, backgroundColor: BORDER, marginTop: 3 },
 
   // ── BODY ──
-  body:         { paddingHorizontal: 48, paddingBottom: 40 },
+  body:         { paddingHorizontal: 48 },
 
-  // ── INFO ROW (4 cols) ──
-  infoRow:      { flexDirection: 'row', gap: 0, marginBottom: 28, marginTop: 8 },
-  infoCol:      { flex: 1, paddingRight: 16 },
-  infoDivider:  { width: 1, backgroundColor: BORDER, marginRight: 16 },
-  infoLabel:    { fontSize: f.xs, fontWeight: 700, color: GOLD, letterSpacing: 1.5, marginBottom: 5 },
-  infoVal:      { fontSize: f.sm, color: INK, fontWeight: 700, lineHeight: 1.5 },
-  infoSub:      { fontSize: f.xs, color: MUTED, lineHeight: 1.6 },
+  // ── 2-COL INFO ──
+  infoRow:      { flexDirection: 'row', gap: 40, marginBottom: 28 },
+  infoCol:      { flex: 1 },
+  section:      { marginBottom: 18 },
+  secLabel:     { fontSize: f.xs, fontWeight: 700, color: GOLD, letterSpacing: 1.8, marginBottom: 6 },
+  secVal:       { fontSize: f.sm, fontWeight: 700, color: INK, lineHeight: 1.5 },
+  secSub:       { fontSize: f.xs, color: MUTED, lineHeight: 1.6 },
 
-  // status pill
-  paidPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREENB, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
+  paidPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREENB,
+                  borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 5 },
   paidDot:      { width: 5, height: 5, borderRadius: 3, backgroundColor: GREEN },
   paidTxt:      { fontSize: f.xs, fontWeight: 700, color: GREEN, letterSpacing: 0.5 },
 
-  // code badge
-  codeBadge:    { backgroundColor: LIGHT, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: BORDER, alignSelf: 'flex-start' },
-  codeTxt:      { fontSize: f.sm, fontWeight: 700, color: INK, letterSpacing: 1.5 },
+  codeBadge:    { backgroundColor: LIGHT, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4,
+                  borderWidth: 1, borderColor: BORDER, alignSelf: 'flex-start', marginBottom: 5 },
+  codeTxt:      { fontSize: f.sm, fontWeight: 700, color: INK, letterSpacing: 2 },
 
-  // ── ITEMS TABLE ──
+  // ── TABLE ──
   tableCap:     { fontSize: f.xs, fontWeight: 700, color: GOLD, letterSpacing: 2, marginBottom: 8 },
   tableWrap:    { borderWidth: 1, borderColor: BORDER, borderRadius: 6, overflow: 'hidden', marginBottom: 24 },
   thead:        { flexDirection: 'row', backgroundColor: LIGHT, paddingHorizontal: 16, paddingVertical: 9 },
   theadCell:    { fontSize: f.xs, fontWeight: 700, color: MUTED, letterSpacing: 1.2 },
-  trow:         { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 13, backgroundColor: WHITE },
-  trowAlt:      { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 13, backgroundColor: '#FDFAF3' },
+  trow:         { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 13 },
   tcell:        { fontSize: f.md, color: INK },
-  trowDivider:  { height: 0.5, backgroundColor: BORDER, marginHorizontal: 16 },
 
   // ── TOTALS ──
-  totalsArea:   { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 32 },
-  totalsBox:    { minWidth: 220, borderWidth: 1, borderColor: BORDER, borderRadius: 6, overflow: 'hidden' },
-  totalRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
-  totalRowFill: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: GOLD },
+  totalsArea:   { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 0 },
+  totalsBox:    { minWidth: 230, borderWidth: 1, borderColor: BORDER, borderRadius: 6, overflow: 'hidden' },
+  totalRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                  paddingHorizontal: 16, paddingVertical: 8 },
+  totalRowGold: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                  paddingHorizontal: 16, paddingVertical: 10, backgroundColor: GOLD },
   totalKey:     { fontSize: f.sm, color: MUTED },
   totalVal:     { fontSize: f.sm, fontWeight: 700, color: INK },
   grandKey:     { fontSize: f.sm, fontWeight: 700, color: WHITE },
   grandVal:     { fontSize: f.lg, fontWeight: 700, color: WHITE },
 
-  // ── FOOTER ──
-  footerWrap:   { borderTopWidth: 1.5, borderTopColor: GOLD, marginTop: 8, paddingTop: 14 },
-  footerThin:   { borderTopWidth: 0.5, borderTopColor: BORDER, marginTop: 3, marginBottom: 14 },
-  footerRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // ── FOOTER (absolute bottom) ──
+  footer:       { position: 'absolute', bottom: 36, left: 48, right: 48,
+                  borderTopWidth: 1.5, borderTopColor: GOLD, paddingTop: 12 },
+  footerThin:   { borderTopWidth: 0.5, borderTopColor: BORDER, marginTop: 3, marginBottom: 12 },
+  footerRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   footerTxt:    { fontSize: f.xs, color: MUTED, lineHeight: 1.8 },
   footerBrand:  { fontSize: f.xs, fontWeight: 700, color: GOLD, letterSpacing: 1 },
 })
@@ -101,30 +98,21 @@ export interface InvoiceData {
 export interface MemberData { full_name: string; email: string; phone?: string | null }
 interface Props { payment: InvoiceData; member: MemberData; logoUrl: string | null; siteName: string }
 
+const LOGO_URL = 'https://mluqxggjbumtmyfldaon.supabase.co/storage/v1/object/public/site-assets/Horizontal%20Logo.png'
+
 const GW: Record<string, string> = {
   instapay: 'InstaPay', vodafone: 'Vodafone Cash', binance: 'Binance Pay',
   bybit: 'Bybit Pay', bep20: 'USDT BEP20', easykash: 'EasyKash', coupon: 'Coupon',
 }
 
-function InfoCol({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={s.infoCol}>
-      <Text style={s.infoLabel}>{label}</Text>
-      {children}
-    </View>
-  )
-}
-
-export function InvoicePDF({ payment, member, logoUrl, siteName }: Props) {
-  const invoiceN   = `INV-${payment.id.slice(0, 8).toUpperCase()}`
-  const code       = payment.payment_code || `PK-${payment.id.slice(0, 6).toUpperCase()}`
-  const issueDate  = new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
-  const dueDate    = issueDate // same day — paid invoice
-  const currency   = (payment.currency || 'EGP').toUpperCase()
-  const amount     = Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })
-  const method     = GW[payment.gateway] || payment.gateway || '—'
-  const product    = payment.tool_name || payment.bundle_name || 'Digital Subscription'
-  const abbr       = siteName.slice(0, 2).toUpperCase()
+export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Props) {
+  const invoiceN  = `INV-${payment.id.slice(0, 8).toUpperCase()}`
+  const code      = payment.payment_code || `PK-${payment.id.slice(0, 6).toUpperCase()}`
+  const issueDate = new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
+  const currency  = (payment.currency || 'EGP').toUpperCase()
+  const amount    = Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })
+  const method    = GW[payment.gateway] || payment.gateway || '—'
+  const product   = payment.tool_name || payment.bundle_name || 'Digital Subscription'
 
   return (
     <Document title={`Invoice ${invoiceN}`} author={siteName}>
@@ -132,19 +120,8 @@ export function InvoicePDF({ payment, member, logoUrl, siteName }: Props) {
 
         {/* ── HEADER ── */}
         <View style={s.header}>
-          <View style={s.headerTop}>
-            {/* Brand */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              {logoUrl
-                ? <Image src={logoUrl} style={s.logoImg} />
-                : <View style={s.logoMark}><Text style={s.logoLetter}>{abbr}</Text></View>
-              }
-              <View>
-                <Text style={s.brandName}>{siteName}</Text>
-                <Text style={s.brandTag}>DIGITAL SUBSCRIPTIONS & TOOLS</Text>
-              </View>
-            </View>
-            {/* Invoice meta */}
+          <View style={s.headerRow}>
+            <Image src={LOGO_URL} style={s.logoImg}/>
             <View style={s.invBlock}>
               <Text style={s.invWord}>INVOICE</Text>
               <Text style={s.invNum}>{invoiceN}</Text>
@@ -154,42 +131,50 @@ export function InvoicePDF({ payment, member, logoUrl, siteName }: Props) {
         </View>
 
         {/* Gold rule */}
-        <View style={s.dividerOuter}>
-          <View style={s.divider}/>
-          <View style={s.dividerThin}/>
+        <View style={s.ruleWrap}>
+          <View style={s.ruleLine}/>
+          <View style={s.ruleThin}/>
         </View>
 
         {/* ── BODY ── */}
         <View style={s.body}>
 
-          {/* ── INFO ROW ── */}
+          {/* ── 2-COL INFO ── */}
           <View style={s.infoRow}>
-            <InfoCol label="BILLED TO">
-              <Text style={s.infoVal}>{member.full_name}</Text>
-              <Text style={s.infoSub}>{member.email}</Text>
-              {member.phone ? <Text style={s.infoSub}>{member.phone}</Text> : null}
-            </InfoCol>
-            <View style={s.infoDivider}/>
-            <InfoCol label="PAYMENT STATUS">
-              <View style={s.paidPill}>
-                <View style={s.paidDot}/>
-                <Text style={s.paidTxt}>PAID IN FULL</Text>
+            {/* LEFT: Billed To → Payment Status */}
+            <View style={s.infoCol}>
+              <View style={s.section}>
+                <Text style={s.secLabel}>BILLED TO</Text>
+                <Text style={s.secVal}>{member.full_name}</Text>
+                <Text style={s.secSub}>{member.email}</Text>
+                {member.phone ? <Text style={s.secSub}>{member.phone}</Text> : null}
               </View>
-              <Text style={[s.infoSub, { marginTop: 5 }]}>Due Date: {dueDate}</Text>
-            </InfoCol>
-            <View style={s.infoDivider}/>
-            <InfoCol label="PAYMENT METHOD">
-              <Text style={s.infoVal}>{method}</Text>
-              {payment.transaction_id
-                ? <Text style={s.infoSub}>{payment.transaction_id}</Text>
-                : null}
-            </InfoCol>
-            <View style={s.infoDivider}/>
-            <InfoCol label="REFERENCE CODE">
-              <View style={s.codeBadge}>
-                <Text style={s.codeTxt}>{code}</Text>
+              <View style={s.section}>
+                <Text style={s.secLabel}>PAYMENT STATUS</Text>
+                <View style={s.paidPill}>
+                  <View style={s.paidDot}/>
+                  <Text style={s.paidTxt}>PAID IN FULL</Text>
+                </View>
+                <Text style={s.secSub}>Due Date: {issueDate}</Text>
               </View>
-            </InfoCol>
+            </View>
+
+            {/* RIGHT: Reference Code → Payment Method */}
+            <View style={s.infoCol}>
+              <View style={s.section}>
+                <Text style={s.secLabel}>REFERENCE CODE</Text>
+                <View style={s.codeBadge}>
+                  <Text style={s.codeTxt}>{code}</Text>
+                </View>
+              </View>
+              <View style={s.section}>
+                <Text style={s.secLabel}>PAYMENT METHOD</Text>
+                <Text style={s.secVal}>{method}</Text>
+                {payment.transaction_id
+                  ? <Text style={s.secSub}>{payment.transaction_id}</Text>
+                  : null}
+              </View>
+            </View>
           </View>
 
           {/* ── ITEMS TABLE ── */}
@@ -224,27 +209,27 @@ export function InvoicePDF({ payment, member, logoUrl, siteName }: Props) {
                 <Text style={s.totalVal}>0.00 {currency}</Text>
               </View>
               <View style={{ height: 0.5, backgroundColor: BORDER }}/>
-              <View style={s.totalRowFill}>
+              <View style={s.totalRowGold}>
                 <Text style={s.grandKey}>TOTAL PAID</Text>
                 <Text style={s.grandVal}>{amount} {currency}</Text>
               </View>
             </View>
           </View>
 
-          {/* ── FOOTER ── */}
-          <View style={s.footerWrap}>
-            <View style={s.footerThin}/>
-            <View style={s.footerRow}>
-              <Text style={s.footerTxt}>
-                Thank you for your purchase.{'\n'}
-                For support, open a ticket in your member dashboard and reference code{' '}
-                <Text style={{ fontWeight: 700, color: INK }}>{code}</Text>.
-              </Text>
-              <Text style={s.footerBrand}>{siteName.toUpperCase()}</Text>
-            </View>
-          </View>
-
         </View>
+
+        {/* ── FOOTER (pinned to page bottom) ── */}
+        <View style={s.footer} fixed>
+          <View style={s.footerThin}/>
+          <View style={s.footerRow}>
+            <Text style={s.footerTxt}>
+              Thank you for your purchase.{'\n'}
+              For support, reference code <Text style={{ fontWeight: 700, color: INK }}>{code}</Text> in your ticket.
+            </Text>
+            <Text style={s.footerBrand}>{siteName.toUpperCase()}</Text>
+          </View>
+        </View>
+
       </Page>
     </Document>
   )
