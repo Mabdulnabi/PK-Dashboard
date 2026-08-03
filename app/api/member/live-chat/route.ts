@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   let { data: conv } = await service
     .from('live_chat_conversations')
-    .select('id, status, unread_member, updated_at')
+    .select('id, member_id, status, unread_member, updated_at')
     .eq('member_id', sess.member_id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const { data: newConv } = await service
       .from('live_chat_conversations')
       .insert({ member_id: sess.member_id })
-      .select('id, status, unread_member, updated_at')
+      .select('id, member_id, status, unread_member, updated_at')
       .single()
     conv = newConv
   }

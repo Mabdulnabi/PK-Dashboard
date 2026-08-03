@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Upload, Check, Image as ImageIcon, Trash2, Sun, Moon, LogIn, Key } from 'lucide-react'
+import { Upload, Check, Image as ImageIcon, Trash2, Sun, Moon, LogIn, Key, MessageCircle } from 'lucide-react'
 
 const LOGO_SLOTS = [
   {
@@ -66,6 +66,7 @@ export default function UISettingsPage() {
   const [logoHeight,     setLogoHeight]  = useState('40')
   const [adminLogoW,     setAdminLogoW]  = useState('36')
   const [adminLogoH,     setAdminLogoH]  = useState('36')
+  const [fabIcon,        setFabIcon]     = useState('')
   const [loading,        setLoading]     = useState(true)
   const [uploadingSlot,  setUpSlot]      = useState<string | null>(null)
   const [saving,         setSaving]      = useState(false)
@@ -84,6 +85,7 @@ export default function UISettingsPage() {
         setLogoHeight(s.logo_height || '40')
         setAdminLogoW(s.admin_logo_width || '36')
         setAdminLogoH(s.admin_logo_height || '36')
+        setFabIcon(s.live_chat_fab_icon || '')
         setLoading(false)
       })
   }, [])
@@ -105,6 +107,7 @@ export default function UISettingsPage() {
     const body: Record<string, string> = {
       logo_width: logoWidth, logo_height: logoHeight,
       admin_logo_width: adminLogoW, admin_logo_height: adminLogoH,
+      live_chat_fab_icon: fabIcon,
       ...urls,
     }
     const res = await fetch('/api/ui-settings', {
@@ -244,6 +247,35 @@ export default function UISettingsPage() {
                   <div>
                     <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">ارتفاع لوجو الأدمن (px)</label>
                     <input type="number" value={adminLogoH} onChange={e => setAdminLogoH(e.target.value)} className={inp}/>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Live Chat ───────────────────────────── */}
+              <div className="rounded-2xl p-6 bg-white dark:bg-[#1F2937] border border-gray-100 dark:border-[#374151] shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <MessageCircle size={14} style={{ color: '#d99401' }}/>
+                  <h2 className="text-gray-900 dark:text-white font-bold text-sm">Live Chat</h2>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">تحكم في أيقونة زر الشات العائم اللي بيظهر عند العميل</p>
+                <div>
+                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5">
+                    أيقونة الزر العائم (Emoji)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      value={fabIcon}
+                      onChange={e => setFabIcon(e.target.value)}
+                      placeholder="مثال: 💬 أو 🎧 — اتركه فاضي للأيقونة الافتراضية"
+                      className={inp}
+                      maxLength={4}
+                    />
+                    {fabIcon && (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0 shadow"
+                        style={{ background: '#d99401' }}>
+                        {fabIcon}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

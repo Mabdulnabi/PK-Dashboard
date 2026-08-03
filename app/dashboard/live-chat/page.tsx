@@ -3,9 +3,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import {
   MessageSquare, Search, Send, Paperclip, X, ChevronLeft,
-  MoreVertical, StickyNote, Zap, Trash2, Edit3, Check, CheckCheck,
-  Clock, Image as ImageIcon, File, Plus, Circle,
-  UserCheck, Users,
+  StickyNote, Zap, Trash2, Edit3, Check, CheckCheck,
+  File, UserCheck,
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { ar } from 'date-fns/locale'
@@ -14,6 +13,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+const GOLD = '#d99401'
 
 type Conversation = {
   id: string; member_id: string; status: string
@@ -34,34 +35,54 @@ type Note = { id: string; admin_name: string | null; content: string; created_at
 type QuickReply = { id: string; title: string; content: string }
 
 const fmtTime = (d: string) => format(new Date(d), 'HH:mm')
-const fmtDate = (d: string) => formatDistanceToNow(new Date(d), { addSuffix: true })
+const fmtDist = (d: string) => formatDistanceToNow(new Date(d), { addSuffix: true })
 const fmtSize = (b: number) => b > 1048576 ? `${(b/1048576).toFixed(1)} MB` : `${(b/1024).toFixed(0)} KB`
 
+function playSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const now = ctx.currentTime
+    ;([
+      [880, now,      now + 0.12],
+      [1100, now + 0.1, now + 0.35],
+    ] as [number, number, number][]).forEach(([freq, start, end]) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain()
+      osc.type = 'sine'; osc.frequency.value = freq
+      gain.gain.setValueAtTime(0, start)
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, end)
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.start(start); osc.stop(end)
+    })
+  } catch {}
+}
+
 function Avatar({ url, name, size = 9 }: { url?: string|null; name?: string; size?: number }) {
-  const cls = `w-${size} h-${size} rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-xs`
-  if (url) return <img src={url} className={`${cls} object-cover`} alt={name}/>
-  const bg = ['#6366f1','#8b5cf6','#ec4899','#f97316','#22c55e','#14b8a6','#d99401']
+  const cls = `rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-xs overflow-hidden`
+  const st  = { width: `${size*4}px`, height: `${size*4}px` }
+  if (url) return <img src={url} className={`${cls} object-cover`} style={st} alt={name}/>
+  const bg = ['#6366f1','#8b5cf6','#ec4899','#f97316','#22c55e','#14b8a6', GOLD]
   const i  = (name?.charCodeAt(0) || 0) % bg.length
-  return <div className={cls} style={{background:bg[i]}}>{name?.[0]?.toUpperCase()}</div>
+  return <div className={cls} style={{ ...st, background: bg[i] }}>{name?.[0]?.toUpperCase()}</div>
 }
 
 function StatusTick({ status }: { status: string }) {
-  if (status === 'read')      return <CheckCheck size={12} className="text-blue-400"/>
+  if (status === 'read')      return <CheckCheck size={12} style={{ color: '#60a5fa' }}/>
   if (status === 'delivered') return <CheckCheck size={12} className="text-gray-400"/>
   return <Check size={12} className="text-gray-400"/>
 }
 
 function AttachmentPreview({ a }: { a: Attachment }) {
   if (a.kind === 'image') return (
-    <a href={a.url} target="_blank" rel="noopener" className="block">
+    <a href={a.url} target="_blank" rel="noopener noreferrer" className="block">
       <img src={a.url} alt={a.name} className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-black/10"/>
     </a>
   )
   return (
-    <a href={a.url} target="_blank" rel="noopener"
+    <a href={a.url} target="_blank" rel="noopener noreferrer"
       className="flex items-center gap-2 bg-black/10 rounded-lg px-3 py-2 text-xs hover:bg-black/20 transition-colors">
-      <File size={14}/> <span className="truncate max-w-[140px]">{a.name}</span>
-      <span className="text-gray-400 flex-shrink-0">{fmtSize(a.size_bytes)}</span>
+      <File size={14}/><span className="truncate max-w-[140px]">{a.name}</span>
+      <span className="text-[10px] opacity-60 flex-shrink-0">{fmtSize(a.size_bytes)}</span>
     </a>
   )
 }
@@ -88,12 +109,27 @@ export default function LiveChatPage() {
   const [uploading, setUploading]   = useState(false)
   const [onlineMembers, setOnline]  = useState<Set<string>>(new Set())
   const [typingConvs, setTyping]    = useState<Set<string>>(new Set())
-  const messagesEndRef              = useRef<HTMLDivElement>(null)
-  const fileInputRef                = useRef<HTMLInputElement>(null)
-  const channelRef                  = useRef<any>(null)
-  const presenceRef                 = useRef<any>(null)
+  const [toast, setToast]           = useState<string | null>(null)
+  const [adminProfile, setAdminProfile] = useState<{ id?: string; display_name?: string; avatar_url?: string } | null>(null)
+  const messagesEndRef  = useRef<HTMLDivElement>(null)
+  const fileInputRef    = useRef<HTMLInputElement>(null)
+  const textareaRef     = useRef<HTMLTextAreaElement>(null)
+  const toastTimer      = useRef<any>(null)
+  const activeIdRef     = useRef(activeId)
+  activeIdRef.current   = activeId
 
   const activeConv = convs.find(c => c.id === activeId) || null
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(null), 4000)
+  }
+
+  // ── Admin profile ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/admin/profile').then(r => r.json()).then(d => { if (!d.error) setAdminProfile(d) })
+  }, [])
 
   // ── Load conversations ──────────────────────────────────────────────────────
   const loadConvs = useCallback(async () => {
@@ -110,30 +146,26 @@ export default function LiveChatPage() {
     fetch('/api/admin/live-chat/quick-replies').then(r=>r.json()).then(d=>setQR(d.replies||[]))
   }, [])
 
-  // ── Realtime: subscribe to all message inserts / conv updates ──────────────
+  // ── Realtime ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const ch = supabase.channel('admin-live-chat')
       .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'live_chat_messages'
-      }, payload => {
+        event: '*', schema: 'public', table: 'live_chat_messages',
+      }, async payload => {
         const msg = payload.new as Message
         if (!msg) return
-        // update conversation list
         loadConvs()
-        // update open conversation
-        if (msg.conversation_id === activeId) {
-          setMessages(prev => {
-            const exists = prev.find(m => m.id === msg.id)
-            if (exists) return prev.map(m => m.id === msg.id ? { ...m, ...msg } : m)
-            return [...prev, { ...msg, live_chat_attachments: [] }]
-          })
-          // mark as delivered if from member
-          if (msg.sender_type === 'member') {
-            fetch(`/api/admin/live-chat/${msg.conversation_id}`, { method:'PATCH',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ unread_admin: 0 })
-            })
-          }
+        if (msg.conversation_id === activeIdRef.current) {
+          // Re-fetch full messages with attachments
+          const r = await fetch(`/api/admin/live-chat/${msg.conversation_id}`)
+          const d = await r.json()
+          if (d.messages) setMessages(d.messages)
+        }
+        // Notify if member sent a message
+        if (msg.sender_type === 'member') {
+          playSound()
+          const convName = convs.find(c => c.id === msg.conversation_id)?.member?.full_name || 'Member'
+          showToast(`${convName}: ${msg.content || '📎 Attachment'}`)
         }
       })
       .on('broadcast', { event: 'typing' }, ({ payload }: any) => {
@@ -143,29 +175,29 @@ export default function LiveChatPage() {
           else next.delete(payload.conv_id)
           return next
         })
-        if (payload.typing) setTimeout(() => {
+        setTimeout(() => {
           setTyping(prev => { const n = new Set(prev); n.delete(payload.conv_id); return n })
         }, 3000)
       })
       .subscribe()
 
-    channelRef.current = ch
-
-    // Presence for online status
+    // Presence: members track with { member_id, conv_id }
+    // We key online status by conv_id for consistent lookup
     const presence = supabase.channel('member-presence')
       .on('presence', { event: 'sync' }, () => {
         const state = presence.presenceState()
-        const online = new Set(Object.values(state).flat().map((p: any) => p.member_id as string))
+        const online = new Set(
+          Object.values(state).flat().map((p: any) => p.conv_id as string)
+        )
         setOnline(online)
       })
       .subscribe()
-    presenceRef.current = presence
 
     return () => {
       supabase.removeChannel(ch)
       supabase.removeChannel(presence)
     }
-  }, [activeId, loadConvs])
+  }, [activeId, loadConvs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Open conversation ───────────────────────────────────────────────────────
   const openConv = async (id: string) => {
@@ -176,28 +208,34 @@ export default function LiveChatPage() {
     setMessages(d.messages || [])
     setNotes(d.notes || [])
     setConvs(prev => prev.map(c => c.id === id ? { ...c, unread_admin: 0 } : c))
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior:'smooth' }), 100)
   }
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior:'smooth' })
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80)
   }, [messages])
+
+  // ── Auto-resize textarea ───────────────────────────────────────────────────
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 128) + 'px'
+    }
+  }
 
   // ── Send message ────────────────────────────────────────────────────────────
   const sendMessage = async () => {
     if (!activeId || (!input.trim() && !pendingFiles.length) || sending) return
     setSending(true)
 
-    // if editing
     if (editMsg) {
       await fetch(`/api/admin/live-chat/${activeId}/messages`, {
         method:'PATCH', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ message_id: editMsg.id, content: input.trim() }),
       })
       setMessages(prev => prev.map(m => m.id === editMsg.id ? { ...m, content: input.trim(), edited_at: new Date().toISOString() } : m))
-      setEditMsg(null)
-      setInput('')
-      setSending(false)
+      setEditMsg(null); setInput(''); setSending(false)
+      if (textareaRef.current) textareaRef.current.style.height = 'auto'
       return
     }
 
@@ -207,22 +245,37 @@ export default function LiveChatPage() {
     })
     const d = await res.json()
     if (d.message) {
+      playSound()
       setMessages(prev => {
         const exists = prev.find(m => m.id === d.message.id)
         return exists ? prev : [...prev, d.message]
       })
       loadConvs()
     }
-    setInput('')
-    setPending([])
-    setSending(false)
+    setInput(''); setPending([]); setSending(false)
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+
+    // broadcast admin-typing false
+    const ch = supabase.channel(`chat-widget-${activeId}`)
+    ch.send({ type: 'broadcast', event: 'admin-typing', payload: { conv_id: activeId, typing: false } })
   }
 
-  // ── Upload file ─────────────────────────────────────────────────────────────
+  // ── Typing broadcast ────────────────────────────────────────────────────────
+  const typingTimer = useRef<any>(null)
+  const broadcastTyping = () => {
+    if (!activeId) return
+    const ch = supabase.channel(`chat-widget-${activeId}`)
+    ch.send({ type: 'broadcast', event: 'admin-typing', payload: { conv_id: activeId, typing: true } })
+    clearTimeout(typingTimer.current)
+    typingTimer.current = setTimeout(() => {
+      ch.send({ type: 'broadcast', event: 'admin-typing', payload: { conv_id: activeId, typing: false } })
+    }, 2500)
+  }
+
+  // ── Upload ──────────────────────────────────────────────────────────────────
   const uploadFile = async (file: File) => {
     setUploading(true)
-    const form = new FormData()
-    form.append('file', file)
+    const form = new FormData(); form.append('file', file)
     const res  = await fetch('/api/admin/live-chat/upload', { method:'POST', body: form })
     const data = await res.json()
     if (data.url) setPending(prev => [...prev, data])
@@ -289,8 +342,29 @@ export default function LiveChatPage() {
     if (activeId === id) setActiveId(null)
   }
 
+  // ── Take conversation ───────────────────────────────────────────────────────
+  const takeConv = async () => {
+    if (!activeId) return
+    await fetch(`/api/admin/live-chat/${activeId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned_admin_id: adminProfile?.id || null }),
+    })
+    showToast('Conversation assigned to you')
+  }
+
+  const inp = `w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none text-gray-800 dark:text-gray-200`
+
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117]">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117] relative">
+
+      {/* ── Toast ─────────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-2xl text-white text-sm font-medium max-w-sm"
+          style={{ background: GOLD, boxShadow: `0 8px 32px ${GOLD}55` }}>
+          <span className="truncate flex-1">{toast}</span>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100 flex-shrink-0"><X size={13}/></button>
+        </div>
+      )}
 
       {/* ── Conversations sidebar ─────────────────────────────────────────── */}
       <div className={`flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111827]
@@ -300,21 +374,23 @@ export default function LiveChatPage() {
         <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <MessageSquare size={18} className="text-indigo-500"/> Live Chat
+              <MessageSquare size={18} style={{ color: GOLD }}/> Live Chat
             </h1>
-            <span className="text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold">
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold text-white"
+              style={{ background: GOLD }}>
               {convs.filter(c=>c.unread_admin>0).length} unread
             </span>
           </div>
           <div className="relative mb-3">
             <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name or code…"
-              className="w-full ps-8 pe-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-indigo-400 text-gray-800 dark:text-gray-200"/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…"
+              className={`${inp} ps-8 py-2`}/>
           </div>
           <div className="flex gap-1.5">
             {(['all','unread'] as const).map(f=>(
               <button key={f} onClick={()=>setFilter(f)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${filter===f ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors`}
+                style={filter===f ? { background: GOLD, color: '#fff' } : { background: '#f3f4f6', color: '#6b7280' }}>
                 {f === 'all' ? 'All' : 'Unread'}
               </button>
             ))}
@@ -341,40 +417,43 @@ export default function LiveChatPage() {
           )}
 
           {convs.map(c => {
-            const isOnline = onlineMembers.has(c.member_id)
+            // Track online by conv_id (widget tracks with conv_id)
+            const isOnline = onlineMembers.has(c.id)
             const isTyping = typingConvs.has(c.id)
             return (
               <div key={c.id} onClick={()=>openConv(c.id)}
-                className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors relative group
-                  ${activeId===c.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-e-2 border-e-indigo-500' : ''}`}>
+                className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors relative group`}
+                style={activeId===c.id ? { background: `${GOLD}12`, borderInlineEndWidth: 2, borderInlineEndColor: GOLD } : {}}>
                 <div className="relative flex-shrink-0">
                   <Avatar url={c.member?.avatar_url} name={c.member?.full_name} size={10}/>
                   <span className={`absolute bottom-0 end-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 ${isOnline?'bg-green-500':'bg-gray-300 dark:bg-gray-600'}`}/>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pe-6">
                   <div className="flex items-center justify-between gap-1">
-                    <span className={`text-sm truncate ${c.unread_admin>0?'font-bold text-gray-900 dark:text-gray-100':'font-medium text-gray-800 dark:text-gray-200'}`}>
+                    <span className={`text-sm truncate ${c.unread_admin>0?'font-bold text-gray-900 dark:text-gray-100':'font-medium text-gray-700 dark:text-gray-300'}`}>
                       {c.member?.full_name || 'Unknown'}
                     </span>
                     <span className="text-[10px] text-gray-400 flex-shrink-0">
-                      {c.last_message_at ? fmtDate(c.last_message_at) : ''}
+                      {c.last_message_at ? fmtDist(c.last_message_at) : ''}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {isTyping ? <span className="text-indigo-500 font-medium">typing…</span>
+                      {isTyping ? <span className="font-medium" style={{ color: GOLD }}>typing…</span>
                         : c.last_message || <span className="italic opacity-60">No messages</span>}
                     </span>
                     {c.unread_admin > 0 && (
-                      <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                      <span className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0"
+                        style={{ background: GOLD }}>
                         {c.unread_admin > 9 ? '9+' : c.unread_admin}
                       </span>
                     )}
                   </div>
                   <div className="text-[10px] text-gray-400 mt-0.5">{c.member?.member_code}</div>
                 </div>
+                {/* Delete button — absolutely positioned, won't overlap content */}
                 <button onClick={e=>deleteConv(c.id,e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all absolute end-2 top-2">
+                  className="absolute end-2 top-2 opacity-0 group-hover:opacity-100 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
                   <Trash2 size={12}/>
                 </button>
               </div>
@@ -395,23 +474,22 @@ export default function LiveChatPage() {
               </button>
               <div className="relative">
                 <Avatar url={activeConv.member?.avatar_url} name={activeConv.member?.full_name} size={10}/>
-                <span className={`absolute bottom-0 end-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 ${onlineMembers.has(activeConv.member_id)?'bg-green-500':'bg-gray-300'}`}/>
+                <span className={`absolute bottom-0 end-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 ${onlineMembers.has(activeConv.id)?'bg-green-500':'bg-gray-300'}`}/>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{activeConv.member?.full_name}</div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>{activeConv.member?.member_code}</span>
                   <span>•</span>
-                  <span className={onlineMembers.has(activeConv.member_id)?'text-green-500':'text-gray-400'}>
-                    {onlineMembers.has(activeConv.member_id) ? '● Online' : '○ Offline'}
+                  <span className={onlineMembers.has(activeConv.id) ? 'text-green-500' : 'text-gray-400'}>
+                    {onlineMembers.has(activeConv.id) ? '● Online' : '○ Offline'}
                   </span>
-                  {typingConvs.has(activeId) && <span className="text-indigo-500 font-medium animate-pulse">typing…</span>}
+                  {typingConvs.has(activeId) && <span className="font-medium animate-pulse" style={{ color: GOLD }}>typing…</span>}
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={()=>{ fetch(`/api/admin/live-chat/${activeId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({assigned_admin_id:'me'})}) }}
-                  title="Take conversation"
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-indigo-500 transition-colors">
+                <button onClick={takeConv} title="Take conversation"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors hover:text-green-500">
                   <UserCheck size={16}/>
                 </button>
                 <button onClick={()=>setPanel(p=>p==='notes'?'none':'notes')}
@@ -419,10 +497,11 @@ export default function LiveChatPage() {
                   <StickyNote size={16}/>
                 </button>
                 <button onClick={()=>setPanel(p=>p==='qr'?'none':'qr')}
-                  className={`p-2 rounded-lg transition-colors ${panel==='qr'?'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600':'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-indigo-500'}`}>
+                  className={`p-2 rounded-lg transition-colors`}
+                  style={panel==='qr' ? { background: `${GOLD}20`, color: GOLD } : {}}>
                   <Zap size={16}/>
                 </button>
-                <button onClick={()=>{ if(confirm('Close conversation?')) fetch(`/api/admin/live-chat/${activeId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'closed'})}).then(()=>setConvs(prev=>prev.map(c=>c.id===activeId?{...c,status:'closed'}:c))) }}
+                <button onClick={()=>{ if(confirm('Close conversation?')) fetch(`/api/admin/live-chat/${activeId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'closed'})}).then(()=>{setConvs(prev=>prev.map(c=>c.id===activeId?{...c,status:'closed'}:c))}) }}
                   className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-red-500 transition-colors" title="Close conversation">
                   <X size={16}/>
                 </button>
@@ -439,10 +518,10 @@ export default function LiveChatPage() {
                 </div>
               )}
               {messages.map((msg, i) => {
-                const isAdmin = msg.sender_type === 'admin'
+                const isAdmin   = msg.sender_type === 'admin'
                 const isDeleted = !!msg.deleted_at
-                const prevMsg = messages[i - 1]
-                const showDate = !prevMsg || new Date(msg.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString()
+                const prevMsg   = messages[i - 1]
+                const showDate  = !prevMsg || new Date(msg.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString()
                 return (
                   <div key={msg.id}>
                     {showDate && (
@@ -455,20 +534,16 @@ export default function LiveChatPage() {
                     <div className={`flex items-end gap-2 ${isAdmin ? 'flex-row-reverse' : 'flex-row'} group`}>
                       {!isAdmin && <Avatar url={msg.sender_avatar} name={msg.sender_name||''} size={7}/>}
                       <div className={`max-w-[70%] ${isAdmin ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
-                        {!isAdmin && !prevMsg?.sender_name && (
-                          <span className="text-[10px] text-gray-500 ms-1">{msg.sender_name}</span>
-                        )}
-                        <div className={`relative rounded-2xl px-3 py-2 shadow-sm text-sm
-                          ${isAdmin
-                            ? 'bg-indigo-500 text-white rounded-br-sm'
-                            : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-sm'
-                          } ${isDeleted ? 'opacity-50 italic' : ''}`}>
+                        <div className={`rounded-2xl px-3 py-2 shadow-sm text-sm
+                          ${isAdmin ? 'text-white rounded-br-sm' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-sm'}
+                          ${isDeleted ? 'opacity-50 italic' : ''}`}
+                          style={isAdmin ? { background: GOLD } : {}}>
                           {isDeleted ? (
                             <span className="text-xs">🚫 Message deleted</span>
                           ) : (
                             <>
-                              {msg.live_chat_attachments?.map(a=>(
-                                <div key={a.url} className="mb-2"><AttachmentPreview a={a}/></div>
+                              {msg.live_chat_attachments?.map((a, ai)=>(
+                                <div key={ai} className="mb-2"><AttachmentPreview a={a}/></div>
                               ))}
                               {msg.content && <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>}
                               {msg.edited_at && <span className="text-[10px] opacity-60 ms-1">(edited)</span>}
@@ -484,8 +559,8 @@ export default function LiveChatPage() {
                       {!isDeleted && (
                         <div className={`opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity ${isAdmin?'flex-row-reverse':''}`}>
                           {isAdmin && msg.content && (
-                            <button onClick={()=>{ setEditMsg(msg); setInput(msg.content||'') }}
-                              className="p-1.5 rounded-lg bg-white dark:bg-gray-700 text-gray-500 hover:text-indigo-500 shadow-sm">
+                            <button onClick={()=>{ setEditMsg(msg); setInput(msg.content||''); setTimeout(()=>{ if(textareaRef.current){ textareaRef.current.style.height='auto'; textareaRef.current.style.height=Math.min(textareaRef.current.scrollHeight,128)+'px' }},0) }}
+                              className="p-1.5 rounded-lg bg-white dark:bg-gray-700 text-gray-500 hover:text-amber-500 shadow-sm">
                               <Edit3 size={11}/>
                             </button>
                           )}
@@ -502,9 +577,9 @@ export default function LiveChatPage() {
               <div ref={messagesEndRef}/>
             </div>
 
-            {/* Pending attachments preview */}
+            {/* Pending attachments */}
             {pendingFiles.length > 0 && (
-              <div className="flex gap-2 px-4 py-2 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800 overflow-x-auto">
+              <div className="flex gap-2 px-4 py-2 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800 overflow-x-auto flex-shrink-0">
                 {pendingFiles.map((f,i)=>(
                   <div key={i} className="relative flex-shrink-0">
                     {f.kind==='image'
@@ -522,9 +597,10 @@ export default function LiveChatPage() {
 
             {/* Edit banner */}
             {editMsg && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-t border-indigo-200 dark:border-indigo-800 text-xs text-indigo-600 dark:text-indigo-400">
+              <div className="flex items-center gap-2 px-4 py-2 border-t text-xs flex-shrink-0"
+                style={{ background: `${GOLD}12`, borderColor: `${GOLD}40`, color: GOLD }}>
                 <Edit3 size={12}/> Editing message
-                <button onClick={()=>{ setEditMsg(null); setInput('') }} className="ms-auto p-1 hover:bg-indigo-100 rounded"><X size={12}/></button>
+                <button onClick={()=>{ setEditMsg(null); setInput(''); if(textareaRef.current) textareaRef.current.style.height='auto' }} className="ms-auto p-1 rounded"><X size={12}/></button>
               </div>
             )}
 
@@ -534,7 +610,7 @@ export default function LiveChatPage() {
                 {quickReplies.map(q=>(
                   <button key={q.id} onClick={()=>{ setInput(q.content); setQrPicker(false) }}
                     className="w-full text-start px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0">
-                    <div className="text-xs font-bold text-gray-800 dark:text-gray-200">{q.title}</div>
+                    <div className="text-xs font-bold" style={{ color: GOLD }}>{q.title}</div>
                     <div className="text-xs text-gray-500 truncate">{q.content}</div>
                   </button>
                 ))}
@@ -547,20 +623,24 @@ export default function LiveChatPage() {
                 <input ref={fileInputRef} type="file" className="hidden" multiple
                   onChange={async e => { for (const f of Array.from(e.target.files||[])) await uploadFile(f); e.target.value='' }}/>
                 <button onClick={()=>fileInputRef.current?.click()}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-indigo-500 transition-colors flex-shrink-0">
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors flex-shrink-0">
                   <Paperclip size={18}/>
                 </button>
                 <button onClick={()=>setQrPicker(v=>!v)}
-                  className={`p-2 rounded-xl transition-colors flex-shrink-0 ${showQrPicker?'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600':'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-indigo-500'}`}>
+                  className="p-2 rounded-xl transition-colors flex-shrink-0"
+                  style={showQrPicker ? { background: `${GOLD}20`, color: GOLD } : { color: '#6b7280' }}>
                   <Zap size={18}/>
                 </button>
-                <textarea value={input} onChange={e=>setInput(e.target.value)}
+                <textarea ref={textareaRef} value={input}
+                  onChange={handleInput}
+                  onInput={broadcastTyping}
                   onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage() } }}
                   placeholder="Type a message…" rows={1}
-                  className="flex-1 resize-none px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-indigo-400 text-gray-800 dark:text-gray-200 max-h-32 overflow-y-auto"
-                  style={{minHeight:'40px'}}/>
+                  className="flex-1 resize-none px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none text-gray-800 dark:text-gray-200 leading-5"
+                  style={{ minHeight: '40px', maxHeight: '128px', transition: 'height 0.1s' }}/>
                 <button onClick={sendMessage} disabled={sending||uploading||(!input.trim()&&!pendingFiles.length)}
-                  className="p-2.5 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0">
+                  className="p-2.5 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  style={{ background: GOLD }}>
                   {sending
                     ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                     : <Send size={16}/>}
@@ -569,11 +649,10 @@ export default function LiveChatPage() {
             </div>
           </div>
 
-          {/* ── Side panel (Notes / Quick Replies) ──────────────────────── */}
+          {/* ── Side panel ──────────────────────────────────────────────── */}
           {panel !== 'none' && (
             <div className="w-72 flex-shrink-0 border-s border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111827] flex flex-col overflow-hidden">
 
-              {/* Notes panel */}
               {panel === 'notes' && (
                 <>
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -585,12 +664,14 @@ export default function LiveChatPage() {
                   <div className="p-3 border-b border-gray-100 dark:border-gray-800">
                     <textarea value={noteInput} onChange={e=>setNoteInput(e.target.value)} rows={3}
                       placeholder={editNote ? 'Edit note…' : 'Add a private note…'}
-                      className="w-full resize-none px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-amber-400 text-gray-800 dark:text-gray-200"/>
+                      className={`${inp} resize-none`}/>
                     <div className="flex gap-2 mt-2">
-                      <button onClick={saveNote} className="flex-1 py-1.5 text-xs font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600">
+                      <button onClick={saveNote}
+                        className="flex-1 py-1.5 text-xs font-bold text-white rounded-lg hover:opacity-90 transition-opacity"
+                        style={{ background: '#f59e0b' }}>
                         {editNote ? 'Update' : 'Add Note'}
                       </button>
-                      {editNote && <button onClick={()=>{ setEditNote(null); setNoteInput('') }} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50">Cancel</button>}
+                      {editNote && <button onClick={()=>{ setEditNote(null); setNoteInput('') }} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500">Cancel</button>}
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -599,7 +680,7 @@ export default function LiveChatPage() {
                       <div key={n.id} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 border border-amber-200 dark:border-amber-800">
                         <p className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{n.content}</p>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-[10px] text-gray-400">{n.admin_name} · {fmtDate(n.created_at)}</span>
+                          <span className="text-[10px] text-gray-400">{n.admin_name} · {fmtDist(n.created_at)}</span>
                           <div className="flex gap-1">
                             <button onClick={()=>{ setEditNote(n); setNoteInput(n.content) }} className="p-1 text-gray-400 hover:text-amber-600 rounded"><Edit3 size={10}/></button>
                             <button onClick={()=>deleteNote(n)} className="p-1 text-gray-400 hover:text-red-500 rounded"><Trash2 size={10}/></button>
@@ -611,23 +692,21 @@ export default function LiveChatPage() {
                 </>
               )}
 
-              {/* Quick Replies panel */}
               {panel === 'qr' && (
                 <>
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                     <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                      <Zap size={14} className="text-indigo-500"/> Quick Replies
+                      <Zap size={14} style={{ color: GOLD }}/> Quick Replies
                     </h3>
                     <button onClick={()=>setPanel('none')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"><X size={14}/></button>
                   </div>
                   <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
-                    <input value={qrInput.title} onChange={e=>setQrInput(v=>({...v,title:e.target.value}))} placeholder="Title / shortcut"
-                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-indigo-400 text-gray-800 dark:text-gray-200"/>
-                    <textarea value={qrInput.content} onChange={e=>setQrInput(v=>({...v,content:e.target.value}))} rows={3} placeholder="Message content…"
-                      className="w-full resize-none px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-indigo-400 text-gray-800 dark:text-gray-200"/>
+                    <input value={qrInput.title} onChange={e=>setQrInput(v=>({...v,title:e.target.value}))} placeholder="Title / shortcut" className={inp}/>
+                    <textarea value={qrInput.content} onChange={e=>setQrInput(v=>({...v,content:e.target.value}))} rows={3} placeholder="Message content…" className={`${inp} resize-none`}/>
                     <div className="flex gap-2">
                       <button onClick={saveQR} disabled={!qrInput.title||!qrInput.content}
-                        className="flex-1 py-1.5 text-xs font-bold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-40">
+                        className="flex-1 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-40 hover:opacity-90 transition-opacity"
+                        style={{ background: GOLD }}>
                         {editQr ? 'Update' : 'Save Reply'}
                       </button>
                       {editQr && <button onClick={()=>{ setEditQr(null); setQrInput({title:'',content:''}) }} className="px-3 text-xs rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500">Cancel</button>}
@@ -639,11 +718,11 @@ export default function LiveChatPage() {
                       <div key={q.id} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-indigo-500">{q.title}</p>
+                            <p className="text-xs font-bold" style={{ color: GOLD }}>{q.title}</p>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">{q.content}</p>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
-                            <button onClick={()=>{ setInput(q.content); setPanel('none') }} title="Use" className="p-1 text-gray-400 hover:text-indigo-500 rounded"><Send size={10}/></button>
+                            <button onClick={()=>{ setInput(q.content); setPanel('none') }} title="Use" className="p-1 text-gray-400 hover:text-green-500 rounded"><Send size={10}/></button>
                             <button onClick={()=>{ setEditQr(q); setQrInput({title:q.title,content:q.content}) }} className="p-1 text-gray-400 hover:text-amber-500 rounded"><Edit3 size={10}/></button>
                             <button onClick={()=>deleteQR(q)} className="p-1 text-gray-400 hover:text-red-500 rounded"><Trash2 size={10}/></button>
                           </div>

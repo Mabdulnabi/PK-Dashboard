@@ -21,6 +21,7 @@ const DEFAULTS: UISettings = {
   logo_light_url: '', logo_dark_url: '', member_login_logo_url: '',
   admin_logo_dark_url: '', admin_logo_light_url: '', admin_login_logo_url: '',
   admin_logo_width: '36', admin_logo_height: '36',
+  live_chat_fab_icon: '',
 }
 const cache: { data: UISettings | null; time: number } = { data: null, time: 0 }
 

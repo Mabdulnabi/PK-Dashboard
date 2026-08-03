@@ -12,8 +12,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   )
   const { data: { session } } = await sc.auth.getSession()
-  const adminId   = session?.user?.id || 'admin'
-  const adminName = session?.user?.user_metadata?.full_name || 'Admin'
+  const adminId   = session?.user?.id ?? null  // null OK now (column is nullable)
+  const adminName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Admin'
 
   if (note_id && deleted) {
     const { error } = await db.from('live_chat_notes').delete().eq('id', note_id)

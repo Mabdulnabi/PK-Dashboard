@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { db } from '@/lib/db'
 
-async function getAdminSession() {
+async function getAdminInfo() {
   const cookieStore = cookies()
   const sc = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,23 +11,37 @@ async function getAdminSession() {
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   )
   const { data: { session } } = await sc.auth.getSession()
-  return session ?? null
+  const userId = session?.user?.id ?? null
+
+  let adminName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Support'
+  let adminAvatar: string | null = null
+
+  if (userId) {
+    const { data: profile } = await db
+      .from('admin_profiles')
+      .select('display_name, avatar_url')
+      .eq('id', userId)
+      .single()
+    if (profile?.display_name) adminName = profile.display_name
+    if (profile?.avatar_url)   adminAvatar = profile.avatar_url
+  }
+
+  return { userId, adminName, adminAvatar }
 }
 
 // POST — admin sends a message
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { content, attachments } = await req.json()
-  const session = await getAdminSession()
-  const adminId   = session?.user?.id   || 'admin'
-  const adminName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Admin'
+  const { userId, adminName, adminAvatar } = await getAdminInfo()
 
   const { data: msg, error } = await db
     .from('live_chat_messages')
     .insert({
       conversation_id: params.id,
       sender_type: 'admin',
-      sender_id: adminId,
+      sender_id: userId,           // null is fine now (column is nullable)
       sender_name: adminName,
+      sender_avatar: adminAvatar,
       content: content || null,
       status: 'sent',
     })
@@ -42,14 +56,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     )
   }
 
-  // update conversation preview
   await db.from('live_chat_conversations').update({
     last_message: content || '📎 Attachment',
     last_message_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }).eq('id', params.id)
 
-  // increment unread_member atomically
   await db.rpc('increment_chat_unread_member', { conv_id: params.id })
 
   const { data: full } = await db
