@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
-import { Check, Clock, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Check, Clock, X, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 
 export default function PaymentsPage() {
   const { t, lang, formatPrice, dir } = useLang()
@@ -38,12 +38,27 @@ export default function PaymentsPage() {
   const totalPages = Math.ceil(payments.length/perPage)
   const paginated  = payments.slice((page-1)*perPage, page*perPage)
 
+  const [downloading, setDownloading] = useState<string|null>(null)
+
+  const downloadInvoice = async (id: string) => {
+    setDownloading(id)
+    const res  = await fetch(`/api/member/invoices/${id}`)
+    if (!res.ok) { setDownloading(null); return }
+    const blob = await res.blob()
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url; a.download = `invoice-${id.slice(0,8)}.pdf`
+    a.click(); URL.revokeObjectURL(url)
+    setDownloading(null)
+  }
+
   const cols = [
     t('Subscription','الاشتراك'),
     t('Amount','المبلغ'),
     t('Method','وسيلة الدفع'),
     t('Status','الحالة'),
     t('Date','التاريخ'),
+    '',
   ]
 
   return (
@@ -65,10 +80,10 @@ export default function PaymentsPage() {
         </div>
 
         <div className="overflow-x-auto">
-        <table className="w-full table-fixed min-w-[540px]">
+        <table className="w-full table-fixed min-w-[600px]">
           <colgroup>
-            <col className="w-[30%]"/><col className="w-[15%]"/>
-            <col className="w-[20%]"/><col className="w-[15%]"/><col className="w-[20%]"/>
+            <col className="w-[28%]"/><col className="w-[13%]"/>
+            <col className="w-[18%]"/><col className="w-[13%]"/><col className="w-[18%]"/><col className="w-[10%]"/>
           </colgroup>
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800/50">
@@ -97,6 +112,22 @@ export default function PaymentsPage() {
                       day: 'numeric', month: 'short', year: 'numeric',
                       hour: 'numeric', minute: '2-digit', hour12: true
                     })}
+                  </td>
+                  <td className="px-5 py-3">
+                    {p.status==='completed' && (
+                      <button
+                        onClick={()=>downloadInvoice(p.id)}
+                        disabled={downloading===p.id}
+                        title={t('Download Invoice','تحميل الفاتورة')}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 border border-gray-200 dark:border-gray-700 transition-colors disabled:opacity-50"
+                      >
+                        {downloading===p.id
+                          ? <div className="w-3 h-3 border border-amber-500 border-t-transparent rounded-full animate-spin"/>
+                          : <Download size={11}/>
+                        }
+                        {t('PDF','PDF')}
+                      </button>
+                    )}
                   </td>
                 </tr>
               )

@@ -26,6 +26,9 @@ const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:bor
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<'quickadd'|'alerts'|'appearance'>('quickadd')
+  const [invoiceLogo,    setInvoiceLogo]    = useState('')
+  const [siteName,       setSiteName]       = useState('')
+  const [logoUploading,  setLogoUploading]  = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading]   = useState(true)
   const [toast,   setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
@@ -61,6 +64,12 @@ export default function SettingsPage() {
       setEmailEnabled(alertData.email_enabled ?? true)
       setTgEnabled(alertData.telegram_enabled ?? false)
     }
+    const { data: uiData } = await supabase.from('ui_settings').select('key,value')
+    const ui: Record<string,string> = {}
+    ;(uiData||[]).forEach((r:any)=>{ ui[r.key]=r.value })
+    setInvoiceLogo(ui.invoice_logo || '')
+    setSiteName(ui.site_name || '')
+
     setLoading(false)
   },[])
 
@@ -102,6 +111,32 @@ export default function SettingsPage() {
     }, { onConflict: 'user_id' })
     setSaving(false)
     setToast({ msg:'Alert settings saved', type:'ok' })
+  }
+
+  const uploadLogo = async (file: File) => {
+    setLogoUploading(true)
+    const ext  = file.name.split('.').pop()
+    const path = `invoice-logos/${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true })
+    if (upErr) { setToast({ msg: upErr.message, type:'err' }); setLogoUploading(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('public-assets').getPublicUrl(path)
+    setInvoiceLogo(publicUrl)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ invoice_logo: publicUrl }),
+    })
+    setLogoUploading(false)
+    setToast({ msg:'Invoice logo saved', type:'ok' })
+  }
+
+  const saveInvoiceSettings = async () => {
+    setSaving(true)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ site_name: siteName, invoice_logo: invoiceLogo }),
+    })
+    setSaving(false)
+    setToast({ msg:'Invoice settings saved', type:'ok' })
   }
 
   const tabs = [
@@ -257,6 +292,56 @@ export default function SettingsPage() {
                   <div className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">Appearance</div>
                   <div className="text-[10px] text-gray-400">Customize how the dashboard looks</div>
                 </div>
+                {/* Invoice Branding */}
+                <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-4">
+                  <div>
+                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Invoice Branding</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Logo and site name shown on customer invoices</div>
+                  </div>
+
+                  {/* Logo upload */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 block">Logo</label>
+                    <div className="flex items-center gap-4">
+                      {/* Preview */}
+                      <div className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                        {invoiceLogo
+                          ? <img src={invoiceLogo} alt="logo" className="w-full h-full object-contain p-1"/>
+                          : <span className="text-[10px] text-gray-300 dark:text-gray-600 text-center leading-tight">No logo</span>
+                        }
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1">
+                        <label className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-fit">
+                          {logoUploading
+                            ? <div className="w-3.5 h-3.5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
+                            : <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">📁 Upload Logo</span>
+                          }
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadLogo(f) }}/>
+                        </label>
+                        {invoiceLogo && (
+                          <button onClick={()=>{ setInvoiceLogo(''); fetch('/api/admin/ui-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invoice_logo:''})}) }}
+                            className="text-[10px] text-red-400 hover:text-red-500 text-left">Remove logo</button>
+                        )}
+                        <p className="text-[9px] text-gray-400">PNG, JPG, SVG — recommended 200×200px</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Site name */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 block">Site / Business Name</label>
+                    <input value={siteName} onChange={e=>setSiteName(e.target.value)}
+                      placeholder="Pro Keys" className={inp}/>
+                  </div>
+
+                  <button onClick={saveInvoiceSettings} disabled={saving}
+                    className="self-start flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors disabled:opacity-60">
+                    {saving ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Check size={12}/>}
+                    Save Invoice Settings
+                  </button>
+                </div>
+
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 block">Theme</label>
                   <div className="grid grid-cols-2 gap-3">
