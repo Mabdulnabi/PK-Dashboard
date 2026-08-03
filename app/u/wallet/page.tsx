@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight } from 'lucide-react'
 
@@ -14,6 +14,7 @@ interface Gateway {
   logo_url?: string; qr_url?: string
   uid?: string; uid_label_en?: string; uid_label_ar?: string
   instructions_en?: string; instructions_ar?: string
+  is_dynamic?: boolean; edge_fn?: string | null
 }
 
 // Skeleton shimmer block
@@ -71,6 +72,8 @@ export default function PaymentsPage() {
   const [topUpSent,setTopUpSent]= useState(false)
   const [submitting,setSubmitting]=useState(false)
   const [downloading, setDownloading] = useState<string|null>(null)
+  const [easykashWaiting, setEasykashWaiting] = useState(false)
+  const pollingRef = useRef<ReturnType<typeof setInterval>|null>(null)
 
   useEffect(()=>{
     Promise.all([
@@ -101,6 +104,53 @@ export default function PaymentsPage() {
       body: JSON.stringify({ amount:parseFloat(topUpAmt), currency:topUpCur, gateway:topUpGw, gateway_name:gw?.name_en, tx_ref:topUpTx }),
     })
     setSubmitting(false); setTopUpSent(true)
+  }
+
+  useEffect(() => () => { if (pollingRef.current) clearInterval(pollingRef.current) }, [])
+
+  const handleEasykash = async () => {
+    if (!topUpAmt || !topUpGw || !activeGw) return
+    setSubmitting(true)
+    try {
+      const cr = await fetch('/api/member/payment/create', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ gateway: activeGw.name_en, amount: parseFloat(topUpAmt), currency: topUpCur }),
+      })
+      const { payment_id, error: ce } = await cr.json()
+      if (!payment_id) throw new Error(ce||'create failed')
+
+      const lr = await fetch('/api/member/payment/verify', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ edge_fn: activeGw.edge_fn||'create-easykash-link', payment_id, amount: parseFloat(topUpAmt) }),
+      })
+      const ld = await lr.json()
+      if (!ld.payUrl) throw new Error(ld.error||'no payment url')
+
+      window.open(ld.payUrl, '_blank', 'noopener')
+      setSubmitting(false)
+      setEasykashWaiting(true)
+
+      pollingRef.current = setInterval(async () => {
+        try {
+          const pr = await fetch('/api/member/payment/verify', {
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ edge_fn:'verify-easykash', payment_id }),
+          })
+          const pd = await pr.json()
+          if (pd.verified || pd.success) {
+            clearInterval(pollingRef.current!)
+            setEasykashWaiting(false)
+            setTopUpSent(true)
+            fetch('/api/member/wallet').then(r=>r.json()).then(wd=>{ if (!wd.error) setWallet(wd) })
+          }
+        } catch {}
+      }, 5000)
+    } catch {
+      setSubmitting(false)
+    }
   }
 
   const statusIcon = (s:string) =>
@@ -208,6 +258,16 @@ export default function PaymentsPage() {
                   <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">{t('Request Submitted!','تم إرسال الطلب!')}</p>
                   <p className="text-xs text-gray-400">{t('Admin will confirm and credit your wallet shortly.','سيقوم الأدمن بتأكيد الطلب وإضافة الرصيد قريباً.')}</p>
                 </div>
+              ) : easykashWaiting ? (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mx-auto mb-3">
+                    <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"/>
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">{t('Waiting for payment...','في انتظار الدفع...')}</p>
+                  <p className="text-xs text-gray-400 mb-4">{t('Complete payment in the new tab. This page updates automatically.','أتمم الدفع في التبويب الجديد. ستتحدث هذه الصفحة تلقائياً.')}</p>
+                  <button onClick={()=>{ if(pollingRef.current)clearInterval(pollingRef.current); setEasykashWaiting(false) }}
+                    className="text-xs text-gray-400 underline">{t('Cancel','إلغاء')}</button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('Charge Wallet','شحن المحفظة')}</h3>
@@ -253,11 +313,11 @@ export default function PaymentsPage() {
                     </div>
                   </div>
 
-                  {/* Selected gateway info + QR — side by side, direction-aware */}
+                  {/* Selected gateway info + QR — direction-aware, TxID inside for static gateways */}
                   {activeGw && (
-                    <div className="p-4 rounded-xl border" style={{background:'#22c55e08',borderColor:'#22c55e30'}}>
+                    <div className="p-4 rounded-xl border space-y-3" style={{background:'#22c55e08',borderColor:'#22c55e30'}}>
                       <div className="flex items-start gap-4">
-                        {/* QR appears first in DOM → left in LTR, right in RTL */}
+                        {/* QR first in DOM → left LTR / right RTL */}
                         {activeGw.qr_url && (
                           <img src={activeGw.qr_url} alt="QR Code"
                             className="w-32 h-32 flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 object-contain bg-white p-1"/>
@@ -280,45 +340,32 @@ export default function PaymentsPage() {
                           )}
                         </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* EasyKash: Pay Now button — no TxID needed */}
-                  {activeGw?.name_en?.toLowerCase().includes('easykash') ? (
-                    <button onClick={async()=>{
-                      if (!topUpAmt || !topUpGw) return
-                      setSubmitting(true)
-                      const res = await fetch('/api/member/wallet/easykash',{
-                        method:'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({ amount:parseFloat(topUpAmt), currency:topUpCur, gateway:topUpGw, gateway_name:activeGw.name_en }),
-                      })
-                      const data = await res.json()
-                      setSubmitting(false)
-                      if (data.payment_url) {
-                        window.location.href = data.payment_url
-                      } else {
-                        setTopUpSent(true)
-                      }
-                    }} disabled={submitting||!topUpAmt}
-                      className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                      style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
-                      {submitting
-                        ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                        : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
-                    </button>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
-                        <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
-                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
-                      </div>
-                      <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
-                        className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                        style={{background:'#22c55e'}}>
-                        {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
-                      </button>
-                    </>
+                      {/* Dynamic gateway (EasyKash): Pay Now button */}
+                      {activeGw.is_dynamic ? (
+                        <button onClick={handleEasykash} disabled={submitting||!topUpAmt}
+                          className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                          style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
+                          {submitting
+                            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                            : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
+                        </button>
+                      ) : (
+                        /* Static gateway: TxID + submit inside the block */
+                        <div className="space-y-3 pt-1 border-t border-green-500/20">
+                          <div>
+                            <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
+                            <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
+                          </div>
+                          <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
+                            className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                            style={{background:'#22c55e'}}>
+                            {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
