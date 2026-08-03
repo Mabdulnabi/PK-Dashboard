@@ -253,7 +253,7 @@ function PomodoroStrip() {
             <button onClick={()=>setRunning(rv=>!rv)}
               className="flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 text-white font-bold text-sm transition-all active:scale-95 hover:opacity-90"
               style={{background:`linear-gradient(135deg,${m.color},${m.color}bb)`,boxShadow:`0 6px 20px ${m.color}44`}}>
-              {running?<><Pause size={18} fill="white"/> {t('Pause','إيقاف')}</>:<><Play size={18} fill="white"/> {t('Start','ابدأ')}</>}
+              {running?<><Pause size={18} fill="white"/> {t('Pause','إيقاف')}</>:<Play size={20} fill="white"/>}
             </button>
             <button onClick={()=>{setDraft({...cfg});setShowCfg(true)}}
               className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
