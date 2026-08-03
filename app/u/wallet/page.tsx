@@ -135,10 +135,10 @@ export default function PaymentsPage() {
       const lr = await fetch('/api/member/payment/verify', {
         method:'POST', credentials:'include',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ edge_fn: activeGw.edge_fn || 'create-easykash-link', payment_id, amount: parseFloat(topUpAmt) }),
+        body: JSON.stringify({ edge_fn: 'create-easykash-link', payment_id, amount: parseFloat(topUpAmt) }),
       })
       const ld = await lr.json()
-      if (!ld.payUrl) throw new Error(ld.error || `No payUrl. Raw: ${JSON.stringify(ld)}`)
+      if (!ld.payUrl) throw new Error(ld.error || 'Failed to create payment link')
 
       // Step 3: navigate to payment link
       // Try new tab first; if popup blocked fall back to current tab
