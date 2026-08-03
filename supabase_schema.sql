@@ -180,6 +180,190 @@ join public.customers c on c.id = s.customer_id
 join public.products  p on p.id = s.product_id
 left join public.my_accounts a on a.id = s.account_id;
 
+-- ══════════════════════════════════════════════════════════════
+--  EXTENDED SCHEMA — Member Portal Tables
+-- ══════════════════════════════════════════════════════════════
+
+-- ── 9. SHOP TOOLS ────────────────────────────────────────────
+create table public.shop_tools (
+  id            uuid default uuid_generate_v4() primary key,
+  name          text not null,
+  description   text,
+  image_url     text,
+  video_url     text,
+  category_slug text default 'shared' check (category_slug in ('shared','private','bundle')),
+  is_active     boolean default true,
+  sort_order    int  default 0,
+  created_at    timestamptz default now()
+);
+
+-- ── 10. MEMBERS ──────────────────────────────────────────────
+create table public.members (
+  id                 uuid default uuid_generate_v4() primary key,
+  email              text not null unique,
+  full_name          text,
+  member_code        text unique,
+  plan_slug          text default 'basic' check (plan_slug in ('basic','vip','private')),
+  avatar_url         text,
+  device_fingerprint text,
+  is_active          boolean default true,
+  created_at         timestamptz default now()
+);
+
+-- ── 11. TOOL PURCHASES ───────────────────────────────────────
+create table public.tool_purchases (
+  id             uuid default uuid_generate_v4() primary key,
+  member_id      uuid references public.members(id) on delete cascade,
+  shop_tool_id   uuid references public.shop_tools(id),
+  tool_name      text,
+  duration_label text,
+  amount_egp     numeric(10,2),
+  payment_method text,
+  status         text default 'pending' check (status in ('pending','confirmed','cancelled','expired')),
+  expires_at     timestamptz,
+  created_at     timestamptz default now()
+);
+create index on public.tool_purchases(member_id, status);
+
+-- ── 12. TOOL SERVERS ─────────────────────────────────────────
+create table public.tool_servers (
+  id                      uuid default uuid_generate_v4() primary key,
+  shop_tool_id            uuid references public.shop_tools(id),
+  tool_name               text not null,
+  server_label            text not null,
+  tier_required           text default 'basic' check (tier_required in ('basic','vip','private')),
+  max_concurrent_users    int  default 1,
+  session_data_encrypted  text,  -- JSON: { cookies, localStorage, indexedDB }
+  proxy_host              text,
+  proxy_port              int,
+  proxy_username          text,
+  proxy_password_encrypted text,
+  status                  text default 'active' check (status in ('active','inactive','maintenance')),
+  created_at              timestamptz default now()
+);
+create index on public.tool_servers(shop_tool_id, status);
+
+-- ── 13. USER SERVER SESSIONS ─────────────────────────────────
+create table public.user_server_sessions (
+  id                 uuid default uuid_generate_v4() primary key,
+  user_id            uuid references public.members(id) on delete cascade,
+  server_id          uuid references public.tool_servers(id) on delete cascade,
+  status             text default 'active' check (status in ('active','expired','cancelled')),
+  device_fingerprint text,
+  started_at         timestamptz default now(),
+  last_active_at     timestamptz default now(),
+  expires_at         timestamptz
+);
+-- Critical index: used in every session check and concurrent-user count
+create index on public.user_server_sessions(user_id, status, expires_at);
+create index on public.user_server_sessions(server_id, status, expires_at);
+
+-- ── 14. SERVER USAGE LOGS (Audit Trail) ──────────────────────
+create table public.server_usage_logs (
+  id                 uuid default uuid_generate_v4() primary key,
+  member_id          uuid references public.members(id),
+  server_id          uuid references public.tool_servers(id),
+  session_id         uuid,
+  action             text not null,  -- connect, disconnect, keepalive, session_reuse
+  ip_address         text,
+  user_agent         text,
+  device_fingerprint text,
+  tool_name          text,
+  server_label       text,
+  meta               jsonb default '{}',
+  created_at         timestamptz default now()
+);
+create index on public.server_usage_logs(member_id, created_at desc);
+
+-- ── 15. PAYMENTS ─────────────────────────────────────────────
+create table public.payments (
+  id             uuid default uuid_generate_v4() primary key,
+  user_id        uuid references public.members(id) on delete cascade,
+  amount         numeric(10,2) not null,
+  currency       text default 'egp',
+  gateway        text,  -- instapay, vodafone, coupon, etc.
+  status         text default 'pending' check (status in ('pending','completed','failed','refunded')),
+  credits        numeric(10,2),
+  pack_id        uuid references public.shop_tools(id),
+  transaction_id text,
+  created_at     timestamptz default now()
+);
+create index on public.payments(user_id, status);
+
+-- ── 16. ACCOUNT DELIVERIES ───────────────────────────────────
+create table public.account_deliveries (
+  id            uuid default uuid_generate_v4() primary key,
+  purchase_id   uuid references public.tool_purchases(id) on delete cascade unique,
+  delivery_type text check (delivery_type in ('account','key')),
+  email         text,
+  password_enc  text,
+  key_enc       text,
+  notes         text,
+  source        text default 'manual' check (source in ('manual','stock')),
+  delivered_at  timestamptz default now(),
+  viewed_at     timestamptz
+);
+
+-- ── 17. MEMBER NOTIFICATIONS ─────────────────────────────────
+create table public.member_notifications (
+  id         uuid default uuid_generate_v4() primary key,
+  member_id  uuid references public.members(id) on delete cascade,
+  title      text,
+  title_en   text,
+  message    text,
+  message_en text,
+  type       text default 'info' check (type in ('info','success','warning','error')),
+  is_read    boolean default false,
+  created_at timestamptz default now()
+);
+create index on public.member_notifications(member_id, is_read, created_at desc);
+
+-- ── 18. SUPPORT TICKETS ──────────────────────────────────────
+create table public.support_tickets (
+  id         uuid default uuid_generate_v4() primary key,
+  member_id  uuid references public.members(id) on delete cascade,
+  subject    text not null,
+  message    text not null,
+  priority   text default 'normal' check (priority in ('low','normal','high','urgent')),
+  category   text default 'general' check (category in ('general','subscription','payment')),
+  status     text default 'open' check (status in ('open','in_progress','resolved','closed')),
+  reply      text,
+  replied_by uuid,
+  replied_at timestamptz,
+  created_at timestamptz default now()
+);
+create index on public.support_tickets(member_id, status);
+create index on public.support_tickets(status, created_at desc);
+
+create table public.ticket_messages (
+  id            uuid default uuid_generate_v4() primary key,
+  ticket_id     uuid references public.support_tickets(id) on delete cascade,
+  sender_type   text check (sender_type in ('member','admin')),
+  message       text not null,
+  sender_name   text,
+  sender_avatar text,
+  created_at    timestamptz default now()
+);
+create index on public.ticket_messages(ticket_id, created_at);
+
+create table public.ticket_attachments (
+  id          uuid default uuid_generate_v4() primary key,
+  ticket_id   uuid references public.support_tickets(id) on delete cascade,
+  file_path   text not null,
+  file_name   text,
+  file_type   text,
+  file_size   bigint,
+  uploaded_by text check (uploaded_by in ('member','admin')),
+  created_at  timestamptz default now()
+);
+
+-- ── 19. RPC STUBS (reference only — implement in Supabase SQL editor) ──
+-- create or replace function public.member_login(p_email text, p_password text, p_ip text, p_ua text)
+--   returns jsonb language plpgsql security definer as $$ ... $$;
+--
+-- create or replace function public.verify_member_session(p_token text)
+--   returns jsonb language plpgsql security definer as $$ ... $$;
+
 -- Dashboard KPIs
 create view public.dashboard_kpis as
 select

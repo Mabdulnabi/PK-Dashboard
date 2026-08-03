@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import { MessageSquare, Check, X, AlertCircle, ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText, User } from 'lucide-react'
@@ -73,27 +72,20 @@ export default function SupportPage() {
   const [saving,     setSaving]     = useState(false)
   const [toast,      setToast]      = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
   const [fStatus,    setFStatus]    = useState('all')
-  const [adminProfile, setAdminProfile] = useState<{ display_name: string; avatar_url?: string } | null>(null)
+  const [adminProfile, setAdminProfile] = useState<{ id?: string; display_name: string; avatar_url?: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async (silent = false) => {
-    const { data: ticketData } = await supabase
-      .from('support_tickets')
-      .select('*, ticket_attachments(*), ticket_messages(id, sender_type, message, sender_name, sender_avatar, created_at)')
-      .order('created_at', { ascending: false })
+    const res = await fetch('/api/admin/tickets')
+    const { tickets: ticketData } = await res.json()
 
     if (ticketData) {
-      // Collect unique member IDs
-      const memberIds = [...new Set(ticketData.map((t: any) => t.member_id).filter(Boolean))]
-      if (memberIds.length > 0) {
-        const { data: memberData } = await supabase
-          .from('members')
-          .select('id, full_name, member_code, avatar_url')
-          .in('id', memberIds)
-        const memberMap: Record<string, MemberInfo> = {}
-        for (const m of memberData || []) memberMap[m.id] = m
-        setMembers(memberMap)
+      // Member info is now embedded by the API
+      const memberMap: Record<string, MemberInfo> = {}
+      for (const t of ticketData) {
+        if (t.member) memberMap[t.member_id] = t.member
       }
+      setMembers(memberMap)
       setTickets(ticketData)
     }
     if (!silent) setLoading(false)
@@ -112,11 +104,10 @@ export default function SupportPage() {
   const sendReply = async (t: Ticket) => {
     if (!replyText.trim()) return
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
     const res = await fetch(`/api/admin/tickets/${t.id}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reply: replyText, status: 'in_progress', admin_id: user?.id }),
+      body: JSON.stringify({ reply: replyText, status: 'in_progress', admin_id: adminProfile?.id ?? null }),
     })
     if (!res.ok) { setSaving(false); setToast({ msg: 'Failed to send reply', type: 'err' }); return }
 
@@ -136,7 +127,11 @@ export default function SupportPage() {
   }
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from('support_tickets').update({ status }).eq('id', id)
+    await fetch('/api/admin/tickets', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status }),
+    })
     setToast({ msg: `Status: ${status}`, type: 'ok' })
     load()
   }

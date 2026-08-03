@@ -83,7 +83,11 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(()=>{
     if (!member) return
-    fetch('/api/member/notifications').then(r=>r.json()).then(d=>setNotifs(d.notifications||[]))
+    const fetchNotifs = () =>
+      fetch('/api/member/notifications').then(r=>r.json()).then(d=>setNotifs(d.notifications||[]))
+    fetchNotifs()
+    const interval = setInterval(fetchNotifs, 30_000)
+    return () => clearInterval(interval)
   },[member])
 
   useEffect(()=>{

@@ -1,27 +1,17 @@
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-
-const service = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function getMemberSession() {
-  const cookieStore = cookies()
-  const token = cookieStore.get('pk_member_token')?.value
-  if (!token) return null
-  const { data } = await service.rpc('verify_member_session', { p_token: token })
-  return data?.valid ? data : null
-}
+import { db } from '@/lib/db'
+import { requireMember, AuthError } from '@/lib/auth'
+import { unauthorized } from '@/lib/responses'
 
 export async function GET() {
-  const session = await getMemberSession()
-  if (!session) return NextResponse.json({ notifications: [] })
+  let session
+  try { session = await requireMember() } catch (e) {
+    return e instanceof AuthError ? e.response : unauthorized()
+  }
 
-  const { data } = await service
+  const { data } = await db
     .from('member_notifications')
-    .select('*')
+    .select('id, title, title_en, message, message_en, type, is_read, created_at')
     .eq('member_id', session.member_id)
     .order('created_at', { ascending: false })
     .limit(30)
@@ -29,21 +19,21 @@ export async function GET() {
   return NextResponse.json({ notifications: data || [] })
 }
 
-// Mark notifications as read
 export async function PATCH(req: NextRequest) {
-  const session = await getMemberSession()
-  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  let session
+  try { session = await requireMember() } catch (e) {
+    return e instanceof AuthError ? e.response : unauthorized()
+  }
 
-  const body = await req.json().catch(() => ({}))
-  const ids: string[] | undefined = body.ids
+  const { ids } = await req.json().catch(() => ({}))
 
-  let query = service
+  let query = db
     .from('member_notifications')
     .update({ is_read: true })
     .eq('member_id', session.member_id)
     .eq('is_read', false)
 
-  if (ids?.length) query = query.in('id', ids)
+  if (Array.isArray(ids) && ids.length > 0) query = query.in('id', ids)
 
   await query
   return NextResponse.json({ ok: true })
