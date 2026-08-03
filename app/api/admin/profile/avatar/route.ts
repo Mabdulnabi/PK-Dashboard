@@ -20,6 +20,12 @@ export async function POST(req: NextRequest) {
   const ext  = file.name.split('.').pop()?.toLowerCase() || 'jpg'
   const path = `${adminId}.${ext}`
 
+  // Auto-create bucket if missing
+  const { data: buckets } = await service.storage.listBuckets()
+  if (!buckets?.find(b => b.name === 'admin-avatars')) {
+    await service.storage.createBucket('admin-avatars', { public: true })
+  }
+
   const bytes = await file.arrayBuffer()
   const { error } = await service.storage
     .from('admin-avatars')

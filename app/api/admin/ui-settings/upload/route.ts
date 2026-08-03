@@ -22,6 +22,12 @@ export async function POST(req: NextRequest) {
     const bytes  = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
+    // Auto-create bucket if missing
+    const { data: buckets } = await service.storage.listBuckets()
+    if (!buckets?.find(b => b.name === 'site-assets')) {
+      await service.storage.createBucket('site-assets', { public: true })
+    }
+
     const { error: upErr } = await service.storage
       .from('site-assets')
       .upload(path, buffer, { upsert: true, contentType: file.type })

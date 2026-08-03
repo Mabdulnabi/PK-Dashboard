@@ -115,15 +115,16 @@ export default function SettingsPage() {
 
   const uploadLogo = async (file: File) => {
     setLogoUploading(true)
-    const ext  = file.name.split('.').pop()
-    const path = `invoice-logos/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true })
-    if (upErr) { setToast({ msg: upErr.message, type:'err' }); setLogoUploading(false); return }
-    const { data: { publicUrl } } = supabase.storage.from('public-assets').getPublicUrl(path)
-    setInvoiceLogo(publicUrl)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('slot', 'invoice-logo')
+    const res = await fetch('/api/admin/ui-settings/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!res.ok || !data.url) { setToast({ msg: data.error || 'Upload failed', type:'err' }); setLogoUploading(false); return }
+    setInvoiceLogo(data.url)
     await fetch('/api/admin/ui-settings', {
       method: 'POST', headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ invoice_logo: publicUrl }),
+      body: JSON.stringify({ invoice_logo: data.url }),
     })
     setLogoUploading(false)
     setToast({ msg:'Invoice logo saved', type:'ok' })

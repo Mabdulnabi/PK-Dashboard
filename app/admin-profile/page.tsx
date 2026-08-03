@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
@@ -24,6 +25,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function AdminProfilePage() {
+  const router = useRouter()
   const [displayName, setDisplayName] = useState('')
   const [fullName,    setFullName]    = useState('')
   const [adminEmail,  setAdminEmail]  = useState('')
@@ -38,7 +40,14 @@ export default function AdminProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) router.push('/auth/login')
+    })
+  }, [router])
+
+  useEffect(() => {
     fetch('/api/admin/profile').then(r => r.json()).then(d => {
+      if (d.error === 'unauthorized') { router.push('/auth/login'); return }
       setDisplayName(d.display_name || '')
       setFullName(d.full_name || '')
       setWhatsapp(d.whatsapp || '')

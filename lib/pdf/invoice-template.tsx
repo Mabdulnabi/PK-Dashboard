@@ -1,42 +1,76 @@
 import React from 'react'
-import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer'
+import path from 'path'
+import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer'
 
-// Use built-in PDF fonts — no external font loading needed
-const ACCENT = '#D99401'
-const DARK   = '#111827'
-const GRAY   = '#6B7280'
-const LIGHT  = '#F9FAFB'
-const BORDER = '#E5E7EB'
+Font.register({
+  family: 'Inter',
+  fonts: [
+    { src: path.join(process.cwd(), 'public/fonts/Inter-Regular.woff'), fontWeight: 400 },
+    { src: path.join(process.cwd(), 'public/fonts/Inter-Bold.woff'),    fontWeight: 700 },
+  ],
+})
+
+const GOLD   = '#C8960C'
+const DARK   = '#0F1623'
+const DARK2  = '#1A2333'
+const GRAY   = '#8B9BB4'
+const LGRAY  = '#E8ECF2'
+const WHITE  = '#FFFFFF'
+const GREEN  = '#0D9E6E'
+const GREENL = '#E6F7F2'
 
 const s = StyleSheet.create({
-  page:      { fontFamily:'Helvetica', backgroundColor:'#ffffff', padding:0 },
-  header:    { backgroundColor:DARK, paddingHorizontal:40, paddingVertical:32, flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
-  logo:      { width:52, height:52, borderRadius:8 },
-  logoBox:   { width:52, height:52, borderRadius:8, backgroundColor:ACCENT, alignItems:'center', justifyContent:'center' },
-  logoFbTxt: { color:'#111827', fontSize:18, fontFamily:'Helvetica-Bold' },
-  hRight:    { alignItems:'flex-end' },
-  invLabel:  { color:ACCENT, fontSize:8, fontFamily:'Helvetica-Bold', letterSpacing:2 },
-  invNum:    { color:'#ffffff', fontSize:20, fontFamily:'Helvetica-Bold', marginTop:4 },
-  invDate:   { color:'#9CA3AF', fontSize:9, marginTop:4 },
-  siteName:  { color:'#ffffff', fontSize:14, fontFamily:'Helvetica-Bold' },
-  siteTag:   { color:'#9CA3AF', fontSize:8, marginTop:3 },
-  body:      { paddingHorizontal:40, paddingVertical:32 },
-  label:     { fontSize:8, fontFamily:'Helvetica-Bold', color:GRAY, letterSpacing:1.5, marginBottom:8 },
-  card:      { backgroundColor:LIGHT, borderRadius:8, padding:14, borderWidth:1, borderColor:BORDER },
-  fRow:      { flexDirection:'row', gap:20, marginBottom:24 },
-  col:       { flex:1 },
-  tHeadRow:  { flexDirection:'row', backgroundColor:DARK, borderTopLeftRadius:6, borderTopRightRadius:6, paddingHorizontal:16, paddingVertical:10 },
-  tBodyRow:  { flexDirection:'row', paddingHorizontal:16, paddingVertical:12, borderBottomWidth:1, borderBottomColor:BORDER, backgroundColor:'#ffffff' },
-  tCellH:    { fontSize:8, color:'#9CA3AF', fontFamily:'Helvetica-Bold', letterSpacing:1 },
-  tCell:     { fontSize:9, color:DARK },
-  totalBox:  { backgroundColor:DARK, borderRadius:8, paddingHorizontal:24, paddingVertical:16, alignItems:'flex-end' },
-  totalLbl:  { fontSize:9, color:'#9CA3AF', marginBottom:4 },
-  totalAmt:  { fontSize:22, color:ACCENT, fontFamily:'Helvetica-Bold' },
-  badge:     { backgroundColor:'#DCFCE7', borderRadius:4, paddingHorizontal:8, paddingVertical:4, alignSelf:'flex-start' },
-  badgeTxt:  { fontSize:8, color:'#166534', fontFamily:'Helvetica-Bold' },
-  divider:   { height:1, backgroundColor:BORDER, marginVertical:10 },
-  footer:    { marginTop:36, borderTopWidth:1, borderTopColor:BORDER, paddingTop:20, alignItems:'center' },
-  footerTxt: { fontSize:8, color:'#9CA3AF', textAlign:'center', lineHeight:1.7 },
+  page:       { fontFamily:'Inter', backgroundColor: WHITE, padding: 0 },
+
+  // Header band
+  header:     { backgroundColor: DARK, paddingHorizontal: 44, paddingVertical: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logoImg:    { width: 48, height: 48, borderRadius: 10 },
+  logoBox:    { width: 48, height: 48, borderRadius: 10, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' },
+  logoTxt:    { color: DARK, fontSize: 16, fontWeight: 700 },
+  brandName:  { color: WHITE, fontSize: 16, fontWeight: 700, marginBottom: 2 },
+  brandSub:   { color: GRAY,  fontSize: 8 },
+  invTag:     { color: GOLD,  fontSize: 7, fontWeight: 700, letterSpacing: 2.5, marginBottom: 5 },
+  invNum:     { color: WHITE, fontSize: 22, fontWeight: 700 },
+  invDate:    { color: GRAY,  fontSize: 8, marginTop: 5 },
+
+  // Sub-header stripe
+  stripe:     { backgroundColor: DARK2, paddingHorizontal: 44, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stripeKey:  { color: GRAY,  fontSize: 7, fontWeight: 700, letterSpacing: 1.5, marginBottom: 3 },
+  stripeVal:  { color: WHITE, fontSize: 9, fontWeight: 700 },
+
+  // Body
+  body:       { paddingHorizontal: 44, paddingVertical: 32 },
+
+  // Cards row
+  cardsRow:   { flexDirection: 'row', gap: 16, marginBottom: 28 },
+  card:       { flex: 1, borderWidth: 1, borderColor: LGRAY, borderRadius: 10, padding: 16 },
+  cardLabel:  { fontSize: 7, fontWeight: 700, color: GRAY, letterSpacing: 1.5, marginBottom: 10 },
+  cardName:   { fontSize: 13, fontWeight: 700, color: DARK, marginBottom: 4 },
+  cardSub:    { fontSize: 8, color: GRAY },
+
+  badge:      { backgroundColor: GREENL, borderRadius: 5, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10 },
+  badgeTxt:   { fontSize: 7, fontWeight: 700, color: GREEN },
+  divider:    { height: 1, backgroundColor: LGRAY, marginVertical: 10 },
+  refLabel:   { fontSize: 7, color: GRAY, marginBottom: 3 },
+  refVal:     { fontSize: 8, fontWeight: 700, color: DARK },
+
+  // Table
+  tableLabel: { fontSize: 7, fontWeight: 700, color: GRAY, letterSpacing: 1.5, marginBottom: 10 },
+  tHead:      { flexDirection: 'row', backgroundColor: DARK, borderTopLeftRadius: 8, borderTopRightRadius: 8, paddingHorizontal: 16, paddingVertical: 11 },
+  tRow:       { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: LGRAY },
+  tHCell:     { fontSize: 7, fontWeight: 700, color: GRAY, letterSpacing: 1 },
+  tCell:      { fontSize: 9, color: DARK },
+
+  // Total
+  totalWrap:  { alignItems: 'flex-end', marginTop: 4, marginBottom: 32 },
+  totalBox:   { backgroundColor: DARK, borderRadius: 10, paddingHorizontal: 28, paddingVertical: 18, alignItems: 'flex-end', minWidth: 200 },
+  totalLbl:   { fontSize: 7, color: GRAY, letterSpacing: 1.5, marginBottom: 6 },
+  totalAmt:   { fontSize: 26, fontWeight: 700, color: GOLD },
+  totalCurr:  { fontSize: 11, fontWeight: 700, color: GRAY, marginTop: 2 },
+
+  // Footer
+  footer:     { borderTopWidth: 1, borderTopColor: LGRAY, paddingTop: 20, alignItems: 'center' },
+  footerTxt:  { fontSize: 7.5, color: GRAY, textAlign: 'center', lineHeight: 1.9 },
 })
 
 export interface InvoiceData {
@@ -63,100 +97,110 @@ interface Props {
   siteName: string
 }
 
-const GATEWAY_LABELS: Record<string, string> = {
+const GW: Record<string, string> = {
   instapay: 'InstaPay', vodafone: 'Vodafone Cash',
-  binance:  'Binance Pay', bybit: 'Bybit Pay',
-  bep20:    'USDT BEP20', easykash: 'EasyKash', coupon: 'Coupon',
+  binance: 'Binance Pay', bybit: 'Bybit Pay',
+  bep20: 'USDT BEP20', easykash: 'EasyKash', coupon: 'Coupon',
 }
 
 export function InvoicePDF({ payment, member, logoUrl, siteName }: Props) {
-  const date     = new Date(payment.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' })
   const invoiceN = `INV-${payment.id.slice(0, 8).toUpperCase()}`
+  const date     = new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
   const currency = (payment.currency || 'EGP').toUpperCase()
-  const amount   = Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits:2 })
-  const method   = GATEWAY_LABELS[payment.gateway] || payment.gateway || '-'
+  const amount   = Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })
+  const method   = GW[payment.gateway] || payment.gateway || '-'
   const product  = payment.tool_name || payment.bundle_name || 'Subscription'
 
   return (
     <Document title={`Invoice ${invoiceN}`} author={siteName}>
       <Page size="A4" style={s.page}>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={s.header}>
-          <View style={{ flexDirection:'row', alignItems:'center', gap:14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             {logoUrl
-              ? <Image src={logoUrl} style={s.logo} />
-              : <View style={s.logoBox}><Text style={s.logoFbTxt}>{siteName.slice(0,2).toUpperCase()}</Text></View>
+              ? <Image src={logoUrl} style={s.logoImg} />
+              : <View style={s.logoBox}><Text style={s.logoTxt}>{siteName.slice(0, 2).toUpperCase()}</Text></View>
             }
-            <View>
-              <Text style={s.siteName}>{siteName}</Text>
-              <Text style={s.siteTag}>Digital Subscriptions & Tools</Text>
+            <View style={{ marginLeft: 4 }}>
+              <Text style={s.brandName}>{siteName}</Text>
+              <Text style={s.brandSub}>Digital Subscriptions & Tools</Text>
             </View>
           </View>
-          <View style={s.hRight}>
-            <Text style={s.invLabel}>INVOICE</Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={s.invTag}>INVOICE</Text>
             <Text style={s.invNum}>{invoiceN}</Text>
-            <Text style={s.invDate}>{date}</Text>
+            <Text style={s.invDate}>Issued {date}</Text>
           </View>
+        </View>
+
+        {/* ── Info stripe ── */}
+        <View style={s.stripe}>
+          {[
+            { k: 'BILLED TO',  v: member.full_name },
+            { k: 'EMAIL',      v: member.email },
+            { k: 'GATEWAY',    v: method },
+            { k: 'CURRENCY',   v: currency },
+          ].map(({ k, v }) => (
+            <View key={k}>
+              <Text style={s.stripeKey}>{k}</Text>
+              <Text style={s.stripeVal}>{v}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={s.body}>
 
-          {/* Bill To + Status */}
-          <View style={s.fRow}>
-            <View style={s.col}>
-              <Text style={s.label}>BILL TO</Text>
-              <View style={s.card}>
-                <Text style={{ fontSize:12, fontFamily:'Helvetica-Bold', color:DARK, marginBottom:4 }}>{member.full_name}</Text>
-                <Text style={{ fontSize:9, color:GRAY }}>{member.email}</Text>
-                {member.phone ? <Text style={{ fontSize:9, color:GRAY, marginTop:2 }}>{member.phone}</Text> : null}
-              </View>
+          {/* ── Cards ── */}
+          <View style={s.cardsRow}>
+            {/* Bill To card */}
+            <View style={s.card}>
+              <Text style={s.cardLabel}>BILL TO</Text>
+              <Text style={s.cardName}>{member.full_name}</Text>
+              <Text style={s.cardSub}>{member.email}</Text>
+              {member.phone ? <Text style={[s.cardSub, { marginTop: 2 }]}>{member.phone}</Text> : null}
             </View>
-            <View style={s.col}>
-              <Text style={s.label}>PAYMENT STATUS</Text>
-              <View style={s.card}>
-                <View style={s.badge}>
-                  <Text style={s.badgeTxt}>PAID</Text>
-                </View>
-                <View style={s.divider}/>
-                <Text style={{ fontSize:8, color:GRAY }}>Transaction Reference</Text>
-                <Text style={{ fontSize:9, fontFamily:'Helvetica-Bold', color:DARK, marginTop:3 }}>
-                  {payment.transaction_id || 'AUTO-VERIFIED'}
-                </Text>
-              </View>
+            {/* Payment Status card */}
+            <View style={s.card}>
+              <Text style={s.cardLabel}>PAYMENT STATUS</Text>
+              <View style={s.badge}><Text style={s.badgeTxt}>PAID IN FULL</Text></View>
+              <View style={s.divider}/>
+              <Text style={s.refLabel}>TRANSACTION REFERENCE</Text>
+              <Text style={s.refVal}>{payment.transaction_id || 'AUTO-VERIFIED'}</Text>
             </View>
           </View>
 
-          {/* Line Items */}
-          <Text style={[s.label, { marginBottom:8 }]}>ITEMS</Text>
-          <View style={{ borderRadius:6, overflow:'hidden', borderWidth:1, borderColor:BORDER, marginBottom:20 }}>
-            <View style={s.tHeadRow}>
-              <Text style={[s.tCellH, { flex:3 }]}>Description</Text>
-              <Text style={[s.tCellH, { flex:1, textAlign:'right' }]}>Method</Text>
-              <Text style={[s.tCellH, { flex:1, textAlign:'right' }]}>Amount</Text>
+          {/* ── Items table ── */}
+          <Text style={s.tableLabel}>ORDER SUMMARY</Text>
+          <View style={{ borderWidth: 1, borderColor: LGRAY, borderRadius: 8, overflow: 'hidden', marginBottom: 8 }}>
+            <View style={s.tHead}>
+              <Text style={[s.tHCell, { flex: 4 }]}>DESCRIPTION</Text>
+              <Text style={[s.tHCell, { flex: 2, textAlign: 'center' }]}>PAYMENT METHOD</Text>
+              <Text style={[s.tHCell, { flex: 2, textAlign: 'right' }]}>AMOUNT</Text>
             </View>
-            <View style={s.tBodyRow}>
-              <Text style={[s.tCell, { flex:3, fontFamily:'Helvetica-Bold' }]}>{product}</Text>
-              <Text style={[s.tCell, { flex:1, textAlign:'right', color:GRAY }]}>{method}</Text>
-              <Text style={[s.tCell, { flex:1, textAlign:'right', fontFamily:'Helvetica-Bold', color:ACCENT }]}>
+            <View style={s.tRow}>
+              <Text style={[s.tCell, { flex: 4, fontWeight: 700 }]}>{product}</Text>
+              <Text style={[s.tCell, { flex: 2, textAlign: 'center', color: GRAY }]}>{method}</Text>
+              <Text style={[s.tCell, { flex: 2, textAlign: 'right', fontWeight: 700, color: GOLD }]}>
                 {amount} {currency}
               </Text>
             </View>
           </View>
 
-          {/* Total */}
-          <View style={{ alignItems:'flex-end', marginBottom:36 }}>
+          {/* ── Total ── */}
+          <View style={s.totalWrap}>
             <View style={s.totalBox}>
-              <Text style={s.totalLbl}>TOTAL AMOUNT DUE</Text>
-              <Text style={s.totalAmt}>{amount} {currency}</Text>
+              <Text style={s.totalLbl}>TOTAL AMOUNT PAID</Text>
+              <Text style={s.totalAmt}>{amount}</Text>
+              <Text style={s.totalCurr}>{currency}</Text>
             </View>
           </View>
 
-          {/* Footer */}
+          {/* ── Footer ── */}
           <View style={s.footer}>
             <Text style={s.footerTxt}>
-              Thank you for your business. This is an automatically generated invoice.{'\n'}
-              For support, contact us through the Help Desk in your member dashboard.
+              Thank you for your purchase — we appreciate your business.{'\n'}
+              This invoice was automatically generated. For questions, open a support ticket in your member dashboard.
             </Text>
           </View>
 
