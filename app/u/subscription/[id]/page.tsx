@@ -178,6 +178,9 @@ export default function SubscriptionDetailPage() {
     }
     window.addEventListener('message', handler)
 
+    // Clear stale flag — extension must re-set it on this page load
+    try { sessionStorage.removeItem('__pk_ext_ready__') } catch {}
+
     // Primary: poll sessionStorage every 200ms (set by content-script, no postMessage race)
     const poll = setInterval(() => {
       try {
