@@ -135,7 +135,7 @@ export default function SubscriptionDetailPage() {
     // Poll every 30 seconds
     const poll = setInterval(fetchServers, 30000)
     return () => clearInterval(poll)
-  }, [purchase?.id])
+  }, [purchase?.id, extReady])
 
   // ── Extension detection (independent of purchase) ──
   useEffect(() => {
