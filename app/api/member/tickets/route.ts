@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { fireAdminNotification } from '@/lib/admin-notify'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,6 +46,13 @@ export async function POST(req: NextRequest) {
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  void fireAdminNotification({
+    title:   `تذكرة جديدة 🎫`,
+    message: `"${subject}" — من العضو`,
+    type:    'info',
+    link:    '/support',
+  })
 
   // Notify member: ticket received confirmation
   service.from('member_notifications').insert({
