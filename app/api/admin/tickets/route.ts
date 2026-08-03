@@ -42,8 +42,23 @@ export async function PATCH(req: NextRequest) {
   const { id, status } = await req.json()
   if (!id || !status) return badRequest('id and status required')
 
+  const { data: ticket } = await db.from('support_tickets').select('member_id, subject').eq('id', id).single()
+
   const { error } = await db.from('support_tickets').update({ status }).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify member when ticket is closed or resolved
+  if (ticket?.member_id && (status === 'closed' || status === 'resolved')) {
+    const isClosed = status === 'closed'
+    await db.from('member_notifications').insert({
+      member_id: ticket.member_id,
+      title:      isClosed ? 'تم إغلاق تذكرتك' : 'تم حل تذكرتك',
+      title_en:   isClosed ? 'Ticket Closed' : 'Ticket Resolved',
+      message:    `${isClosed ? 'تم إغلاق' : 'تم حل'} التذكرة: ${ticket.subject}`,
+      message_en: `Your ticket "${ticket.subject}" has been ${isClosed ? 'closed' : 'resolved'}.`,
+      type: 'ticket_update',
+    })
+  }
 
   return NextResponse.json({ ok: true })
 }

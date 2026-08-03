@@ -133,11 +133,7 @@ export default function MemberProfilePage() {
                 </span>
               )}
             </div>
-            <p className="text-xs font-semibold mt-1 capitalize"
-              style={{ color: PLAN_COLOR[profile.plan_slug] || '#3B82F6' }}>
-              {profile.plan_slug} {t('plan', 'باقة')}
-              {profile.expires_at && ` · ${t('exp', 'تنتهي')} ${new Date(profile.expires_at).toLocaleDateString('en-GB')}`}
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">{profile.email}</p>
           </div>
         </div>
 

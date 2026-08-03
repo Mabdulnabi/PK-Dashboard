@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Check, Zap, Package, Crown } from 'lucide-react'
+import { Check, Zap, Package, Crown, MessageCircle } from 'lucide-react'
 
 interface IncludedTool { id: string; name: string; image_url?: string; description?: string; category_slug: string }
 interface Bundle {
@@ -36,26 +36,34 @@ export default function BundlePage() {
   return (
     <div className="p-3 md:p-6 max-w-6xl mx-auto" dir={isRtl?'rtl':'ltr'}>
 
-      {/* Hero */}
-      <div className="rounded-3xl mb-8 px-6 md:px-12 py-10 text-center relative overflow-hidden"
-        style={{background:'linear-gradient(135deg,#0d0d1a 0%,#1a1200 40%,#0d1117 100%)'}}>
-        <div className="absolute inset-0 pointer-events-none"
-          style={{backgroundImage:'radial-gradient(ellipse at 20% 60%, #d9940125 0%, transparent 55%), radial-gradient(ellipse at 80% 40%, #f59e0b15 0%, transparent 55%)'}}/>
-        <div className="absolute inset-0 opacity-5"
-          style={{backgroundImage:'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',backgroundSize:'40px 40px'}}/>
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4"
-            style={{background:'#d9940120',border:'1px solid #d9940140',color:'#fbbf24'}}>
-            <Crown size={12}/>{isRtl?'حزم مميزة بأسعار حصرية':'Premium Bundles — Exclusive Value'}
+      {/* Banner */}
+      <div className="rounded-2xl mb-6 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4"
+              style={{border:'1px solid #f59e0b50',background:'#f59e0b18'}}>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"/>
+              <span className="text-xs font-semibold text-amber-400 uppercase tracking-wide">
+                {isRtl?'حزم مميزة':'Premium Bundles'}
+              </span>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">
+              {isRtl?'اختار ':'Choose Your '}<span style={{color:'#d99401'}}>{isRtl?'حزمتك المثالية':'Perfect Bundle'}</span>
+            </h1>
+            <p className="text-sm text-gray-300">
+              {isRtl
+                ? 'حزم مجمّعة من أفضل الأدوات المشتركة بسعر أقل من شرائها منفردة'
+                : 'Curated bundles of top tools at a fraction of individual prices'}
+            </p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
-            {isRtl ? 'اختار حزمتك' : 'Choose Your Bundle'}
-          </h1>
-          <p className="text-gray-400 text-base max-w-lg mx-auto">
-            {isRtl
-              ? 'حزم مجمّعة من أفضل الأدوات المشتركة بسعر أقل من شرائها منفردة'
-              : 'Curated bundles of top shared tools at a fraction of individual prices'}
-          </p>
+          <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}`} target="_blank"
+            className="bg-green-500/20 border border-green-500/30 rounded-xl px-5 py-3 flex items-center gap-3 hover:bg-green-500/30 transition-colors flex-shrink-0">
+            <MessageCircle size={20} className="text-green-400"/>
+            <div className="text-end">
+              <p className="text-xs text-gray-400">{isRtl?'دعم واتساب':'WhatsApp Support'}</p>
+              <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</p>
+            </div>
+          </a>
         </div>
       </div>
 

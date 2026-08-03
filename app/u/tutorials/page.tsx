@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Play, Link as LinkIcon, Star } from 'lucide-react'
+import { Play, Link as LinkIcon, Star, MessageCircle } from 'lucide-react'
 
 export default function TutorialsPage() {
   const settings = useSiteSettings()
@@ -24,23 +24,26 @@ export default function TutorialsPage() {
     <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
       <div className="rounded-2xl mb-6 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4" style={{border:'1px solid #d9940140',background:'#d9940115'}}>
-          <span className="w-1.5 h-1.5 rounded-full" style={{background:'#d99401'}}/>
-          <span className="text-sm font-semibold uppercase tracking-wide" style={{color:'#d99401'}}>{t('Learning Hub','مركز التعلم')}</span>
-        </div>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4" style={{border:'1px solid #d9940140',background:'#d9940115'}}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{background:'#d99401'}}/>
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{color:'#d99401'}}>{t('Educational Videos','فيديوهات تعليمية')}</span>
+            </div>
             <h1 className="text-xl font-bold text-white mb-2">
-              {t('Guide Videos & ','فيديوهات وأدلة ')}<span style={{color:'#d99401'}}>{t('User Manuals','الاستخدام')}</span>
+              {t('Step-by-Step ','أدلة ')}<span style={{color:'#d99401'}}>{t('Video Guides','الفيديو خطوة بخطوة')}</span>
             </h1>
-            <p className="text-sm text-gray-300 max-w-lg">
-              {t('Watch our step-by-step video guides to safely access your premium accounts.','شاهد أدلة الفيديو خطوة بخطوة للوصول الآمن لحساباتك المميزة.')}
+            <p className="text-sm text-gray-300">
+              {t('Watch our guides to safely access your premium accounts.','شاهد أدلة الفيديو للوصول الآمن لحساباتك المميزة.')}
             </p>
           </div>
           <a href={`https://wa.me/${settings.whatsapp_number?.replace(/\D/g,'')}`} target="_blank"
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 flex-shrink-0 hover:bg-white/20 transition-colors text-end">
-            <p className="text-xs text-gray-400">{t('Facing issues? Message on WhatsApp','واجه مشكلة؟ راسلنا على واتساب')}</p>
-            <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</p>
+            className="bg-green-500/20 border border-green-500/30 rounded-xl px-5 py-3 flex items-center gap-3 hover:bg-green-500/30 transition-colors flex-shrink-0">
+            <MessageCircle size={20} className="text-green-400"/>
+            <div className="text-end">
+              <p className="text-xs text-gray-400">{t('WhatsApp Support','دعم واتساب')}</p>
+              <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</p>
+            </div>
           </a>
         </div>
       </div>

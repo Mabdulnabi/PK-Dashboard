@@ -17,11 +17,18 @@ export async function GET() {
     const { data: session } = await service.rpc('verify_member_session', { p_token: token })
     if (!session?.valid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-    const { data, error } = await service
-      .from('payments')
-      .select('id, amount, currency, gateway, status, transaction_id, pack_id, bundle_id, payment_code, verified_at, created_at')
-      .eq('user_id', session.member_id)
-      .order('created_at', { ascending: false })
+    const [{ data, error }, { data: walletTxs }] = await Promise.all([
+      service
+        .from('payments')
+        .select('id, amount, currency, gateway, status, transaction_id, pack_id, bundle_id, payment_code, verified_at, created_at')
+        .eq('user_id', session.member_id)
+        .order('created_at', { ascending: false }),
+      service
+        .from('wallet_transactions')
+        .select('id, type, amount, currency, created_at, description, tx_code, gateway_name, status, admin_id')
+        .eq('member_id', session.member_id)
+        .order('created_at', { ascending: false }),
+    ])
 
     if (error) throw error
 
@@ -49,6 +56,7 @@ export async function GET() {
 
     const payments = (data || []).map(p => ({
       id:             p.id,
+      row_type:       'payment' as const,
       payment_code:   p.payment_code,
       amount:         p.amount,
       currency:       p.currency,
@@ -60,7 +68,30 @@ export async function GET() {
       created_at:     p.created_at,
     }))
 
-    return NextResponse.json({ payments })
+    const walletRows = (walletTxs || []).map(tx => ({
+      id:             tx.id,
+      row_type:       'wallet_tx' as const,
+      payment_code:   tx.tx_code || null,
+      amount:         tx.amount,
+      currency:       tx.currency,
+      gateway:        tx.gateway_name || null,
+      status:         tx.status || 'completed',
+      transaction_id: tx.tx_code || null,
+      tool_name:      tx.type === 'deduct'
+        ? 'خصم رصيد / Deduct Balance'
+        : tx.admin_id
+          ? 'إضافة رصيد / Add Balance'
+          : 'شحن المحفظة / Topup Wallet',
+      verified_at:    tx.created_at,
+      created_at:     tx.created_at,
+    }))
+
+    // Merge and sort by date descending
+    const allRows = [...payments, ...walletRows].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+
+    return NextResponse.json({ payments: allRows })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

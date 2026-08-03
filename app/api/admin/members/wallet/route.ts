@@ -34,8 +34,13 @@ export async function POST(req: NextRequest) {
   if (action === 'deduct' && balanceAfter < 0)
     return NextResponse.json({ error: 'insufficient balance' }, { status: 400 })
 
+  // wallet_transactions.user_id is NOT NULL — fetch from members table
+  const { data: memberRow } = await service.from('members').select('user_id').eq('id', member_id).single()
+  if (!memberRow?.user_id) return NextResponse.json({ error: 'member not found' }, { status: 404 })
+
   const { error } = await service.from('wallet_transactions').insert({
     member_id,
+    user_id: memberRow.user_id,
     type,
     amount: amt,
     currency: cur,

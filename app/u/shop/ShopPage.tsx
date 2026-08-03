@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Star, Zap, Info, X, Search } from 'lucide-react'
+import { Star, Zap, Info, X, Search, MessageCircle } from 'lucide-react'
 import ToolLandingPage from './ToolLandingPage'
 
 interface Tool {
@@ -44,9 +44,21 @@ export default function ShopPage({ category }: Props) {
   const [categories,setCategories]= useState<DbCategory[]>([])
 
   const CATEGORY_META = {
-    shared:  { title: t('Shared Tools','أدوات مشتركة'),    banner: t('Explore premium shared tools!','استكشف أدوات مميزة مشتركة!') },
-    private: { title: t('Private Tools','أدوات خاصة'),     banner: t('Exclusive private accounts!','حسابات خاصة حصرية!') },
-    bundle:  { title: t('Bundle Tools','حزم الأدوات'),     banner: t('Best value bundles!','أفضل الحزم بأسعار مميزة!') },
+    shared:  {
+      badge: t('Shared Tools','أدوات مشتركة'), badgeColor:'#3b82f6',
+      title: t('Access Premium ','الوصول إلى '), accent: t('Shared Tools','الأدوات المشتركة'),
+      sub: t('Browse and activate shared premium tools instantly.','تصفح وفعّل الأدوات المميزة المشتركة فوراً.'),
+    },
+    private: {
+      badge: t('Private Store','المتجر الشخصي'), badgeColor:'#8b5cf6',
+      title: t('Exclusive ','حسابات '), accent: t('Private Accounts','خاصة حصرية'),
+      sub: t('Private accounts and licenses just for you.','حسابات وتراخيص خاصة حصرية لك.'),
+    },
+    bundle:  {
+      badge: t('Bundle Tools','حزم الأدوات'), badgeColor:'#f59e0b',
+      title: t('Best Value ','أفضل قيمة '), accent: t('Tool Bundles','في حزم الأدوات'),
+      sub: t('Curated bundles of top tools at unbeatable prices.','حزم مجمّعة من أفضل الأدوات بأسعار لا تُقارن.'),
+    },
   }
   const meta = CATEGORY_META[category]
 
@@ -81,16 +93,28 @@ export default function ShopPage({ category }: Props) {
   return (
     <div className="p-3 md:p-6" dir={dir}>
       {/* Banner */}
-      <div className="rounded-2xl mb-5 px-4 md:px-8 py-6 text-center" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)'}}>
-        <h1 className="text-2xl font-bold text-white mb-1.5" dir="ltr">
-          Pro<span style={{color:'#d99401'}}>Keys</span> {meta.title}
-        </h1>
-        <p className="text-sm text-gray-300 mb-0.5">{meta.banner}</p>
-        <p className="text-sm text-gray-400">
-          {t('Need help?','محتاج مساعدة؟')}{' '}
-          <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}`}
-            className="text-green-400 font-semibold" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</a>
-        </p>
+      <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4"
+              style={{border:`1px solid ${meta.badgeColor}50`,background:`${meta.badgeColor}18`}}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{background:meta.badgeColor}}/>
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{color:meta.badgeColor}}>{meta.badge}</span>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">
+              {meta.title}<span style={{color:'#d99401'}}>{meta.accent}</span>
+            </h1>
+            <p className="text-sm text-gray-300">{meta.sub}</p>
+          </div>
+          <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}`} target="_blank"
+            className="bg-green-500/20 border border-green-500/30 rounded-xl px-5 py-3 flex items-center gap-3 hover:bg-green-500/30 transition-colors flex-shrink-0">
+            <MessageCircle size={20} className="text-green-400"/>
+            <div className="text-end">
+              <p className="text-xs text-gray-400">{t('WhatsApp Support','دعم واتساب')}</p>
+              <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</p>
+            </div>
+          </a>
+        </div>
       </div>
 
       {/* Filter bar */}

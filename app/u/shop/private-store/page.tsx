@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store } from 'lucide-react'
+import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store, MessageCircle } from 'lucide-react'
 import ToolLandingPage from '../ToolLandingPage'
 
 interface Category {
@@ -86,21 +86,32 @@ export default function PrivateStorePage() {
   return (
     <div className="p-3 md:p-6" dir={isRtl?'rtl':'ltr'}>
 
-      {/* Hero banner */}
-      <div className="rounded-2xl mb-5 px-4 md:px-8 py-6 text-center relative overflow-hidden"
-        style={{background:'linear-gradient(135deg,#1a0533 0%,#2d1b69 60%,#0f0e2e 100%)'}}>
-        <div className="absolute inset-0 opacity-10" style={{backgroundImage:'radial-gradient(circle at 30% 50%, #8b5cf6 0%, transparent 60%), radial-gradient(circle at 70% 50%, #6366f1 0%, transparent 60%)'}}/>
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3"
-            style={{background:'#8b5cf620',border:'1px solid #8b5cf640',color:'#c4b5fd'}}>
-            <Store size={12}/>{isRtl?'حسابات ومفاتيح خاصة':'Private Accounts & Keys'}
+      {/* Banner */}
+      <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4"
+              style={{border:'1px solid #8b5cf650',background:'#8b5cf618'}}>
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-400"/>
+              <span className="text-xs font-semibold text-violet-400 uppercase tracking-wide">
+                {isRtl?'المتجر الشخصي':'Private Store'}
+              </span>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">
+              {isRtl?'حسابات ':'Exclusive '}<span style={{color:'#d99401'}}>{isRtl?'خاصة حصرية':'Private Accounts'}</span>
+            </h1>
+            <p className="text-sm text-gray-300">
+              {isRtl?'حسابات وتراخيص خاصة حصرية لك':'Private accounts and licenses just for you'}
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1.5">
-            {isRtl?'المتجر الشخصي':'Private Store'}
-          </h1>
-          <p className="text-sm text-purple-300">
-            {isRtl?'حسابات وتراخيص خاصة حصرية لك':'Exclusive private accounts and licenses just for you'}
-          </p>
+          <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}`} target="_blank"
+            className="bg-green-500/20 border border-green-500/30 rounded-xl px-5 py-3 flex items-center gap-3 hover:bg-green-500/30 transition-colors flex-shrink-0">
+            <MessageCircle size={20} className="text-green-400"/>
+            <div className="text-end">
+              <p className="text-xs text-gray-400">{isRtl?'دعم واتساب':'WhatsApp Support'}</p>
+              <p className="text-sm font-bold text-white" dir="ltr">{settings.whatsapp_number||'+20 100 000 0000'}</p>
+            </div>
+          </a>
         </div>
       </div>
 

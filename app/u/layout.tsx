@@ -21,9 +21,9 @@ const NAV_BASE = [
     { en:'Bundle Tools',  ar:'حزم الأدوات',   href:'/u/shop/bundle',          icon:Package,      color:'#10b981' },
   ]},
   { en:'Private Store',   ar:'المتجر الشخصي', href:'/u/shop/private-store',   icon:LockKey,      color:'#8b5cf6' },
-  { en:'My Wallet',       ar:'محفظتي',        href:'/u/payments',             icon:Wallet,       color:'#d99401' },
-  { en:'HelpDesk',        ar:'الدعم',         href:'/u/helpdesk',             icon:Headset,      color:'#f97316' },
-  { en:'Tutorial Videos', ar:'الدروس',        href:'/u/tutorials',            icon:PlayCircle,   color:'#ec4899' },
+  { en:'My Wallet',            ar:'محفظتي',           href:'/u/wallet',               icon:Wallet,       color:'#22c55e' },
+  { en:'Tickets',              ar:'تذاكر الدعم',      href:'/u/tickets',              icon:Headset,      color:'#f97316' },
+  { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',            icon:PlayCircle,   color:'#ec4899' },
   { en:'My Account',      ar:'حسابي',         href:'/u/profile',              icon:UserCircle,   color:'#14b8a6' },
 ]
 
