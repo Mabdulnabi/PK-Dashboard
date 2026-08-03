@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { LangProvider, useLang } from '@/lib/lang-context'
+const ChatWidget = dynamic(() => import('@/components/live-chat/ChatWidget'), { ssr: false })
 import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -580,6 +582,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   return (
     <LangProvider>
       <UserLayoutInner>{children}</UserLayoutInner>
+      <ChatWidget/>
     </LangProvider>
   )
 }

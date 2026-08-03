@@ -95,7 +95,11 @@ export default function SupportPage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/admin/profile').then(r => r.json()).then(setAdminProfile) }, [])
 
-  // Poll every 8s when a ticket is expanded
+  // Background poll: every 15s for new tickets, every 8s when expanded
+  useEffect(() => {
+    const id = setInterval(() => load(true), 15000)
+    return () => clearInterval(id)
+  }, [load])
   useEffect(() => {
     if (!expanded) return
     const id = setInterval(() => load(true), 8000)

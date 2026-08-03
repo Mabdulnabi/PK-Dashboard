@@ -32,6 +32,19 @@ export async function POST(req: NextRequest) {
     )
 
     const data = await res.json()
+
+    // When EasyKash confirms the payment, notify the member
+    if ((data.verified || data.success) && !data.error && payload.amount) {
+      void db.from('member_notifications').insert({
+        member_id:   session.member_id,
+        title:       `تم شحن محفظتك ✅`,
+        title_en:    `Wallet topped up ✅`,
+        message:     `تم إضافة ${payload.amount} إلى محفظتك بنجاح.`,
+        message_en:  `${payload.amount} has been added to your wallet successfully.`,
+        type:        'success',
+      })
+    }
+
     return NextResponse.json(data, { status: res.status })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

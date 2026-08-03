@@ -55,5 +55,20 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify member
+  void service.from('member_notifications').insert({
+    member_id,
+    title:      action === 'charge' ? `تم شحن محفظتك ✅` : `تم خصم من محفظتك`,
+    title_en:   action === 'charge' ? `Wallet credited ✅` : `Wallet debited`,
+    message:    action === 'charge'
+      ? `تمت إضافة ${amt} ${cur} إلى محفظتك.`
+      : `تم خصم ${amt} ${cur} من محفظتك.`,
+    message_en: action === 'charge'
+      ? `${amt} ${cur} has been added to your wallet.`
+      : `${amt} ${cur} has been deducted from your wallet.`,
+    type: action === 'charge' ? 'success' : 'info',
+  })
+
   return NextResponse.json({ ok: true, balance_after: balanceAfter })
 }

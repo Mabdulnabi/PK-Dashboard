@@ -66,5 +66,27 @@ export async function POST(req: NextRequest) {
     confirmed_at: new Date().toISOString(),
   }).eq('id', charge_id)
 
+  // Notify member
+  const cur = (charge.currency || 'EGP').toUpperCase()
+  if (action === 'confirm') {
+    void service.from('member_notifications').insert({
+      member_id:   charge.member_id,
+      title:       `تم شحن محفظتك ✅`,
+      title_en:    `Wallet topped up ✅`,
+      message:     `تمت إضافة ${charge.amount} ${cur} إلى محفظتك بنجاح.`,
+      message_en:  `${charge.amount} ${cur} has been added to your wallet.`,
+      type:        'success',
+    })
+  } else {
+    void service.from('member_notifications').insert({
+      member_id:   charge.member_id,
+      title:       `طلب الشحن مرفوض`,
+      title_en:    `Top-up request rejected`,
+      message:     `تم رفض طلب شحن محفظتك بقيمة ${charge.amount} ${cur}.${admin_note ? ' ' + admin_note : ''}`,
+      message_en:  `Your top-up request of ${charge.amount} ${cur} was rejected.${admin_note ? ' ' + admin_note : ''}`,
+      type:        'warning',
+    })
+  }
+
   return NextResponse.json({ ok: true })
 }

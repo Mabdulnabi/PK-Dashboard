@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, CreditCard, MessageSquare, ShoppingBag, Tag,
   PackageCheck, Archive, Globe, Server, BarChart3, Receipt,
   Bell, Upload, Settings, SlidersHorizontal, Key, LogOut, UserCircle,
-  Gauge, Layers, ChevronLeft,
+  Gauge, Layers, ChevronLeft, MessagesSquare,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -18,9 +18,10 @@ const nav = [
     { label: 'Dashboard',  href: '/dashboard', icon: LayoutDashboard },
   ]},
   { section: 'Members', items: [
-    { label: 'Members',    href: '/members',   icon: UserCircle },
-    { label: 'Plans',      href: '/plans',     icon: CreditCard },
-    { label: 'Support',    href: '/support',   icon: MessageSquare },
+    { label: 'Members',    href: '/members',        icon: UserCircle },
+    { label: 'Plans',      href: '/plans',           icon: CreditCard },
+    { label: 'Live Chat',  href: '/dashboard/live-chat', icon: MessagesSquare },
+    { label: 'Support',    href: '/support',         icon: MessageSquare },
   ]},
   { section: 'Shop', items: [
     { label: 'Shop Tools', href: '/shop-admin', icon: ShoppingBag },
