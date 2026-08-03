@@ -73,6 +73,7 @@ export default function PaymentsPage() {
   const [submitting,setSubmitting]=useState(false)
   const [downloading, setDownloading] = useState<string|null>(null)
   const [easykashWaiting, setEasykashWaiting] = useState(false)
+  const [easykashError, setEasykashError] = useState<string|null>(null)
   const [copiedUid, setCopiedUid] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval>|null>(null)
 
@@ -119,37 +120,41 @@ export default function PaymentsPage() {
   const handleEasykash = async () => {
     if (!topUpAmt || !topUpGw || !activeGw) return
     setSubmitting(true)
-    // Open tab synchronously (before any await) to avoid browser popup blocker.
-    // Must NOT use 'noopener' here — it severs the reference, making location.href assignment fail.
-    const newTab = window.open('', '_blank')
+    setEasykashError(null)
     try {
+      // Step 1: create payment record
       const cr = await fetch('/api/member/payment/create', {
         method:'POST', credentials:'include',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ gateway: activeGw.name_en, amount: parseFloat(topUpAmt), currency: topUpCur }),
       })
       const { payment_id, error: ce } = await cr.json()
-      if (!payment_id) throw new Error(ce||'create failed')
+      if (!payment_id) throw new Error(ce || 'Failed to create payment')
 
+      // Step 2: get EasyKash payment link
       const lr = await fetch('/api/member/payment/verify', {
         method:'POST', credentials:'include',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ edge_fn: activeGw.edge_fn||'create-easykash-link', payment_id, amount: parseFloat(topUpAmt) }),
+        body: JSON.stringify({ edge_fn: activeGw.edge_fn || 'create-easykash-link', payment_id, amount: parseFloat(topUpAmt) }),
       })
       const ld = await lr.json()
-      if (!ld.payUrl) throw new Error(ld.error||'no payment url')
+      if (!ld.payUrl) throw new Error(ld.error || 'EasyKash did not return a payment link')
 
-      if (newTab) newTab.location.href = ld.payUrl
-      else window.open(ld.payUrl, '_blank', 'noopener')
+      // Step 3: navigate to payment link
+      // Try new tab first; if popup blocked fall back to current tab
+      const opened = window.open(ld.payUrl, '_blank')
+      if (!opened) window.location.href = ld.payUrl
+
       setSubmitting(false)
       setEasykashWaiting(true)
 
+      // Step 4: poll for verification
       pollingRef.current = setInterval(async () => {
         try {
           const pr = await fetch('/api/member/payment/verify', {
             method:'POST', credentials:'include',
             headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ edge_fn:'verify-easykash', payment_id }),
+            body: JSON.stringify({ edge_fn: 'verify-easykash', payment_id }),
           })
           const pd = await pr.json()
           if (pd.verified || pd.success) {
@@ -160,9 +165,9 @@ export default function PaymentsPage() {
           }
         } catch {}
       }, 5000)
-    } catch {
-      if (newTab) newTab.close()
+    } catch (e: any) {
       setSubmitting(false)
+      setEasykashError(e.message || 'Something went wrong')
     }
   }
 
@@ -364,13 +369,20 @@ export default function PaymentsPage() {
                           )}
                           {/* Dynamic (EasyKash): Pay Now */}
                           {activeGw.is_dynamic ? (
-                            <button onClick={handleEasykash} disabled={submitting||!topUpAmt}
-                              className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                              style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
-                              {submitting
-                                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                                : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
-                            </button>
+                            <div className="space-y-2">
+                              {easykashError && (
+                                <div className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                                  {easykashError}
+                                </div>
+                              )}
+                              <button onClick={handleEasykash} disabled={submitting||!topUpAmt}
+                                className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
+                                {submitting
+                                  ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                                  : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
+                              </button>
+                            </div>
                           ) : (
                             /* Static: TxID + submit in the same right column, below instructions */
                             <div className="space-y-2 pt-2 border-t border-green-500/20">
