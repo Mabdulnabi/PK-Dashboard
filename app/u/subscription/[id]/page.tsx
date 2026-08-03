@@ -88,7 +88,8 @@ export default function SubscriptionDetailPage() {
   const [deliveryLoading, setDeliveryLoading] = useState(false)
   const [showPass,    setShowPass]    = useState(false)
   const [copied,      setCopied]      = useState<'email'|'pass'|null>(null)
-  const extCheckRef   = useRef(false)
+  const extCheckRef    = useRef(false)
+  const fetchServersRef = useRef<(() => void) | null>(null)
 
   const copyText = async (text: string, field: 'email'|'pass') => {
     await navigator.clipboard.writeText(text)
@@ -130,12 +131,14 @@ export default function SubscriptionDetailPage() {
         .then(d => setServers(d.servers || []))
     }
 
+    // Keep ref updated so extension handler can call it directly
+    fetchServersRef.current = fetchServers
+
     fetchServers()
 
-    // Poll every 30 seconds
     const poll = setInterval(fetchServers, 30000)
     return () => clearInterval(poll)
-  }, [purchase?.id, extReady])
+  }, [purchase?.id])
 
   // ── Extension detection (independent of purchase) ──
   useEffect(() => {
@@ -147,6 +150,7 @@ export default function SubscriptionDetailPage() {
       if (data.type === 'PK_EXTENSION_READY') {
         setExtReady(true)
         stopPoll()
+        fetchServersRef.current?.()
         window.postMessage({ type: 'PK_GET_STATE' }, '*')
       }
       if (data.type === 'PK_STATE') {
