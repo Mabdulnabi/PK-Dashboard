@@ -9,21 +9,22 @@ interface WalletData {
   last_deduct: { amount: number; currency: string; created_at: string } | null
   pending_charges: any[]
 }
-interface Gateway { id:string; name_ar:string; name_en:string; currency:string; logo_url?:string; uid?:string; uid_label_en?:string; instructions_en?:string }
+interface Gateway { id:string; name_ar:string; name_en:string; currency:string; logo_url?:string; uid?:string; uid_label_en?:string; uid_label_ar?:string; instructions_en?:string; instructions_ar?:string }
 
-function WalletCard({ icon: Icon, label, value, sub, accent }: { icon:any; label:string; value:string; sub?:string; accent:string }) {
+function WalletCard({ icon: Icon, label, value, sub, accent, children }: { icon:any; label:string; value:string; sub?:string; accent:string; children?: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-4 relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex-1">
-      <div className="absolute inset-0 pointer-events-none opacity-[0.05]" style={{background:`radial-gradient(circle at top right, ${accent}, transparent 70%)`}}/>
-      <div className="absolute top-0 left-0 right-0 h-[2px] opacity-50" style={{background:`linear-gradient(90deg,${accent},transparent)`}}/>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:accent+'18'}}>
-          <Icon size={13} style={{color:accent}}/>
+    <div className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm flex-1 min-w-[140px]">
+      <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none" style={{background:`radial-gradient(circle at top right,${accent},transparent 65%)`}}/>
+      <div className="absolute top-0 left-0 right-0 h-[2px] opacity-60" style={{background:`linear-gradient(90deg,${accent},transparent)`}}/>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{label}</span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:accent+'20'}}>
+          <Icon size={15} style={{color:accent}}/>
         </div>
       </div>
-      <div className="text-xl font-black tabular-nums" style={{color:accent}}>{value}</div>
-      {sub && <div className="text-[10px] text-gray-400 mt-1">{sub}</div>}
+      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
+      {children}
+      {sub && !children && <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>}
     </div>
   )
 }
@@ -130,15 +131,20 @@ export default function PaymentsPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('My Wallet','محفظتي')}</h2>
             <button onClick={()=>{ setShowTopUp(v=>!v); setTopUpSent(false); setTopUpAmt(''); setTopUpTx(''); setTopUpGw(gateways[0]?.id||'') }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all"
-              style={{background:'#d99401'}}>
-              <Plus size={12}/> {t('Charge Wallet','شحن المحفظة')}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-sm"
+              style={{background:'#d99401',boxShadow:'0 4px 12px #d9940133'}}>
+              <Plus size={13}/> {t('Topup your wallet','شحن محفظتي')}
             </button>
           </div>
-          <div className="flex gap-3 flex-wrap">
-            <WalletCard icon={Wallet}      label={t('Balance EGP','الرصيد بالجنيه')}    value={fmtAmt(wallet.balance_egp,'EGP')} accent="#d99401"/>
-            <WalletCard icon={Wallet}      label={t('Balance USD','الرصيد بالدولار')}    value={fmtAmt(wallet.balance_usd,'USD')} accent="#3B82F6"/>
-            <WalletCard icon={TrendingUp}  label={t('Last Charge','آخر شحن')}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Balance card — shows EGP as main, USD as sub */}
+            <WalletCard icon={Wallet} label={t('Wallet Balance','رصيد المحفظة')} value={fmtAmt(wallet.balance_egp,'EGP')} accent="#d99401">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-gray-400 dark:text-gray-600 tabular-nums">{fmtAmt(wallet.balance_usd,'USD')}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold" style={{background:'#d9940115',color:'#d99401'}}>USD</span>
+              </div>
+            </WalletCard>
+            <WalletCard icon={TrendingUp}   label={t('Last Charge','آخر شحن')}
               value={wallet.last_charge ? fmtAmt(wallet.last_charge.amount, wallet.last_charge.currency) : '—'}
               sub={wallet.last_charge ? fmtDate(wallet.last_charge.created_at) : undefined} accent="#22C55E"/>
             <WalletCard icon={TrendingDown} label={t('Last Deduction','آخر خصم')}
@@ -189,10 +195,12 @@ export default function PaymentsPage() {
                     </div>
                   </div>
                   {activeGw?.uid && (
-                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-xs">
-                      <div className="text-gray-500 mb-1">{activeGw.uid_label_en || t('Send to','أرسل إلى')}</div>
-                      <div className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm">{activeGw.uid}</div>
-                      {activeGw.instructions_en && <div className="text-gray-400 mt-2">{lang==='ar'?'':activeGw.instructions_en}</div>}
+                    <div className="p-3 rounded-xl border text-xs" style={{background:'#d9940108',borderColor:'#d9940130'}}>
+                      <div className="text-gray-500 mb-1">{lang==='ar'?(activeGw.uid_label_ar||activeGw.uid_label_en||t('أرسل إلى','Send to')):(activeGw.uid_label_en||'Send to')}</div>
+                      <div className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm tracking-wide" dir="ltr">{activeGw.uid}</div>
+                      {(lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en) && (
+                        <div className="text-gray-400 mt-2 leading-relaxed">{lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en}</div>
+                      )}
                     </div>
                   )}
                   <div>

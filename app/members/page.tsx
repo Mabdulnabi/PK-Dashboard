@@ -6,7 +6,7 @@ import Topbar from '@/components/layout/Topbar'
 import { useAdminTheme } from '@/lib/admin-theme'
 import {
   Plus, Search, Pencil, Trash2, X, Check, AlertCircle,
-  UserCheck, UserX, Wallet, MinusCircle, RefreshCw,
+  UserCheck, UserX, Wallet, RefreshCw,
   ArrowUpRight, Users, Activity, Clock, TrendingUp, KeyRound, Mail,
 } from 'lucide-react'
 
@@ -23,13 +23,7 @@ interface Member {
   last_deduct_amount?: number; last_deduct_currency?: string; last_deduct_at?: string
   time_remaining?: string
 }
-interface Gateway {
-  id: string; name_ar: string; name_en: string; currency: string
-  logo_url?: string; uid?: string; uid_label_ar?: string; uid_label_en?: string
-  input_label_ar?: string; input_label_en?: string
-  input_placeholder_ar?: string; input_placeholder_en?: string
-  instructions_ar?: string; instructions_en?: string
-}
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-[#d99401] transition-all"
@@ -91,14 +85,13 @@ function StatCard({ label, value, icon: Icon, accent, sub }: { label:string; val
 export default function MembersPage() {
   const { dark } = useAdminTheme()
   const [members,   setMembers]   = useState<Member[]>([])
-  const [gateways,  setGateways]  = useState<Gateway[]>([])
   const [loading,   setLoading]   = useState(true)
   const [q,         setQ]         = useState('')
   const [fStatus,   setFStatus]   = useState('all')
   const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [saving,    setSaving]    = useState(false)
 
-  // modal state: null | 'add' | 'edit' | 'wallet_charge' | 'wallet_deduct' | 'reset'
+  // modal state: null | 'add' | 'edit' | 'wallet' | 'reset'
   const [modal,  setModal]  = useState<string|null>(null)
   const [sel,    setSel]    = useState<Member|null>(null)
   const [delId,  setDelId]  = useState<Member|null>(null)
@@ -106,7 +99,7 @@ export default function MembersPage() {
   // forms
   const emptyMember = { full_name:'', email:'', phone:'', telegram:'', whatsapp:'', notes:'' }
   const [mForm, setMForm] = useState(emptyMember)
-  const emptyWallet = { amount:'', currency:'EGP', gateway:'', gateway_name:'', tx_ref:'', note:'' }
+  const emptyWallet = { amount:'', currency:'EGP', note:'', action:'charge' as 'charge'|'deduct' }
   const [wForm, setWForm] = useState(emptyWallet)
   const emptyReset = { new_password:'', new_email:'' }
   const [rForm, setRForm] = useState(emptyReset)
@@ -116,12 +109,8 @@ export default function MembersPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [mRes, gwRes] = await Promise.all([
-      supabase.from('members_full').select('*').order('created_at', { ascending: false }),
-      fetch('/api/member/gateways').then(r => r.json()),
-    ])
+    const mRes = await supabase.from('members_full').select('*').order('created_at', { ascending: false })
     if (mRes.data) setMembers(mRes.data)
-    if (gwRes.gateways) setGateways(gwRes.gateways)
     setLoading(false)
   }, [])
 
@@ -151,13 +140,9 @@ export default function MembersPage() {
   // ── Actions ───────────────────────────────────────────────────────────────
   const openAdd  = () => { setMForm(emptyMember); setSel(null); setModal('add') }
   const openEdit = (m: Member) => { setMForm({ full_name:m.full_name, email:m.email, phone:m.phone||'', telegram:m.telegram||'', whatsapp:m.whatsapp||'', notes:m.notes||'' }); setSel(m); setModal('edit') }
-  const openWalletCharge = (m: Member) => {
-    setSel(m)
-    const firstGw = gateways[0]
-    setWForm({ ...emptyWallet, gateway: firstGw?.id||'', gateway_name: firstGw?.name_en||'' })
-    setModal('wallet_charge')
+  const openWallet = (m: Member, action: 'charge'|'deduct' = 'charge') => {
+    setSel(m); setWForm({ ...emptyWallet, action }); setModal('wallet')
   }
-  const openWalletDeduct = (m: Member) => { setSel(m); setWForm(emptyWallet); setModal('wallet_deduct') }
   const openReset = (m: Member) => { setSel(m); setRForm(emptyReset); setModal('reset') }
 
   const saveMember = async () => {
@@ -174,27 +159,24 @@ export default function MembersPage() {
     setModal(null); load()
   }
 
-  const walletAction = async (action: 'charge' | 'deduct') => {
+  const walletAction = async () => {
     if (!sel || !wForm.amount) return err('Enter amount')
+    const amt = parseFloat(wForm.amount)
+    if (isNaN(amt) || amt <= 0) return err('Invalid amount')
     setSaving(true)
-    const gw = gateways.find(g => g.id === wForm.gateway)
     const res = await fetch('/api/admin/members/wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        member_id: sel.id, action,
-        amount: parseFloat(wForm.amount),
-        currency: wForm.currency,
-        note: wForm.note,
-        gateway: wForm.gateway || null,
-        gateway_name: gw?.name_en || wForm.gateway_name || null,
-        tx_ref: wForm.tx_ref || null,
+        member_id: sel.id, action: wForm.action,
+        amount: amt, currency: wForm.currency,
+        note: wForm.note || null,
       }),
     })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) return err(data.error || 'Failed')
-    ok(`Wallet ${action === 'charge' ? 'charged' : 'deducted'} — new balance: ${data.balance_after} ${wForm.currency}`)
+    ok(`${wForm.action === 'charge' ? '✅ Added' : '➖ Deducted'} ${amt} ${wForm.currency} — balance: ${data.balance_after} ${wForm.currency}`)
     setModal(null); load()
   }
 
@@ -327,13 +309,9 @@ export default function MembersPage() {
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => openWalletCharge(m)} title="Charge Wallet"
-                          className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                        <button onClick={() => openWallet(m)} title="Wallet — Add / Deduct"
+                          className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-[#d99401] hover:bg-[#d9940115] transition-colors">
                           <Wallet size={11}/>
-                        </button>
-                        <button onClick={() => openWalletDeduct(m)} title="Deduct from Wallet"
-                          className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                          <MinusCircle size={11}/>
                         </button>
                         <button onClick={() => openEdit(m)} title="Edit Member"
                           className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
@@ -394,76 +372,38 @@ export default function MembersPage() {
         </Modal>
       )}
 
-      {/* ═══ WALLET CHARGE MODAL ═══ */}
-      {modal==='wallet_charge' && sel && (
-        <Modal title={`💳 Charge Wallet — ${sel.full_name}`} onClose={() => setModal(null)}>
-          <div className="p-3 mb-3 rounded-xl flex items-center justify-between" style={{ background:'#d9940110', border:'1px solid #d9940130' }}>
+      {/* ═══ WALLET MODAL (add / deduct) ═══ */}
+      {modal==='wallet' && sel && (
+        <Modal title={`💰 Wallet — ${sel.full_name}`} onClose={() => setModal(null)}>
+          {/* Current balance */}
+          <div className="p-3 mb-4 rounded-xl flex items-center justify-between" style={{background:'#d9940110',border:'1px solid #d9940130'}}>
             <span className="text-xs text-gray-500">Current Balance</span>
             <div className="text-right">
               <div className="text-sm font-black" style={{color:'#d99401'}}>{fmtAmt(sel.wallet_egp,'EGP')}</div>
               {(sel.wallet_usd||0)>0 && <div className="text-xs text-gray-400">{fmtAmt(sel.wallet_usd,'USD')}</div>}
             </div>
           </div>
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1">
-              <Label>Amount *</Label>
-              <input type="number" value={wForm.amount} onChange={e=>setWForm({...wForm,amount:e.target.value})} placeholder="0" className={inp}/>
-            </div>
-            <div>
-              <Label>Currency</Label>
-              <select value={wForm.currency} onChange={e=>setWForm({...wForm,currency:e.target.value})} className={inp+" cursor-pointer"}>
-                <option value="EGP">EGP</option>
-                <option value="USD">USD</option>
-              </select>
-            </div>
-          </div>
-          <Label>Payment Method</Label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {gateways.map(gw => (
-              <button key={gw.id} onClick={() => setWForm({...wForm, gateway:gw.id, gateway_name:gw.name_en})}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-                style={wForm.gateway===gw.id
-                  ? { background:'#d99401', color:'#fff', borderColor:'#d99401' }
-                  : { background:'transparent', color:'#6B7280', borderColor:'#E5E7EB' }}>
-                {gw.logo_url ? <img src={gw.logo_url} alt={gw.name_en} className="h-4 inline mr-1"/> : null}
-                {gw.name_en}
+          {/* Add / Deduct toggle */}
+          <div className="flex gap-1 p-1 rounded-xl mb-4" style={{background:'#f3f4f6'}}>
+            {(['charge','deduct'] as const).map(a=>(
+              <button key={a} onClick={()=>setWForm({...wForm,action:a})}
+                className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
+                style={wForm.action===a
+                  ? {background: a==='charge'?'#d99401':'#EF4444', color:'#fff', boxShadow:'0 2px 8px '+(a==='charge'?'#d9940133':'#EF444433')}
+                  : {background:'transparent', color:'#6B7280'}}>
+                {a==='charge'?'➕ Add to Wallet':'➖ Deduct from Wallet'}
               </button>
             ))}
           </div>
-          {wForm.gateway && (() => {
-            const gw = gateways.find(g=>g.id===wForm.gateway)
-            return gw?.uid ? (
-              <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 mb-3">
-                <div className="font-semibold mb-1">{gw.uid_label_en || 'Account'}</div>
-                <div className="font-mono font-bold text-gray-900 dark:text-gray-100">{gw.uid}</div>
-                {gw.instructions_en && <div className="mt-2 text-gray-400">{gw.instructions_en}</div>}
-              </div>
-            ) : null
-          })()}
-          <Label>Transaction Reference / TxID</Label>
-          <input value={wForm.tx_ref} onChange={e=>setWForm({...wForm,tx_ref:e.target.value})} placeholder="TxID or reference..." className={inp+" mb-3"}/>
-          <Label>Admin Note</Label>
-          <input value={wForm.note} onChange={e=>setWForm({...wForm,note:e.target.value})} placeholder="optional note..." className={inp}/>
-          <ModalFooter onClose={() => setModal(null)} onSave={() => walletAction('charge')} saving={saving} label="Charge Wallet" accent="#d99401"/>
-        </Modal>
-      )}
-
-      {/* ═══ WALLET DEDUCT MODAL ═══ */}
-      {modal==='wallet_deduct' && sel && (
-        <Modal title={`➖ Deduct from Wallet — ${sel.full_name}`} onClose={() => setModal(null)}>
-          <div className="p-3 mb-3 rounded-xl flex items-center justify-between" style={{ background:'#FEE2E240', border:'1px solid #FEE2E2' }}>
-            <span className="text-xs text-gray-500">Current Balance</span>
-            <div className="text-right">
-              <div className="text-sm font-black text-red-500">{fmtAmt(sel.wallet_egp,'EGP')}</div>
-              {(sel.wallet_usd||0)>0 && <div className="text-xs text-gray-400">{fmtAmt(sel.wallet_usd,'USD')}</div>}
-            </div>
-          </div>
+          {/* Amount + Currency */}
           <div className="flex gap-2 mb-3">
             <div className="flex-1">
               <Label>Amount *</Label>
-              <input type="number" value={wForm.amount} onChange={e=>setWForm({...wForm,amount:e.target.value})} placeholder="0" className={inp}/>
+              <input type="number" min="0" step="0.01"
+                value={wForm.amount} onChange={e=>setWForm({...wForm,amount:e.target.value})}
+                placeholder="0.00" className={inp}/>
             </div>
-            <div>
+            <div className="w-24">
               <Label>Currency</Label>
               <select value={wForm.currency} onChange={e=>setWForm({...wForm,currency:e.target.value})} className={inp+" cursor-pointer"}>
                 <option value="EGP">EGP</option>
@@ -471,9 +411,16 @@ export default function MembersPage() {
               </select>
             </div>
           </div>
-          <Label>Reason / Note</Label>
-          <input value={wForm.note} onChange={e=>setWForm({...wForm,note:e.target.value})} placeholder="reason for deduction..." className={inp}/>
-          <ModalFooter onClose={() => setModal(null)} onSave={() => walletAction('deduct')} saving={saving} label="Deduct" accent="#EF4444"/>
+          <Label>{wForm.action==='charge'?'Note (optional)':'Reason *'}</Label>
+          <input value={wForm.note} onChange={e=>setWForm({...wForm,note:e.target.value})}
+            placeholder={wForm.action==='charge'?'optional note...':'reason for deduction...'}
+            className={inp}/>
+          <ModalFooter
+            onClose={() => setModal(null)}
+            onSave={walletAction}
+            saving={saving}
+            label={wForm.action==='charge'?'Add to Wallet':'Deduct from Wallet'}
+            accent={wForm.action==='charge'?'#d99401':'#EF4444'}/>
         </Modal>
       )}
 
