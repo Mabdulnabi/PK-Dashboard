@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
-import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight } from 'lucide-react'
+import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight, Copy } from 'lucide-react'
 
 interface WalletData {
   balance_egp: number; balance_usd: number
@@ -73,7 +73,15 @@ export default function PaymentsPage() {
   const [submitting,setSubmitting]=useState(false)
   const [downloading, setDownloading] = useState<string|null>(null)
   const [easykashWaiting, setEasykashWaiting] = useState(false)
+  const [copiedUid, setCopiedUid] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval>|null>(null)
+
+  const copyUid = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedUid(true)
+      setTimeout(() => setCopiedUid(false), 2000)
+    })
+  }
 
   useEffect(()=>{
     Promise.all([
@@ -111,6 +119,8 @@ export default function PaymentsPage() {
   const handleEasykash = async () => {
     if (!topUpAmt || !topUpGw || !activeGw) return
     setSubmitting(true)
+    // Open tab synchronously (before any await) to avoid browser popup blocker
+    const newTab = window.open('', '_blank', 'noopener')
     try {
       const cr = await fetch('/api/member/payment/create', {
         method:'POST', credentials:'include',
@@ -128,7 +138,8 @@ export default function PaymentsPage() {
       const ld = await lr.json()
       if (!ld.payUrl) throw new Error(ld.error||'no payment url')
 
-      window.open(ld.payUrl, '_blank', 'noopener')
+      if (newTab) newTab.location.href = ld.payUrl
+      else window.open(ld.payUrl, '_blank', 'noopener')
       setSubmitting(false)
       setEasykashWaiting(true)
 
@@ -149,6 +160,7 @@ export default function PaymentsPage() {
         } catch {}
       }, 5000)
     } catch {
+      if (newTab) newTab.close()
       setSubmitting(false)
     }
   }
@@ -313,58 +325,66 @@ export default function PaymentsPage() {
                     </div>
                   </div>
 
-                  {/* Selected gateway info + QR — direction-aware, TxID inside for static gateways */}
+                  {/* Selected gateway info — QR left, details+TxID right */}
                   {activeGw && (
-                    <div className="p-4 rounded-xl border space-y-3" style={{background:'#22c55e08',borderColor:'#22c55e30'}}>
+                    <div className="p-4 rounded-xl border" style={{background:'#22c55e08',borderColor:'#22c55e30'}}>
                       <div className="flex items-start gap-4">
                         {/* QR first in DOM → left LTR / right RTL */}
                         {activeGw.qr_url && (
                           <img src={activeGw.qr_url} alt="QR Code"
                             className="w-32 h-32 flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 object-contain bg-white p-1"/>
                         )}
-                        <div className="flex-1 space-y-2 min-w-0">
+                        <div className="flex-1 space-y-3 min-w-0">
+                          {/* UID with one-click copy */}
                           {activeGw.uid && (
                             <div className="text-xs">
                               <div className="text-gray-500 mb-1">
                                 {lang==='ar'?(activeGw.uid_label_ar||activeGw.uid_label_en||'أرسل إلى'):(activeGw.uid_label_en||'Send to')}
                               </div>
-                              <div className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm tracking-wide break-all" dir="ltr">
-                                {activeGw.uid}
-                              </div>
+                              <button onClick={()=>copyUid(activeGw.uid!)}
+                                className="flex items-center gap-2 group w-full text-start">
+                                <span className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm tracking-wide break-all" dir="ltr">
+                                  {activeGw.uid}
+                                </span>
+                                <span className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+                                  style={{background: copiedUid ? '#22c55e20' : '#00000008'}}>
+                                  {copiedUid
+                                    ? <Check size={11} className="text-emerald-500"/>
+                                    : <Copy size={11} className="text-gray-400 group-hover:text-gray-600"/>}
+                                </span>
+                              </button>
                             </div>
                           )}
+                          {/* Instructions */}
                           {(lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en) && (
                             <div className="text-xs text-gray-400 leading-relaxed">
                               {lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en}
                             </div>
                           )}
+                          {/* Dynamic (EasyKash): Pay Now */}
+                          {activeGw.is_dynamic ? (
+                            <button onClick={handleEasykash} disabled={submitting||!topUpAmt}
+                              className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                              style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
+                              {submitting
+                                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                                : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
+                            </button>
+                          ) : (
+                            /* Static: TxID + submit in the same right column, below instructions */
+                            <div className="space-y-2 pt-2 border-t border-green-500/20">
+                              <label className="text-[10px] font-bold uppercase text-gray-400 block">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
+                              <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
+                                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
+                              <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
+                                className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                style={{background:'#22c55e'}}>
+                                {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      {/* Dynamic gateway (EasyKash): Pay Now button */}
-                      {activeGw.is_dynamic ? (
-                        <button onClick={handleEasykash} disabled={submitting||!topUpAmt}
-                          className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                          style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
-                          {submitting
-                            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                            : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
-                        </button>
-                      ) : (
-                        /* Static gateway: TxID + submit inside the block */
-                        <div className="space-y-3 pt-1 border-t border-green-500/20">
-                          <div>
-                            <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
-                            <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
-                              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
-                          </div>
-                          <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
-                            className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                            style={{background:'#22c55e'}}>
-                            {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
