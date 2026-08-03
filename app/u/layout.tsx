@@ -350,8 +350,7 @@ if (pathname==='/u/login') return <>{children}</>
             </button>
             <div className="flex flex-col leading-tight min-w-0">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
-                <span className="hidden sm:inline">{isRtl?'أهلاً':'Welcome'} </span>
-                <span style={{color:'#d99401'}}>{member?.full_name}!</span>
+                {isRtl?'أهلاً':'Welcome'} <span style={{color:'#d99401'}}>{member?.full_name}!</span>
               </span>
               <span className="text-xs text-gray-400 hidden sm:block">{isRtl?'الوصول لجميع الأدوات النشطة':'Access all active tools'}</span>
             </div>
