@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
       paymentOptions: [2, 4, 6],
       cashExpiry: 3,
       name: member?.full_name || 'Customer',
-      email: member?.email || Deno.env.get('PROKEYS_FALLBACK_EMAIL') || 'noreply@pro-keys.store',
+      email: (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(member?.email || '') ? member!.email : null)
+        ?? Deno.env.get('PROKEYS_FALLBACK_EMAIL')
+        ?? 'noreply@pro-keys.store',
       mobile: member?.phone || '01000000000',
       redirectUrl,
       customerReference: payment.id,
