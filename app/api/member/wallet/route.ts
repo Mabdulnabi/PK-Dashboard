@@ -9,12 +9,11 @@ const service = createClient(
 
 async function getMember(req: NextRequest) {
   const cookieStore = cookies()
-  const token = (cookieStore as any).get?.('pk_session')?.value
+  const token = cookieStore.get('pk_member_token')?.value
     || req.headers.get('x-session-token') || ''
   if (!token) return null
-  const { data } = await service.from('member_sessions')
-    .select('member_id, expires_at').eq('token', token).single()
-  if (!data || new Date(data.expires_at) < new Date()) return null
+  const { data } = await service.rpc('verify_member_session', { p_token: token })
+  if (!data?.valid) return null
   return data.member_id as string
 }
 
