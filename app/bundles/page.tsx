@@ -38,6 +38,8 @@ export default function BundlesPage() {
   const [delId,    setDelId]    = useState<string | null>(null)
   const [saving,   setSaving]   = useState(false)
   const [toast,    setToast]    = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
+  const [payments, setPayments] = useState<any[]>([])
+  const [confirming, setConfirming] = useState<string|null>(null)
 
   const emptyForm = { name: '', price_egp: '', image_url: '', selectedIds: [] as string[] }
   const [form, setForm] = useState(emptyForm)
@@ -48,14 +50,34 @@ export default function BundlesPage() {
 
   const load = async () => {
     setLoading(true)
-    const [bRes, tRes] = await Promise.all([
+    const [bRes, tRes, payRes] = await Promise.all([
       fetch('/api/admin/bundles').then(r => r.json()),
       supabase.from('shop_tools').select('id, name, image_url, category_slug')
         .in('category_slug', ['shared', 'private']).eq('is_active', true).order('name'),
+      supabase.from('payments')
+        .select('id, amount, currency, gateway, transaction_id, created_at, user_id, bundle_id, membership_plans(name), members(full_name, email)')
+        .not('bundle_id', 'is', null)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false }),
     ])
     setBundles(bRes.bundles || [])
     setAllTools(tRes.data || [])
+    setPayments(payRes.data || [])
     setLoading(false)
+  }
+
+  const confirmBundlePayment = async (paymentId: string) => {
+    setConfirming(paymentId)
+    const res  = await fetch('/api/admin/bundles/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_id: paymentId }),
+    })
+    const data = await res.json()
+    setConfirming(null)
+    if (!res.ok) { setToast({ msg: data.error || 'Error', type: 'err' }); return }
+    setToast({ msg: `Bundle activated — ${data.tools_activated} tools`, type: 'ok' })
+    load()
   }
 
   useEffect(() => { load() }, [])
@@ -176,6 +198,56 @@ export default function BundlesPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pending bundle payments */}
+          {payments.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <Package size={15} className="text-amber-500"/>
+                Pending Bundle Payments
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold">{payments.length}</span>
+              </h2>
+              <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-[#0D1117]">
+                      {['Member','Bundle','Amount','Gateway','Ref','Date',''].map(h=>(
+                        <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p:any)=>(
+                      <tr key={p.id} className="border-t border-gray-50 dark:border-[#1a2233] hover:bg-gray-50 dark:hover:bg-[#1a2233]/30">
+                        <td className="px-4 py-3">
+                          <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{(p.members as any)?.full_name || '—'}</div>
+                          <div className="text-[10px] text-gray-400">{(p.members as any)?.email}</div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{(p.membership_plans as any)?.name || '—'}</td>
+                        <td className="px-4 py-3 text-xs font-bold text-gray-800 dark:text-gray-200">{p.amount} {p.currency?.toUpperCase()}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500">{p.gateway}</td>
+                        <td className="px-4 py-3 text-[10px] text-gray-400 font-mono">{p.transaction_id || '—'}</td>
+                        <td className="px-4 py-3 text-[10px] text-gray-400">{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={()=>confirmBundlePayment(p.id)}
+                            disabled={confirming===p.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                          >
+                            {confirming===p.id
+                              ? <div className="w-3 h-3 border border-emerald-500 border-t-transparent rounded-full animate-spin"/>
+                              : <Check size={11}/>
+                            }
+                            Confirm
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </main>

@@ -23,26 +23,24 @@ export async function POST(req: NextRequest) {
     if (sessionErr || !session?.valid)
       return NextResponse.json({ error: session?.error || 'Invalid session' }, { status: 401 })
 
-    const { gateway, amount, currency, credits, tool_id } = await req.json()
+    const { gateway, amount, currency, credits, tool_id, bundle_id } = await req.json()
     if (!gateway || !amount)
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
     const { data, error } = await service
       .from('payments')
       .insert({
-        user_id:  session.member_id,
+        user_id:   session.member_id,
         amount,
-        currency: currency || 'EGP',
+        currency:  currency || 'EGP',
         gateway,
-        status:   'pending',
-        credits:  credits || null,
-        pack_id:  tool_id || null,
+        status:    'pending',
+        credits:   credits || null,
+        pack_id:   tool_id  || null,
+        bundle_id: bundle_id || null,
       })
       .select('id')
       .single()
-
-    console.log('INSERT DATA:', JSON.stringify(data))
-    console.log('INSERT ERROR:', JSON.stringify(error))
 
     if (error) throw error
 
