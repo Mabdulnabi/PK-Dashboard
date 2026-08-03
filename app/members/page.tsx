@@ -21,6 +21,7 @@ interface Member {
   wallet_egp?: number; wallet_usd?: number
   last_charge_amount?: number; last_charge_currency?: string; last_charge_at?: string
   last_deduct_amount?: number; last_deduct_currency?: string; last_deduct_at?: string
+  time_remaining?: string
 }
 interface Gateway {
   id: string; name_ar: string; name_en: string; currency: string
