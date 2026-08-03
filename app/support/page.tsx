@@ -1,7 +1,5 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import { MessageSquare, Check, X, AlertCircle, ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText, User } from 'lucide-react'
@@ -65,7 +63,6 @@ const PRIORITY_COLORS: any = { low: '#6B7280', normal: '#3B82F6', high: '#F59E0B
 const CATEGORY_LABELS: Record<string, string> = { subscription: 'Subscription', payment: 'Payment', general: 'General' }
 
 export default function SupportPage() {
-  const router = useRouter()
   const [tickets,    setTickets]    = useState<Ticket[]>([])
   const [members,    setMembers]    = useState<Record<string, MemberInfo>>({})
   const [loading,    setLoading]    = useState(true)
@@ -77,12 +74,6 @@ export default function SupportPage() {
   const [fStatus,    setFStatus]    = useState('all')
   const [adminProfile, setAdminProfile] = useState<{ id?: string; display_name: string; avatar_url?: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.push('/auth/login')
-    })
-  }, [router])
 
   const load = useCallback(async (silent = false) => {
     const res = await fetch('/api/admin/tickets')
