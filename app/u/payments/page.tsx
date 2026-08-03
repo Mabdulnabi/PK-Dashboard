@@ -1,18 +1,75 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
-import { Check, Clock, X, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight } from 'lucide-react'
+
+interface WalletData {
+  balance_egp: number; balance_usd: number
+  last_charge: { amount: number; currency: string; created_at: string } | null
+  last_deduct: { amount: number; currency: string; created_at: string } | null
+  pending_charges: any[]
+}
+interface Gateway { id:string; name_ar:string; name_en:string; currency:string; logo_url?:string; uid?:string; uid_label_en?:string; instructions_en?:string }
+
+function WalletCard({ icon: Icon, label, value, sub, accent }: { icon:any; label:string; value:string; sub?:string; accent:string }) {
+  return (
+    <div className="rounded-xl p-4 relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex-1">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.05]" style={{background:`radial-gradient(circle at top right, ${accent}, transparent 70%)`}}/>
+      <div className="absolute top-0 left-0 right-0 h-[2px] opacity-50" style={{background:`linear-gradient(90deg,${accent},transparent)`}}/>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:accent+'18'}}>
+          <Icon size={13} style={{color:accent}}/>
+        </div>
+      </div>
+      <div className="text-xl font-black tabular-nums" style={{color:accent}}>{value}</div>
+      {sub && <div className="text-[10px] text-gray-400 mt-1">{sub}</div>}
+    </div>
+  )
+}
 
 export default function PaymentsPage() {
   const { t, lang, formatPrice, dir } = useLang()
   const [payments, setPayments] = useState<any[]>([])
+  const [wallet,   setWallet]   = useState<WalletData|null>(null)
+  const [gateways, setGateways] = useState<Gateway[]>([])
   const [loading,  setLoading]  = useState(true)
   const [page,     setPage]     = useState(1)
   const [perPage,  setPerPage]  = useState(10)
+  const [showTopUp,setShowTopUp]= useState(false)
+  const [topUpGw,  setTopUpGw]  = useState('')
+  const [topUpAmt, setTopUpAmt] = useState('')
+  const [topUpCur, setTopUpCur] = useState('EGP')
+  const [topUpTx,  setTopUpTx]  = useState('')
+  const [topUpSent,setTopUpSent]= useState(false)
+  const [submitting,setSubmitting]=useState(false)
 
   useEffect(()=>{
-    fetch('/api/member/payment').then(r=>r.json()).then(d=>{ setPayments(d.payments||[]); setLoading(false) })
+    Promise.all([
+      fetch('/api/member/payment').then(r=>r.json()),
+      fetch('/api/member/wallet').then(r=>r.json()).catch(()=>null),
+      fetch('/api/member/gateways').then(r=>r.json()).catch(()=>({gateways:[]})),
+    ]).then(([pd, wd, gd])=>{
+      setPayments(pd.payments||[])
+      if (wd && !wd.error) setWallet(wd)
+      setGateways(gd.gateways||[])
+      setLoading(false)
+    })
   },[])
+
+  const fmtAmt = (n:number, cur:string) => `${Number(n).toLocaleString()} ${cur}`
+  const fmtDate = (d:string) => new Date(d).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB',{day:'2-digit',month:'short',year:'numeric'})
+
+  const submitTopUp = async () => {
+    if (!topUpAmt || !topUpGw) return
+    setSubmitting(true)
+    const gw = gateways.find(g=>g.id===topUpGw)
+    await fetch('/api/member/wallet',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ amount:parseFloat(topUpAmt), currency:topUpCur, gateway:topUpGw, gateway_name:gw?.name_en, tx_ref:topUpTx }),
+    })
+    setSubmitting(false); setTopUpSent(true)
+  }
 
   const statusIcon = (s:string) =>
     s==='completed'?<Check size={13} className="text-emerald-500"/>:
@@ -62,8 +119,99 @@ export default function PaymentsPage() {
     '',
   ]
 
+  const activeGw = gateways.find(g=>g.id===topUpGw)
+
   return (
-    <div dir={dir} className="p-3 md:p-6">
+    <div dir={dir} className="p-3 md:p-6 space-y-4">
+
+      {/* ── Wallet Cards ── */}
+      {wallet !== null && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('My Wallet','محفظتي')}</h2>
+            <button onClick={()=>{ setShowTopUp(v=>!v); setTopUpSent(false); setTopUpAmt(''); setTopUpTx(''); setTopUpGw(gateways[0]?.id||'') }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all"
+              style={{background:'#d99401'}}>
+              <Plus size={12}/> {t('Charge Wallet','شحن المحفظة')}
+            </button>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <WalletCard icon={Wallet}      label={t('Balance EGP','الرصيد بالجنيه')}    value={fmtAmt(wallet.balance_egp,'EGP')} accent="#d99401"/>
+            <WalletCard icon={Wallet}      label={t('Balance USD','الرصيد بالدولار')}    value={fmtAmt(wallet.balance_usd,'USD')} accent="#3B82F6"/>
+            <WalletCard icon={TrendingUp}  label={t('Last Charge','آخر شحن')}
+              value={wallet.last_charge ? fmtAmt(wallet.last_charge.amount, wallet.last_charge.currency) : '—'}
+              sub={wallet.last_charge ? fmtDate(wallet.last_charge.created_at) : undefined} accent="#22C55E"/>
+            <WalletCard icon={TrendingDown} label={t('Last Deduction','آخر خصم')}
+              value={wallet.last_deduct ? fmtAmt(wallet.last_deduct.amount, wallet.last_deduct.currency) : '—'}
+              sub={wallet.last_deduct ? fmtDate(wallet.last_deduct.created_at) : undefined} accent="#EF4444"/>
+          </div>
+
+          {/* Top-up form */}
+          {showTopUp && (
+            <div className="mt-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+              {topUpSent ? (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-3">
+                    <Check size={22} className="text-emerald-500"/>
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">{t('Request Submitted!','تم إرسال الطلب!')}</p>
+                  <p className="text-xs text-gray-400">{t('Admin will confirm and credit your wallet shortly.','سيقوم الأدمن بتأكيد الطلب وإضافة الرصيد قريباً.')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('Charge Wallet','شحن المحفظة')}</h3>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Amount','المبلغ')} *</label>
+                      <input type="number" value={topUpAmt} onChange={e=>setTopUpAmt(e.target.value)} placeholder="0"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#d99401] text-gray-900 dark:text-gray-100"/>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Currency','العملة')}</label>
+                      <select value={topUpCur} onChange={e=>setTopUpCur(e.target.value)}
+                        className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none text-gray-900 dark:text-gray-100">
+                        <option value="EGP">EGP</option>
+                        <option value="USD">USD</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-2">{t('Payment Method','طريقة الدفع')} *</label>
+                    <div className="flex flex-wrap gap-2">
+                      {gateways.map(gw=>(
+                        <button key={gw.id} onClick={()=>setTopUpGw(gw.id)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                          style={topUpGw===gw.id?{background:'#d99401',color:'#fff',borderColor:'#d99401'}:{background:'transparent',color:'#6B7280',borderColor:'#E5E7EB'}}>
+                          {gw.logo_url?<img src={gw.logo_url} alt={gw.name_en} className="h-4 inline mr-1"/>:null}
+                          {lang==='ar'?gw.name_ar:gw.name_en}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {activeGw?.uid && (
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-xs">
+                      <div className="text-gray-500 mb-1">{activeGw.uid_label_en || t('Send to','أرسل إلى')}</div>
+                      <div className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm">{activeGw.uid}</div>
+                      {activeGw.instructions_en && <div className="text-gray-400 mt-2">{lang==='ar'?'':activeGw.instructions_en}</div>}
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
+                    <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#d99401] text-gray-900 dark:text-gray-100"/>
+                  </div>
+                  <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    style={{background:'#d99401'}}>
+                    {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <div>

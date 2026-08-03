@@ -1,237 +1,352 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Search, Pencil, Trash2, X, Check, AlertCircle, Eye, RefreshCw, UserCheck, UserX, Clock } from 'lucide-react'
+import { useAdminTheme } from '@/lib/admin-theme'
+import {
+  Plus, Search, Pencil, Trash2, X, Check, AlertCircle,
+  UserCheck, UserX, Wallet, MinusCircle, RefreshCw,
+  ArrowUpRight, Users, Activity, Clock, TrendingUp, KeyRound, Mail,
+} from 'lucide-react'
 
-interface Plan { id:string; name:string; slug:string; price_egp:number; duration_days:number }
+// ─── Types ───────────────────────────────────────────────────────────────────
 interface Member {
-  id:string; full_name:string; email:string; phone?:string; telegram?:string
-  plan_slug:string; plan_name?:string; plan_price?:number; status:string
-  expires_at?:string; joined_at:string; notes?:string
-  computed_status?:string; total_paid_egp?:number; total_payments?:number
+  id: string; user_id?: string; full_name: string; email: string
+  phone?: string; telegram?: string; whatsapp?: string
+  plan_slug: string; plan_name?: string; status: string
+  expires_at?: string; joined_at: string; notes?: string
+  computed_status?: string; total_paid_egp?: number; total_payments?: number
+  member_code?: string; avatar_url?: string
+  wallet_egp?: number; wallet_usd?: number
+  last_charge_amount?: number; last_charge_currency?: string; last_charge_at?: string
+  last_deduct_amount?: number; last_deduct_currency?: string; last_deduct_at?: string
+}
+interface Gateway {
+  id: string; name_ar: string; name_en: string; currency: string
+  logo_url?: string; uid?: string; uid_label_ar?: string; uid_label_en?: string
+  input_label_ar?: string; input_label_en?: string
+  input_placeholder_ar?: string; input_placeholder_en?: string
+  instructions_ar?: string; instructions_en?: string
 }
 
-const PAYMENTS = ['InstaPay','Vodafone Cash','Binance Pay','Bybit','BEP20','PayPal','Cash','Other']
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-[#d99401] transition-all"
+const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'
+const fmtAmt  = (n?: number, cur = 'EGP') => n ? `${Number(n).toLocaleString()} ${cur}` : `0 ${cur}`
 
-function Toast({msg,type,onClose}:{msg:string;type:'ok'|'err';onClose:()=>void}) {
-  useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t)},[onClose])
-  return <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${type==='ok'?'bg-emerald-500':'bg-red-500'}`}>{type==='ok'?<Check size={15}/>:<AlertCircle size={15}/>}{msg}</div>
+function Toast({ msg, type, onClose }: { msg: string; type: 'ok'|'err'; onClose: () => void }) {
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t) }, [onClose])
+  return (
+    <div className={`fixed bottom-5 right-5 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold text-white ${type==='ok'?'bg-emerald-500':'bg-red-500'}`}>
+      {type==='ok'?<Check size={15}/>:<AlertCircle size={15}/>} {msg}
+    </div>
+  )
 }
 
-const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-red-400 transition-all"
-const sel = inp + " cursor-pointer"
+function Avatar({ m, size=7 }: { m: Member; size?: number }) {
+  if (m.avatar_url) return (
+    <img src={m.avatar_url} alt={m.full_name}
+      className={`w-${size} h-${size} rounded-full object-cover flex-shrink-0 border-2 border-white dark:border-gray-800 shadow-sm`}/>
+  )
+  return (
+    <div className={`w-${size} h-${size} rounded-full flex-shrink-0 flex items-center justify-center text-xs font-black`}
+      style={{ background: '#d9940120', color: '#d99401', border: '2px solid #d9940140' }}>
+      {m.full_name.charAt(0).toUpperCase()}
+    </div>
+  )
+}
 
-function statusBadge(s:string) {
-  const cfg:any = {
-    active:   {bg:'#DCFCE7',color:'#166534',label:'Active'},
-    expiring: {bg:'#FEF3C7',color:'#92400E',label:'Expiring'},
-    expired:  {bg:'#FEE2E2',color:'#991B1B',label:'Expired'},
-    suspended:{bg:'#F3F4F6',color:'#374151',label:'Suspended'},
-    pending:  {bg:'#DBEAFE',color:'#1E40AF',label:'Pending'},
+function StatusBadge({ s }: { s: string }) {
+  const cfg: Record<string,{bg:string;color:string;label:string}> = {
+    active:    { bg:'#DCFCE7', color:'#166534', label:'Active' },
+    expiring:  { bg:'#FEF3C7', color:'#92400E', label:'Expiring' },
+    expired:   { bg:'#FEE2E2', color:'#991B1B', label:'Expired' },
+    suspended: { bg:'#F3F4F6', color:'#374151', label:'Suspended' },
+    pending:   { bg:'#DBEAFE', color:'#1E40AF', label:'Pending' },
   }
   const c = cfg[s] || cfg.pending
-  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:c.bg,color:c.color}}>{c.label}</span>
+  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{background:c.bg,color:c.color}}>{c.label}</span>
 }
 
+function StatCard({ label, value, icon: Icon, accent, sub }: { label:string; value:any; icon:any; accent:string; sub?:string }) {
+  return (
+    <div className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm">
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ background:`radial-gradient(circle at top right, ${accent}, transparent 65%)` }}/>
+      <div className="absolute top-0 left-0 right-0 h-[2px] opacity-60" style={{ background:`linear-gradient(90deg, ${accent}, transparent)` }}/>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{label}</span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:accent+'18'}}>
+          <Icon size={15} style={{color:accent}}/>
+        </div>
+      </div>
+      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tabular-nums">{value}</div>
+      {sub && <div className="text-[11px] text-gray-400 dark:text-gray-600">{sub}</div>}
+    </div>
+  )
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [plans,   setPlans]   = useState<Plan[]>([])
-  const [loading, setLoading] = useState(true)
-  const [q,       setQ]       = useState('')
-  const [fStatus, setFStatus] = useState('all')
-  const [fPlan,   setFPlan]   = useState('all')
-  const [toast,   setToast]   = useState<{msg:string;type:'ok'|'err'}|null>(null)
-  const [saving,  setSaving]  = useState(false)
-  const [modal,   setModal]   = useState<'add'|'edit'|'pay'|null>(null)
-  const [sel2,    setSel2]    = useState<Member|null>(null)
-  const [delId,   setDelId]   = useState<Member|null>(null)
+  const { dark } = useAdminTheme()
+  const [members,   setMembers]   = useState<Member[]>([])
+  const [gateways,  setGateways]  = useState<Gateway[]>([])
+  const [loading,   setLoading]   = useState(true)
+  const [q,         setQ]         = useState('')
+  const [fStatus,   setFStatus]   = useState('all')
+  const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
+  const [saving,    setSaving]    = useState(false)
 
-  const emptyForm = {full_name:'',email:'',phone:'',telegram:'',plan_id:'',plan_slug:'basic',notes:'',duration_days:'30'}
-  const [form, setForm] = useState(emptyForm)
-  const emptyPay = {amount_egp:'',payment_method:'InstaPay',reference:'',duration_days:'30'}
-  const [payForm, setPayForm] = useState(emptyPay)
+  // modal state: null | 'add' | 'edit' | 'wallet_charge' | 'wallet_deduct' | 'reset'
+  const [modal,  setModal]  = useState<string|null>(null)
+  const [sel,    setSel]    = useState<Member|null>(null)
+  const [delId,  setDelId]  = useState<Member|null>(null)
 
-  const load = useCallback(async()=>{
-    const [mRes,pRes] = await Promise.all([
-      supabase.from('members_full').select('*').order('created_at',{ascending:false}),
-      supabase.from('membership_plans').select('*').eq('is_active',true).order('sort_order'),
+  // forms
+  const emptyMember = { full_name:'', email:'', phone:'', telegram:'', whatsapp:'', notes:'' }
+  const [mForm, setMForm] = useState(emptyMember)
+  const emptyWallet = { amount:'', currency:'EGP', gateway:'', gateway_name:'', tx_ref:'', note:'' }
+  const [wForm, setWForm] = useState(emptyWallet)
+  const emptyReset = { new_password:'', new_email:'' }
+  const [rForm, setRForm] = useState(emptyReset)
+
+  const ok  = (msg: string) => setToast({ msg, type:'ok' })
+  const err = (msg: string) => setToast({ msg, type:'err' })
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [mRes, gwRes] = await Promise.all([
+      supabase.from('members_full').select('*').order('created_at', { ascending: false }),
+      fetch('/api/member/gateways').then(r => r.json()),
     ])
-    if(mRes.data) setMembers(mRes.data)
-    if(pRes.data) setPlans(pRes.data)
+    if (mRes.data) setMembers(mRes.data)
+    if (gwRes.gateways) setGateways(gwRes.gateways)
     setLoading(false)
-  },[])
+  }, [])
 
-  useEffect(()=>{load()},[load])
+  useEffect(() => { load() }, [load])
 
-  const openAdd  = ()=>{ setForm(emptyForm); setSel2(null); setModal('add') }
-  const openEdit = (m:Member)=>{ setForm({full_name:m.full_name,email:m.email,phone:m.phone||'',telegram:m.telegram||'',plan_id:'',plan_slug:m.plan_slug,notes:m.notes||'',duration_days:'30'}); setSel2(m); setModal('edit') }
-  const openPay  = (m:Member)=>{ setSel2(m); setPayForm(emptyPay); setModal('pay') }
-
-  const save = async()=>{
-    if(!form.full_name||!form.email) return
-    setSaving(true)
-    const plan = plans.find(p=>p.slug===form.plan_slug)
-    const expires = new Date(Date.now()+(parseInt(form.duration_days)||30)*86400000).toISOString()
-    const payload:any = {full_name:form.full_name,email:form.email,phone:form.phone||null,telegram:form.telegram||null,plan_slug:form.plan_slug,plan_id:plan?.id||null,notes:form.notes||null,status:'active',expires_at:expires}
-    const res = sel2
-      ? await supabase.from('members').update(payload).eq('id',sel2.id)
-      : await supabase.from('members').insert(payload)
-    setSaving(false)
-    if(res.error){setToast({msg:res.error.message,type:'err'});return}
-    setToast({msg:sel2?'Updated':'Member added',type:'ok'})
-    setModal(null); load()
-  }
-
-  const addPayment = async()=>{
-    if(!payForm.amount_egp||!sel2) return
-    setSaving(true)
-    const plan = plans.find(p=>p.slug===sel2.plan_slug)
-    const {data:pay} = await supabase.from('member_payments').insert({
-      member_id:sel2.id, plan_id:plan?.id||null,
-      amount_egp:parseFloat(payForm.amount_egp),
-      payment_method:payForm.payment_method,
-      reference:payForm.reference||null,
-      duration_days:parseInt(payForm.duration_days)||30,
-      status:'pending'
-    }).select().single()
-    if(pay){
-      await fetch('/api/admin/payments/confirm',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          payment_id: pay.id,
-          member_id: sel2.id,
-          plan_name: plans.find(p=>p.slug===sel2.plan_slug)?.name,
-        })
-      })
-    }
-    setSaving(false)
-    setToast({msg:'Payment added & confirmed',type:'ok'})
-    setModal(null); load()
-  }
-
-  const suspend = async(m:Member)=>{
-    const ns = m.status==='suspended'?'active':'suspended'
-    await supabase.from('members').update({status:ns}).eq('id',m.id)
-    setToast({msg:`Member ${ns}`,type:'ok'}); load()
-  }
-
-  const del = async()=>{
-    if(!delId) return
-    await supabase.from('members').delete().eq('id',delId.id)
-    setToast({msg:'Deleted',type:'ok'}); setDelId(null); load()
-  }
-
-  const filtered = members.filter(m=>{
-    const qm = !q||m.full_name.toLowerCase().includes(q.toLowerCase())||m.email.toLowerCase().includes(q.toLowerCase())||(m.phone||'').includes(q)
-    const sm = fStatus==='all'||(m.computed_status||m.status)===fStatus
-    const pm = fPlan==='all'||m.plan_slug===fPlan
-    return qm&&sm&&pm
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const filtered = members.filter(m => {
+    const cs = m.computed_status || m.status
+    if (fStatus !== 'all' && cs !== fStatus) return false
+    if (!q) return true
+    const ql = q.toLowerCase()
+    return (
+      m.full_name.toLowerCase().includes(ql) ||
+      m.email.toLowerCase().includes(ql) ||
+      (m.phone || '').includes(q) ||
+      (m.member_code || '').toLowerCase().includes(ql)
+    )
   })
 
   const stats = {
-    active:   members.filter(m=>m.computed_status==='active').length,
-    expiring: members.filter(m=>m.computed_status==='expiring').length,
-    expired:  members.filter(m=>m.computed_status==='expired').length,
     total:    members.length,
+    active:   members.filter(m => (m.computed_status||m.status) === 'active').length,
+    expiring: members.filter(m => (m.computed_status||m.status) === 'expiring').length,
+    expired:  members.filter(m => (m.computed_status||m.status) === 'expired').length,
   }
 
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const openAdd  = () => { setMForm(emptyMember); setSel(null); setModal('add') }
+  const openEdit = (m: Member) => { setMForm({ full_name:m.full_name, email:m.email, phone:m.phone||'', telegram:m.telegram||'', whatsapp:m.whatsapp||'', notes:m.notes||'' }); setSel(m); setModal('edit') }
+  const openWalletCharge = (m: Member) => {
+    setSel(m)
+    const firstGw = gateways[0]
+    setWForm({ ...emptyWallet, gateway: firstGw?.id||'', gateway_name: firstGw?.name_en||'' })
+    setModal('wallet_charge')
+  }
+  const openWalletDeduct = (m: Member) => { setSel(m); setWForm(emptyWallet); setModal('wallet_deduct') }
+  const openReset = (m: Member) => { setSel(m); setRForm(emptyReset); setModal('reset') }
+
+  const saveMember = async () => {
+    if (!mForm.full_name || !mForm.email) return err('Name and email required')
+    setSaving(true)
+    const payload: any = { full_name:mForm.full_name, email:mForm.email, phone:mForm.phone||null, telegram:mForm.telegram||null, whatsapp:mForm.whatsapp||null, notes:mForm.notes||null }
+    if (!sel) payload.status = 'active'
+    const res = sel
+      ? await supabase.from('members').update(payload).eq('id', sel.id)
+      : await supabase.from('members').insert(payload)
+    setSaving(false)
+    if (res.error) return err(res.error.message)
+    ok(sel ? 'Member updated' : 'Member added')
+    setModal(null); load()
+  }
+
+  const walletAction = async (action: 'charge' | 'deduct') => {
+    if (!sel || !wForm.amount) return err('Enter amount')
+    setSaving(true)
+    const gw = gateways.find(g => g.id === wForm.gateway)
+    const res = await fetch('/api/admin/members/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        member_id: sel.id, action,
+        amount: parseFloat(wForm.amount),
+        currency: wForm.currency,
+        note: wForm.note,
+        gateway: wForm.gateway || null,
+        gateway_name: gw?.name_en || wForm.gateway_name || null,
+        tx_ref: wForm.tx_ref || null,
+      }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) return err(data.error || 'Failed')
+    ok(`Wallet ${action === 'charge' ? 'charged' : 'deducted'} — new balance: ${data.balance_after} ${wForm.currency}`)
+    setModal(null); load()
+  }
+
+  const resetCredentials = async () => {
+    if (!sel) return
+    if (!rForm.new_password && !rForm.new_email) return err('Enter new password or email')
+    setSaving(true)
+    const res = await fetch('/api/admin/members/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: sel.id, new_password: rForm.new_password || undefined, new_email: rForm.new_email || undefined }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) return err(data.error || 'Failed')
+    ok('Credentials updated & sessions cleared')
+    setModal(null); load()
+  }
+
+  const suspend = async (m: Member) => {
+    const ns = m.status === 'suspended' ? 'active' : 'suspended'
+    await supabase.from('members').update({ status: ns }).eq('id', m.id)
+    ok(`Member ${ns}`); load()
+  }
+
+  const del = async () => {
+    if (!delId) return
+    await supabase.from('members').delete().eq('id', delId.id)
+    ok('Deleted'); setDelId(null); load()
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar/>
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar title="Members" subtitle={`${members.length} total members`}/>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 px-5 py-3 flex-shrink-0">
-          {[
-            {label:'Active',val:stats.active,color:'#22C55E',bg:'#DCFCE7'},
-            {label:'Expiring',val:stats.expiring,color:'#F59E0B',bg:'#FEF3C7'},
-            {label:'Expired',val:stats.expired,color:'#EF4444',bg:'#FEE2E2'},
-            {label:'Total',val:stats.total,color:'#3B82F6',bg:'#DBEAFE'},
-          ].map(s=>(
-            <div key={s.label} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3">
-              <div className="text-xl font-bold" style={{color:s.color}}>{s.val}</div>
-              <div className="text-[10px] text-gray-400 uppercase tracking-wide">{s.label}</div>
-            </div>
-          ))}
+        {/* ── Stat cards (dashboard theme) ── */}
+        <div className="grid grid-cols-4 gap-3 px-5 pt-4 pb-2 flex-shrink-0">
+          <StatCard label="Total Members"    value={stats.total}    icon={Users}     accent="#d99401" sub={`${stats.active} active`}/>
+          <StatCard label="Active"           value={stats.active}   icon={Activity}  accent="#22C55E"/>
+          <StatCard label="Expiring Soon"    value={stats.expiring} icon={Clock}     accent="#F59E0B" sub="within 7 days"/>
+          <StatCard label="Expired"          value={stats.expired}  icon={TrendingUp} accent="#EF4444"/>
         </div>
 
-        {/* Filters */}
+        {/* ── Filters ── */}
         <div className="flex items-center gap-3 px-5 py-2.5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="relative flex-1 max-w-xs">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search name, email, phone..."
-              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-red-400 text-gray-800 dark:text-gray-200"/>
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, email, phone, PK code..."
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#d99401] text-gray-800 dark:text-gray-200"/>
           </div>
-          <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none">
+          <select value={fStatus} onChange={e => setFStatus(e.target.value)}
+            className="text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none text-gray-700 dark:text-gray-300">
             <option value="all">All Status</option>
-            {['active','expiring','expired','suspended','pending'].map(s=><option key={s}>{s}</option>)}
-          </select>
-          <select value={fPlan} onChange={e=>setFPlan(e.target.value)} className="text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none">
-            <option value="all">All Plans</option>
-            {plans.map(p=><option key={p.slug} value={p.slug}>{p.name}</option>)}
+            {['active','expiring','expired','suspended','pending'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
           </select>
           <div className="ml-auto text-xs text-gray-400">{filtered.length} results</div>
-          <button onClick={openAdd} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors">
-            <Plus size={13}/>Add Member
+          <button onClick={openAdd}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-bold transition-colors"
+            style={{ background:'#d99401' }}>
+            <Plus size={13}/> Add Member
           </button>
         </div>
 
-        {/* Table */}
+        {/* ── Table ── */}
         <div className="flex-1 overflow-auto p-5">
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
-            <table className="w-full">
+            <table className="w-full min-w-[900px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800/50">
-                  {['Member','Plan','Status','Expiry','Paid','Actions'].map(h=>(
-                    <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
+                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                  {['Member','PK Code','Status','Next Renew','Wallet','Actions'].map(h => (
+                    <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-4 py-3">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {loading&&<tr><td colSpan={6} className="text-center py-12 text-sm text-gray-400">Loading...</td></tr>}
-                {!loading&&filtered.length===0&&<tr><td colSpan={6} className="text-center py-12 text-sm text-gray-400">No members found</td></tr>}
-                {filtered.map(m=>(
-                  <tr key={m.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                {loading && (
+                  <tr><td colSpan={6} className="text-center py-16 text-sm text-gray-400">
+                    <div className="w-6 h-6 border-2 border-gray-300 border-t-[#d99401] rounded-full animate-spin mx-auto"/>
+                  </td></tr>
+                )}
+                {!loading && filtered.length === 0 && (
+                  <tr><td colSpan={6} className="text-center py-16 text-sm text-gray-400">No members found</td></tr>
+                )}
+                {filtered.map(m => (
+                  <tr key={m.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-colors">
+
+                    {/* Member */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-xs font-bold text-red-500 flex-shrink-0">
-                          {m.full_name.slice(0,1).toUpperCase()}
-                        </div>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar m={m} size={8}/>
                         <div>
-                          <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{m.full_name}</div>
+                          <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{m.full_name}</div>
                           <div className="text-[10px] text-gray-400">{m.email}</div>
+                          {m.phone && <div className="text-[10px] text-gray-400">{m.phone}</div>}
                         </div>
                       </div>
                     </td>
+
+                    {/* PK Code */}
                     <td className="px-4 py-3">
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 capitalize">{m.plan_slug}</span>
+                      {m.member_code
+                        ? <span className="font-mono text-[11px] font-bold px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 tracking-wider">{m.member_code}</span>
+                        : <span className="text-[10px] text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3">{statusBadge(m.computed_status||m.status)}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      {m.expires_at ? new Date(m.expires_at).toLocaleDateString('en-GB') : '—'}
+
+                    {/* Status */}
+                    <td className="px-4 py-3"><StatusBadge s={m.computed_status || m.status}/></td>
+
+                    {/* Next Renew */}
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-gray-700 dark:text-gray-300 font-medium">{fmtDate(m.expires_at)}</div>
+                      {m.expires_at && new Date(m.expires_at) > new Date() && (
+                        <div className="text-[10px] text-gray-400">{m.time_remaining}</div>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      {Number(m.total_paid_egp||0).toLocaleString()} EGP
+
+                    {/* Wallet */}
+                    <td className="px-4 py-3">
+                      <div className="text-xs font-bold" style={{ color:'#d99401' }}>
+                        {fmtAmt(m.wallet_egp, 'EGP')}
+                      </div>
+                      {(m.wallet_usd || 0) > 0 && (
+                        <div className="text-[10px] text-gray-400">{fmtAmt(m.wallet_usd,'USD')}</div>
+                      )}
                     </td>
+
+                    {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={()=>openPay(m)} title="Add Payment"
+                        <button onClick={() => openWalletCharge(m)} title="Charge Wallet"
                           className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
-                          <RefreshCw size={11}/>
+                          <Wallet size={11}/>
                         </button>
-                        <button onClick={()=>openEdit(m)} title="Edit"
+                        <button onClick={() => openWalletDeduct(m)} title="Deduct from Wallet"
+                          className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <MinusCircle size={11}/>
+                        </button>
+                        <button onClick={() => openEdit(m)} title="Edit Member"
                           className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                           <Pencil size={11}/>
                         </button>
-                        <button onClick={()=>suspend(m)} title={m.status==='suspended'?'Activate':'Suspend'}
+                        <button onClick={() => openReset(m)} title="Reset Password / Email"
+                          className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                          <KeyRound size={11}/>
+                        </button>
+                        <button onClick={() => suspend(m)} title={m.status==='suspended'?'Activate':'Suspend'}
                           className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-amber-500 hover:bg-amber-50 transition-colors">
                           {m.status==='suspended'?<UserCheck size={11}/>:<UserX size={11}/>}
                         </button>
-                        <button onClick={()=>setDelId(m)} title="Delete"
+                        <button onClick={() => setDelId(m)} title="Delete"
                           className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
                           <Trash2 size={11}/>
                         </button>
@@ -245,118 +360,184 @@ export default function MembersPage() {
         </div>
       </main>
 
-      {/* Add/Edit Modal */}
+      {/* ═══ ADD / EDIT MODAL ═══ */}
       {(modal==='add'||modal==='edit') && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">{modal==='add'?'Add Member':'Edit Member'}</h3>
-              <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
+        <Modal title={modal==='add'?'Add Member':`Edit — ${sel?.full_name}`} onClose={() => setModal(null)}>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <Label>Full Name *</Label>
+              <input value={mForm.full_name} onChange={e=>setMForm({...mForm,full_name:e.target.value})} placeholder="Dr. Ahmed..." className={inp}/>
             </div>
-            <div className="p-5 flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="col-span-2">
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Full Name *</label>
-                  <input value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})} placeholder="Dr. Ahmed..." className={inp}/>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Email *</label>
-                  <input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@..." className={inp}/>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Phone</label>
-                  <input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="+20 10..." className={inp}/>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Telegram</label>
-                  <input value={form.telegram} onChange={e=>setForm({...form,telegram:e.target.value})} placeholder="@username" className={inp}/>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Plan</label>
-                  <select value={form.plan_slug} onChange={e=>setForm({...form,plan_slug:e.target.value})} className={sel}>
-                    {plans.map(p=><option key={p.slug} value={p.slug}>{p.name} — {p.price_egp} EGP</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Duration (days)</label>
-                  <input type="number" value={form.duration_days} onChange={e=>setForm({...form,duration_days:e.target.value})} className={inp}/>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Notes</label>
-                  <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} className={inp+" resize-none h-14"}/>
-                </div>
-              </div>
+            <div className="col-span-2">
+              <Label>Email *</Label>
+              <input type="email" value={mForm.email} onChange={e=>setMForm({...mForm,email:e.target.value})} placeholder="email@..." className={inp}/>
             </div>
-            <div className="flex gap-2 px-5 pb-5">
-              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
-              <button onClick={save} disabled={saving} className="flex-[2] py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
-                {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><Check size={13}/>{modal==='add'?'Add Member':'Save'}</>}
-              </button>
+            <div>
+              <Label>Phone</Label>
+              <input value={mForm.phone} onChange={e=>setMForm({...mForm,phone:e.target.value})} placeholder="+20 10..." className={inp}/>
+            </div>
+            <div>
+              <Label>WhatsApp</Label>
+              <input value={mForm.whatsapp} onChange={e=>setMForm({...mForm,whatsapp:e.target.value})} placeholder="+20 10..." className={inp}/>
+            </div>
+            <div>
+              <Label>Telegram</Label>
+              <input value={mForm.telegram} onChange={e=>setMForm({...mForm,telegram:e.target.value})} placeholder="@username" className={inp}/>
+            </div>
+            <div className="col-span-2">
+              <Label>Notes</Label>
+              <textarea value={mForm.notes} onChange={e=>setMForm({...mForm,notes:e.target.value})} className={inp+" resize-none h-16"}/>
             </div>
           </div>
-        </div>
+          <ModalFooter onClose={() => setModal(null)} onSave={saveMember} saving={saving} label={modal==='add'?'Add Member':'Save Changes'}/>
+        </Modal>
       )}
 
-      {/* Payment Modal */}
-      {modal==='pay' && sel2 && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Add Payment — {sel2.full_name}</h3>
-              <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
-            </div>
-            <div className="p-5 flex flex-col gap-3">
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Amount (EGP) *</label>
-                <input type="number" value={payForm.amount_egp} onChange={e=>setPayForm({...payForm,amount_egp:e.target.value})} placeholder="0" className={inp}/>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Duration (days)</label>
-                <input type="number" value={payForm.duration_days} onChange={e=>setPayForm({...payForm,duration_days:e.target.value})} className={inp}/>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-2 block">Payment Method</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {PAYMENTS.map(p=>(
-                    <button key={p} onClick={()=>setPayForm({...payForm,payment_method:p})}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
-                      style={{background:payForm.payment_method===p?'#EF4444':'#F3F4F6',color:payForm.payment_method===p?'#fff':'#6B7280'}}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Reference / TX ID</label>
-                <input value={payForm.reference} onChange={e=>setPayForm({...payForm,reference:e.target.value})} placeholder="optional" className={inp}/>
-              </div>
-            </div>
-            <div className="flex gap-2 px-5 pb-5">
-              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
-              <button onClick={addPayment} disabled={saving} className="flex-[2] py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
-                {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><Check size={13}/>Confirm Payment</>}
-              </button>
+      {/* ═══ WALLET CHARGE MODAL ═══ */}
+      {modal==='wallet_charge' && sel && (
+        <Modal title={`💳 Charge Wallet — ${sel.full_name}`} onClose={() => setModal(null)}>
+          <div className="p-3 mb-3 rounded-xl flex items-center justify-between" style={{ background:'#d9940110', border:'1px solid #d9940130' }}>
+            <span className="text-xs text-gray-500">Current Balance</span>
+            <div className="text-right">
+              <div className="text-sm font-black" style={{color:'#d99401'}}>{fmtAmt(sel.wallet_egp,'EGP')}</div>
+              {(sel.wallet_usd||0)>0 && <div className="text-xs text-gray-400">{fmtAmt(sel.wallet_usd,'USD')}</div>}
             </div>
           </div>
-        </div>
+          <div className="flex gap-2 mb-3">
+            <div className="flex-1">
+              <Label>Amount *</Label>
+              <input type="number" value={wForm.amount} onChange={e=>setWForm({...wForm,amount:e.target.value})} placeholder="0" className={inp}/>
+            </div>
+            <div>
+              <Label>Currency</Label>
+              <select value={wForm.currency} onChange={e=>setWForm({...wForm,currency:e.target.value})} className={inp+" cursor-pointer"}>
+                <option value="EGP">EGP</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+          </div>
+          <Label>Payment Method</Label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {gateways.map(gw => (
+              <button key={gw.id} onClick={() => setWForm({...wForm, gateway:gw.id, gateway_name:gw.name_en})}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                style={wForm.gateway===gw.id
+                  ? { background:'#d99401', color:'#fff', borderColor:'#d99401' }
+                  : { background:'transparent', color:'#6B7280', borderColor:'#E5E7EB' }}>
+                {gw.logo_url ? <img src={gw.logo_url} alt={gw.name_en} className="h-4 inline mr-1"/> : null}
+                {gw.name_en}
+              </button>
+            ))}
+          </div>
+          {wForm.gateway && (() => {
+            const gw = gateways.find(g=>g.id===wForm.gateway)
+            return gw?.uid ? (
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                <div className="font-semibold mb-1">{gw.uid_label_en || 'Account'}</div>
+                <div className="font-mono font-bold text-gray-900 dark:text-gray-100">{gw.uid}</div>
+                {gw.instructions_en && <div className="mt-2 text-gray-400">{gw.instructions_en}</div>}
+              </div>
+            ) : null
+          })()}
+          <Label>Transaction Reference / TxID</Label>
+          <input value={wForm.tx_ref} onChange={e=>setWForm({...wForm,tx_ref:e.target.value})} placeholder="TxID or reference..." className={inp+" mb-3"}/>
+          <Label>Admin Note</Label>
+          <input value={wForm.note} onChange={e=>setWForm({...wForm,note:e.target.value})} placeholder="optional note..." className={inp}/>
+          <ModalFooter onClose={() => setModal(null)} onSave={() => walletAction('charge')} saving={saving} label="Charge Wallet" accent="#d99401"/>
+        </Modal>
       )}
 
-      {/* Delete Confirm */}
+      {/* ═══ WALLET DEDUCT MODAL ═══ */}
+      {modal==='wallet_deduct' && sel && (
+        <Modal title={`➖ Deduct from Wallet — ${sel.full_name}`} onClose={() => setModal(null)}>
+          <div className="p-3 mb-3 rounded-xl flex items-center justify-between" style={{ background:'#FEE2E240', border:'1px solid #FEE2E2' }}>
+            <span className="text-xs text-gray-500">Current Balance</span>
+            <div className="text-right">
+              <div className="text-sm font-black text-red-500">{fmtAmt(sel.wallet_egp,'EGP')}</div>
+              {(sel.wallet_usd||0)>0 && <div className="text-xs text-gray-400">{fmtAmt(sel.wallet_usd,'USD')}</div>}
+            </div>
+          </div>
+          <div className="flex gap-2 mb-3">
+            <div className="flex-1">
+              <Label>Amount *</Label>
+              <input type="number" value={wForm.amount} onChange={e=>setWForm({...wForm,amount:e.target.value})} placeholder="0" className={inp}/>
+            </div>
+            <div>
+              <Label>Currency</Label>
+              <select value={wForm.currency} onChange={e=>setWForm({...wForm,currency:e.target.value})} className={inp+" cursor-pointer"}>
+                <option value="EGP">EGP</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+          </div>
+          <Label>Reason / Note</Label>
+          <input value={wForm.note} onChange={e=>setWForm({...wForm,note:e.target.value})} placeholder="reason for deduction..." className={inp}/>
+          <ModalFooter onClose={() => setModal(null)} onSave={() => walletAction('deduct')} saving={saving} label="Deduct" accent="#EF4444"/>
+        </Modal>
+      )}
+
+      {/* ═══ RESET PASSWORD / EMAIL MODAL ═══ */}
+      {modal==='reset' && sel && (
+        <Modal title={`🔑 Reset Credentials — ${sel.full_name}`} onClose={() => setModal(null)}>
+          <p className="text-xs text-gray-400 mb-4">Leave blank to keep unchanged. All active sessions will be cleared.</p>
+          <Label>New Email</Label>
+          <div className="relative mb-3">
+            <Mail size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+            <input type="email" value={rForm.new_email} onChange={e=>setRForm({...rForm,new_email:e.target.value})} placeholder={sel.email} className={inp+" pl-8"}/>
+          </div>
+          <Label>New Password</Label>
+          <div className="relative">
+            <KeyRound size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+            <input type="password" value={rForm.new_password} onChange={e=>setRForm({...rForm,new_password:e.target.value})} placeholder="••••••••" className={inp+" pl-8"}/>
+          </div>
+          <ModalFooter onClose={() => setModal(null)} onSave={resetCredentials} saving={saving} label="Update & Clear Sessions" accent="#7C3AED"/>
+        </Modal>
+      )}
+
+      {/* ═══ DELETE CONFIRM ═══ */}
       {delId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl p-6">
-            <div className="w-11 h-11 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4"><Trash2 size={18} className="text-red-500"/></div>
-            <h3 className="font-bold text-center mb-1">Delete Member?</h3>
-            <p className="text-xs text-center text-gray-400 mb-5"><span className="font-semibold text-gray-700 dark:text-gray-300">{delId.full_name}</span> will be deleted permanently.</p>
-            <div className="flex gap-2">
-              <button onClick={()=>setDelId(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
-              <button onClick={del} className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold">Delete</button>
-            </div>
+        <Modal title="Delete Member" onClose={() => setDelId(null)}>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Delete <strong className="text-gray-900 dark:text-gray-100">{delId.full_name}</strong>? This cannot be undone.</p>
+          <div className="flex gap-2">
+            <button onClick={() => setDelId(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
+            <button onClick={del} className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold">Delete</button>
           </div>
-        </div>
+        </Modal>
       )}
 
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)}/>}
+    </div>
+  )
+}
+
+// ─── Reusable modal shell ─────────────────────────────────────────────────────
+function Modal({ title, children, onClose }: { title:string; children:React.ReactNode; onClose:()=>void }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={e=>{ if(e.target===e.currentTarget) onClose() }}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 rounded-t-2xl">
+          <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X size={16}/></button>
+        </div>
+        <div className="p-5 flex flex-col gap-3">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1 block">{children}</label>
+}
+
+function ModalFooter({ onClose, onSave, saving, label, accent='#d99401' }: { onClose:()=>void; onSave:()=>void; saving:boolean; label:string; accent?:string }) {
+  return (
+    <div className="flex gap-2 pt-2">
+      <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+      <button onClick={onSave} disabled={saving}
+        className="flex-[2] py-2.5 rounded-xl text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5 transition-all"
+        style={{ background: accent }}>
+        {saving ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <><Check size={13}/> {label}</>}
+      </button>
     </div>
   )
 }
