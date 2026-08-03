@@ -329,7 +329,7 @@ if (pathname==='/u/login') return <>{children}</>
         <div className="md:hidden fixed inset-0 z-50 flex" dir={isRtl?'rtl':'ltr'}>
           <div className="fixed inset-0 bg-black/40" onClick={()=>setSidebar(false)}/>
           <div className={`relative w-64 flex flex-col h-full bg-white dark:bg-[#111827] shadow-2xl ${isRtl?'mr-auto border-l':'ml-0 border-r'} border-gray-200 dark:border-gray-800`}>
-            <button onClick={()=>setSidebar(false)} className="absolute top-3 start-3 w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10">
+            <button onClick={()=>setSidebar(false)} className="absolute top-3 end-3 w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10">
               <X size={14}/>
             </button>
             {SidebarContent({forMobile:true})}
@@ -392,7 +392,7 @@ if (pathname==='/u/login') return <>{children}</>
                 {unread>0&&<span className="absolute top-1.5 end-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
               </button>
               {notifOpen&&(
-                <div className={`absolute ${isRtl?'left-0':'right-0'} top-10 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden`}>
+                <div className="absolute end-0 top-10 w-72 sm:w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
