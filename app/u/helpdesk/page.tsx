@@ -190,14 +190,15 @@ export default function HelpdeskPage() {
               <MessageCircle size={24} className="text-gray-200 mx-auto mb-3"/>
               <p className="text-sm text-gray-400">{t('No support tickets yet', 'لا توجد تذاكر دعم بعد')}</p>
             </div>
-          ) : tickets.map(ticket => {
+          ) : tickets.map((ticket, idx) => {
             const st      = statusStyle(ticket.status)
             const cat     = CATEGORY_LABELS[ticket.category] || CATEGORY_LABELS.general
             const isOpen  = expanded === ticket.id
             const memberAtts = (ticket.ticket_attachments || []).filter(a => a.uploaded_by === 'member')
             const adminAtts  = (ticket.ticket_attachments || []).filter(a => a.uploaded_by === 'admin')
+            const isEven  = idx % 2 === 0
             return (
-              <div key={ticket.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+              <div key={ticket.id} className={`border rounded-2xl overflow-hidden ${isEven ? 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800' : 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-100/60 dark:border-blue-900/30'}`}>
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4 p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                   onClick={() => setExpanded(isOpen ? null : ticket.id)}>

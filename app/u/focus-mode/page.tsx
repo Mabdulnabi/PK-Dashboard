@@ -1313,7 +1313,7 @@ export default function FocusModePage() {
   return (
     <div className="min-h-full p-4 md:p-5 flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex-shrink-0">
           <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Focus Mode</h1>
           <p className="text-xs text-gray-400 mt-0.5">Focus. Write. Track. Repeat.</p>
@@ -1335,7 +1335,7 @@ export default function FocusModePage() {
           <Upload size={15} style={{color:'#f59e0b'}}/>
         </button>
         <input ref={importInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileSelect}/>
-        <div className="flex-1"><SearchBar/></div>
+        <div className="w-full sm:flex-1"><SearchBar/></div>
       </div>
 
       {/* Board toggle */}

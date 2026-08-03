@@ -328,7 +328,7 @@ if (pathname==='/u/login') return <>{children}</>
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex" dir={isRtl?'rtl':'ltr'}>
           <div className="fixed inset-0 bg-black/40" onClick={()=>setSidebar(false)}/>
-          <div className={`relative w-64 flex flex-col h-full bg-white dark:bg-[#111827] shadow-2xl ${isRtl?'mr-auto border-l':'ml-0 border-r'} border-gray-200 dark:border-gray-800`}>
+          <div className={`relative w-64 flex flex-col h-full bg-white dark:bg-[#111827] shadow-2xl ${isRtl?'border-l':'ml-0 border-r'} border-gray-200 dark:border-gray-800`}>
             <button onClick={()=>setSidebar(false)} className="absolute top-3 end-3 w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10">
               <X size={14}/>
             </button>

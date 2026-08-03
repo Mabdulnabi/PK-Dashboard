@@ -80,11 +80,7 @@ export default function PaymentsPage() {
         </div>
 
         <div className="overflow-x-auto">
-        <table className="w-full table-fixed min-w-[600px]">
-          <colgroup>
-            <col className="w-[28%]"/><col className="w-[13%]"/>
-            <col className="w-[18%]"/><col className="w-[13%]"/><col className="w-[18%]"/><col className="w-[10%]"/>
-          </colgroup>
+        <table className="w-full min-w-[750px] whitespace-nowrap">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800/50">
               {cols.map(h=>(
