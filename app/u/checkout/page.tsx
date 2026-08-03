@@ -150,7 +150,17 @@ function CheckoutInner() {
           body: JSON.stringify({ edge_fn:'verify-easykash', payment_id:pid })
         })
         const data = await res.json()
-        if (data.verified){ clearInterval(pollRef.current!); setPolling(false); setStep('done') }
+        if (data.verified){
+          clearInterval(pollRef.current!); setPolling(false)
+          if (bundleId) {
+            await fetch('/api/member/payment/activate-bundle',{
+              method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ payment_id:pid, bundle_id:bundleId })
+            })
+          }
+          setStep('done')
+        }
       }catch{}
     }, 5000)
     setTimeout(()=>{ clearInterval(pollRef.current!); setPolling(false) }, 600000)
@@ -196,17 +206,6 @@ function CheckoutInner() {
 
       if (!txRef.trim()){ setError(t('Please enter transaction ID','من فضلك ادخل رقم العملية')); setVerifying(false); return }
 
-      // Bundle: manual review flow — notify admin and show done
-      if (isBundle) {
-        await fetch('/api/member/payment/activate-bundle',{
-          method:'POST',
-          credentials:'include',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ payment_id:pid, bundle_id:bundleId, ref:txRef })
-        })
-        setStep('done'); setVerifying(false); return
-      }
-
       if (!cfg.edge_fn||!cfg.payload_key){
         await fetch('/api/member/payment/manual',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ payment_id:pid, ref:txRef }) })
         setStep('done'); setVerifying(false); return
@@ -221,7 +220,17 @@ function CheckoutInner() {
       const verData = await verRes.json()
       if (!verRes.ok||!verData.success) throw new Error(verData.error||t('Verification failed','فشل التحقق'))
 
-      if (verData.verified){ setStep('done') } else {
+      if (verData.verified){
+        // Auto-activate bundle tools after payment verified by edge function
+        if (isBundle) {
+          await fetch('/api/member/payment/activate-bundle',{
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ payment_id:pid, bundle_id:bundleId })
+          })
+        }
+        setStep('done')
+      } else {
         const reasons:Record<string,string> = {
           tx_not_found:t('Transaction not found. Check the ID.','لم يتم العثور على العملية، تأكد من الرقم.'),
           wrong_amount:t(`Paid amount (${verData.paid?.toFixed(2)}) is less than required.`,`المبلغ المدفوع (${verData.paid?.toFixed(2)}) أقل من المطلوب.`),
