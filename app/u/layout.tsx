@@ -364,14 +364,13 @@ if (pathname==='/u/login') return <>{children}</>
           <div className="flex items-center gap-1 flex-shrink-0">
             {/* Currency */}
             <button onClick={()=>setCurrency(currency==='egp'?'usd':'egp')}
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <DollarSign size={12}/>{currency.toUpperCase()}
+              className="flex items-center px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              {currency.toUpperCase()}
             </button>
             {/* Language */}
             <button onClick={()=>setLang(lang==='en'?'ar':'en')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <Globe size={12}/><span className="hidden xs:inline">{lang==='en'?'EN':'عربي'}</span>
-              <span className="xs:hidden">{lang==='en'?'EN':'AR'}</span>
+              className="flex items-center px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              {lang==='en'?'EN':'AR'}
             </button>
             {/* Theme cycle: auto → light → dark */}
             <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
