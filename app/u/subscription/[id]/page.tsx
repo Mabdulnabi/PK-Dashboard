@@ -140,7 +140,7 @@ export default function SubscriptionDetailPage() {
     return () => clearInterval(poll)
   }, [purchase?.id])
 
-  // ── Extension detection (independent of purchase) ──
+  // ── Extension detection ──
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.source !== window) return
@@ -155,14 +155,10 @@ export default function SubscriptionDetailPage() {
       if (data.type === 'PK_STATE') {
         setExtReady(true)
         if (data.state?.active_tool && data.state?.server_id) {
-          // Verify session is still active in DB
           fetch(`/api/member/servers/session/status?server_id=${data.state.server_id}`, { credentials: 'include' })
             .then(r => r.json())
             .then(d => {
-              if (d.active) {
-                setConnected(true)
-                setActiveServer(data.state.server_id)
-              }
+              if (d.active) { setConnected(true); setActiveServer(data.state.server_id) }
             }).catch(() => {})
         }
       }
@@ -170,12 +166,7 @@ export default function SubscriptionDetailPage() {
         setConnecting(false)
         if (data.success) {
           setConnected(true)
-          // Re-fetch servers to update active count
-          if (purchase?.tool_name) {
-            fetch(`/api/member/servers?tool=${encodeURIComponent(purchase.tool_name)}`, { credentials: 'include' })
-              .then(r => r.json())
-              .then(d => setServers(d.servers || []))
-          }
+          fetchServersRef.current?.()
         } else {
           setConnError(data.error || t('Connection failed','فشل الاتصال'))
         }
@@ -187,33 +178,19 @@ export default function SubscriptionDetailPage() {
     }
     window.addEventListener('message', handler)
 
-    // Check window flag directly (set by content-script) — works even if postMessage was missed
-    const checkFlag = () => {
-      if ((window as any).__PK_EXT_READY__) {
-        setExtReady(true)
-        fetchServersRef.current?.()
-        window.postMessage({ type: 'PK_GET_STATE' }, '*')
-        return true
-      }
-      return false
-    }
-
-    // Also ping via postMessage as fallback
-    let pollRef: ReturnType<typeof setInterval>
-    const stopPoll = () => clearInterval(pollRef)
-
-    if (!checkFlag()) {
-      pollRef = setInterval(() => {
-        if (checkFlag()) { stopPoll(); return }
-        window.postMessage({ type: 'PK_PING' }, '*')
-      }, 300)
-    }
+    // Ping every 300ms — same as dashboard page which works reliably
+    let attempts = 0
+    const poll = setInterval(() => {
+      if (attempts >= 20) { clearInterval(poll); return }
+      attempts++
+      window.postMessage({ type: 'PK_PING' }, '*')
+    }, 300)
 
     return () => {
       window.removeEventListener('message', handler)
-      stopPoll()
+      clearInterval(poll)
     }
-  }, [])  // ← runs once on mount, independent of purchase
+  }, [])
 
   async function connectServer(server: ServerInfo) {
     if (!purchase) return
