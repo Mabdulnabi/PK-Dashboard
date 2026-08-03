@@ -53,11 +53,14 @@ Deno.serve(async (req) => {
       body: JSON.stringify(payload),
     });
 
-    if (!ekRes.ok) return json({ success: false, error: 'EasyKash API error' }, 502);
+    const ekBody = await ekRes.text();
+    if (!ekRes.ok) return json({ success: false, error: `EasyKash API error ${ekRes.status}: ${ekBody}` }, 502);
 
-    const data = await ekRes.json();
-    const payUrl = data.redirectUrl || data.paymentUrl || data.url;
-    if (!payUrl) return json({ success: false, error: 'EasyKash did not return a payment URL' }, 502);
+    let data: any;
+    try { data = JSON.parse(ekBody); } catch { return json({ success: false, error: `EasyKash non-JSON: ${ekBody}` }, 502); }
+
+    const payUrl = data.redirectUrl || data.paymentUrl || data.url || data.payUrl || data.link || data.payment_url || data.checkoutUrl;
+    if (!payUrl) return json({ success: false, error: `EasyKash response has no URL. Keys: ${Object.keys(data).join(',')}. Body: ${ekBody.slice(0,300)}` }, 502);
 
     return json({ success: true, payUrl });
   } catch (err) {
