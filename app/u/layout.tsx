@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp } from 'lucide-react'
 import {
-  HouseSimple, ShoppingBag, Receipt, Headset, PlayCircle,
+  HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
   UserCircle, Users, LockKey, Package, Key, GraduationCap,
 } from '@phosphor-icons/react'
 
@@ -21,7 +21,7 @@ const NAV_BASE = [
     { en:'Bundle Tools',  ar:'حزم الأدوات',   href:'/u/shop/bundle',          icon:Package,      color:'#10b981' },
   ]},
   { en:'Private Store',   ar:'المتجر الشخصي', href:'/u/shop/private-store',   icon:LockKey,      color:'#8b5cf6' },
-  { en:'Payment History', ar:'المدفوعات',     href:'/u/payments',             icon:Receipt,      color:'#3b82f6' },
+  { en:'My Wallet',       ar:'محفظتي',        href:'/u/payments',             icon:Wallet,       color:'#d99401' },
   { en:'HelpDesk',        ar:'الدعم',         href:'/u/helpdesk',             icon:Headset,      color:'#f97316' },
   { en:'Tutorial Videos', ar:'الدروس',        href:'/u/tutorials',            icon:PlayCircle,   color:'#ec4899' },
   { en:'My Account',      ar:'حسابي',         href:'/u/profile',              icon:UserCircle,   color:'#14b8a6' },
