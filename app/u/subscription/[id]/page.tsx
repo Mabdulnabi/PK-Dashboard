@@ -149,7 +149,6 @@ export default function SubscriptionDetailPage() {
 
       if (data.type === 'PK_EXTENSION_READY') {
         setExtReady(true)
-        stopPoll()
         fetchServersRef.current?.()
         window.postMessage({ type: 'PK_GET_STATE' }, '*')
       }
@@ -188,12 +187,27 @@ export default function SubscriptionDetailPage() {
     }
     window.addEventListener('message', handler)
 
-    // Ping every second until extension responds, then stop
+    // Check window flag directly (set by content-script) — works even if postMessage was missed
+    const checkFlag = () => {
+      if ((window as any).__PK_EXT_READY__) {
+        setExtReady(true)
+        fetchServersRef.current?.()
+        window.postMessage({ type: 'PK_GET_STATE' }, '*')
+        return true
+      }
+      return false
+    }
+
+    // Also ping via postMessage as fallback
     let pollRef: ReturnType<typeof setInterval>
     const stopPoll = () => clearInterval(pollRef)
-    pollRef = setInterval(() => {
-      window.postMessage({ type: 'PK_PING' }, '*')
-    }, 1000)
+
+    if (!checkFlag()) {
+      pollRef = setInterval(() => {
+        if (checkFlag()) { stopPoll(); return }
+        window.postMessage({ type: 'PK_PING' }, '*')
+      }, 300)
+    }
 
     return () => {
       window.removeEventListener('message', handler)

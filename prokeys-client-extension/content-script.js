@@ -4,6 +4,9 @@ const isDashboard = window.location.hostname === 'localhost' ||
                     window.location.hostname.includes('vercel.app')
 
 if (isDashboard) {
+  // Inject flag directly — page can read it without waiting for messages
+  window.__PK_EXT_READY__ = true
+
   // Send ready immediately
   window.postMessage({ type: 'PK_EXTENSION_READY', version: '1.1.0' }, '*')
   
