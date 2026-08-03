@@ -90,6 +90,7 @@ export default function SubscriptionDetailPage() {
   const [copied,      setCopied]      = useState<'email'|'pass'|null>(null)
   const extCheckRef    = useRef(false)
   const fetchServersRef = useRef<(() => void) | null>(null)
+  const pollRef        = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const copyText = async (text: string, field: 'email'|'pass') => {
     await navigator.clipboard.writeText(text)
@@ -148,6 +149,7 @@ export default function SubscriptionDetailPage() {
       if (!data?.type?.startsWith('PK_')) return
 
       if (data.type === 'PK_EXTENSION_READY') {
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
         setExtReady(true)
         fetchServersRef.current?.()
         window.postMessage({ type: 'PK_GET_STATE' }, '*')
@@ -194,10 +196,12 @@ export default function SubscriptionDetailPage() {
       // Also ping via postMessage as secondary mechanism
       window.postMessage({ type: 'PK_PING' }, '*')
     }, 200)
+    pollRef.current = poll
 
     return () => {
       window.removeEventListener('message', handler)
       clearInterval(poll)
+      pollRef.current = null
     }
   }, [])
 

@@ -4,8 +4,8 @@ const isDashboard = window.location.hostname === 'localhost' ||
                     window.location.hostname.includes('vercel.app')
 
 if (isDashboard) {
-  // Inject flag directly — page can read it without waiting for messages
-  window.__PK_EXT_READY__ = true
+  // Write to sessionStorage — page can poll this directly without postMessage
+  try { sessionStorage.setItem('__pk_ext_ready__', '1') } catch {}
 
   // Send ready immediately
   window.postMessage({ type: 'PK_EXTENSION_READY', version: '1.1.0' }, '*')
@@ -24,6 +24,7 @@ if (isDashboard) {
 
     // Respond to ping — React uses this to detect extension
     if (e.data.type === 'PK_PING') {
+      try { sessionStorage.setItem('__pk_ext_ready__', '1') } catch {}
       window.postMessage({ type: 'PK_EXTENSION_READY', version: '1.1.0' }, '*')
     }
 
