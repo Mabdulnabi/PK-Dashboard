@@ -121,14 +121,14 @@ export default function PaymentsPage() {
   const totalPages = Math.ceil(payments.length/perPage)
   const paginated  = payments.slice((page-1)*perPage, page*perPage)
 
-  const downloadInvoice = async (id: string) => {
+  const downloadInvoice = async (id: string, paymentCode?: string) => {
     setDownloading(id)
     const res  = await fetch(`/api/member/invoices/${id}`)
     if (!res.ok) { setDownloading(null); return }
     const blob = await res.blob()
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
-    a.href = url; a.download = `invoice-${id.slice(0,8)}.pdf`
+    a.href = url; a.download = `${paymentCode || 'invoice-' + id.slice(0,8)}.pdf`
     a.click(); URL.revokeObjectURL(url)
     setDownloading(null)
   }
@@ -233,7 +233,7 @@ export default function PaymentsPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {gateways.map(gw=>(
                         <button key={gw.id} onClick={()=>setTopUpGw(gw.id)}
-                          className="relative p-4 rounded-xl border-2 transition-all text-start flex flex-col gap-2"
+                          className="relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 text-center"
                           style={topUpGw===gw.id
                             ? {borderColor:'#22c55e', background:'#22c55e08'}
                             : {borderColor:'#E5E7EB',background:'transparent'}}>
@@ -242,44 +242,84 @@ export default function PaymentsPage() {
                               <Check size={9} className="text-white"/>
                             </div>
                           )}
-                          {gw.logo_url && <img src={gw.logo_url} alt={gw.name_en} className="h-7 w-auto object-contain"/>}
-                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{lang==='ar'?gw.name_ar:gw.name_en}</span>
-                          <span className="text-xs text-gray-400">{gw.currency}</span>
+                          {gw.logo_url
+                            ? <img src={gw.logo_url} alt={gw.name_en} className="h-8 w-auto object-contain"/>
+                            : <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-800"/>
+                          }
+                          <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight">{lang==='ar'?gw.name_ar:gw.name_en}</span>
+                          <span className="text-[10px] text-gray-400">{gw.currency}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Selected gateway info + QR */}
+                  {/* Selected gateway info + QR — side by side, direction-aware */}
                   {activeGw && (
-                    <div className="p-4 rounded-xl border space-y-3" style={{background:'#22c55e08',borderColor:'#22c55e30'}}>
-                      {activeGw.qr_url && (
-                        <div className="flex justify-center">
-                          <img src={activeGw.qr_url} alt="QR Code" className="w-40 h-40 rounded-xl border border-gray-200 dark:border-gray-700 object-contain bg-white p-1"/>
+                    <div className="p-4 rounded-xl border" style={{background:'#22c55e08',borderColor:'#22c55e30'}}>
+                      <div className="flex items-start gap-4">
+                        {/* QR appears first in DOM → left in LTR, right in RTL */}
+                        {activeGw.qr_url && (
+                          <img src={activeGw.qr_url} alt="QR Code"
+                            className="w-32 h-32 flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 object-contain bg-white p-1"/>
+                        )}
+                        <div className="flex-1 space-y-2 min-w-0">
+                          {activeGw.uid && (
+                            <div className="text-xs">
+                              <div className="text-gray-500 mb-1">
+                                {lang==='ar'?(activeGw.uid_label_ar||activeGw.uid_label_en||'أرسل إلى'):(activeGw.uid_label_en||'Send to')}
+                              </div>
+                              <div className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm tracking-wide break-all" dir="ltr">
+                                {activeGw.uid}
+                              </div>
+                            </div>
+                          )}
+                          {(lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en) && (
+                            <div className="text-xs text-gray-400 leading-relaxed">
+                              {lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {activeGw.uid && (
-                        <div className="text-xs">
-                          <div className="text-gray-500 mb-1">{lang==='ar'?(activeGw.uid_label_ar||activeGw.uid_label_en||'أرسل إلى'):(activeGw.uid_label_en||'Send to')}</div>
-                          <div className="font-mono font-black text-gray-900 dark:text-gray-100 text-sm tracking-wide" dir="ltr">{activeGw.uid}</div>
-                        </div>
-                      )}
-                      {(lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en) && (
-                        <div className="text-xs text-gray-400 leading-relaxed">{lang==='ar'?activeGw.instructions_ar:activeGw.instructions_en}</div>
-                      )}
+                      </div>
                     </div>
                   )}
 
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
-                    <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
-                  </div>
-                  <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
-                    className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                    style={{background:'#22c55e'}}>
-                    {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
-                  </button>
+                  {/* EasyKash: Pay Now button — no TxID needed */}
+                  {activeGw?.name_en?.toLowerCase().includes('easykash') ? (
+                    <button onClick={async()=>{
+                      if (!topUpAmt || !topUpGw) return
+                      setSubmitting(true)
+                      const res = await fetch('/api/member/wallet/easykash',{
+                        method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({ amount:parseFloat(topUpAmt), currency:topUpCur, gateway:topUpGw, gateway_name:activeGw.name_en }),
+                      })
+                      const data = await res.json()
+                      setSubmitting(false)
+                      if (data.payment_url) {
+                        window.location.href = data.payment_url
+                      } else {
+                        setTopUpSent(true)
+                      }
+                    }} disabled={submitting||!topUpAmt}
+                      className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                      style={{background:'#22c55e',boxShadow:'0 4px 14px #22c55e33'}}>
+                      {submitting
+                        ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                        : <><ArrowUpRight size={15}/> {t('Pay Now','ادفع الآن')}</>}
+                    </button>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
+                        <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
+                      </div>
+                      <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
+                        className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                        style={{background:'#22c55e'}}>
+                        {submitting?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><ArrowUpRight size={15}/> {t('Submit Charge Request','إرسال طلب الشحن')}</>}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -356,7 +396,7 @@ export default function PaymentsPage() {
                   <td className="px-4 py-3">
                     {!isWallet && p.status==='completed' && (
                       <button
-                        onClick={()=>downloadInvoice(p.id)}
+                        onClick={()=>downloadInvoice(p.id, p.payment_code)}
                         disabled={downloading===p.id}
                         title={t('Download Invoice','تحميل الفاتورة')}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 border border-gray-200 dark:border-gray-700 transition-colors disabled:opacity-50"

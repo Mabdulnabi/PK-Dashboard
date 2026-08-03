@@ -65,7 +65,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     headers: {
       'Content-Type':        'application/pdf',
-      'Content-Disposition': `attachment; filename="invoice-${params.id.slice(0, 8)}.pdf"`,
+      'Content-Disposition': `attachment; filename="${payment.payment_code || payment.id.slice(0, 8)}.pdf"`,
     },
   })
 }
