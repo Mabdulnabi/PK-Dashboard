@@ -1,205 +1,270 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import { Menu, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Star, Globe } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
-// ── Types ────────────────────────────────────────────────────────────────────
-interface Settings { [key: string]: string }
-interface ToolLogo  { id: string; url: string; name: string }
-interface Feature   { id: string; icon: string; title_ar: string; title_en: string; desc_ar: string; desc_en: string }
-interface Stat      { id: string; number: string; suffix: string; label_ar: string; label_en: string }
-interface FaqItem   { id: string; q_ar: string; q_en: string; a_ar: string; a_en: string }
-interface Review    { id: string; name: string; location: string; source: string; photo: string; stars: number; text_ar: string; text_en: string }
-
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Lang = 'ar' | 'en'
+interface S { [k: string]: string }
+interface ToolLogo { id: string; url: string; name: string }
+interface Feature  { id: string; icon: string; title_ar: string; title_en: string; desc_ar: string; desc_en: string }
+interface Stat     { id: string; number: string; suffix: string; label_ar: string; label_en: string }
+interface FaqItem  { id: string; q_ar: string; q_en: string; a_ar: string; a_en: string }
+interface Review   { id: string; name: string; location: string; photo: string; stars: number; text_ar: string; text_en: string }
 
-function safeParse<T>(val: string | undefined, fallback: T): T {
-  if (!val) return fallback
-  try { return JSON.parse(val) as T } catch { return fallback }
+function parse<T>(v: string | undefined, fb: T): T {
+  if (!v) return fb
+  try { return JSON.parse(v) as T } catch { return fb }
 }
 
-// ── Counter animation ────────────────────────────────────────────────────────
-function useCountUp(target: number, duration = 2000, started = false) {
-  const [count, setCount] = useState(0)
+// ─── Scroll-triggered counter ─────────────────────────────────────────────────
+function Counter({ target, suffix }: { target: number; suffix: string }) {
+  const [n, setN] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  const ran = useRef(false)
   useEffect(() => {
-    if (!started) return
-    let start = 0; const step = target / (duration / 16)
-    const timer = setInterval(() => {
-      start += step
-      if (start >= target) { setCount(target); clearInterval(timer) }
-      else setCount(Math.floor(start))
-    }, 16)
-    return () => clearInterval(timer)
-  }, [target, duration, started])
-  return count
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting || ran.current) return
+      ran.current = true
+      const dur = 1800; let start = 0; const step = target / (dur / 16)
+      const t = setInterval(() => {
+        start += step
+        if (start >= target) { setN(target); clearInterval(t) }
+        else setN(Math.floor(start))
+      }, 16)
+    }, { threshold: 0.4 })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [target])
+  return <span ref={ref}>{n.toLocaleString()}{suffix}</span>
 }
 
-function StatCounter({ stat, lang, started }: { stat: Stat; lang: Lang; started: boolean }) {
-  const num = useCountUp(parseInt(stat.number) || 0, 2000, started)
-  return (
-    <div className="text-center">
-      <div className="text-5xl font-black text-[#d99401] tabular-nums leading-none mb-2">
-        {num.toLocaleString()}{stat.suffix}
-      </div>
-      <div className="text-sm font-medium text-gray-300 uppercase tracking-widest">
-        {lang === 'ar' ? stat.label_ar : stat.label_en}
-      </div>
-    </div>
-  )
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────────
-export default function LandingPage() {
+// ─── Main page ────────────────────────────────────────────────────────────────
+export default function Landing() {
   const [lang,    setLang]    = useState<Lang>('ar')
-  const [s,       setS]       = useState<Settings>({})
-  const [loaded,  setLoaded]  = useState(false)
-  const [menuOpen,setMenuOpen]= useState(false)
+  const [s,       setS]       = useState<S>({})
+  const [ready,   setReady]   = useState(false)
+  const [preHide, setPreHide] = useState(false)
+
+  // header
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // faq
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [revIdx,  setRevIdx]  = useState(0)
-  const [statsVis,setStatsVis]= useState(false)
-  const statsRef = useRef<HTMLDivElement>(null)
+
+  // reviews slider
+  const [revIdx, setRevIdx] = useState(0)
+  const revTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  // newsletter
   const [nlName,  setNlName]  = useState('')
   const [nlEmail, setNlEmail] = useState('')
   const [nlSent,  setNlSent]  = useState(false)
 
+  // scroll progress + back-to-top
+  const [scrollPct, setScrollPct] = useState(0)
+  const [showTop,   setShowTop]   = useState(false)
+
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
   const t   = (ar: string, en: string) => lang === 'ar' ? ar : en
+  const g   = (ar: string, en: string) => t(s[`lp_${ar}`] || '', s[`lp_${en}`] || '') // generic getter
 
+  // ── Fetch settings ──────────────────────────────────────────────────────────
   useEffect(() => {
     fetch('/api/landing').then(r => r.json()).then(d => {
       setS(d.settings || {})
-      setLoaded(true)
+      setReady(true)
+      setTimeout(() => setPreHide(true), 200)
     })
   }, [])
 
+  // ── Scroll listener ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setStatsVis(true) }, { threshold: 0.3 })
-    if (statsRef.current) obs.observe(statsRef.current)
-    return () => obs.disconnect()
-  }, [loaded])
+    const h = () => {
+      const el = document.documentElement
+      const pct = el.scrollTop / ((el.scrollHeight - el.clientHeight) || 1)
+      setScrollPct(pct)
+      setShowTop(el.scrollTop > 500)
+    }
+    window.addEventListener('scroll', h, { passive: true })
+    return () => window.removeEventListener('scroll', h)
+  }, [])
 
-  if (!loaded) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0d0d0d]">
-      <div className="w-10 h-10 border-2 border-[#d99401] border-t-transparent rounded-full animate-spin"/>
+  // ── Auto-advance reviews ─────────────────────────────────────────────────────
+  const reviews: Review[] = parse(s.lp_reviews, [])
+  useEffect(() => {
+    if (reviews.length < 2) return
+    revTimer.current = setTimeout(() => setRevIdx(i => (i + 1) % reviews.length), 4500)
+    return () => clearTimeout(revTimer.current)
+  }, [revIdx, reviews.length])
+
+  const toolLogos: ToolLogo[] = parse(s.lp_tool_logos, [])
+  const features:  Feature[]  = parse(s.lp_features,   [])
+  const stats:     Stat[]     = parse(s.lp_stats,      [])
+  const faq:       FaqItem[]  = parse(s.lp_faq,        [])
+
+  const logo     = s.lp_header_logo || s.logo_url || ''
+  const siteName = s.lp_site_name   || 'Pro Keys'
+  const signIn   = s.lp_signin_url  || '/u/login'
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setMenuOpen(false)
+  }
+
+  // marquee: duplicate for seamless loop
+  const marquee = [...toolLogos, ...toolLogos]
+
+  // ── CSS ring for back-to-top ──────────────────────────────────────────────
+  const R = 18; const C = 2 * Math.PI * R
+  const ringOffset = C * (1 - scrollPct)
+
+  if (!ready) return (
+    <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#0B5FC9,#1B2556)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
+      <div style={{ textAlign:'center' }}>
+        {logo && <img src={logo} alt={siteName} style={{ height:120, marginBottom:16 }}/>}
+        <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
+          {[0,1,2].map(i => <span key={i} style={{ width:10, height:10, borderRadius:'50%', background:'#fff', display:'block', animation:`pkdot 1.4s ${i*0.2}s infinite ease-in-out` }}/>)}
+        </div>
+      </div>
+      <style>{`@keyframes pkdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-6px)}}`}</style>
     </div>
   )
 
-  const toolLogos: ToolLogo[] = safeParse(s.lp_tool_logos, [])
-  const features:  Feature[]  = safeParse(s.lp_features,   [])
-  const stats:     Stat[]     = safeParse(s.lp_stats,      [])
-  const faq:       FaqItem[]  = safeParse(s.lp_faq,        [])
-  const reviews:   Review[]   = safeParse(s.lp_reviews,    [])
-
-  const logo      = s.lp_header_logo || s.logo_url || ''
-  const siteName  = s.lp_site_name   || 'Pro Keys'
-  const signinUrl = s.lp_signin_url  || '/u/login'
-
-  const heroTitleRaw = t(s.lp_hero_title_ar || 'اشتراكاتك الرقمية\nبأفضل الأسعار', s.lp_hero_title_en || 'Your Digital Subscriptions\nat the Best Prices')
-  const heroLines = heroTitleRaw.split('\n')
-
-  // duplicate for seamless marquee
-  const marqueeItems = [...toolLogos, ...toolLogos]
-
   return (
-    <div dir={dir} className="min-h-screen bg-[#0d0d0d] text-white font-sans antialiased">
+    <div dir={dir} style={{ fontFamily:"'Cairo',sans-serif", color:'#16213D', background:'#fff', overflowX:'hidden' }}>
 
-      {/* ── Sticky header ── */}
-      <header className="fixed top-0 inset-x-0 z-50 bg-[#0d0d0d]/90 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+      {/* ── Scroll progress bar ── */}
+      <div style={{ position:'fixed', top:0, left:0, height:3, width:`${scrollPct*100}%`, background:'#d99401', zIndex:999999, opacity:.9, transition:'width .1s' }}/>
+
+      {/* ── Sticky Header ── */}
+      <header style={{ position:'sticky', top:0, zIndex:1000, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(10px)', borderBottom:'1px solid #EDD98A' }}>
+        <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', display:'flex', alignItems:'center', justifyContent:'space-between', height:64, gap:16 }}>
+
           {/* Logo */}
-          <a href={signinUrl} className="flex items-center gap-2.5 flex-shrink-0">
+          <a href="/" style={{ flexShrink:0 }}>
             {logo
-              ? <img src={logo} alt={siteName} className="h-9 object-contain"/>
-              : <span className="font-black text-xl text-[#d99401]">{siteName}</span>}
+              ? <img src={logo} alt={siteName} style={{ height:42, width:'auto' }}/>
+              : <span style={{ fontWeight:900, fontSize:20, color:'#d99401' }}>{siteName}</span>}
           </a>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-2">
-            <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
-              <Globe size={14}/>
-              {lang === 'ar' ? 'EN' : 'عربي'}
-            </button>
-            <a href={signinUrl}
-              className="px-5 py-2 rounded-full text-sm font-bold text-[#0d0d0d] transition-all hover:brightness-110"
-              style={{ background: '#d99401' }}>
-              {t('تسجيل الدخول', 'Sign In')}
-            </a>
-          </div>
+          <nav style={{ display:'flex', alignItems:'center', gap:24, fontSize:13.5, fontWeight:700, color:'#3D4A6B' }} className="lp-desk-nav">
+            {features.length > 0 && <span onClick={() => scrollTo('features')} style={{ cursor:'pointer', whiteSpace:'nowrap' }} onMouseEnter={e=>(e.currentTarget.style.color='#d99401')} onMouseLeave={e=>(e.currentTarget.style.color='#3D4A6B')}>{t('المميزات','Features')}</span>}
+            {stats.length    > 0 && <span onClick={() => scrollTo('stats')}    style={{ cursor:'pointer', whiteSpace:'nowrap' }} onMouseEnter={e=>(e.currentTarget.style.color='#d99401')} onMouseLeave={e=>(e.currentTarget.style.color='#3D4A6B')}>{t('أرقامنا','Numbers')}</span>}
+            {faq.length      > 0 && <span onClick={() => scrollTo('faq')}      style={{ cursor:'pointer', whiteSpace:'nowrap' }} onMouseEnter={e=>(e.currentTarget.style.color='#d99401')} onMouseLeave={e=>(e.currentTarget.style.color='#3D4A6B')}>{t('الأسئلة الشائعة','FAQ')}</span>}
+            {reviews.length  > 0 && <span onClick={() => scrollTo('reviews')}  style={{ cursor:'pointer', whiteSpace:'nowrap' }} onMouseEnter={e=>(e.currentTarget.style.color='#d99401')} onMouseLeave={e=>(e.currentTarget.style.color='#3D4A6B')}>{t('التقييمات','Reviews')}</span>}
+          </nav>
 
-          {/* Mobile hamburger */}
-          <button onClick={() => setMenuOpen(v => !v)} className="md:hidden text-gray-400 hover:text-white transition-colors">
-            {menuOpen ? <X size={22}/> : <Menu size={22}/>}
-          </button>
+          {/* Actions */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+            <button onClick={() => setLang(l => l === 'ar' ? 'en' : 'ar')}
+              style={{ background:'#fff', border:'1.5px solid #EDD98A', color:'#1B2556', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:13, padding:'9px 14px', borderRadius:10, cursor:'pointer', whiteSpace:'nowrap' }}>
+              {lang === 'ar' ? '🇬🇧 EN' : '🇪🇬 AR'}
+            </button>
+            <a href={signIn}
+              style={{ background:'#1B2556', color:'#fff', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:14, padding:'10px 22px', borderRadius:10, textDecoration:'none', whiteSpace:'nowrap', display:'inline-block' }}>
+              {t('تسجيل الدخول','Sign In')}
+            </a>
+            {/* Hamburger */}
+            <button onClick={() => setMenuOpen(v => !v)} className="lp-ham"
+              style={{ display:'none', alignItems:'center', justifyContent:'center', width:36, height:36, borderRadius:9, border:'1.5px solid #EDD98A', background:'#fff', cursor:'pointer', color:'#1B2556' }}>
+              <svg viewBox="0 0 24 24" style={{ width:20, height:20, stroke:'currentColor', fill:'none', strokeWidth:2, strokeLinecap:'round' }}>
+                {menuOpen ? <><path d="M6 6l12 12"/><path d="M18 6L6 18"/></> : <><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></>}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-white/5 bg-[#0d0d0d] px-5 py-4 flex flex-col gap-3">
-            <button onClick={() => { setLang(lang === 'ar' ? 'en' : 'ar'); setMenuOpen(false) }}
-              className="flex items-center gap-2 text-sm text-gray-300">
-              <Globe size={14}/> {lang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
-            </button>
-            <a href={signinUrl} className="px-5 py-2.5 rounded-full text-sm font-bold text-[#0d0d0d] text-center" style={{ background: '#d99401' }}>
-              {t('تسجيل الدخول', 'Sign In')}
-            </a>
+          <div style={{ borderTop:'1px solid #EDD98A', background:'#fff', padding:'8px 0 16px' }}>
+            {[
+              features.length > 0 && { id:'features', ar:'المميزات',      en:'Features' },
+              stats.length    > 0 && { id:'stats',    ar:'أرقامنا',        en:'Numbers' },
+              faq.length      > 0 && { id:'faq',      ar:'الأسئلة الشائعة',en:'FAQ' },
+              reviews.length  > 0 && { id:'reviews',  ar:'التقييمات',      en:'Reviews' },
+            ].filter(Boolean).map((item: any) => (
+              <button key={item.id} onClick={() => scrollTo(item.id)}
+                style={{ display:'block', width:'100%', padding:'13px 20px', textAlign: lang==='ar' ? 'right' : 'left', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:14, color:'#1B2556', background:'none', border:'none', borderBottom:'1px solid #EDD98A', cursor:'pointer' }}>
+                {t(item.ar, item.en)}
+              </button>
+            ))}
+            <div style={{ display:'flex', gap:8, padding:'10px 20px' }}>
+              <button onClick={() => setLang(l => l === 'ar' ? 'en' : 'ar')}
+                style={{ background:'#fff', border:'1.5px solid #EDD98A', color:'#1B2556', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:13, padding:'9px 14px', borderRadius:10, cursor:'pointer' }}>
+                {lang === 'ar' ? '🇬🇧 EN' : '🇪🇬 AR'}
+              </button>
+              <a href={signIn} style={{ flex:1, background:'#1B2556', color:'#fff', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:14, padding:'10px 0', borderRadius:10, textDecoration:'none', textAlign:'center', display:'block' }}>
+                {t('تسجيل الدخول','Sign In')}
+              </a>
+            </div>
           </div>
         )}
       </header>
 
-      {/* ── Hero ── */}
-      <section className="relative pt-32 pb-20 px-5 overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(ellipse, #d99401 0%, transparent 70%)' }}/>
-        </div>
+      {/* ── HERO ── */}
+      <section style={{ position:'relative', padding:'80px 0 60px', background:'radial-gradient(1200px 500px at 85% -10%, #FBF2D8, transparent 60%)' }}>
+        <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48, alignItems:'center' }} className="lp-hero-grid">
 
-        <div className="relative max-w-4xl mx-auto text-center">
-          {s.lp_hero_badge && (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold text-[#d99401] border border-[#d99401]/30 bg-[#d99401]/10 mb-6">
-              {s.lp_hero_badge}
+          {/* Left copy */}
+          <div>
+            {s.lp_hero_badge && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:13, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:20, border:'1px solid #EDD98A' }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>
+                {s.lp_hero_badge}
+              </span>
+            )}
+            <h1 style={{ fontSize:'clamp(28px,4vw,42px)', fontWeight:800, lineHeight:1.32, color:'#1B2556', marginBottom:18, whiteSpace:'pre-line' }}>
+              {(t(s.lp_hero_title_ar || '', s.lp_hero_title_en || '')).split('\n').map((line, i) => (
+                <span key={i} style={{ display:'block' }}>
+                  {i === 0 ? line : <span style={{ background:'linear-gradient(90deg,#d99401,#b87e00)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>{line}</span>}
+                </span>
+              ))}
+            </h1>
+            {(s.lp_hero_sub_ar || s.lp_hero_sub_en) && (
+              <p style={{ fontSize:15.5, color:'#6B7494', maxWidth:500, marginBottom:28, lineHeight:1.8 }}>
+                {t(s.lp_hero_sub_ar || '', s.lp_hero_sub_en || '')}
+              </p>
+            )}
+            <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+              <a href={s.lp_hero_cta_url || signIn}
+                style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#d99401', color:'#fff', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:15, padding:'14px 32px', borderRadius:10, textDecoration:'none', boxShadow:'0 8px 22px rgba(217,148,1,.35)' }}>
+                🛒 {t(s.lp_hero_cta_ar || 'تسوق الآن', s.lp_hero_cta_en || 'Shop Now')}
+              </a>
+              {(s.lp_hero_cta2_ar || s.lp_hero_cta2_en) && (
+                <a href={s.lp_hero_cta2_url || signIn}
+                  style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#fff', color:'#1B2556', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:15, padding:'14px 28px', borderRadius:10, textDecoration:'none', border:'1.5px solid #DCE4F1' }}>
+                  👤 {t(s.lp_hero_cta2_ar || '', s.lp_hero_cta2_en || '')}
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Right: hero visual */}
+          {s.lp_hero_image ? (
+            <div style={{ borderRadius:20, overflow:'hidden', border:'1.5px solid #EDD98A', boxShadow:'0 20px 48px -16px rgba(27,37,86,.12)' }}>
+              <img src={s.lp_hero_image} alt="hero" style={{ width:'100%', display:'block' }}/>
+            </div>
+          ) : (
+            <div style={{ borderRadius:20, border:'1.5px dashed #EDD98A', minHeight:260, display:'flex', alignItems:'center', justifyContent:'center', background:'#FFFDF5', color:'#EDD98A', fontSize:48 }}>
+              🔑
             </div>
           )}
-
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight tracking-tight mb-6">
-            {heroLines.map((line, i) => (
-              <span key={i} className="block">
-                {i === 0 ? line : <span className="text-[#d99401]">{line}</span>}
-              </span>
-            ))}
-          </h1>
-
-          {(s.lp_hero_sub_ar || s.lp_hero_sub_en) && (
-            <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              {t(s.lp_hero_sub_ar || '', s.lp_hero_sub_en || '')}
-            </p>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a href={s.lp_hero_cta_url || signinUrl}
-              className="px-8 py-3.5 rounded-full text-base font-bold text-[#0d0d0d] hover:brightness-110 transition-all shadow-lg shadow-[#d99401]/20"
-              style={{ background: '#d99401' }}>
-              {t(s.lp_hero_cta_ar || 'تسوق الآن', s.lp_hero_cta_en || 'Shop Now')}
-            </a>
-            {(s.lp_hero_cta2_ar || s.lp_hero_cta2_en) && (
-              <a href={s.lp_hero_cta2_url || signinUrl}
-                className="px-8 py-3.5 rounded-full text-base font-semibold text-white border border-white/20 hover:border-[#d99401]/50 hover:text-[#d99401] transition-all">
-                {t(s.lp_hero_cta2_ar || 'سجل مجاناً', s.lp_hero_cta2_en || 'Sign up free')}
-              </a>
-            )}
-          </div>
         </div>
 
         {/* Tool logos marquee */}
         {toolLogos.length > 0 && (
-          <div className="mt-20 relative overflow-hidden">
-            <div className="absolute inset-y-0 left-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, #0d0d0d, transparent)' }}/>
-            <div className="absolute inset-y-0 right-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, #0d0d0d, transparent)' }}/>
-            <div className="flex gap-6 marquee-track" style={{ width: `${marqueeItems.length * 120}px` }}>
-              {marqueeItems.map((logo, i) => (
-                <div key={i} className="flex-shrink-0 w-24 h-16 flex items-center justify-center rounded-xl border border-white/8 bg-white/4 hover:border-[#d99401]/40 transition-colors p-2">
+          <div style={{ marginTop:60, position:'relative', overflow:'hidden' }}>
+            <div style={{ position:'absolute', inset:'0 0 0 auto', left:0, top:0, bottom:0, width:96, background:'linear-gradient(to right,#fff,transparent)', zIndex:2, pointerEvents:'none' }}/>
+            <div style={{ position:'absolute', right:0, top:0, bottom:0, width:96, background:'linear-gradient(to left,#fff,transparent)', zIndex:2, pointerEvents:'none' }}/>
+            <p style={{ textAlign:'center', fontSize:12, fontWeight:700, color:'#6B7494', letterSpacing:2, textTransform:'uppercase', marginBottom:20 }}>
+              {t('الأدوات والمنتجات المتاحة','Available Tools & Products')}
+            </p>
+            <div className="lp-marquee" style={{ display:'flex', gap:16, width:`${marquee.length * 132}px` }}>
+              {marquee.map((logo, i) => (
+                <div key={i} style={{ flexShrink:0, width:116, height:68, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:12, border:'1px solid #DCE4F1', background:'#FAFAFA', padding:10, transition:'border-color .2s' }}>
                   {logo.url
-                    ? <img src={logo.url} alt={logo.name} className="max-h-10 max-w-full object-contain filter brightness-90 hover:brightness-110 transition-all"/>
-                    : <span className="text-xs text-gray-400 text-center">{logo.name}</span>}
+                    ? <img src={logo.url} alt={logo.name} style={{ maxHeight:44, maxWidth:'100%', objectFit:'contain' }}/>
+                    : <span style={{ fontSize:12, color:'#6B7494', textAlign:'center' }}>{logo.name}</span>}
                 </div>
               ))}
             </div>
@@ -207,24 +272,30 @@ export default function LandingPage() {
         )}
       </section>
 
-      {/* ── Features ── */}
+      {/* ── WHY CHOOSE US ── */}
       {features.length > 0 && (
-        <section className="py-24 px-5">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-black mb-3">
-                {t(s.lp_feat_title_ar || 'ليه تختار Pro Keys؟', s.lp_feat_title_en || 'Why Choose Pro Keys?')}
+        <section id="features" style={{ padding:'80px 0', background:'#F9F6EE' }}>
+          <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
+            <div style={{ textAlign:'center', maxWidth:640, margin:'0 auto 52px' }}>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>
+                {t('ليه تختارنا','WHY CHOOSE US')}
+              </span>
+              <h2 style={{ fontSize:30, fontWeight:800, color:'#1B2556', marginBottom:8 }}>
+                {t(s.lp_feat_title_ar || 'ليه تختار Pro Keys؟', s.lp_feat_title_en || 'Why Choose Pro Keys?').split(' ').map((word, i, arr) =>
+                  i === arr.length - 1
+                    ? <span key={i} style={{ background:'linear-gradient(90deg,#d99401,#b87e00)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}> {word}</span>
+                    : <span key={i}>{i === 0 ? word : ' ' + word}</span>
+                )}
               </h2>
-              <div className="w-16 h-1 rounded-full mx-auto mt-4" style={{ background: '#d99401' }}/>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20 }} className="lp-feat-grid">
               {features.map((f, i) => (
-                <div key={f.id || i} className="group p-6 rounded-2xl border border-white/8 bg-white/3 hover:border-[#d99401]/40 hover:bg-[#d99401]/5 transition-all duration-300">
-                  <div className="text-4xl mb-4">{f.icon}</div>
-                  <h3 className="text-base font-bold mb-2 text-white group-hover:text-[#d99401] transition-colors">
-                    {t(f.title_ar, f.title_en)}
-                  </h3>
-                  <p className="text-sm text-gray-400 leading-relaxed">{t(f.desc_ar, f.desc_en)}</p>
+                <div key={f.id || i} className="lp-card"
+                  style={{ background:'#fff', border:'1px solid #DCE4F1', borderRadius:16, padding:26, transition:'all .2s' }}>
+                  <div style={{ fontSize:28, marginBottom:16, lineHeight:1 }}>{f.icon}</div>
+                  <h3 style={{ fontSize:16, fontWeight:800, color:'#1B2556', marginBottom:8 }}>{t(f.title_ar, f.title_en)}</h3>
+                  <p style={{ fontSize:13.5, color:'#6B7494', lineHeight:1.75 }}>{t(f.desc_ar, f.desc_en)}</p>
                 </div>
               ))}
             </div>
@@ -232,43 +303,53 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── Stats ── */}
+      {/* ── STATS ── */}
       {stats.length > 0 && (
-        <section ref={statsRef} className="py-24 px-5" style={{ background: 'linear-gradient(135deg, #111 0%, #1a1400 50%, #111 100%)' }}>
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-black mb-3">
-                {t(s.lp_stats_title_ar || 'أرقامنا', s.lp_stats_title_en || 'Our Numbers')}
-              </h2>
-              {(s.lp_stats_sub_ar || s.lp_stats_sub_en) && (
-                <p className="text-gray-400 max-w-xl mx-auto mt-3">
-                  {t(s.lp_stats_sub_ar || '', s.lp_stats_sub_en || '')}
-                </p>
-              )}
-              <div className="w-16 h-1 rounded-full mx-auto mt-4" style={{ background: '#d99401' }}/>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
-              {stats.map((st, i) => <StatCounter key={st.id || i} stat={st} lang={lang} started={statsVis}/>)}
+        <section id="stats" style={{ padding:'80px 0', background:'linear-gradient(135deg,#1B2556,#2A3A78)' }}>
+          <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', textAlign:'center' }}>
+            <h2 style={{ fontSize:30, fontWeight:800, color:'#fff', marginBottom:8 }}>
+              {t(s.lp_stats_title_ar || 'أرقامنا', s.lp_stats_title_en || 'Our Numbers')}
+            </h2>
+            {(s.lp_stats_sub_ar || s.lp_stats_sub_en) && (
+              <p style={{ color:'rgba(255,255,255,.65)', fontSize:14.5, marginBottom:48 }}>
+                {t(s.lp_stats_sub_ar || '', s.lp_stats_sub_en || '')}
+              </p>
+            )}
+            <div style={{ display:'grid', gridTemplateColumns:`repeat(${stats.length},1fr)`, gap:32, marginTop:40 }} className="lp-stats-grid">
+              {stats.map((st, i) => (
+                <div key={st.id || i} style={{ padding:'32px 24px', borderRadius:16, background:'rgba(255,255,255,.07)', border:'1px solid rgba(217,148,1,.3)' }}>
+                  <div style={{ fontSize:'clamp(36px,5vw,52px)', fontWeight:900, color:'#d99401', fontVariantNumeric:'tabular-nums', lineHeight:1, marginBottom:10 }}>
+                    <Counter target={parseInt(st.number) || 0} suffix={st.suffix}/>
+                  </div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,.7)', textTransform:'uppercase', letterSpacing:2 }}>
+                    {t(st.label_ar, st.label_en)}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* ── Map ── */}
+      {/* ── CLIENTS MAP ── */}
       {(s.lp_map_image || s.lp_map_title_ar || s.lp_map_title_en) && (
-        <section className="py-24 px-5">
-          <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-black mb-3">
+        <section style={{ padding:'80px 0' }}>
+          <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', textAlign:'center' }}>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>
+              {t('عملاؤنا حول العالم','Our Clients Worldwide')}
+            </span>
+            <h2 style={{ fontSize:30, fontWeight:800, color:'#1B2556', marginBottom:8 }}>
               {t(s.lp_map_title_ar || '', s.lp_map_title_en || '')}
             </h2>
             {(s.lp_map_sub_ar || s.lp_map_sub_en) && (
-              <p className="text-gray-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+              <p style={{ color:'#6B7494', fontSize:15, maxWidth:640, margin:'0 auto 36px', lineHeight:1.8 }}>
                 {t(s.lp_map_sub_ar || '', s.lp_map_sub_en || '')}
               </p>
             )}
             {s.lp_map_image && (
-              <div className="mt-12 rounded-2xl overflow-hidden border border-white/8 shadow-2xl">
-                <img src={s.lp_map_image} alt="clients map" className="w-full object-cover"/>
+              <div style={{ borderRadius:20, overflow:'hidden', border:'1.5px solid #EDD98A', boxShadow:'0 20px 48px -16px rgba(27,37,86,.12)', marginTop:16 }}>
+                <img src={s.lp_map_image} alt="clients map" style={{ width:'100%', display:'block' }}/>
               </div>
             )}
           </div>
@@ -277,28 +358,36 @@ export default function LandingPage() {
 
       {/* ── FAQ ── */}
       {faq.length > 0 && (
-        <section className="py-24 px-5 bg-[#0a0a0a]">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-black mb-2">
-                {t(s.lp_faq_title_ar || 'الأسئلة الشائعة', s.lp_faq_title_en || 'FAQ')}
+        <section id="faq" style={{ padding:'80px 0', background:'#F9F6EE' }}>
+          <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
+            <div style={{ textAlign:'center', maxWidth:640, margin:'0 auto 52px' }}>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>
+                {t('أسئلة شائعة','FAQ')}
+              </span>
+              <h2 style={{ fontSize:30, fontWeight:800, color:'#1B2556', marginBottom:8 }}>
+                {t(s.lp_faq_title_ar || 'الأسئلة الشائعة', s.lp_faq_title_en || 'Frequently Asked Questions')}
               </h2>
               {(s.lp_faq_sub_ar || s.lp_faq_sub_en) && (
-                <p className="text-gray-400 mt-2">{t(s.lp_faq_sub_ar || '', s.lp_faq_sub_en || '')}</p>
+                <p style={{ color:'#6B7494', fontSize:15 }}>
+                  {t(s.lp_faq_sub_ar || '', s.lp_faq_sub_en || '')}
+                </p>
               )}
-              <div className="w-16 h-1 rounded-full mx-auto mt-4" style={{ background: '#d99401' }}/>
             </div>
-            <div className="space-y-3">
+            <div style={{ maxWidth:860, margin:'0 auto' }}>
               {faq.map((item, i) => (
-                <div key={item.id || i} className="rounded-xl border border-white/8 overflow-hidden">
+                <div key={item.id || i} style={{ border:'1px solid #DCE4F1', borderRadius:12, marginBottom:12, overflow:'hidden' }}>
                   <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between px-6 py-4 text-start hover:bg-white/3 transition-colors">
-                    <span className="font-semibold text-white">{t(item.q_ar, item.q_en)}</span>
-                    {openFaq === i ? <ChevronUp size={16} className="text-[#d99401] flex-shrink-0"/> : <ChevronDown size={16} className="text-gray-500 flex-shrink-0"/>}
+                    style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 26px', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:15, color:'#1B2556', background:'#fff', border:'none', cursor:'pointer', gap:14, textAlign: lang==='ar' ? 'right' : 'left' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                      <span style={{ flexShrink:0, width:26, height:26, borderRadius:8, background:'#FBF2D8', color:'#b87e00', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>؟</span>
+                      <span>{t(item.q_ar, item.q_en)}</span>
+                    </div>
+                    <span style={{ color:'#6B7494', fontSize:12, flexShrink:0, transition:'transform .2s', transform: openFaq === i ? 'rotate(180deg)' : 'none' }}>▾</span>
                   </button>
                   {openFaq === i && (
-                    <div className="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-white/5">
-                      <p className="pt-4">{t(item.a_ar, item.a_en)}</p>
+                    <div style={{ background:'#F9F6EE', borderTop:'1px solid #DCE4F1', padding:'18px 26px 24px', fontSize:14, color:'#6B7494', lineHeight:1.9 }}>
+                      {t(item.a_ar, item.a_en)}
                     </div>
                   )}
                 </div>
@@ -308,60 +397,68 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── Reviews ── */}
+      {/* ── REVIEWS ── */}
       {reviews.length > 0 && (
-        <section className="py-24 px-5">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-black mb-3">
+        <section id="reviews" style={{ padding:'80px 0' }}>
+          <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
+            <div style={{ textAlign:'center', maxWidth:640, margin:'0 auto 52px' }}>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>
+                {t('آراء العملاء','Customer Reviews')}
+              </span>
+              <h2 style={{ fontSize:30, fontWeight:800, color:'#1B2556', marginBottom:8 }}>
                 {t(s.lp_rev_title_ar || 'ماذا يقول عملاؤنا', s.lp_rev_title_en || 'What Our Clients Say')}
               </h2>
-              <div className="w-16 h-1 rounded-full mx-auto mt-4" style={{ background: '#d99401' }}/>
             </div>
 
-            <div className="relative">
-              <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/3">
-                <div className="p-8 md:p-10">
-                  {(() => {
-                    const rev = reviews[revIdx]
-                    return (
-                      <div key={revIdx} className="flex flex-col items-center text-center">
-                        {rev.photo
-                          ? <img src={rev.photo} alt={rev.name} className="w-20 h-20 rounded-full object-cover border-2 border-[#d99401] mb-5 shadow-lg shadow-[#d99401]/20"/>
-                          : <div className="w-20 h-20 rounded-full bg-[#d99401]/20 border-2 border-[#d99401] flex items-center justify-center mb-5 text-2xl font-black text-[#d99401]">{rev.name.charAt(0)}</div>}
-                        <div className="flex gap-1 mb-4">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} size={18} fill={i < rev.stars ? '#d99401' : 'transparent'} stroke={i < rev.stars ? '#d99401' : '#555'} />
-                          ))}
-                        </div>
-                        <p className="text-gray-200 text-base leading-relaxed mb-6 max-w-2xl">
-                          "{t(rev.text_ar, rev.text_en)}"
-                        </p>
-                        <div>
-                          <div className="font-bold text-white">{rev.name}</div>
-                          {rev.location && <div className="text-xs text-gray-500 mt-0.5">{rev.location}</div>}
-                        </div>
+            {/* Slider */}
+            <div style={{ maxWidth:720, margin:'0 auto' }}>
+              {(() => {
+                const rev = reviews[revIdx]
+                return (
+                  <div style={{ background:'#FFFDF5', border:'1.5px solid #EDD98A', borderRadius:20, padding:'40px 48px', textAlign:'center', boxShadow:'0 16px 40px -16px rgba(27,37,86,.10)' }}>
+                    {/* Stars */}
+                    <div style={{ display:'flex', justifyContent:'center', gap:4, marginBottom:20 }}>
+                      {[1,2,3,4,5].map(n => (
+                        <svg key={n} viewBox="0 0 24 24" style={{ width:20, height:20, fill: n <= rev.stars ? '#d99401' : '#DCE4F1', stroke:'none' }}>
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                      ))}
+                    </div>
+                    {/* Quote */}
+                    <p style={{ fontSize:15.5, color:'#3D4A6B', lineHeight:2, marginBottom:28, fontStyle:'normal' }}>
+                      "{t(rev.text_ar, rev.text_en)}"
+                    </p>
+                    {/* Avatar + name */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:14 }}>
+                      {rev.photo
+                        ? <img src={rev.photo} alt={rev.name} style={{ width:52, height:52, borderRadius:'50%', objectFit:'cover', border:'2px solid #d99401' }}/>
+                        : <div style={{ width:52, height:52, borderRadius:'50%', background:'#FBF2D8', border:'2px solid #d99401', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, fontWeight:800, color:'#d99401' }}>{rev.name.charAt(0)}</div>}
+                      <div style={{ textAlign: lang==='ar' ? 'right' : 'left' }}>
+                        <div style={{ fontWeight:800, fontSize:15, color:'#1B2556' }}>{rev.name}</div>
+                        {rev.location && <div style={{ fontSize:12.5, color:'#6B7494', marginTop:2 }}>{rev.location}</div>}
                       </div>
-                    )
-                  })()}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                )
+              })()}
 
+              {/* Dots + arrows */}
               {reviews.length > 1 && (
-                <div className="flex items-center justify-center gap-4 mt-6">
-                  <button onClick={() => setRevIdx(i => (i - 1 + reviews.length) % reviews.length)}
-                    className="w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:border-[#d99401]/50 transition-colors">
-                    {lang === 'ar' ? <ChevronRight size={16}/> : <ChevronLeft size={16}/>}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, marginTop:24 }}>
+                  <button onClick={() => { clearTimeout(revTimer.current); setRevIdx(i => (i - 1 + reviews.length) % reviews.length) }}
+                    style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #DCE4F1', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#1B2556' }}>
+                    {lang === 'ar' ? '›' : '‹'}
                   </button>
-                  <div className="flex gap-2">
+                  <div style={{ display:'flex', gap:6 }}>
                     {reviews.map((_, i) => (
-                      <button key={i} onClick={() => setRevIdx(i)}
-                        className={`rounded-full transition-all ${i === revIdx ? 'w-6 h-2.5 bg-[#d99401]' : 'w-2.5 h-2.5 bg-white/20 hover:bg-white/40'}`}/>
+                      <button key={i} onClick={() => { clearTimeout(revTimer.current); setRevIdx(i) }}
+                        style={{ borderRadius:999, border:'none', cursor:'pointer', transition:'all .3s', background: i === revIdx ? '#d99401' : '#DCE4F1', width: i === revIdx ? 22 : 8, height:8 }}/>
                     ))}
                   </div>
-                  <button onClick={() => setRevIdx(i => (i + 1) % reviews.length)}
-                    className="w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:border-[#d99401]/50 transition-colors">
-                    {lang === 'ar' ? <ChevronLeft size={16}/> : <ChevronRight size={16}/>}
+                  <button onClick={() => { clearTimeout(revTimer.current); setRevIdx(i => (i + 1) % reviews.length) }}
+                    style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #DCE4F1', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#1B2556' }}>
+                    {lang === 'ar' ? '‹' : '›'}
                   </button>
                 </div>
               )}
@@ -370,34 +467,34 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── Newsletter ── */}
+      {/* ── NEWSLETTER CTA ── */}
       {(s.lp_nl_title_ar || s.lp_nl_title_en) && (
-        <section className="py-24 px-5" style={{ background: 'linear-gradient(135deg, #1a1400 0%, #0d0d0d 100%)' }}>
-          <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-black mb-3">
+        <section style={{ padding:'80px 24px' }}>
+          <div style={{ maxWidth:1132, margin:'0 auto', background:'linear-gradient(135deg,#1B2556,#2A3A78)', borderRadius:24, padding:'56px 40px', textAlign:'center', color:'#fff' }}>
+            <h2 style={{ fontSize:28, fontWeight:800, marginBottom:12 }}>
               {t(s.lp_nl_title_ar || 'فاتك عرض ميتفوتش؟', s.lp_nl_title_en || 'Missed a deal?')}
             </h2>
             {(s.lp_nl_sub_ar || s.lp_nl_sub_en) && (
-              <p className="text-gray-400 mb-8 leading-relaxed">
+              <p style={{ color:'rgba(255,255,255,.7)', marginBottom:32, fontSize:14.5, maxWidth:480, margin:'0 auto 32px' }}>
                 {t(s.lp_nl_sub_ar || '', s.lp_nl_sub_en || '')}
               </p>
             )}
             {nlSent
-              ? <div className="p-6 rounded-2xl border border-[#d99401]/30 bg-[#d99401]/10 text-[#d99401] font-semibold">
-                  {t('شكراً! هيوصلك كل جديد 🎉', 'Thank you! We\'ll keep you updated 🎉')}
+              ? <div style={{ background:'rgba(14,159,110,.15)', border:'1px solid rgba(14,159,110,.4)', borderRadius:12, padding:'18px 32px', display:'inline-block', color:'#6EE7B7', fontWeight:700 }}>
+                  {t('✅ تم الاشتراك بنجاح! شكراً ليك 🎉', '✅ Subscribed successfully! Thank you 🎉')}
                 </div>
               : (
-                <form onSubmit={e => { e.preventDefault(); if (nlEmail) setNlSent(true) }} className="space-y-3">
+                <form onSubmit={e => { e.preventDefault(); if (nlEmail) setNlSent(true) }}
+                  style={{ display:'flex', flexDirection:'column', gap:10, maxWidth:420, margin:'0 auto' }}>
                   <input value={nlName} onChange={e => setNlName(e.target.value)}
                     placeholder={t(s.lp_nl_name_ar || 'الاسم', s.lp_nl_name_en || 'Name')}
-                    className="w-full px-5 py-3.5 rounded-xl bg-white/6 border border-white/10 text-white placeholder-gray-500 focus:border-[#d99401]/50 outline-none transition-colors text-sm"/>
+                    style={{ padding:'13px 18px', borderRadius:10, border:'1px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.08)', color:'#fff', fontFamily:"'Cairo',sans-serif", fontSize:14, outline:'none' }}/>
                   <input type="email" required value={nlEmail} onChange={e => setNlEmail(e.target.value)}
-                    placeholder={t(s.lp_nl_email_ar || 'البريد الالكتروني', s.lp_nl_email_en || 'Email address')}
-                    className="w-full px-5 py-3.5 rounded-xl bg-white/6 border border-white/10 text-white placeholder-gray-500 focus:border-[#d99401]/50 outline-none transition-colors text-sm"/>
+                    placeholder={t(s.lp_nl_email_ar || 'البريد الإلكتروني', s.lp_nl_email_en || 'Email address')}
+                    style={{ padding:'13px 18px', borderRadius:10, border:'1px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.08)', color:'#fff', fontFamily:"'Cairo',sans-serif", fontSize:14, outline:'none' }}/>
                   <button type="submit"
-                    className="w-full py-3.5 rounded-xl font-bold text-sm text-[#0d0d0d] hover:brightness-110 transition-all"
-                    style={{ background: '#d99401' }}>
-                    {t(s.lp_nl_btn_ar || 'اشترك في نشرتنا', s.lp_nl_btn_en || 'Subscribe')}
+                    style={{ padding:'14px', borderRadius:10, border:'none', background:'#d99401', color:'#fff', fontFamily:"'Cairo',sans-serif", fontWeight:700, fontSize:15, cursor:'pointer', boxShadow:'0 8px 22px rgba(217,148,1,.4)' }}>
+                    {t(s.lp_nl_btn_ar || 'اشترك في نشرتنا الإخبارية', s.lp_nl_btn_en || 'Subscribe')}
                   </button>
                 </form>
               )}
@@ -405,29 +502,51 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-white/5 py-10 px-5">
-        <div className="max-w-6xl mx-auto">
+      {/* ── FOOTER ── */}
+      <footer style={{ padding:'36px 0', borderTop:'1px solid #DCE4F1', background:'#fff' }}>
+        <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
           {s.lp_footer_html
-            ? <div dangerouslySetInnerHTML={{ __html: s.lp_footer_html }} className="text-sm text-gray-500"/>
-            : <p className="text-center text-sm text-gray-600">{siteName} © {new Date().getFullYear()}</p>}
+            ? <div dangerouslySetInnerHTML={{ __html: s.lp_footer_html }} style={{ fontSize:12.5, color:'#6B7494' }}/>
+            : <p style={{ textAlign:'center', fontSize:12.5, color:'#6B7494' }}><strong>{siteName}</strong> © {new Date().getFullYear()}</p>}
         </div>
       </footer>
 
-      {/* ── Marquee CSS ── */}
+      {/* ── Back to top ── */}
+      <button onClick={() => window.scrollTo({ top:0, behavior:'smooth' })} aria-label="Back to top"
+        style={{ position:'fixed', bottom: lang==='ar' ? 'auto' : 30, right: lang==='ar' ? 'auto' : 18, left: lang==='ar' ? 18 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <circle cx="23" cy="23" r={R} fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="3"/>
+          <circle cx="23" cy="23" r={R} fill="none" stroke="#d99401" strokeWidth="3"
+            strokeLinecap="round" transform="rotate(-90 23 23)"
+            strokeDasharray={C} strokeDashoffset={ringOffset}/>
+          <path d="M17 26L23 20L29 26" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {/* ── Google Fonts + responsive CSS ── */}
+      <link rel="preconnect" href="https://fonts.googleapis.com"/>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
       <style>{`
-        @keyframes marquee {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{overflow-x:hidden;}
+        a{text-decoration:none;color:inherit;}
+        input::placeholder{color:rgba(255,255,255,.4);}
+        .lp-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -12px rgba(27,37,86,.14);border-color:#EDD98A !important;}
+
+        @keyframes lpmarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        .lp-marquee{animation:lpmarquee 30s linear infinite;}
+        .lp-marquee:hover{animation-play-state:paused;}
+        [dir="rtl"] .lp-marquee{animation-direction:reverse;}
+
+        @media(max-width:860px){
+          .lp-hero-grid{grid-template-columns:1fr !important;}
+          .lp-feat-grid{grid-template-columns:1fr !important;}
+          .lp-stats-grid{grid-template-columns:1fr !important;}
+          .lp-desk-nav{display:none !important;}
+          .lp-ham{display:inline-flex !important;}
         }
-        .marquee-track {
-          animation: marquee 30s linear infinite;
-          display: flex;
-          gap: 1.5rem;
-        }
-        .marquee-track:hover { animation-play-state: paused; }
-        [dir="rtl"] .marquee-track {
-          animation-direction: reverse;
+        @media(max-width:600px){
+          section{padding:56px 0 !important;}
         }
       `}</style>
     </div>
