@@ -94,27 +94,31 @@ export default function ShopPage({ category }: Props) {
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-        <div className="relative flex-1 min-w-[140px]">
+      <div className="flex flex-col gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+        {/* Search — full width */}
+        <div className="relative w-full">
           <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools...','ابحث عن أداة...')}
             className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
         </div>
-        <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
-          <option value="all">{t('All','الكل')} ({tools.length})</option>
-          {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-          ))}
-        </select>
-        <button onClick={()=>setSort('best')}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-          ⭐ {t('Top Rated','الأعلى تقييماً')}
-        </button>
-        <button onClick={()=>setSort('recent')}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-          🕐 {t('New','الأحدث')}
-        </button>
+        {/* Filters — one row */}
+        <div className="flex items-center gap-2">
+          <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
+            className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
+            <option value="all">{t('All','الكل')} ({tools.length})</option>
+            {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+            ))}
+          </select>
+          <button onClick={()=>setSort('best')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            ⭐ {t('Top Rated','الأعلى تقييماً')}
+          </button>
+          <button onClick={()=>setSort('recent')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            🕐 {t('New','الأحدث')}
+          </button>
+        </div>
       </div>
 
       {/* Section label */}
