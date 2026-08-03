@@ -119,8 +119,9 @@ export default function PaymentsPage() {
   const handleEasykash = async () => {
     if (!topUpAmt || !topUpGw || !activeGw) return
     setSubmitting(true)
-    // Open tab synchronously (before any await) to avoid browser popup blocker
-    const newTab = window.open('', '_blank', 'noopener')
+    // Open tab synchronously (before any await) to avoid browser popup blocker.
+    // Must NOT use 'noopener' here — it severs the reference, making location.href assignment fail.
+    const newTab = window.open('', '_blank')
     try {
       const cr = await fetch('/api/member/payment/create', {
         method:'POST', credentials:'include',
@@ -332,7 +333,7 @@ export default function PaymentsPage() {
                         {/* QR first in DOM → left LTR / right RTL */}
                         {activeGw.qr_url && (
                           <img src={activeGw.qr_url} alt="QR Code"
-                            className="w-32 h-32 flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 object-contain bg-white p-1"/>
+                            className="w-40 h-40 flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 object-contain bg-white p-1"/>
                         )}
                         <div className="flex-1 space-y-3 min-w-0">
                           {/* UID with one-click copy */}
