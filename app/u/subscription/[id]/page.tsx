@@ -178,13 +178,19 @@ export default function SubscriptionDetailPage() {
     }
     window.addEventListener('message', handler)
 
-    // Ping every 300ms — same as dashboard page which works reliably
-    let attempts = 0
+    // Primary: poll sessionStorage every 200ms (set by content-script, no postMessage race)
     const poll = setInterval(() => {
-      if (attempts >= 20) { clearInterval(poll); return }
-      attempts++
+      try {
+        if (sessionStorage.getItem('__pk_ext_ready__') === '1') {
+          clearInterval(poll)
+          setExtReady(true)
+          fetchServersRef.current?.()
+          window.postMessage({ type: 'PK_GET_STATE' }, '*')
+        }
+      } catch {}
+      // Also ping via postMessage as secondary mechanism
       window.postMessage({ type: 'PK_PING' }, '*')
-    }, 300)
+    }, 200)
 
     return () => {
       window.removeEventListener('message', handler)
