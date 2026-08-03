@@ -53,6 +53,7 @@ export default function PaymentsPage() {
   }
 
   const cols = [
+    t('Code','الكود'),
     t('Subscription','الاشتراك'),
     t('Amount','المبلغ'),
     t('Method','وسيلة الدفع'),
@@ -80,36 +81,41 @@ export default function PaymentsPage() {
         </div>
 
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[750px] whitespace-nowrap">
+        <table className="w-full min-w-[820px] whitespace-nowrap">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800/50">
               {cols.map(h=>(
-                <th key={h} className="text-start text-xs font-semibold uppercase tracking-wide text-gray-400 px-5 py-3">{h}</th>
+                <th key={h} className="text-start text-xs font-semibold uppercase tracking-wide text-gray-400 px-4 py-3">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {loading&&<tr><td colSpan={5} className="text-center py-12 text-sm text-gray-400">{t('Loading...','جاري التحميل...')}</td></tr>}
-            {!loading&&payments.length===0&&<tr><td colSpan={5} className="text-center py-12 text-sm text-gray-400">{t('No payments yet','لا توجد مدفوعات بعد')}</td></tr>}
+            {loading&&<tr><td colSpan={7} className="text-center py-12 text-sm text-gray-400">{t('Loading...','جاري التحميل...')}</td></tr>}
+            {!loading&&payments.length===0&&<tr><td colSpan={7} className="text-center py-12 text-sm text-gray-400">{t('No payments yet','لا توجد مدفوعات بعد')}</td></tr>}
             {paginated.map(p=>{
               const st=statusStyle(p.status)
               return (
                 <tr key={p.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                  <td className="px-5 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200">{p.tool_name||'—'}</td>
-                  <td className="px-5 py-3 text-sm font-bold text-gray-900 dark:text-gray-100">{formatPrice(Number(p.amount))}</td>
-                  <td className="px-5 py-3 text-sm text-gray-500">{gatewayLabel[p.gateway]||p.gateway||'—'}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-bold px-2 py-1 rounded-md tracking-wide" style={{background:'#d9940115',color:'#d99401',border:'1px solid #d9940130'}}>
+                      {p.payment_code||'—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200">{p.tool_name||'—'}</td>
+                  <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100">{formatPrice(Number(p.amount))}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{gatewayLabel[p.gateway]||p.gateway||'—'}</td>
+                  <td className="px-4 py-3">
                     <span className="text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 w-fit" style={{background:st.bg,color:st.color}}>
                       {statusIcon(p.status)}{statusLabel(p.status)}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-sm text-gray-400">
+                  <td className="px-4 py-3 text-sm text-gray-400">
                     {new Date(p.created_at).toLocaleString(lang==='ar'?'ar-EG':'en-US', {
                       day: 'numeric', month: 'short', year: 'numeric',
                       hour: 'numeric', minute: '2-digit', hour12: true
                     })}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     {p.status==='completed' && (
                       <button
                         onClick={()=>downloadInvoice(p.id)}

@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const { data: payment } = await service
     .from('payments')
-    .select('id, amount, currency, gateway, status, transaction_id, pack_id, bundle_id, created_at')
+    .select('id, amount, currency, gateway, status, transaction_id, pack_id, bundle_id, payment_code, created_at')
     .eq('id', params.id)
     .eq('user_id', session.member_id)
     .single()
@@ -54,7 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const siteName = settings.site_name || 'Pro Keys'
 
   const element = React.createElement(InvoicePDF, {
-    payment:  { ...payment, tool_name, bundle_name },
+    payment:  { ...payment, tool_name, bundle_name, payment_code: payment.payment_code || null },
     member:   member || { full_name: 'Customer', email: '' },
     logoUrl,
     siteName,

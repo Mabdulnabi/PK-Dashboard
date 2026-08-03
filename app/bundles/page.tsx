@@ -55,7 +55,7 @@ export default function BundlesPage() {
       supabase.from('shop_tools').select('id, name, image_url, category_slug')
         .in('category_slug', ['shared', 'private']).eq('is_active', true).order('name'),
       supabase.from('payments')
-        .select('id, amount, currency, gateway, transaction_id, created_at, user_id, bundle_id, membership_plans(name), members(full_name, email)')
+        .select('id, payment_code, amount, currency, gateway, transaction_id, created_at, user_id, bundle_id, membership_plans(name), members(full_name, email)')
         .not('bundle_id', 'is', null)
         .eq('status', 'pending')
         .order('created_at', { ascending: false }),
@@ -213,7 +213,7 @@ export default function BundlesPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-[#0D1117]">
-                      {['Member','Bundle','Amount','Gateway','Ref','Date',''].map(h=>(
+                      {['Code','Member','Bundle','Amount','Gateway','Ref','Date',''].map(h=>(
                         <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
                       ))}
                     </tr>
@@ -221,6 +221,11 @@ export default function BundlesPage() {
                   <tbody>
                     {payments.map((p:any)=>(
                       <tr key={p.id} className="border-t border-gray-50 dark:border-[#1a2233] hover:bg-gray-50 dark:hover:bg-[#1a2233]/30">
+                        <td className="px-4 py-3">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md" style={{background:'#d9940115',color:'#d99401',border:'1px solid #d9940130'}}>
+                            {p.payment_code || '—'}
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{(p.members as any)?.full_name || '—'}</div>
                           <div className="text-[10px] text-gray-400">{(p.members as any)?.email}</div>

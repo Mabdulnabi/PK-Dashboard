@@ -19,7 +19,7 @@ export async function GET() {
 
     const { data, error } = await service
       .from('payments')
-      .select('id, amount, currency, gateway, status, transaction_id, pack_id, verified_at, created_at')
+      .select('id, amount, currency, gateway, status, transaction_id, pack_id, bundle_id, payment_code, verified_at, created_at')
       .eq('user_id', session.member_id)
       .order('created_at', { ascending: false })
 
@@ -36,14 +36,26 @@ export async function GET() {
       toolNames = Object.fromEntries((tools || []).map(t => [t.id, t.name]))
     }
 
+    // Get bundle names for bundle_ids
+    const bundleIds = Array.from(new Set((data || []).filter(p => p.bundle_id).map(p => p.bundle_id)))
+    let bundleNames: Record<string, string> = {}
+    if (bundleIds.length > 0) {
+      const { data: bundles } = await service
+        .from('membership_plans')
+        .select('id, name')
+        .in('id', bundleIds)
+      bundleNames = Object.fromEntries((bundles || []).map(b => [b.id, b.name]))
+    }
+
     const payments = (data || []).map(p => ({
       id:             p.id,
+      payment_code:   p.payment_code,
       amount:         p.amount,
       currency:       p.currency,
       gateway:        p.gateway,
       status:         p.status,
       transaction_id: p.transaction_id,
-      tool_name:      toolNames[p.pack_id] || null,
+      tool_name:      toolNames[p.pack_id] || bundleNames[p.bundle_id] || null,
       verified_at:    p.verified_at,
       created_at:     p.created_at,
     }))
