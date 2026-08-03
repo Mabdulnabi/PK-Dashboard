@@ -94,29 +94,27 @@ export default function ShopPage({ category }: Props) {
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+        <div className="relative flex-1 min-w-[140px]">
           <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools...','ابحث عن أداة...')}
             className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
-            <option value="all">{t('All','الكل')} ({tools.length})</option>
-            {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-            ))}
-          </select>
-          <button onClick={()=>setSort('best')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-            ⭐ {t('Top Rated','الأعلى تقييماً')}
-          </button>
-          <button onClick={()=>setSort('recent')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-            🕐 {t('New','الأحدث')}
-          </button>
-        </div>
+        <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
+          <option value="all">{t('All','الكل')} ({tools.length})</option>
+          {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+          ))}
+        </select>
+        <button onClick={()=>setSort('best')}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+          ⭐ {t('Top Rated','الأعلى تقييماً')}
+        </button>
+        <button onClick={()=>setSort('recent')}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+          🕐 {t('New','الأحدث')}
+        </button>
       </div>
 
       {/* Section label */}
@@ -170,7 +168,7 @@ export default function ShopPage({ category }: Props) {
               {tool.is_out_of_stock
                 ? <button disabled className="w-full py-3 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
                 : <button onClick={()=>buy(tool)} className="w-full py-3 rounded-xl text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md" style={{background:'#d99401'}}>
-                    🔒 {t('Buy Now','اشتري الآن')}
+                    🛒 {t('Buy Now','اشتري الآن')}
                   </button>
               }
             </div>
@@ -222,7 +220,7 @@ export default function ShopPage({ category }: Props) {
                   ? <button disabled className="w-full py-3.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 font-bold text-base cursor-default mb-5">{t('Out of Stock','نفذت الكمية')}</button>
                   : <button onClick={()=>{ setPopup(null); buy(popup) }}
                       className="w-full py-3.5 rounded-xl text-white font-bold text-base transition-colors shadow-lg flex items-center justify-center gap-2 mb-5" style={{background:'#d99401'}}>
-                      🔒 {t('Buy Now','اشتري الآن')}
+                      🛒 {t('Buy Now','اشتري الآن')}
                     </button>
                 }
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-4">

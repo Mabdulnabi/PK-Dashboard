@@ -202,7 +202,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   : <button onClick={()=>{ window.location.href=buyUrl }}
                       className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{background:'#d99401', boxShadow:'0 6px 20px rgba(217,148,1,0.35)'}}>
-                      🔒 {t('Buy Now','اشتري الآن')}
+                      🛒 {t('Buy Now','اشتري الآن')}
                     </button>
                 }
                 <div className="flex flex-col gap-1.5 pt-1">
@@ -407,7 +407,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="px-10 py-4 rounded-2xl text-white font-bold text-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{background:'#d99401', boxShadow:'0 8px 24px rgba(217,148,1,0.3)'}}>
-              🔒 {t('Buy Now — ','اشتري الآن — ')}{price}
+              🛒 {t('Buy Now — ','اشتري الآن — ')}{price}
             </button>
           )}
         </div>
@@ -424,7 +424,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm"
               style={{background:'#d99401'}}>
-              🔒 {t('Buy Now','اشتري الآن')}
+              🛒 {t('Buy Now','اشتري الآن')}
             </button>
           </div>
         </div>
