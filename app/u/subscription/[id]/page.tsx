@@ -146,6 +146,7 @@ export default function SubscriptionDetailPage() {
 
       if (data.type === 'PK_EXTENSION_READY') {
         setExtReady(true)
+        stopPoll()
         window.postMessage({ type: 'PK_GET_STATE' }, '*')
       }
       if (data.type === 'PK_STATE') {
@@ -183,17 +184,16 @@ export default function SubscriptionDetailPage() {
     }
     window.addEventListener('message', handler)
 
-    // Ping every 300ms for 5 seconds
-    let attempts = 0
-    const poll = setInterval(() => {
-      if (attempts >= 15) { clearInterval(poll); return }
-      attempts++
+    // Ping every second until extension responds, then stop
+    let pollRef: ReturnType<typeof setInterval>
+    const stopPoll = () => clearInterval(pollRef)
+    pollRef = setInterval(() => {
       window.postMessage({ type: 'PK_PING' }, '*')
-    }, 300)
+    }, 1000)
 
     return () => {
       window.removeEventListener('message', handler)
-      clearInterval(poll)
+      stopPoll()
     }
   }, [])  // ← runs once on mount, independent of purchase
 
