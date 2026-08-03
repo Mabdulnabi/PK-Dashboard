@@ -49,7 +49,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
   try {
-    const adminClient = createClient(Deno.env.get('PROKEYS_SUPABASE_URL') ?? '', Deno.env.get('PROKEYS_SERVICE_ROLE_KEY') ?? '');
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROKEYS_SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('PROKEYS_SERVICE_ROLE_KEY') ?? '',
+    );
 
     const { payment_id, member_id } = await req.json();
     if (!payment_id || !member_id) return json({ success: false, error: 'Missing fields' }, 400);

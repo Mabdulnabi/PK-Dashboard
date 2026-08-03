@@ -14,7 +14,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
   try {
-    const adminClient = createClient(Deno.env.get('PROKEYS_SUPABASE_URL') ?? '', Deno.env.get('PROKEYS_SERVICE_ROLE_KEY') ?? '');
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROKEYS_SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('PROKEYS_SERVICE_ROLE_KEY') ?? '',
+    );
 
     const { payment_id, member_id, amount } = await req.json();
     if (!payment_id || !member_id) return json({ success: false, error: 'Missing fields' }, 400);
@@ -41,7 +44,7 @@ Deno.serve(async (req) => {
       paymentOptions: [2, 4, 6],
       cashExpiry: 3,
       name: member?.full_name || 'Customer',
-      email: member?.email || 'customer@example.com',
+      email: member?.email || Deno.env.get('PROKEYS_FALLBACK_EMAIL') || 'noreply@pro-keys.store',
       mobile: member?.phone || '01000000000',
       redirectUrl,
       customerReference: payment.id,
