@@ -97,8 +97,15 @@ export default function MembersPage() {
       status:'pending'
     }).select().single()
     if(pay){
-      const {data:{user}} = await supabase.auth.getUser()
-      await supabase.rpc('confirm_payment',{p_payment_id:pay.id,p_admin_id:user?.id})
+      await fetch('/api/admin/payments/confirm',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          payment_id: pay.id,
+          member_id: sel2.id,
+          plan_name: plans.find(p=>p.slug===sel2.plan_slug)?.name,
+        })
+      })
     }
     setSaving(false)
     setToast({msg:'Payment added & confirmed',type:'ok'})

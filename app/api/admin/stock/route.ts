@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-
-const service = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { db as service } from '@/lib/db'
 
 export async function GET() {
   const { data: tools } = await service
@@ -47,5 +42,31 @@ export async function POST(req: NextRequest) {
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify members who have a pending purchase for this tool
+  const { data: tool } = await service
+    .from('shop_tools').select('name').eq('id', tool_id).single()
+
+  if (tool) {
+    const { data: pendingMembers } = await service
+      .from('tool_purchases')
+      .select('member_id')
+      .eq('shop_tool_id', tool_id)
+      .eq('status', 'pending')
+
+    const memberIds = [...new Set((pendingMembers || []).map((p: any) => p.member_id))]
+    if (memberIds.length > 0) {
+      const notifications = memberIds.map((member_id: string) => ({
+        member_id,
+        title:      `${tool.name} متاح الآن 🎉`,
+        title_en:   `${tool.name} is now available 🎉`,
+        message:    `تم إضافة حساب جديد لـ ${tool.name}. تواصل مع الدعم لاستكمال تفعيل اشتراكك.`,
+        message_en: `A new ${tool.name} account has been added. Contact support to activate your subscription.`,
+        type:       'info',
+      }))
+      void service.from('member_notifications').insert(notifications)
+    }
+  }
+
   return NextResponse.json({ ok: true, item: data })
 }

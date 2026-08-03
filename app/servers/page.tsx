@@ -287,7 +287,7 @@ export default function ServersPage() {
                         <Ban size={10}/>Ban
                       </button>
                       <button onClick={()=>setDel(s)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors ml-auto">
+                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ml-auto">
                         <Trash2 size={10}/>Delete
                       </button>
                     </div>

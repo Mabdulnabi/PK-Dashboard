@@ -1,26 +1,16 @@
 // app/api/member/payment/verify/route.ts
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies()
     const token = cookieStore.get('pk_member_token')?.value
-    console.log('VERIFY TOKEN:', token)
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Create client inside the function — not at module level
-    const service = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    const { data: session, error: sessionErr } = await service
+    const { data: session, error: sessionErr } = await db
       .rpc('verify_member_session', { p_token: token })
-
-    console.log('VERIFY SESSION:', JSON.stringify(session))
-    console.log('VERIFY SESSION ERR:', JSON.stringify(sessionErr))
 
     if (sessionErr || !session?.valid)
       return NextResponse.json({ error: session?.error || 'Invalid session' }, { status: 401 })

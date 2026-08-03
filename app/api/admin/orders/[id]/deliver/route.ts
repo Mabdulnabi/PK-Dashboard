@@ -1,59 +1,54 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-
-const service = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { db } from '@/lib/db'
+import { badRequest, notFound, serverError } from '@/lib/responses'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const purchaseId = params.id
   const { delivery_type = 'account', email, password, key, notes } = await req.json()
 
   if (delivery_type === 'account' && (!email?.trim() || !password?.trim()))
-    return NextResponse.json({ error: 'email and password required' }, { status: 400 })
+    return badRequest('email and password required')
   if (delivery_type === 'key' && !key?.trim())
-    return NextResponse.json({ error: 'key required' }, { status: 400 })
+    return badRequest('key required')
 
-  const { data: purchase } = await service
+  const { data: purchase } = await db
     .from('tool_purchases')
-    .select('id, member_id, shop_tools(id, category_slug)')
-    .eq('id', purchaseId)
+    .select('id, member_id, shop_tools(id, name, category_slug)')
+    .eq('id', params.id)
     .eq('status', 'confirmed')
     .single()
 
-  if (!purchase) return NextResponse.json({ error: 'purchase not found' }, { status: 404 })
+  if (!purchase) return notFound('purchase not found')
   if ((purchase as any).shop_tools?.category_slug !== 'private')
-    return NextResponse.json({ error: 'not a private tool' }, { status: 400 })
+    return badRequest('not a private tool')
 
-  const { error } = await service.from('account_deliveries').upsert({
-    purchase_id:   purchaseId,
-    member_id:     (purchase as any).member_id,
-    tool_id:       (purchase as any).shop_tools?.id,
+  const { error } = await db.from('account_deliveries').upsert({
+    purchase_id:  params.id,
+    member_id:    (purchase as any).member_id,
+    tool_id:      (purchase as any).shop_tools?.id,
     delivery_type,
-    email:         delivery_type === 'account' ? email.trim()    : null,
-    password_enc:  delivery_type === 'account' ? password.trim() : null,
-    key_enc:       delivery_type === 'key'     ? key.trim()      : null,
-    notes:         notes?.trim() || null,
-    source:        'manual',
-    delivered_at:  new Date().toISOString(),
-    viewed_at:     null,
+    email:        delivery_type === 'account' ? email.trim()    : null,
+    password_enc: delivery_type === 'account' ? password.trim() : null,
+    key_enc:      delivery_type === 'key'     ? key.trim()      : null,
+    notes:        notes?.trim() || null,
+    source:       'manual',
+    delivered_at: new Date().toISOString(),
+    viewed_at:    null,
   }, { onConflict: 'purchase_id' })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError(error.message)
 
-  // Notify member
-  const toolName   = (purchase as any).shop_tools?.name || 'الأداة'
-  const label      = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'
-  const label_en   = delivery_type === 'key' ? 'activation key'  : 'account credentials'
-  service.from('member_notifications').insert({
-    member_id:   (purchase as any).member_id,
-    title:       `تم تسليم ${label} 🎉`,
-    title_en:    `Your ${label_en} has been delivered 🎉`,
-    message:     `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
-    message_en:  `Your ${label_en} for ${toolName} is ready. Go to My Subscriptions to view it.`,
-    type:        'success',
-  }).then(() => {})
+  const toolName = (purchase as any).shop_tools?.name || 'الأداة'
+  const label    = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'
+  const labelEn  = delivery_type === 'key' ? 'activation key' : 'account credentials'
+
+  void db.from('member_notifications').insert({
+    member_id:  (purchase as any).member_id,
+    title:      `تم تسليم ${label} 🎉`,
+    title_en:   `Your ${labelEn} has been delivered 🎉`,
+    message:    `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
+    message_en: `Your ${labelEn} for ${toolName} is ready. Go to My Subscriptions to view it.`,
+    type:       'success',
+  })
 
   return NextResponse.json({ ok: true })
 }
