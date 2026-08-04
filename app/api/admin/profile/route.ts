@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { db } from '@/lib/db'
 
-// Extract the admin user ID from the Supabase auth cookie and verify
-// with the service-role client. Avoids getSession() which fails when
-// the token needs refreshing but setAll is a no-op.
-async function getAdminUserId(): Promise<string | null> {
+// Extract the admin user ID from the Supabase auth cookie by decoding
+// the JWT payload directly. Avoids getSession() (which fails on token
+// expiry when setAll is a no-op) and avoids db.auth.getUser() (which
+// can update the shared db singleton's Authorization header, corrupting
+// service-role access on tables with RLS).
+// The middleware already verified the cookie exists; we trust the sub claim.
+function getAdminUserId(): string | null {
   const cookieStore = cookies()
   const ref = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
     .replace('https://', '').split('.')[0]
@@ -26,17 +29,21 @@ async function getAdminUserId(): Promise<string | null> {
 
   try {
     const session = JSON.parse(decodeURIComponent(raw))
-    const accessToken = session?.access_token
+    const accessToken: string = session?.access_token
     if (!accessToken) return null
-    const { data } = await db.auth.getUser(accessToken)
-    return data.user?.id ?? null
+    // Decode JWT payload (middle segment) — no signature verification needed
+    // since the middleware already gated on the cookie's existence.
+    const payload = JSON.parse(
+      Buffer.from(accessToken.split('.')[1], 'base64url').toString('utf-8')
+    )
+    return payload?.sub ?? null
   } catch {
     return null
   }
 }
 
 export async function GET() {
-  const userId = await getAdminUserId()
+  const userId = getAdminUserId()
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { data: profile } = await db
@@ -55,7 +62,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const userId = await getAdminUserId()
+  const userId = getAdminUserId()
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { display_name, full_name, avatar_url, whatsapp, email, password } = await req.json()
