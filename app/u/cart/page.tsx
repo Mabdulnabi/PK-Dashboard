@@ -70,8 +70,11 @@ export default function CartPage() {
   const checkout = async () => {
     if (cart.length === 0) return
     setCheckingOut(true)
-    const tool = cart[0].shop_tools
-    router.push(`/u/checkout?tool_id=${tool.id}`)
+    if (cart.length === 1 && cart[0].shop_tools?.id) {
+      router.push(`/u/checkout?tool_id=${cart[0].shop_tools.id}`)
+    } else {
+      router.push('/u/checkout?cart=1')
+    }
   }
 
   if (loading) {
@@ -99,7 +102,7 @@ export default function CartPage() {
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">{cartCount} {t('items', 'عناصر')}</p>
         </div>
-        <Link href="/u/shop" className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+        <Link href="/u/shop" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
           <ArrowRight size={15} className={dir === 'rtl' ? 'rotate-180' : ''}/>
           {t('Continue Shopping', 'متابعة التسوق')}
         </Link>

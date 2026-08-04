@@ -29,6 +29,8 @@ const FALLBACK_ICONS: Record<string,string> = {
   binance:'🟡', bybit:'🔵', bep20:'💎', instapay:'💳', vodafone:'📱', easykash:'💰',
 }
 
+interface CartLocalItem { tool_id: string; quantity: number; shop_tools?: Partial<Tool> }
+
 function CheckoutInner() {
   const { t, lang, formatPrice, dir } = useLang()
   const siteSettings = useSiteSettings()
@@ -36,9 +38,11 @@ function CheckoutInner() {
   const router    = useRouter()
   const toolId    = params.get('tool_id')
   const bundleId  = params.get('bundle_id')
+  const cartMode  = params.get('cart') === '1'
 
   const [tool,             setTool]             = useState<Tool|null>(null)
   const [bundle,           setBundle]           = useState<Bundle|null>(null)
+  const [cartItems,        setCartItems]        = useState<CartLocalItem[]>([])
   const [settings,         setSettings]         = useState<Settings>({ whatsapp_number:'', usd_to_egp_rate:'50' })
   const [gateways,         setGateways]         = useState<Gateway[]>([])
   const [loading,          setLoading]          = useState(true)
@@ -64,40 +68,45 @@ function CheckoutInner() {
     })
 
   useEffect(()=>{
-    if (!toolId && !bundleId) return
+    if (!toolId && !bundleId && !cartMode) return
 
     const promises: Promise<any>[] = [
       fetch('/api/member/gateways').then(r=>r.json()),
+      fetch('/api/member/shop').then(r=>r.json()),
     ]
 
-    if (toolId) {
-      promises.push(fetch('/api/member/shop').then(r=>r.json()))
-      promises.push(fetch('/api/member/purchases').then(r=>r.json()))
-    } else {
-      promises.push(fetch('/api/member/bundles').then(r=>r.json()))
-    }
-
-    Promise.all(promises).then(([gwData, secondData])=>{
+    Promise.all(promises).then(([gwData, shopData])=>{
       const gws: Gateway[] = gwData.gateways || []
       setGateways(gws)
       if (gws.length > 0) setMethod(gws[0].id)
 
-      if (toolId) {
-        const shopData     = secondData
-        // purchaseData fetched separately below
-        const foundTool    = shopData.tools?.find((x:any)=>x.id===toolId)
+      const s:any={}
+      shopData.settings && Object.entries(shopData.settings).forEach(([k,v]:any)=>{ s[k]=v })
+      setSettings(s)
+
+      if (cartMode) {
+        try {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem('pk_cart') : null
+          const local: CartLocalItem[] = raw ? JSON.parse(raw) : []
+          const allTools: Tool[] = shopData.tools || []
+          const merged = local.map((item: CartLocalItem) => {
+            const found = allTools.find((x:Tool) => x.id === item.tool_id)
+            return { ...item, shop_tools: found ? { ...found } : item.shop_tools }
+          }).filter((item: CartLocalItem) => item.shop_tools?.id)
+          setCartItems(merged)
+        } catch {}
+      } else if (toolId) {
+        const foundTool = shopData.tools?.find((x:any)=>x.id===toolId)
         if (foundTool) setTool(foundTool)
-        const s:any={}
-        shopData.settings && Object.entries(shopData.settings).forEach(([k,v]:any)=>{ s[k]=v })
-        setSettings(s)
         fetch('/api/member/purchases').then(r=>r.json()).then(pd=>{
           const existing = (pd.purchases||[]).find((p:any)=>p.tool_id===toolId)
           if (existing) setExistingPurchase(existing)
         })
-      } else {
-        const bundleData = secondData
-        const found = (bundleData.bundles||[]).find((b:any)=>b.id===bundleId)
-        if (found) setBundle(found)
+      } else if (bundleId) {
+        fetch('/api/member/bundles').then(r=>r.json()).then(bundleData=>{
+          const found = (bundleData.bundles||[]).find((b:any)=>b.id===bundleId)
+          if (found) setBundle(found)
+        })
       }
       setLoading(false)
     }).catch(()=>setLoading(false))
@@ -111,17 +120,18 @@ function CheckoutInner() {
       supabase.removeChannel(channel)
       if (pollRef.current) clearInterval(pollRef.current)
     }
-  },[toolId, bundleId])
+  },[toolId, bundleId, cartMode])
 
   const cfg          = gateways.find(g=>g.id===method)
   const isEgp        = cfg?.currency==='EGP'
   const exchangeRate = parseFloat(settings.usd_to_egp_rate||'50')
   const isBundle     = !!bundleId && !!bundle
+  const cartTotal    = cartItems.reduce((s, i) => s + ((i.shop_tools as any)?.price_egp || 0) * (i.quantity || 1), 0)
 
-  const basePrice = ()=> isBundle ? (bundle?.price_egp||0) : (tool?.price_egp||0)
+  const basePrice = ()=> cartMode ? cartTotal : isBundle ? (bundle?.price_egp||0) : (tool?.price_egp||0)
   const finalPriceEgp = ()=>{
     let p = basePrice()
-    if (!isBundle && couponResult?.valid && couponResult.type==='discount') p=p*(1-couponResult.value/100)
+    if (!isBundle && !cartMode && couponResult?.valid && couponResult.type==='discount') p=p*(1-couponResult.value/100)
     return Math.round(p)
   }
   const amountForGateway = ()=> isEgp ? finalPriceEgp() : Math.round(finalPriceEgp()/exchangeRate*100)/100
@@ -180,7 +190,7 @@ function CheckoutInner() {
           amount:    amountForGateway(),
           currency:  cfg.currency,
           credits:   finalPriceEgp(),
-          tool_id:   toolId   || null,
+          tool_id:   cartMode ? null : (toolId || null),
           bundle_id: bundleId || null,
         })
       })
@@ -248,8 +258,9 @@ function CheckoutInner() {
   const wa = `https://wa.me/${waNum}?text=${encodeURIComponent(`طلب جديد: ${tool?.name} — وسيلة: ${method} — مرجع: ${txRef||'N/A'}`)}`
 
   if (loading) return <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
-  if (!isBundle && !tool) return <div className="text-center py-32 text-gray-400 text-lg">{t('Tool not found','الأداة غير موجودة')}</div>
-  if (isBundle && !bundle) return <div className="text-center py-32 text-gray-400 text-lg">{t('Bundle not found','الباقة غير موجودة')}</div>
+  if (!cartMode && !isBundle && !tool) return <div className="text-center py-32 text-gray-400 text-lg">{t('Tool not found','الأداة غير موجودة')}</div>
+  if (!cartMode && isBundle && !bundle) return <div className="text-center py-32 text-gray-400 text-lg">{t('Bundle not found','الباقة غير موجودة')}</div>
+  if (cartMode && cartItems.length === 0) return <div className="text-center py-32 text-gray-400 text-lg">{t('Your cart is empty','السلة فارغة')}</div>
 
   // ── Duplicate purchase blocker ──────────────────────────
   if (existingPurchase) {
@@ -323,6 +334,34 @@ function CheckoutInner() {
           {step==='details' && (
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">{t('Order Details','تفاصيل الطلب')}</h2>
+
+              {/* Cart mode: multiple tools */}
+              {cartMode && (
+                <div className="mb-5">
+                  <div className="flex flex-col gap-2 mb-4">
+                    {cartItems.map(item => {
+                      const t2 = item.shop_tools as any
+                      return (
+                        <div key={item.tool_id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {t2?.image_url ? <img src={t2.image_url} alt={t2.name} className="w-full h-full object-contain"/> : <span className="text-xs font-bold text-gray-400">{t2?.name?.slice(0,2).toUpperCase()}</span>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{t2?.name || '—'}</div>
+                            <div className="text-xs text-gray-400">{t2?.duration_label}</div>
+                          </div>
+                          {item.quantity > 1 && <span className="text-xs text-gray-400">×{item.quantity}</span>}
+                          <div className="text-sm font-bold" style={{color:'#d99401'}}>{((t2?.price_egp||0)*(item.quantity||1)).toLocaleString()} EGP</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <span>{t('Total','الإجمالي')}</span>
+                    <span dir="ltr" style={{color:'#d99401'}}>{formatPrice(cartTotal, exchangeRate)}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Bundle header */}
               {isBundle && bundle && (
@@ -519,7 +558,11 @@ function CheckoutInner() {
               <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/20 flex items-center justify-center mx-auto mb-5">
                 <Check size={36} className="text-emerald-500"/>
               </div>
-              {isBundle ? (<>
+              {cartMode ? (<>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{t('Order Received! 🛒','تم استلام طلبك! 🛒')}</h2>
+                <p className="text-base text-gray-500 dark:text-gray-400 mb-2">{t('Your cart order is pending admin confirmation.','طلبك في انتظار تأكيد الأدمن.')}</p>
+                <p className="text-sm text-gray-400 mb-8">{t("You'll receive a notification once your tools are activated.",'هتوصلك إشعار لما الأدوات تتفعل.')}</p>
+              </>) : isBundle ? (<>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{t('Order Received! 📦','تم استلام طلبك! 📦')}</h2>
                 <p className="text-base text-gray-500 dark:text-gray-400 mb-2">{t('Your bundle order is pending admin confirmation.','طلب الباقة بانتظار تأكيد الأدمن.')}</p>
                 <p className="text-sm text-gray-400 mb-8">{t("You'll receive a notification once your bundle is activated.",'هتوصلك إشعار لما الباقة تتفعل.')}</p>
@@ -541,32 +584,54 @@ function CheckoutInner() {
         <div className="flex flex-col gap-4">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 sticky top-4 shadow-sm">
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-4">{t('Order Summary','ملخص الطلب')}</h3>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {isBundle
-                  ? <span className="text-xl">📦</span>
-                  : tool?.image_url
-                    ? <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain"/>
-                    : <span className="text-sm font-bold text-gray-400">{tool?.name.slice(0,2).toUpperCase()}</span>
-                }
+
+            {/* Cart mode: list all items */}
+            {cartMode ? (
+              <div className="flex flex-col gap-2 mb-4">
+                {cartItems.map(item => {
+                  const t2 = item.shop_tools as any
+                  return (
+                    <div key={item.tool_id} className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {t2?.image_url ? <img src={t2.image_url} alt={t2.name} className="w-full h-full object-contain"/> : <span className="text-[10px] font-bold text-gray-400">{t2?.name?.slice(0,2).toUpperCase()}</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">{t2?.name || '—'}</div>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300" dir="ltr">{((t2?.price_egp||0)*(item.quantity||1)).toLocaleString()} EGP</span>
+                    </div>
+                  )
+                })}
               </div>
-              <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  {isBundle ? (lang==='ar'&&bundle?.name_ar ? bundle.name_ar : bundle?.name) : tool?.name}
-                </div>
-                <div className="text-xs text-gray-400 mt-0.5">
+            ) : (
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {isBundle
-                    ? `${bundle?.duration_days} ${lang==='ar'?'يوم':'days'} · ${bundle?.included_tools?.length||0} ${lang==='ar'?'أدوات':'tools'}`
-                    : lang==='ar'
-                      ? tool?.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر')
-                      : tool?.duration_label
+                    ? <span className="text-xl">📦</span>
+                    : tool?.image_url
+                      ? <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain"/>
+                      : <span className="text-sm font-bold text-gray-400">{tool?.name.slice(0,2).toUpperCase()}</span>
                   }
                 </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white">
+                    {isBundle ? (lang==='ar'&&bundle?.name_ar ? bundle.name_ar : bundle?.name) : tool?.name}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {isBundle
+                      ? `${bundle?.duration_days} ${lang==='ar'?'يوم':'days'} · ${bundle?.included_tools?.length||0} ${lang==='ar'?'أدوات':'tools'}`
+                      : lang==='ar'
+                        ? tool?.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر')
+                        : tool?.duration_label
+                    }
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex flex-col gap-2">
-              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400"><span>{t('Price','السعر')}</span><span dir="ltr">{formatPrice(basePrice(), exchangeRate)}</span></div>
-              {!isBundle && couponResult?.valid && <div className="flex justify-between text-sm text-emerald-500"><span>{t('Discount','خصم')}</span><span dir="ltr">-{formatPrice(basePrice()*couponResult.value/100, exchangeRate)}</span></div>}
+              {!cartMode && <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400"><span>{t('Price','السعر')}</span><span dir="ltr">{formatPrice(basePrice(), exchangeRate)}</span></div>}
+              {!isBundle && !cartMode && couponResult?.valid && <div className="flex justify-between text-sm text-emerald-500"><span>{t('Discount','خصم')}</span><span dir="ltr">-{formatPrice(basePrice()*couponResult.value/100, exchangeRate)}</span></div>}
               <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white mt-1 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <span>{t('Total','الإجمالي')}</span><span dir="ltr" style={{color:'#d99401'}}>{formatPrice(finalPriceEgp(), exchangeRate)}</span>
               </div>
