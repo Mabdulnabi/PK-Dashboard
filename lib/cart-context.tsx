@@ -16,22 +16,34 @@ export interface FavoriteItem {
 }
 
 interface CartCtx {
-  cart:       CartItem[]
-  favorites:  FavoriteItem[]
-  loading:    boolean
-  cartCount:  number
-  addToCart:  (tool_id: string, quantity?: number) => Promise<void>
+  cart:           CartItem[]
+  favorites:      FavoriteItem[]
+  loading:        boolean
+  cartCount:      number
+  addToCart:      (tool_id: string, quantity?: number, toolData?: Partial<CartTool>) => Promise<void>
   removeFromCart: (tool_id: string) => Promise<void>
-  updateQty:  (tool_id: string, quantity: number) => Promise<void>
-  clearCart:  () => Promise<void>
-  inCart:     (tool_id: string) => boolean
-  getQty:     (tool_id: string) => number
-  toggleFav:  (tool_id: string) => Promise<void>
-  isFav:      (tool_id: string) => boolean
-  refresh:    () => Promise<void>
+  updateQty:      (tool_id: string, quantity: number) => Promise<void>
+  clearCart:      () => Promise<void>
+  inCart:         (tool_id: string) => boolean
+  getQty:         (tool_id: string) => number
+  toggleFav:      (tool_id: string, toolData?: Partial<CartTool>) => Promise<void>
+  isFav:          (tool_id: string) => boolean
+  refresh:        () => Promise<void>
 }
 
 const Ctx = createContext<CartCtx | null>(null)
+
+const CART_KEY = 'pk_cart'
+const FAV_KEY  = 'pk_favs'
+
+function readLocal<T>(key: string): T[] {
+  if (typeof window === 'undefined') return []
+  try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
+}
+function writeLocal(key: string, data: unknown) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(key, JSON.stringify(data)) } catch {}
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart,      setCart]      = useState<CartItem[]>([])
@@ -39,101 +51,148 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [loading,   setLoading]   = useState(true)
   const pendingRef  = useRef<Set<string>>(new Set())
 
-  const fetchAll = useCallback(async () => {
+  // Load localStorage immediately on mount (instant — no flicker)
+  useEffect(() => {
+    setCart(readLocal<CartItem>(CART_KEY))
+    setFavorites(readLocal<FavoriteItem>(FAV_KEY))
+    setLoading(false)
+  }, [])
+
+  // Sync from DB (best-effort — never blocks UI)
+  const syncFromDB = useCallback(async () => {
     try {
       const [cr, fr] = await Promise.all([
         fetch('/api/member/cart'),
         fetch('/api/member/favorites'),
       ])
-      if (cr.ok) { const d = await cr.json(); setCart(d.items || []) }
-      if (fr.ok) { const d = await fr.json(); setFavorites(d.favorites || []) }
+      if (cr.ok) {
+        const d = await cr.json()
+        const items: CartItem[] = d.items || []
+        setCart(items)
+        writeLocal(CART_KEY, items)
+      }
+      if (fr.ok) {
+        const d = await fr.json()
+        const favs: FavoriteItem[] = d.favorites || []
+        setFavorites(favs)
+        writeLocal(FAV_KEY, favs)
+      }
     } catch {}
-    setLoading(false)
   }, [])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => { syncFromDB() }, [syncFromDB])
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
-
   const inCart = (tool_id: string) => cart.some(i => i.tool_id === tool_id)
   const getQty = (tool_id: string) => cart.find(i => i.tool_id === tool_id)?.quantity ?? 1
   const isFav  = (tool_id: string) => favorites.some(f => f.tool_id === tool_id)
 
-  const addToCart = async (tool_id: string, quantity = 1) => {
+  const addToCart = async (tool_id: string, quantity = 1, toolData?: Partial<CartTool>) => {
     const key = `add:${tool_id}`
     if (pendingRef.current.has(key)) return
     pendingRef.current.add(key)
 
-    // Optimistic update — works for both new and existing items
+    // 1. Update localStorage + state immediately (never rolls back)
     const existing = cart.find(i => i.tool_id === tool_id)
+    let newCart: CartItem[]
     if (existing) {
-      setCart(prev => prev.map(i => i.tool_id === tool_id ? { ...i, quantity } : i))
+      newCart = cart.map(i => i.tool_id === tool_id ? { ...i, quantity } : i)
     } else {
-      setCart(prev => [...prev, { id: `tmp-${tool_id}`, tool_id, quantity, shop_tools: {} as CartTool }])
+      const stub: CartTool = {
+        id: tool_id, name: toolData?.name || '', description: toolData?.description || '',
+        image_url: toolData?.image_url, price_egp: toolData?.price_egp || 0,
+        price_usd: toolData?.price_usd, duration_label: toolData?.duration_label || '',
+        category_slug: toolData?.category_slug || '', is_out_of_stock: false,
+      }
+      newCart = [...cart, { id: `local-${tool_id}`, tool_id, quantity, shop_tools: stub }]
     }
+    setCart(newCart)
+    writeLocal(CART_KEY, newCart)
 
+    // 2. Sync to DB — if it works, refresh to get real IDs
     try {
       const res = await fetch('/api/member/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tool_id, quantity }),
       })
-      if (res.ok) {
-        await fetchAll()
-      } else {
-        // Rollback optimistic add on error
-        if (!existing) setCart(prev => prev.filter(i => i.id !== `tmp-${tool_id}`))
-      }
+      if (res.ok) await syncFromDB()
     } finally {
       pendingRef.current.delete(key)
     }
   }
 
   const removeFromCart = async (tool_id: string) => {
-    setCart(prev => prev.filter(i => i.tool_id !== tool_id))
-    await fetch('/api/member/cart', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tool_id }),
-    })
+    const newCart = cart.filter(i => i.tool_id !== tool_id)
+    setCart(newCart)
+    writeLocal(CART_KEY, newCart)
+    try {
+      await fetch('/api/member/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool_id }),
+      })
+    } catch {}
   }
 
   const updateQty = async (tool_id: string, quantity: number) => {
     if (quantity < 1) return
-    setCart(prev => prev.map(i => i.tool_id === tool_id ? { ...i, quantity } : i))
-    await fetch('/api/member/cart', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tool_id, quantity }),
-    })
+    const newCart = cart.map(i => i.tool_id === tool_id ? { ...i, quantity } : i)
+    setCart(newCart)
+    writeLocal(CART_KEY, newCart)
+    try {
+      await fetch('/api/member/cart', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool_id, quantity }),
+      })
+    } catch {}
   }
 
   const clearCart = async () => {
     setCart([])
-    await fetch('/api/member/cart', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clear: true }),
-    })
+    writeLocal(CART_KEY, [])
+    try {
+      await fetch('/api/member/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clear: true }),
+      })
+    } catch {}
   }
 
-  const toggleFav = async (tool_id: string) => {
+  const toggleFav = async (tool_id: string, toolData?: Partial<CartTool>) => {
     const wasFav = isFav(tool_id)
-    setFavorites(prev =>
-      wasFav
-        ? prev.filter(f => f.tool_id !== tool_id)
-        : [...prev, { id: 'tmp', tool_id, shop_tools: cart.find(i=>i.tool_id===tool_id)?.shop_tools || ({} as CartTool) }]
-    )
-    const res = await fetch('/api/member/favorites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tool_id }),
-    })
-    if (res.ok) await fetchAll()
+    let newFavs: FavoriteItem[]
+    if (wasFav) {
+      newFavs = favorites.filter(f => f.tool_id !== tool_id)
+    } else {
+      const stub: CartTool = {
+        id: tool_id, name: toolData?.name || '', description: toolData?.description || '',
+        image_url: toolData?.image_url, price_egp: toolData?.price_egp || 0,
+        price_usd: toolData?.price_usd, duration_label: toolData?.duration_label || '',
+        category_slug: toolData?.category_slug || '', is_out_of_stock: false,
+      }
+      newFavs = [...favorites, { id: `local-fav-${tool_id}`, tool_id, shop_tools: stub }]
+    }
+    setFavorites(newFavs)
+    writeLocal(FAV_KEY, newFavs)
+    try {
+      const res = await fetch('/api/member/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool_id }),
+      })
+      if (res.ok) await syncFromDB()
+    } catch {}
   }
 
   return (
-    <Ctx.Provider value={{ cart, favorites, loading, cartCount, addToCart, removeFromCart, updateQty, clearCart, inCart, getQty, toggleFav, isFav, refresh: fetchAll }}>
+    <Ctx.Provider value={{
+      cart, favorites, loading, cartCount,
+      addToCart, removeFromCart, updateQty, clearCart,
+      inCart, getQty, toggleFav, isFav, refresh: syncFromDB,
+    }}>
       {children}
     </Ctx.Provider>
   )

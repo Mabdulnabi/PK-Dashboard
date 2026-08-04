@@ -62,7 +62,7 @@ export default function PrivateStorePage() {
       removeFromCart(tool.id)
       showToast(isRtl ? 'تمت الإزالة من السلة' : 'Removed from cart')
     } else {
-      await addToCart(tool.id, qty)
+      await addToCart(tool.id, qty, tool)
       showToast(isRtl ? 'تمت الإضافة للسلة ✓' : 'Added to cart ✓')
     }
   }
@@ -295,7 +295,7 @@ export default function PrivateStorePage() {
                       </div>
                       {/* Action row */}
                       <div className="flex items-center gap-2">
-                        <button onClick={()=>toggleFav(tool.id)}
+                        <button onClick={()=>toggleFav(tool.id, tool)}
                           className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
                           style={isFav(tool.id)
                             ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}

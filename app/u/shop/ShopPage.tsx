@@ -100,7 +100,7 @@ export default function ShopPage({ category }: Props) {
       removeFromCart(tool.id)
       showToast(t('Removed from cart','تمت الإزالة من السلة'))
     } else {
-      await addToCart(tool.id, qty)
+      await addToCart(tool.id, qty, tool)
       showToast(t('Added to cart ✓','تمت الإضافة للسلة ✓'))
     }
   }
@@ -242,7 +242,7 @@ export default function ShopPage({ category }: Props) {
                   {/* Action row: [Fav] [Buy Now (large)] [Cart (small)] */}
                   <div className="flex items-center gap-2">
                     {/* Fav — small icon */}
-                    <button onClick={()=>toggleFav(tool.id)}
+                    <button onClick={()=>toggleFav(tool.id, tool)}
                       className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
                       style={isFav(tool.id)
                         ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
