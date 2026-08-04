@@ -255,19 +255,25 @@ export default function ShopPage({ category }: Props) {
                       style={{background:'#d99401'}}>
                       <ShoppingCart size={13}/>{t('Buy Now','شراء الآن')}
                     </button>
-                    {/* Add to Cart — small */}
+                    {/* Add to Cart — interactive +🛒 button */}
                     <button onClick={()=>handleAddToCart(tool)}
-                      className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors relative"
+                      className="flex-shrink-0 h-9 px-2.5 rounded-xl border flex items-center gap-1 transition-all text-xs font-bold relative"
                       style={inCart(tool.id)
-                        ? {background:'#d9940120',borderColor:'#d9940170',color:'#d99401'}
-                        : {borderColor:'#e5e7eb',color:'#6b7280'}}>
-                      {inCart(tool.id)
-                        ? <Check size={13}/>
-                        : <Plus size={13}/>}
-                      {inCart(tool.id) && category === 'private' && getQty(tool.id) > 0 && (
-                        <span className="absolute -top-1.5 -end-1.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5" style={{background:'#d99401'}}>
-                          {getQty(tool.id)}
-                        </span>
+                        ? {background:'#d9940118',borderColor:'#d99401',color:'#d99401'}
+                        : {borderColor:'#e5e7eb',color:'#6b7280',background:'white'}}>
+                      {inCart(tool.id) ? (
+                        <>
+                          <Check size={11}/>
+                          <ShoppingCart size={12}/>
+                          {(category === 'private' ? getQty(tool.id) : 1) > 0 && (
+                            <span className="text-[10px] font-black">{category === 'private' ? getQty(tool.id) : ''}</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={11}/>
+                          <ShoppingCart size={12}/>
+                        </>
                       )}
                     </button>
                   </div>

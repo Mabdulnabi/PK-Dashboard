@@ -64,10 +64,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (pendingRef.current.has(key)) return
     pendingRef.current.add(key)
 
-    // Optimistic update
+    // Optimistic update — works for both new and existing items
     const existing = cart.find(i => i.tool_id === tool_id)
     if (existing) {
       setCart(prev => prev.map(i => i.tool_id === tool_id ? { ...i, quantity } : i))
+    } else {
+      setCart(prev => [...prev, { id: `tmp-${tool_id}`, tool_id, quantity, shop_tools: {} as CartTool }])
     }
 
     try {
@@ -76,7 +78,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tool_id, quantity }),
       })
-      if (res.ok) await fetchAll()
+      if (res.ok) {
+        await fetchAll()
+      } else {
+        // Rollback optimistic add on error
+        if (!existing) setCart(prev => prev.filter(i => i.id !== `tmp-${tool_id}`))
+      }
     } finally {
       pendingRef.current.delete(key)
     }

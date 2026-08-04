@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store, MessageCircle } from 'lucide-react'
+import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store, MessageCircle, Heart, Plus, Minus, ShoppingCart, Check } from 'lucide-react'
 import ToolLandingPage from '../ToolLandingPage'
+import { useCart } from '@/lib/cart-context'
 
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -37,6 +38,7 @@ export default function PrivateStorePage() {
   const { t, lang, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
   const isRtl = lang === 'ar'
+  const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
 
   const [categories,  setCategories]  = useState<Category[]>([])
   const [tools,       setTools]       = useState<Tool[]>([])
@@ -46,6 +48,24 @@ export default function PrivateStorePage() {
   const [sort,        setSort]        = useState<'best'|'recent'>('best')
   const [popup,       setPopup]       = useState<Tool|null>(null)
   const [landing,     setLanding]     = useState<Tool|null>(null)
+  const [qtys,        setQtys]        = useState<Record<string,number>>({})
+  const [toast,       setToast]       = useState('')
+
+  const localQty = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
+  const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2200) }
+
+  const handleAddToCart = async (tool: Tool) => {
+    const qty = localQty(tool.id)
+    if (inCart(tool.id)) {
+      removeFromCart(tool.id)
+      showToast(isRtl ? 'تمت الإزالة من السلة' : 'Removed from cart')
+    } else {
+      await addToCart(tool.id, qty)
+      showToast(isRtl ? 'تمت الإضافة للسلة ✓' : 'Added to cart ✓')
+    }
+  }
 
   useEffect(()=>{
     Promise.all([
@@ -251,20 +271,68 @@ export default function PrivateStorePage() {
                   </button>
                   <Stars rating={tool.rating} count={tool.review_count}/>
                 </div>
-                <div className="px-4 pb-4" dir={isRtl?'rtl':'ltr'}>
-                  {tool.is_out_of_stock
-                    ? <button disabled className="w-full py-3 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">{isRtl?'نفذت الكمية':'Out of Stock'}</button>
-                    : <button onClick={()=>buy(tool)}
-                        className="w-full py-3 rounded-xl text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"
-                        style={{background:'#8b5cf6'}}>
-                        🔑 {isRtl?'اشتري الآن':'Buy Now'}
-                      </button>
-                  }
+                <div className="px-4 pb-4 space-y-2" dir={isRtl?'rtl':'ltr'}>
+                  {tool.is_out_of_stock ? (
+                    <button disabled className="w-full py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">
+                      {isRtl?'نفذت الكمية':'Out of Stock'}
+                    </button>
+                  ) : (
+                    <>
+                      {/* Qty controls */}
+                      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{isRtl?'الكمية':'Qty'}</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)-1)} disabled={localQty(tool.id)<=1}
+                            className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                            <Minus size={10}/>
+                          </button>
+                          <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-6 text-center">{localQty(tool.id)}</span>
+                          <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)+1)}
+                            className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                            <Plus size={10}/>
+                          </button>
+                        </div>
+                      </div>
+                      {/* Action row */}
+                      <div className="flex items-center gap-2">
+                        <button onClick={()=>toggleFav(tool.id)}
+                          className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
+                          style={isFav(tool.id)
+                            ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
+                            : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
+                          <Heart size={13} fill={isFav(tool.id)?'currentColor':'none'}/>
+                        </button>
+                        <button onClick={()=>buy(tool)}
+                          className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90 shadow-sm"
+                          style={{background:'#8b5cf6'}}>
+                          🔑 {isRtl?'اشتري الآن':'Buy Now'}
+                        </button>
+                        <button onClick={()=>handleAddToCart(tool)}
+                          className="flex-shrink-0 h-9 px-2.5 rounded-xl border flex items-center gap-1 transition-all text-xs font-bold"
+                          style={inCart(tool.id)
+                            ? {background:'#d9940118',borderColor:'#d99401',color:'#d99401'}
+                            : {borderColor:'#e5e7eb',color:'#6b7280',background:'white'}}>
+                          {inCart(tool.id) ? (
+                            <><Check size={11}/><ShoppingCart size={12}/><span className="text-[10px] font-black">{getQty(tool.id)}</span></>
+                          ) : (
+                            <><Plus size={11}/><ShoppingCart size={12}/></>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl shadow-lg text-sm font-semibold text-white pointer-events-none" style={{background:'#8b5cf6'}}>
+          {toast}
+        </div>
       )}
 
       {/* Popup */}
