@@ -18,10 +18,9 @@ const nav = [
     { label: 'Dashboard',  href: '/dashboard', icon: LayoutDashboard },
   ]},
   { section: 'Members', items: [
-    { label: 'Members',    href: '/members',        icon: UserCircle },
-    { label: 'Plans',      href: '/plans',           icon: CreditCard },
+    { label: 'Members',    href: '/members',             icon: UserCircle },
     { label: 'Live Chat',  href: '/dashboard/live-chat', icon: MessagesSquare },
-    { label: 'Support',    href: '/support',         icon: MessageSquare },
+    { label: 'Tickets',    href: '/tickets',             icon: MessageSquare },
   ]},
   { section: 'Shop', items: [
     { label: 'Shop Tools', href: '/shop-admin', icon: ShoppingBag },

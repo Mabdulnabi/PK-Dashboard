@@ -50,6 +50,7 @@ export default function HelpdeskPage() {
   const [files,      setFiles]     = useState<File[]>([])
   const [sending,    setSending]   = useState(false)
   const [msg,        setMsg]       = useState('')
+  const [fStatus,      setFStatus]      = useState('all')
   const [replyText,    setReplyText]    = useState('')
   const [replySending, setReplySending] = useState(false)
   const [adminProfile, setAdminProfile] = useState<{ display_name?: string; avatar_url?: string } | null>(null)
@@ -182,9 +183,27 @@ export default function HelpdeskPage() {
         <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm border border-emerald-200 dark:border-emerald-500/20">{msg}</div>
       )}
 
-      <div className="flex justify-end mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        {/* Filter tabs */}
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          {(['all', 'open', 'in_progress', 'resolved', 'closed'] as const).map(s => {
+            const count = s === 'all' ? tickets.length : tickets.filter(tk => tk.status === s).length
+            return (
+              <button key={s} onClick={() => setFStatus(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${fStatus === s ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                style={fStatus === s ? { background: '#d99401' } : {}}>
+                {s === 'all' ? t('All', 'الكل') :
+                 s === 'open' ? t('Open', 'مفتوح') :
+                 s === 'in_progress' ? t('In Progress', 'قيد المعالجة') :
+                 s === 'resolved' ? t('Resolved', 'محلول') :
+                 t('Closed', 'مغلق')}
+                {count > 0 && <span className="ml-1 opacity-60 text-[10px]">({count})</span>}
+              </button>
+            )
+          })}
+        </div>
         <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold transition-colors flex-shrink-0" style={{background:'#d99401'}}>
           <Plus size={15}/>{t('New Ticket', 'تذكرة جديدة')}
         </button>
       </div>
@@ -193,12 +212,12 @@ export default function HelpdeskPage() {
         <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
       ) : (
         <div className="flex flex-col gap-3">
-          {tickets.length === 0 ? (
+          {(fStatus === 'all' ? tickets : tickets.filter(tk => tk.status === fStatus)).length === 0 ? (
             <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl">
               <MessageCircle size={24} className="text-gray-200 mx-auto mb-3"/>
-              <p className="text-sm text-gray-400">{t('No support tickets yet', 'لا توجد تذاكر دعم بعد')}</p>
+              <p className="text-sm text-gray-400">{t('No tickets found', 'لا توجد تذاكر')}</p>
             </div>
-          ) : tickets.map((ticket, idx) => {
+          ) : (fStatus === 'all' ? tickets : tickets.filter(tk => tk.status === fStatus)).map((ticket, idx) => {
             const st      = statusStyle(ticket.status)
             const cat     = CATEGORY_LABELS[ticket.category] || CATEGORY_LABELS.general
             const isOpen  = expanded === ticket.id
@@ -239,7 +258,7 @@ export default function HelpdeskPage() {
                           .map(m => ({
                             sender: m.sender_type, text: m.message, time: m.created_at, id: m.id,
                             name:   m.sender_type === 'admin' ? (m.sender_name || adminProfile?.display_name || 'Support') : undefined,
-                            avatar: m.sender_type === 'admin' ? (adminProfile?.avatar_url || m.sender_avatar || undefined) : undefined,
+                            avatar: m.sender_type === 'admin' ? (m.sender_avatar || adminProfile?.avatar_url || undefined) : undefined,
                           }))
                         ),
                       ]

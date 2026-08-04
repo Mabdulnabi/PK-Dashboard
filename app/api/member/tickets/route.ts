@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     title:   `تذكرة جديدة 🎫`,
     message: `"${subject}" — من العضو`,
     type:    'info',
-    link:    '/support',
+    link:    '/tickets',
   })
 
   // Notify member: ticket received confirmation
