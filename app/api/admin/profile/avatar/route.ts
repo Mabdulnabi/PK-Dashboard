@@ -37,13 +37,28 @@ export async function POST(req: NextRequest) {
   // Use cache-busted URL everywhere so browser always loads the latest
   const urlWithBust = `${publicUrl}?v=${Date.now()}`
 
-  const { error: upsertErr } = await service.from('admin_profiles').upsert({
-    id:         adminId,
-    avatar_url: urlWithBust,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'id' })
+  // Try update first; if no row exists yet, insert with safe defaults
+  const { data: existing } = await service
+    .from('admin_profiles')
+    .select('id')
+    .eq('id', adminId)
+    .maybeSingle()
 
-  if (upsertErr) console.error('[avatar-upload] upsert failed:', upsertErr.message)
+  if (existing) {
+    const { error: updateErr } = await service
+      .from('admin_profiles')
+      .update({ avatar_url: urlWithBust, updated_at: new Date().toISOString() })
+      .eq('id', adminId)
+    if (updateErr) console.error('[avatar-upload] update failed:', updateErr.message)
+  } else {
+    const { error: insertErr } = await service.from('admin_profiles').insert({
+      id:           adminId,
+      avatar_url:   urlWithBust,
+      display_name: 'Admin',
+      updated_at:   new Date().toISOString(),
+    })
+    if (insertErr) console.error('[avatar-upload] insert failed:', insertErr.message)
+  }
 
   return NextResponse.json({ url: urlWithBust })
 }

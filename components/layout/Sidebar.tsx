@@ -54,7 +54,20 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
   const ui          = useUISettings()
   const { dark }    = useAdminTheme()
   const [collapsed, setCollapsed] = useState(false)
+  const [adminName,   setAdminName]   = useState(userName)
+  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null)
   const signOut  = async () => { await supabase.auth.signOut(); router.push('/auth/login') }
+
+  useEffect(() => {
+    fetch('/api/admin/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return
+        if (d.display_name) setAdminName(d.display_name)
+        if (d.avatar_url)   setAvatarUrl(d.avatar_url)
+      })
+      .catch(() => {})
+  }, [])
 
   const navRef = useRef<HTMLElement>(null)
   const SCROLL_KEY = 'sidebar_scroll'
@@ -144,14 +157,17 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
       {/* User */}
       <div className="px-2 py-2 border-t border-gray-200 dark:border-[#1a2233]">
         <div className={`flex items-center ${collapsed ? 'justify-center px-1' : 'gap-2.5 px-3'} py-2.5 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a2233] transition-colors group`}
-          title={collapsed ? userName : undefined}>
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0">
-            {userName.slice(0, 2).toUpperCase()}
+          title={collapsed ? adminName : undefined}>
+          <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0">
+            {avatarUrl
+              ? <img src={avatarUrl} alt={adminName} className="w-full h-full object-cover"/>
+              : adminName.slice(0, 2).toUpperCase()
+            }
           </div>
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 truncate">{userName}</div>
+                <div className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 truncate">{adminName}</div>
                 <div className="text-[10px] text-gray-400 dark:text-gray-600">Administrator</div>
               </div>
               <button onClick={signOut} className="opacity-0 group-hover:opacity-100 transition-opacity">
