@@ -387,6 +387,12 @@ export default function Landing() {
   const marquee = [...toolLogos, ...toolLogos]
 
   // ── CSS ring for back-to-top ──────────────────────────────────────────────
+  // Lock body scroll when modal is open — must be before any early return
+  useEffect(() => {
+    document.body.style.overflow = authModal ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [authModal])
+
   const R = 18; const C = 2 * Math.PI * R
   const ringOffset = C * (1 - scrollPct)
 
@@ -401,12 +407,6 @@ export default function Landing() {
       <style>{`@keyframes pkdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-6px)}}`}</style>
     </div>
   )
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    document.body.style.overflow = authModal ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [authModal])
 
   return (
     <div dir={dir} style={{ fontFamily:"'Cairo',sans-serif", color:'#16213D', background:'#fff', overflowX:'hidden' }}>
