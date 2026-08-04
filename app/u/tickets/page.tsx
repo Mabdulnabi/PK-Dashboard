@@ -22,13 +22,31 @@ const CATEGORY_LABELS: Record<string, [string, string]> = {
   general:      ['General',      'استفسار عام'],
 }
 
-function FileChip({ att }: { att: Attachment }) {
+function FileChip({ att, inline = false }: { att: Attachment; inline?: boolean }) {
   const isImg = att.file_type?.startsWith('image/')
+  const [imgUrl, setImgUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isImg && inline) {
+      fetch(`/api/tickets/file?path=${encodeURIComponent(att.file_path)}`)
+        .then(r => r.json()).then(d => { if (d.url) setImgUrl(d.url) })
+    }
+  }, [att.file_path, isImg, inline])
+
   const openFile = async () => {
     const res = await fetch(`/api/tickets/file?path=${encodeURIComponent(att.file_path)}`)
     const { url } = await res.json()
     if (url) window.open(url, '_blank')
   }
+
+  if (isImg && inline && imgUrl) {
+    return (
+      <button onClick={openFile} className="block rounded-xl overflow-hidden max-w-[240px] hover:opacity-90 transition-opacity">
+        <img src={imgUrl} alt={att.file_name} className="w-full h-auto max-h-48 object-cover"/>
+      </button>
+    )
+  }
+
   return (
     <button onClick={openFile}
       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs text-gray-600 dark:text-gray-300 max-w-[200px]">
@@ -289,17 +307,22 @@ export default function HelpdeskPage() {
                       ))
                     })()}
 
-                    {/* Attachments */}
-                    {memberAtts.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {memberAtts.map(a => <FileChip key={a.id} att={a}/>)}
+                    {/* Attachments — shown as inline bubbles */}
+                    {(ticket.ticket_attachments || []).map(a => (
+                      <div key={a.id} className={`flex gap-2 ${a.uploaded_by === 'admin' ? 'flex-row-reverse' : 'flex-row'}`} style={{direction:'ltr'}}>
+                        {a.uploaded_by === 'admin' && (
+                          adminProfile?.avatar_url
+                            ? <img src={adminProfile.avatar_url} className="w-6 h-6 rounded-full object-cover flex-shrink-0" alt=""/>
+                            : <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">S</div>
+                        )}
+                        <div className={`flex flex-col gap-0.5 max-w-[85%] ${a.uploaded_by === 'admin' ? 'items-end' : 'items-start'}`} style={{direction: dir}}>
+                          <span className={`text-[10px] font-semibold ${a.uploaded_by === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
+                            {a.uploaded_by === 'member' ? t('You', 'أنت') : (adminProfile?.display_name || t('Support', 'الدعم'))}
+                          </span>
+                          <FileChip att={a} inline/>
+                        </div>
                       </div>
-                    )}
-                    {adminAtts.length > 0 && (
-                      <div className="flex flex-wrap gap-2 justify-end">
-                        {adminAtts.map(a => <FileChip key={a.id} att={a}/>)}
-                      </div>
-                    )}
+                    ))}
 
                     {/* No messages yet — awaiting */}
                     {!ticket.reply && (ticket.ticket_messages || []).length === 0 && (

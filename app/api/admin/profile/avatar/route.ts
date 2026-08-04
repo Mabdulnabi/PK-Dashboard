@@ -33,15 +33,17 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Add cache-buster so browser loads the new image immediately
   const { data: { publicUrl } } = service.storage.from('admin-avatars').getPublicUrl(path)
+  // Use cache-busted URL everywhere so browser always loads the latest
   const urlWithBust = `${publicUrl}?v=${Date.now()}`
 
-  await service.from('admin_profiles').upsert({
+  const { error: upsertErr } = await service.from('admin_profiles').upsert({
     id:         adminId,
-    avatar_url: publicUrl,
+    avatar_url: urlWithBust,
     updated_at: new Date().toISOString(),
-  })
+  }, { onConflict: 'id' })
+
+  if (upsertErr) console.error('[avatar-upload] upsert failed:', upsertErr.message)
 
   return NextResponse.json({ url: urlWithBust })
 }

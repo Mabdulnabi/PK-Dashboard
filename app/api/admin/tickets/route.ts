@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (memberIds.length > 0) {
     const { data: members } = await db
       .from('members')
-      .select('id, full_name, member_code, avatar_url')
+      .select('id, full_name, member_code, avatar_url, last_seen_at')
       .in('id', memberIds)
     for (const m of members || []) memberMap[m.id] = m
   }
@@ -60,6 +60,19 @@ export async function PATCH(req: NextRequest) {
       link: '/u/tickets',
     })
   }
+
+  return NextResponse.json({ ok: true })
+}
+
+// DELETE — permanently delete a ticket and its messages/attachments
+export async function DELETE(req: NextRequest) {
+  const { id } = await req.json()
+  if (!id) return badRequest('id required')
+
+  await db.from('ticket_messages').delete().eq('ticket_id', id)
+  await db.from('ticket_attachments').delete().eq('ticket_id', id)
+  const { error } = await db.from('support_tickets').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
 }

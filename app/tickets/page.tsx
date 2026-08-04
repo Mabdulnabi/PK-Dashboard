@@ -4,12 +4,12 @@ import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import {
   MessageSquare, Check, X, AlertCircle, Paperclip,
-  Download, Image as ImageIcon, FileText, ChevronLeft, Send,
+  Download, Image as ImageIcon, FileText, ChevronLeft, Send, Trash2, Wifi, WifiOff,
 } from 'lucide-react'
 
-type Attachment  = { id: string; file_path: string; file_name: string; file_type: string; uploaded_by: string }
+type Attachment  = { id: string; file_path: string; file_name: string; file_type: string; uploaded_by: string; created_at?: string }
 type TMsg        = { id: string; sender_type: 'member' | 'admin'; message: string; sender_name?: string; sender_avatar?: string; created_at: string }
-type MemberInfo  = { id: string; full_name: string; member_code: string; avatar_url?: string }
+type MemberInfo  = { id: string; full_name: string; member_code: string; avatar_url?: string; last_seen_at?: string }
 interface Ticket {
   id: string; member_id?: string; subject: string; message: string
   status: string; priority: string; category?: string
@@ -33,13 +33,31 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'ok' | 'err'; onClos
   )
 }
 
-function FileChip({ att }: { att: Attachment }) {
+function FileChip({ att, inline = false }: { att: Attachment; inline?: boolean }) {
   const isImg = att.file_type?.startsWith('image/')
+  const [imgUrl, setImgUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isImg && inline) {
+      fetch(`/api/tickets/file?path=${encodeURIComponent(att.file_path)}`)
+        .then(r => r.json()).then(d => { if (d.url) setImgUrl(d.url) })
+    }
+  }, [att.file_path, isImg, inline])
+
   const open = async () => {
     const res = await fetch(`/api/tickets/file?path=${encodeURIComponent(att.file_path)}`)
     const { url } = await res.json()
     if (url) window.open(url, '_blank')
   }
+
+  if (isImg && inline && imgUrl) {
+    return (
+      <button onClick={open} className="block mt-1 rounded-xl overflow-hidden max-w-[240px] hover:opacity-90 transition-opacity">
+        <img src={imgUrl} alt={att.file_name} className="w-full h-auto max-h-48 object-cover"/>
+      </button>
+    )
+  }
+
   return (
     <button onClick={open}
       className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-[11px] text-gray-600 dark:text-gray-300 max-w-[180px]">
@@ -143,6 +161,22 @@ export default function TicketsPage() {
     load(true)
   }
 
+  const deleteTicket = async (id: string) => {
+    if (!confirm('Permanently delete this ticket and all its messages?')) return
+    await fetch('/api/admin/tickets', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    if (activeId === id) setActiveId(null)
+    setToast({ msg: 'Ticket deleted', type: 'ok' })
+    load(true)
+  }
+
+  const isOnline = (m?: MemberInfo) => {
+    if (!m?.last_seen_at) return false
+    return Date.now() - new Date(m.last_seen_at).getTime() < 5 * 60 * 1000
+  }
+
   const filtered   = tickets.filter(t => fStatus === 'all' || t.status === fStatus)
   const counts     = {
     open:        tickets.filter(t => t.status === 'open').length,
@@ -176,8 +210,17 @@ export default function TicketsPage() {
     ),
   ] : []
 
-  const memberAtts = (activeTicket?.ticket_attachments || []).filter(a => a.uploaded_by === 'member')
-  const adminAtts  = (activeTicket?.ticket_attachments || []).filter(a => a.uploaded_by === 'admin')
+  // Build attachment "messages" sorted by created_at so they interleave with messages
+  const attBubbles = (activeTicket?.ticket_attachments || []).map(a => ({
+    id:     a.id,
+    sender: a.uploaded_by as 'member' | 'admin',
+    att:    a,
+    time:   a.created_at || activeTicket!.created_at,
+    name:   a.uploaded_by === 'admin'
+      ? (adminProfile?.display_name || 'Support Team')
+      : (activeMember?.full_name || 'Member'),
+    avatar: a.uploaded_by === 'admin' ? adminProfile?.avatar_url : activeMember?.avatar_url,
+  }))
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -220,11 +263,16 @@ export default function TicketsPage() {
                 const m = members[t.member_id || '']
                 const isActive = activeId === t.id
                 const msgCount = (t.ticket_messages || []).length
+                const online   = isOnline(m)
                 return (
-                  <div key={t.id} onClick={() => { setActiveId(t.id); setReplyText(''); setReplyFiles([]) }}
-                    className="flex items-center gap-3 px-3 py-3 border-b border-gray-50 dark:border-gray-800/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-                    style={isActive ? { background: `${GOLD}12`, borderInlineEndWidth: 2, borderInlineEndColor: GOLD } : {}}>
-                    <MemberAvatar member={m} size={36}/>
+                  <div key={t.id}
+                    className="flex items-center gap-3 px-3 py-3 border-b border-gray-50 dark:border-gray-800/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group"
+                    style={isActive ? { background: `${GOLD}12`, borderInlineEndWidth: 2, borderInlineEndColor: GOLD } : {}}
+                    onClick={() => { setActiveId(t.id); setReplyText(''); setReplyFiles([]) }}>
+                    <div className="relative flex-shrink-0">
+                      <MemberAvatar member={m} size={36}/>
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${online ? 'bg-emerald-400' : 'bg-gray-300'}`}/>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{t.subject}</span>
@@ -232,6 +280,7 @@ export default function TicketsPage() {
                       <div className="flex items-center gap-1.5">
                         {m && <span className="text-[10px] text-gray-500 truncate">{m.full_name}</span>}
                         {m && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 flex-shrink-0">{m.member_code}</span>}
+                        {online && <span className="text-[9px] text-emerald-500 font-bold flex-shrink-0">● online</span>}
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: STATUS_COLORS[t.status]+'20', color: STATUS_COLORS[t.status] }}>
@@ -243,8 +292,14 @@ export default function TicketsPage() {
                         {msgCount > 0 && <span className="text-[9px] text-gray-400 ml-auto">{msgCount} msg{msgCount !== 1 ? 's' : ''}</span>}
                       </div>
                     </div>
-                    <div className="text-[9px] text-gray-400 flex-shrink-0 text-right">
-                      {new Date(t.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short' })}
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <div className="text-[9px] text-gray-400">
+                        {new Date(t.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short' })}
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); deleteTicket(t.id) }}
+                        className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                        <Trash2 size={11}/>
+                      </button>
                     </div>
                   </div>
                 )
@@ -272,16 +327,32 @@ export default function TicketsPage() {
                 <button onClick={() => setActiveId(null)} className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
                   <ChevronLeft size={18}/>
                 </button>
-                <MemberAvatar member={activeMember} size={36}/>
+                <div className="relative flex-shrink-0">
+                  <MemberAvatar member={activeMember} size={36}/>
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#111827] ${isOnline(activeMember) ? 'bg-emerald-400' : 'bg-gray-300'}`}/>
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{activeTicket.subject}</div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     {activeMember && <span>{activeMember.full_name}</span>}
                     {activeMember && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">{activeMember.member_code}</span>}
+                    {isOnline(activeMember)
+                      ? <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-0.5"><Wifi size={10}/>Online</span>
+                      : activeMember?.last_seen_at
+                        ? <span className="text-[10px] text-gray-400 flex items-center gap-0.5"><WifiOff size={10}/>Last seen {new Date(activeMember.last_seen_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+                        : null
+                    }
                     {activeTicket.category && <span className="text-gray-400">{CATEGORY_LABELS[activeTicket.category] || activeTicket.category}</span>}
                   </div>
                 </div>
 
+                {/* Delete + Status switcher */}
+                <div className="flex items-center gap-1">
+                <button onClick={() => deleteTicket(activeTicket.id)}
+                  className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0" title="Delete ticket">
+                  <Trash2 size={15}/>
+                </button>
+                </div>
                 {/* Status switcher */}
                 <div className="flex gap-1">
                   {(['open', 'in_progress', 'resolved', 'closed'] as const).map(s => (
@@ -298,6 +369,7 @@ export default function TicketsPage() {
 
               {/* Thread — scrollable, fills remaining space */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f0f2f5' }}>
+                {/* Text messages */}
                 {thread.map(m => (
                   <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
                     {m.sender === 'member' ? (
@@ -330,13 +402,29 @@ export default function TicketsPage() {
                   </div>
                 ))}
 
-                {/* Attachments */}
-                {memberAtts.length > 0 && (
-                  <div className="flex flex-wrap gap-2 ps-8">{memberAtts.map(a => <FileChip key={a.id} att={a}/>)}</div>
-                )}
-                {adminAtts.length > 0 && (
-                  <div className="flex flex-wrap gap-2 justify-end pe-8">{adminAtts.map(a => <FileChip key={a.id} att={a}/>)}</div>
-                )}
+                {/* Attachments as inline bubbles */}
+                {attBubbles.map(b => (
+                  <div key={b.id} className={`flex gap-2 ${b.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                    {b.sender === 'member' ? (
+                      <MemberAvatar member={activeMember} size={28}/>
+                    ) : (
+                      b.avatar
+                        ? <img src={b.avatar} alt={b.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0"/>
+                        : <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                            {b.name?.charAt(0).toUpperCase() || 'S'}
+                          </div>
+                    )}
+                    <div className={`flex flex-col gap-0.5 max-w-[75%] ${b.sender === 'admin' ? 'items-end' : ''}`}>
+                      <span className={`text-[10px] font-semibold ${b.sender === 'admin' ? 'text-emerald-500' : 'text-gray-500'}`}>
+                        {b.name}
+                      </span>
+                      <FileChip att={b.att} inline/>
+                      <span className="text-[9px] text-gray-400">
+                        {new Date(b.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
 
                 <div ref={threadEnd}/>
               </div>

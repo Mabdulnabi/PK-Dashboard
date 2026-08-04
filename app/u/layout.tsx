@@ -110,6 +110,14 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(()=>{
     if (!member) return
+    const ping = () => fetch('/api/member/ping', { method: 'POST' }).catch(()=>{})
+    ping()
+    const interval = setInterval(ping, 60_000)
+    return () => clearInterval(interval)
+  },[member])
+
+  useEffect(()=>{
+    if (!member) return
     const check = async () => {
       try {
         const r = await fetch('/api/member/focus-reminders')
