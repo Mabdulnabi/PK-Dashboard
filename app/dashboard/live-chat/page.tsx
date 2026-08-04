@@ -203,6 +203,17 @@ export default function LiveChatPage() {
     }
   }, [activeId, loadConvs]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Polling fallback for active conversation ───────────────────────────────
+  useEffect(() => {
+    if (!activeId) return
+    const interval = setInterval(async () => {
+      const r = await fetch(`/api/admin/live-chat/${activeId}`)
+      const d = await r.json()
+      if (d.messages) setMessages(d.messages)
+    }, 5_000)
+    return () => clearInterval(interval)
+  }, [activeId])
+
   // ── Open conversation ───────────────────────────────────────────────────────
   const openConv = async (id: string) => {
     setActiveId(id)

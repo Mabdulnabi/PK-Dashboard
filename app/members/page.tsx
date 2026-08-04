@@ -135,6 +135,9 @@ export default function MembersPage() {
 
   useEffect(() => { load() }, [load])
 
+  const [page,    setPage]    = useState(1)
+  const [perPage, setPerPage] = useState(25)
+
   // ── Derived ───────────────────────────────────────────────────────────────
   const filtered = members.filter(m => {
     const cs = m.computed_status || m.status
@@ -148,6 +151,10 @@ export default function MembersPage() {
       (m.member_code || '').toLowerCase().includes(ql)
     )
   })
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paged = filtered.slice((page - 1) * perPage, page * perPage)
+
+  useEffect(() => { setPage(1) }, [q, fStatus])
 
   const stats = {
     total:    members.length,
@@ -268,6 +275,15 @@ export default function MembersPage() {
             {['active','expiring','expired','suspended','pending'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
           </select>
           <div className="ml-auto text-xs text-gray-400">{filtered.length} results</div>
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            {[10,25,50].map(n => (
+              <button key={n} onClick={() => { setPerPage(n); setPage(1) }}
+                className={`px-2 py-1 rounded transition-colors ${perPage===n ? 'font-bold text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                style={perPage===n ? { background:'#d99401' } : {}}>
+                {n}
+              </button>
+            ))}
+          </div>
           <button onClick={openAdd}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-bold transition-colors"
             style={{ background:'#d99401' }}>
@@ -295,7 +311,7 @@ export default function MembersPage() {
                 {!loading && filtered.length === 0 && (
                   <tr><td colSpan={6} className="text-center py-16 text-sm text-gray-400">No members found</td></tr>
                 )}
-                {filtered.map(m => (
+                {paged.map(m => (
                   <tr key={m.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-colors">
 
                     {/* Member */}
@@ -384,6 +400,21 @@ export default function MembersPage() {
                 ))}
               </tbody>
             </table>
+            {/* Pagination bar */}
+            {filtered.length > perPage && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500">
+                <span>
+                  Showing {Math.min((page-1)*perPage+1, filtered.length)}–{Math.min(page*perPage, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => p-1)} disabled={page===1}
+                    className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
+                  <span className="px-2">{page} / {totalPages}</span>
+                  <button onClick={() => setPage(p => p+1)} disabled={page>=totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>

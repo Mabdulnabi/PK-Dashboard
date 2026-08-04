@@ -141,8 +141,12 @@ export default function SupportPage() {
     load()
   }
 
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(25)
   const filtered = tickets.filter(t => fStatus === 'all' || t.status === fStatus)
   const counts   = { open: tickets.filter(t => t.status === 'open').length, in_progress: tickets.filter(t => t.status === 'in_progress').length }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paged = filtered.slice((page-1)*perPage, page*perPage)
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -154,7 +158,7 @@ export default function SupportPage() {
         <div className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
             {['all', 'open', 'in_progress', 'resolved', 'closed'].map(s => (
-              <button key={s} onClick={() => setFStatus(s)}
+              <button key={s} onClick={() => { setFStatus(s); setPage(1) }}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${fStatus === s ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'}`}>
                 {s.replace('_', ' ')}
               </button>
@@ -171,7 +175,7 @@ export default function SupportPage() {
               <p className="text-sm text-gray-400">No tickets</p>
             </div>
           )}
-          {filtered.map(t => {
+          {paged.map(t => {
             const member     = members[t.member_id || '']
             const memberAtts = (t.ticket_attachments || []).filter(a => a.uploaded_by === 'member')
             const adminAtts  = (t.ticket_attachments || []).filter(a => a.uploaded_by === 'admin')
@@ -326,6 +330,28 @@ export default function SupportPage() {
               </div>
             )
           })}
+          {/* Pagination */}
+          {filtered.length > perPage && (
+            <div className="flex items-center justify-between px-2 py-3 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                {[10,25,50].map(n=>(
+                  <button key={n} onClick={()=>{ setPerPage(n); setPage(1) }}
+                    className={`px-2 py-1 rounded transition-colors ${perPage===n?'font-bold text-white':'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    style={perPage===n?{background:'#d99401'}:{}}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <span>{Math.min((page-1)*perPage+1,filtered.length)}–{Math.min(page*perPage,filtered.length)} of {filtered.length}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={()=>setPage(p=>p-1)} disabled={page===1}
+                  className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
+                <span className="px-2">{page} / {totalPages}</span>
+                <button onClick={()=>setPage(p=>p+1)} disabled={page>=totalPages}
+                  className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)}/>}

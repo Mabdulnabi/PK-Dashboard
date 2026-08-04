@@ -70,7 +70,9 @@ export default function LandingPageAdmin() {
   const [landingUrl,  setLandingUrl]  = useState('')
 
   // ── Hero ──
-  const [heroBadge,      setHeroBadge]      = useState('🔑 اشتراكاتك الرقمية')
+  const [heroBadge,      setHeroBadge]      = useState('🔑 اشتراكاتك الرقمية') // legacy fallback
+  const [heroBadgeAr,    setHeroBadgeAr]    = useState('🔑 اشتراكاتك الرقمية')
+  const [heroBadgeEn,    setHeroBadgeEn]    = useState('🔑 Your Digital Subscriptions')
   const [heroTitleAr,    setHeroTitleAr]    = useState('اشتراكاتك الرقمية\nبأفضل الأسعار')
   const [heroTitleEn,    setHeroTitleEn]    = useState('Your Digital Subscriptions\nat the Best Prices')
   const [heroSubAr,      setHeroSubAr]      = useState('منصة Pro Keys توفر لك أفضل الاشتراكات الرقمية بأسعار منافسة مع ضمان الجودة والدعم الفوري')
@@ -143,6 +145,8 @@ export default function LandingPageAdmin() {
       setLandingUrl(s.lp_url || '')
 
       setHeroBadge(s.lp_hero_badge || '🔑 اشتراكاتك الرقمية')
+      setHeroBadgeAr(s.lp_hero_badge_ar || s.lp_hero_badge || '🔑 اشتراكاتك الرقمية')
+      setHeroBadgeEn(s.lp_hero_badge_en || '🔑 Your Digital Subscriptions')
       setHeroTitleAr(s.lp_hero_title_ar || 'اشتراكاتك الرقمية\nبأفضل الأسعار')
       setHeroTitleEn(s.lp_hero_title_en || 'Your Digital Subscriptions\nat the Best Prices')
       setHeroSubAr(s.lp_hero_sub_ar || '')
@@ -204,6 +208,8 @@ export default function LandingPageAdmin() {
       lp_site_name: siteName, lp_signin_url: signinUrl,
       lp_header_logo: headerLogo, lp_url: landingUrl,
       lp_hero_badge: heroBadge,
+      lp_hero_badge_ar: heroBadgeAr,
+      lp_hero_badge_en: heroBadgeEn,
       lp_hero_title_ar: heroTitleAr, lp_hero_title_en: heroTitleEn,
       lp_hero_sub_ar: heroSubAr, lp_hero_sub_en: heroSubEn,
       lp_hero_cta_ar: heroCtaAr, lp_hero_cta_en: heroCtaEn, lp_hero_cta_url: heroCtaUrl,
@@ -370,7 +376,7 @@ export default function LandingPageAdmin() {
                 <div className={sec}>
                   <SectionHeading>قسم الهيرو</SectionHeading>
                   <Card>
-                    <div><label className={lbl}>Badge / Eyebrow text</label><input className={inp} value={heroBadge} onChange={e => setHeroBadge(e.target.value)}/></div>
+                    <BilingualField labelAr="بادج الهيرو (عربي)" labelEn="Hero Badge (English)" valueAr={heroBadgeAr} valueEn={heroBadgeEn} onAr={setHeroBadgeAr} onEn={setHeroBadgeEn}/>
                     <BilingualField labelAr="العنوان الرئيسي" labelEn="Main Title" valueAr={heroTitleAr} valueEn={heroTitleEn} onAr={setHeroTitleAr} onEn={setHeroTitleEn} multiline/>
                     <BilingualField labelAr="النص الفرعي" labelEn="Subtitle" valueAr={heroSubAr} valueEn={heroSubEn} onAr={setHeroSubAr} onEn={setHeroSubEn} multiline/>
                     <div className="grid grid-cols-3 gap-3">

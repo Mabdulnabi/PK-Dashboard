@@ -89,7 +89,11 @@ export default function StockPage() {
     load()
   }
 
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(25)
   const filtered = selTool==='all' ? stock : stock.filter(s=>s.tool_id===selTool)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paged = filtered.slice((page-1)*perPage, page*perPage)
   const totalAvail    = stock.filter(s=>s.status==='available').length
   const totalAssigned = stock.filter(s=>s.status==='assigned').length
   const lowTools = tools.filter(t=>t.available<3)
@@ -135,12 +139,12 @@ export default function StockPage() {
 
           {/* Tool filter tabs */}
           <div className="flex gap-2 mb-4 flex-wrap">
-            <button onClick={()=>setSelTool('all')}
+            <button onClick={()=>{ setSelTool('all'); setPage(1) }}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${selTool==='all'?'bg-red-500 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
               الكل
             </button>
             {tools.map(t=>(
-              <button key={t.id} onClick={()=>setSelTool(t.id)}
+              <button key={t.id} onClick={()=>{ setSelTool(t.id); setPage(1) }}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${selTool===t.id?'bg-red-500 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                 {t.image_url && <img src={t.image_url} alt={t.name} className="w-4 h-4 object-contain rounded"/>}
                 {t.name}
@@ -170,7 +174,7 @@ export default function StockPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(s=>{
+                  {paged.map(s=>{
                     const tool = tools.find(t=>t.id===s.tool_id)
                     return (
                       <tr key={s.id} className="border-b border-gray-50 dark:border-[#1a2233] hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
@@ -209,6 +213,27 @@ export default function StockPage() {
                   })}
                 </tbody>
               </table>
+            )}
+            {filtered.length > perPage && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-[#1a2233] text-xs text-gray-500">
+                <div className="flex items-center gap-1">
+                  {[10,25,50].map(n=>(
+                    <button key={n} onClick={()=>{ setPerPage(n); setPage(1) }}
+                      className={`px-2 py-1 rounded transition-colors ${perPage===n?'font-bold text-white':'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                      style={perPage===n?{background:'#d99401'}:{}}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <span>{Math.min((page-1)*perPage+1,filtered.length)}–{Math.min(page*perPage,filtered.length)} of {filtered.length}</span>
+                <div className="flex items-center gap-1">
+                  <button onClick={()=>setPage(p=>p-1)} disabled={page===1}
+                    className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-[#1a2233] disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
+                  <span className="px-2">{page} / {totalPages}</span>
+                  <button onClick={()=>setPage(p=>p+1)} disabled={page>=totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-[#1a2233] disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+                </div>
+              </div>
             )}
           </div>
         </main>

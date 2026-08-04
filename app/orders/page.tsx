@@ -76,8 +76,12 @@ export default function OrdersPage() {
     load()
   }
 
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(25)
   const pending   = orders.filter(o=>!o.delivered).length
   const delivered = orders.filter(o=>o.delivered).length
+  const totalPages = Math.max(1, Math.ceil(orders.length / perPage))
+  const paged = orders.slice((page-1)*perPage, page*perPage)
 
   const stats = [
     { label:'إجمالي الطلبات', val:orders.length, gradient:'from-slate-50 to-white dark:from-[#111827] dark:to-[#111827]', stripe:'bg-gray-300 dark:bg-gray-600', valCls:'text-gray-800 dark:text-gray-200' },
@@ -104,9 +108,9 @@ export default function OrdersPage() {
           </div>
 
           {/* Filter tabs */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-4">
             {(['all','pending','delivered'] as const).map(f=>(
-              <button key={f} onClick={()=>setFilter(f)}
+              <button key={f} onClick={()=>{ setFilter(f); setPage(1) }}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${filter===f?'bg-red-500 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                 {f==='all'?'الكل':f==='pending'?'⏳ في الانتظار':'✅ تم التسليم'}
               </button>
@@ -132,7 +136,7 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(o=>(
+                  {paged.map(o=>(
                     <tr key={o.id} className="border-b border-gray-50 dark:border-[#1a2233] hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                       <td className="px-5 py-4">
                         <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">{o.member_name}</div>
@@ -173,6 +177,30 @@ export default function OrdersPage() {
                   ))}
                 </tbody>
               </table>
+            )}
+            {/* Pagination */}
+            {orders.length > perPage && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-[#1a2233] text-xs text-gray-500">
+                <div className="flex items-center gap-1">
+                  {[10,25,50].map(n=>(
+                    <button key={n} onClick={()=>{ setPerPage(n); setPage(1) }}
+                      className={`px-2 py-1 rounded transition-colors ${perPage===n?'font-bold text-white':'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                      style={perPage===n?{background:'#d99401'}:{}}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <span>
+                  {Math.min((page-1)*perPage+1, orders.length)}–{Math.min(page*perPage, orders.length)} of {orders.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={()=>setPage(p=>p-1)} disabled={page===1}
+                    className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-[#1a2233] disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
+                  <span className="px-2">{page} / {totalPages}</span>
+                  <button onClick={()=>setPage(p=>p+1)} disabled={page>=totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-[#1a2233] disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+                </div>
+              </div>
             )}
           </div>
         </main>

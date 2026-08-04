@@ -55,7 +55,7 @@ export default function CustomersPage() {
   const [products,   setProducts]   = useState<Product[]>([])
   const [accounts,   setAccounts]   = useState<Account[]>([])
   const [loading,    setLoading]    = useState(true)
-  const [q,          setQ]          = useState('')
+  const [q,          setQ]          = useState(''); useEffect(() => setPage(1), [q])
   const [expanded,   setExpanded]   = useState<string|null>(null)
   const [toast,      setToast]      = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [saving,     setSaving]     = useState(false)
@@ -195,8 +195,12 @@ export default function CustomersPage() {
     setToast({msg:'Subscription deleted',type:'ok'}); setDelConfirm(null); loadSubs(custId)
   }
 
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(25)
   const filtAccounts = accounts.filter(a=>a.product_id===subForm.product_id)
   const filtered = customers.filter(c=>!q||c.full_name.toLowerCase().includes(q.toLowerCase())||(c.phone||'').includes(q)||(c.email||'').toLowerCase().includes(q.toLowerCase()))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paged = filtered.slice((page-1)*perPage, page*perPage)
 
   // ── Sub modal inner form (shared between quick + sub-only) ─
   const SubFields = ({showStatus=false}:{showStatus?:boolean}) => (
@@ -307,7 +311,7 @@ export default function CustomersPage() {
             </div>
           )}
 
-          {filtered.map(c => {
+          {paged.map(c => {
             const isOpen = expanded===c.id
             const cSubs  = subs[c.id]||[]
             return (
@@ -391,6 +395,28 @@ export default function CustomersPage() {
               </div>
             )
           })}
+          {/* Pagination */}
+          {filtered.length > perPage && (
+            <div className="flex items-center justify-between py-3 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                {[10,25,50].map(n=>(
+                  <button key={n} onClick={()=>{ setPerPage(n); setPage(1) }}
+                    className={`px-2 py-1 rounded transition-colors ${perPage===n?'font-bold text-white':'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    style={perPage===n?{background:'#d99401'}:{}}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <span>{Math.min((page-1)*perPage+1,filtered.length)}–{Math.min(page*perPage,filtered.length)} of {filtered.length}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={()=>setPage(p=>p-1)} disabled={page===1}
+                  className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
+                <span className="px-2">{page} / {totalPages}</span>
+                <button onClick={()=>setPage(p=>p+1)} disabled={page>=totalPages}
+                  className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

@@ -96,6 +96,10 @@ export default function CouponsPage() {
     load()
   }
 
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(25)
+  const totalPages = Math.max(1, Math.ceil(coupons.length / perPage))
+  const paged = coupons.slice((page-1)*perPage, page*perPage)
   const toolMap = Object.fromEntries(tools.map(t => [t.id, t]))
 
   return (
@@ -211,7 +215,7 @@ export default function CouponsPage() {
             <div className="text-center py-20 text-gray-400 text-sm">No coupons yet — create one above</div>
           ) : (
             <div className="flex flex-col gap-3">
-              {coupons.map(c => {
+              {paged.map(c => {
                 const isExpanded = expanded === c.id
                 const toolNames  = (c.tool_ids || []).map(id => toolMap[id]?.name).filter(Boolean)
                 const usagePct   = c.max_uses > 0 ? Math.min(100, (c.used_count / c.max_uses) * 100) : 0
@@ -299,6 +303,27 @@ export default function CouponsPage() {
                   </div>
                 )
               })}
+              {coupons.length > perPage && (
+                <div className="flex items-center justify-between py-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-1">
+                    {[10,25,50].map(n=>(
+                      <button key={n} onClick={()=>{ setPerPage(n); setPage(1) }}
+                        className={`px-2 py-1 rounded transition-colors ${perPage===n?'font-bold text-white':'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                        style={perPage===n?{background:'#d99401'}:{}}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <span>{Math.min((page-1)*perPage+1,coupons.length)}–{Math.min(page*perPage,coupons.length)} of {coupons.length}</span>
+                  <div className="flex items-center gap-1">
+                    <button onClick={()=>setPage(p=>p-1)} disabled={page===1}
+                      className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
+                    <span className="px-2">{page} / {totalPages}</span>
+                    <button onClick={()=>setPage(p=>p+1)} disabled={page>=totalPages}
+                      className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

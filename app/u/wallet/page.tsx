@@ -84,6 +84,9 @@ export default function PaymentsPage() {
     })
   }
 
+  const refreshWallet = () =>
+    fetch('/api/member/wallet').then(r=>r.json()).then(wd=>{ if (wd && !wd.error) setWallet(wd) })
+
   useEffect(()=>{
     Promise.all([
       fetch('/api/member/payment').then(r=>r.json()),
@@ -95,6 +98,9 @@ export default function PaymentsPage() {
       setGateways(gd.gateways||[])
       setLoading(false)
     })
+    // Poll wallet balance every 30s for real-time balance updates
+    const interval = setInterval(refreshWallet, 30_000)
+    return () => clearInterval(interval)
   },[])
 
   const fmtAmt = (n:number, cur:string) => `${Number(n).toLocaleString()} ${cur}`

@@ -207,10 +207,12 @@ export default function Landing() {
 
           {/* Left copy */}
           <div>
-            {s.lp_hero_badge && (
+            {(s.lp_hero_badge || s.lp_hero_badge_ar || s.lp_hero_badge_en) && (
               <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:13, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:20, border:'1px solid #EDD98A' }}>
                 <span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>
-                {s.lp_hero_badge}
+                {lang === 'ar'
+                  ? (s.lp_hero_badge_ar || s.lp_hero_badge || s.lp_hero_badge_en)
+                  : (s.lp_hero_badge_en || s.lp_hero_badge || s.lp_hero_badge_ar)}
               </span>
             )}
             <h1 style={{ fontSize:'clamp(28px,4vw,42px)', fontWeight:800, lineHeight:1.32, color:'#1B2556', marginBottom:18, whiteSpace:'pre-line' }}>
