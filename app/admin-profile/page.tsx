@@ -39,8 +39,11 @@ export default function AdminProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch('/api/admin/profile').then(r => r.json()).then(d => {
-      if (d.error === 'unauthorized') { window.location.href = '/auth/login'; return }
+    fetch('/api/admin/profile').then(r => {
+      if (r.status === 401) { window.location.href = '/auth/login'; return Promise.reject() }
+      return r.json()
+    }).then(d => {
+      if (!d) return
       setDisplayName(d.display_name || '')
       setFullName(d.full_name || '')
       setWhatsapp(d.whatsapp || '')
