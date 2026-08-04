@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { MessageSquare, Check, X, AlertCircle, ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText } from 'lucide-react'
+import {
+  MessageSquare, Check, X, AlertCircle, Paperclip,
+  Download, Image as ImageIcon, FileText, ChevronLeft, Send,
+} from 'lucide-react'
 
 type Attachment  = { id: string; file_path: string; file_name: string; file_type: string; uploaded_by: string }
 type TMsg        = { id: string; sender_type: 'member' | 'admin'; message: string; sender_name?: string; sender_avatar?: string; created_at: string }
@@ -15,6 +18,11 @@ interface Ticket {
   ticket_messages?: TMsg[]
   member?: MemberInfo
 }
+
+const GOLD = '#d99401'
+const STATUS_COLORS: Record<string, string> = { open: '#EF4444', in_progress: '#F59E0B', resolved: '#10B981', closed: '#6B7280' }
+const PRIORITY_COLORS: Record<string, string> = { low: '#6B7280', normal: '#3B82F6', high: '#F59E0B', urgent: '#EF4444' }
+const CATEGORY_LABELS: Record<string, string> = { subscription: 'Subscription', payment: 'Payment', general: 'General' }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'ok' | 'err'; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [onClose])
@@ -44,9 +52,8 @@ function FileChip({ att }: { att: Attachment }) {
 
 function MemberAvatar({ member, size = 28 }: { member?: MemberInfo; size?: number }) {
   const initials = member?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
-  if (member?.avatar_url) {
+  if (member?.avatar_url)
     return <img src={member.avatar_url} alt={member.full_name} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }}/>
-  }
   const colors = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#3b82f6']
   const color  = colors[(member?.full_name?.charCodeAt(0) || 0) % colors.length]
   return (
@@ -57,16 +64,11 @@ function MemberAvatar({ member, size = 28 }: { member?: MemberInfo; size?: numbe
   )
 }
 
-const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-red-400 transition-all"
-const STATUS_COLORS: Record<string, string> = { open: '#EF4444', in_progress: '#F59E0B', resolved: '#10B981', closed: '#6B7280' }
-const PRIORITY_COLORS: Record<string, string> = { low: '#6B7280', normal: '#3B82F6', high: '#F59E0B', urgent: '#EF4444' }
-const CATEGORY_LABELS: Record<string, string> = { subscription: 'Subscription', payment: 'Payment', general: 'General' }
-
 export default function TicketsPage() {
   const [tickets,      setTickets]      = useState<Ticket[]>([])
   const [members,      setMembers]      = useState<Record<string, MemberInfo>>({})
   const [loading,      setLoading]      = useState(true)
-  const [expanded,     setExpanded]     = useState<string | null>(null)
+  const [activeId,     setActiveId]     = useState<string | null>(null)
   const [replyText,    setReplyText]    = useState('')
   const [replyFiles,   setReplyFiles]   = useState<File[]>([])
   const [saving,       setSaving]       = useState(false)
@@ -74,9 +76,9 @@ export default function TicketsPage() {
   const [fStatus,      setFStatus]      = useState('all')
   const [adminProfile, setAdminProfile] = useState<{ id?: string; display_name: string; avatar_url?: string } | null>(null)
   const [page,         setPage]         = useState(1)
-  const [perPage,      setPerPage]      = useState(25)
-  const fileRef   = useRef<HTMLInputElement>(null)
-  const threadRef = useRef<HTMLDivElement>(null)
+  const perPage = 30
+  const fileRef    = useRef<HTMLInputElement>(null)
+  const threadEnd  = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async (silent = false) => {
     const res = await fetch('/api/admin/tickets')
@@ -97,28 +99,23 @@ export default function TicketsPage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/admin/profile').then(r => r.json()).then(setAdminProfile) }, [])
 
+  // Poll every 15s; faster (8s) when a ticket is open
   useEffect(() => {
-    const id = setInterval(() => load(true), 15000)
+    const id = setInterval(() => load(true), activeId ? 8000 : 15000)
     return () => clearInterval(id)
-  }, [load])
+  }, [load, activeId])
 
+  // Scroll thread to bottom on open or new messages
   useEffect(() => {
-    if (!expanded) return
-    const id = setInterval(() => load(true), 8000)
-    return () => clearInterval(id)
-  }, [expanded, load])
+    if (activeId) setTimeout(() => threadEnd.current?.scrollIntoView({ behavior: 'smooth' }), 80)
+  }, [activeId, tickets])
 
-  // Scroll thread to bottom when expanded or messages change
-  useEffect(() => {
-    if (expanded && threadRef.current) {
-      threadRef.current.scrollTop = threadRef.current.scrollHeight
-    }
-  }, [expanded, tickets])
+  const activeTicket = tickets.find(t => t.id === activeId) || null
 
-  const sendReply = async (t: Ticket) => {
-    if (!replyText.trim()) return
+  const sendReply = async () => {
+    if (!replyText.trim() || !activeTicket) return
     setSaving(true)
-    const res = await fetch(`/api/admin/tickets/${t.id}/reply`, {
+    const res = await fetch(`/api/admin/tickets/${activeTicket.id}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reply: replyText, status: 'in_progress', admin_id: adminProfile?.id ?? null }),
@@ -127,24 +124,23 @@ export default function TicketsPage() {
     for (const file of replyFiles) {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('ticket_id', t.id)
+      fd.append('ticket_id', activeTicket.id)
       await fetch('/api/admin/tickets/upload', { method: 'POST', body: fd })
     }
     setSaving(false)
     setToast({ msg: 'Reply sent', type: 'ok' })
     setReplyText('')
     setReplyFiles([])
-    load()
+    load(true)
   }
 
   const updateStatus = async (id: string, status: string) => {
     await fetch('/api/admin/tickets', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status }),
     })
-    setToast({ msg: `Status: ${status}`, type: 'ok' })
-    load()
+    setToast({ msg: `Status → ${status.replace('_', ' ')}`, type: 'ok' })
+    load(true)
   }
 
   const filtered   = tickets.filter(t => fStatus === 'all' || t.status === fStatus)
@@ -157,240 +153,261 @@ export default function TicketsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const paged      = filtered.slice((page - 1) * perPage, page * perPage)
 
+  // Build thread for active ticket
+  const activeMember = activeTicket ? members[activeTicket.member_id || ''] : undefined
+  const thread = activeTicket ? [
+    { sender: 'member' as const, text: activeTicket.message, time: activeTicket.created_at, id: 'orig',
+      name: activeMember?.full_name, avatar: activeMember?.avatar_url },
+    ...((activeTicket.ticket_messages || [])
+      .slice()
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .map(m => ({
+        sender: m.sender_type as 'member' | 'admin',
+        text:   m.message,
+        time:   m.created_at,
+        id:     m.id,
+        name:   m.sender_type === 'member'
+          ? activeMember?.full_name
+          : (m.sender_name || adminProfile?.display_name || 'Support Team'),
+        avatar: m.sender_type === 'member'
+          ? activeMember?.avatar_url
+          : (m.sender_avatar || adminProfile?.avatar_url || undefined),
+      }))
+    ),
+  ] : []
+
+  const memberAtts = (activeTicket?.ticket_attachments || []).filter(a => a.uploaded_by === 'member')
+  const adminAtts  = (activeTicket?.ticket_attachments || []).filter(a => a.uploaded_by === 'admin')
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar/>
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar title="Tickets" subtitle={`${counts.open} open · ${counts.in_progress} in progress`}/>
 
-        {/* Filter bar */}
-        <div className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            {(['all', 'open', 'in_progress', 'resolved', 'closed'] as const).map(s => (
-              <button key={s} onClick={() => { setFStatus(s); setPage(1) }}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${fStatus === s ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'}`}>
-                {s === 'all' ? 'All' : s.replace('_', ' ')}
-                {s !== 'all' && counts[s as keyof typeof counts] > 0 && (
-                  <span className="ml-1 text-[9px] font-bold opacity-60">({counts[s as keyof typeof counts]})</span>
-                )}
-              </button>
-            ))}
-          </div>
-          <span className="ml-auto text-xs text-gray-400">{filtered.length} tickets</span>
-        </div>
+        <div className="flex flex-1 overflow-hidden">
 
-        <div className="flex-1 overflow-auto p-5 flex flex-col gap-3">
-          {loading && (
-            <div className="flex justify-center py-16">
-              <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/>
-            </div>
-          )}
-          {!loading && filtered.length === 0 && (
-            <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl">
-              <MessageSquare size={28} className="text-gray-200 mx-auto mb-3"/>
-              <p className="text-sm text-gray-400">No tickets</p>
-            </div>
-          )}
+          {/* ── Left: ticket list ── */}
+          <div className={`flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111827] ${activeId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-shrink-0`}>
 
-          {paged.map(t => {
-            const member     = members[t.member_id || '']
-            const memberAtts = (t.ticket_attachments || []).filter(a => a.uploaded_by === 'member')
-            const adminAtts  = (t.ticket_attachments || []).filter(a => a.uploaded_by === 'admin')
-            const isExpanded = expanded === t.id
-
-            const msgs: { sender: 'member' | 'admin'; text: string; time: string; id: string; name?: string; avatar?: string }[] = [
-              { sender: 'member', text: t.message, time: t.created_at, id: 'orig',
-                name: member?.full_name, avatar: member?.avatar_url },
-              ...((t.ticket_messages || [])
-                .slice()
-                .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                .map(m => ({
-                  sender: m.sender_type as 'member' | 'admin',
-                  text:   m.message,
-                  time:   m.created_at,
-                  id:     m.id,
-                  name:   m.sender_type === 'member'
-                    ? member?.full_name
-                    : (m.sender_name || adminProfile?.display_name || 'Support Team'),
-                  // prefer stored per-message avatar, fall back to current admin profile avatar
-                  avatar: m.sender_type === 'member'
-                    ? member?.avatar_url
-                    : (m.sender_avatar || adminProfile?.avatar_url || undefined),
-                }))
-              ),
-            ]
-
-            return (
-              <div key={t.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
-
-                {/* Ticket header row */}
-                <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                  onClick={() => { setExpanded(isExpanded ? null : t.id); setReplyText(''); setReplyFiles([]) }}>
-                  <MemberAvatar member={member} size={32}/>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      {member && (
-                        <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                          {member.member_code}
-                        </span>
-                      )}
-                      {member && (
-                        <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 flex-shrink-0">{member.full_name}</span>
-                      )}
-                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">· {t.subject}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: PRIORITY_COLORS[t.priority] + '20', color: PRIORITY_COLORS[t.priority] }}>
-                        {t.priority}
-                      </span>
-                      {t.category && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 flex-shrink-0">
-                          {CATEGORY_LABELS[t.category] || t.category}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-gray-400">
-                      {new Date(t.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: STATUS_COLORS[t.status] + '20', color: STATUS_COLORS[t.status] }}>
-                    {t.status.replace('_', ' ')}
-                  </span>
-                  {isExpanded ? <ChevronUp size={14} className="text-gray-400 flex-shrink-0"/> : <ChevronDown size={14} className="text-gray-400 flex-shrink-0"/>}
-                </div>
-
-                {/* Expanded panel */}
-                {isExpanded && (
-                  <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 flex flex-col">
-
-                    {/* Scrollable conversation thread */}
-                    <div ref={threadRef} className="overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: '360px' }}>
-                      {msgs.map(m => (
-                        <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
-                          {m.sender === 'member' ? (
-                            <MemberAvatar member={member} size={24}/>
-                          ) : (
-                            m.avatar
-                              ? <img src={m.avatar} alt={m.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0"/>
-                              : <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
-                                  {m.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'S'}
-                                </div>
-                          )}
-                          <div className={`flex flex-col gap-0.5 max-w-[85%] ${m.sender === 'admin' ? 'items-end' : ''}`}>
-                            <div className="flex items-center gap-1.5">
-                              {member?.member_code && m.sender === 'member' && (
-                                <span className="text-[9px] font-bold text-indigo-500">{member.member_code}</span>
-                              )}
-                              <span className={`text-[10px] font-semibold ${m.sender === 'admin' ? 'text-emerald-500' : 'text-gray-500'}`}>
-                                {m.name || (m.sender === 'admin' ? 'Support Team' : 'Member')}
-                              </span>
-                            </div>
-                            <div className={`rounded-lg p-2.5 text-xs whitespace-pre-wrap ${
-                              m.sender === 'admin'
-                                ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                                : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400'
-                            }`}>{m.text}</div>
-                            <span className="text-[9px] text-gray-300 dark:text-gray-600">
-                              {new Date(m.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Attachments inside scroll area */}
-                      {memberAtts.length > 0 && <div className="flex flex-wrap gap-2">{memberAtts.map(a => <FileChip key={a.id} att={a}/>)}</div>}
-                      {adminAtts.length > 0 && <div className="flex flex-wrap gap-2 justify-end">{adminAtts.map(a => <FileChip key={a.id} att={a}/>)}</div>}
-                    </div>
-
-                    {/* Sticky bottom: status + reply box */}
-                    <div className="flex-shrink-0 border-t border-gray-100 dark:border-gray-700 px-4 py-3 space-y-2 bg-gray-50 dark:bg-gray-800/40">
-                      {/* Status buttons */}
-                      <div className="flex gap-2">
-                        {(['open', 'in_progress', 'resolved', 'closed'] as const).map(s => (
-                          <button key={s} onClick={() => updateStatus(t.id, s)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${t.status === s ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}
-                            style={t.status === s ? { background: STATUS_COLORS[s] } : {}}>
-                            {s.replace('_', ' ')}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Admin identity preview */}
-                      <div className="flex items-center gap-2">
-                        {adminProfile?.avatar_url
-                          ? <img src={adminProfile.avatar_url} className="w-5 h-5 rounded-full object-cover" alt=""/>
-                          : <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold">
-                              {adminProfile?.display_name?.charAt(0) || 'S'}
-                            </div>
-                        }
-                        <span className="text-[10px] font-semibold text-gray-400">
-                          Replying as <span className="text-emerald-500">{adminProfile?.display_name || 'Support Team'}</span>
-                        </span>
-                      </div>
-
-                      {/* Reply textarea + send */}
-                      <div className="flex gap-2">
-                        <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
-                          placeholder="Type your reply…" className={inp + ' resize-none h-16 flex-1'}/>
-                        <button onClick={() => sendReply(t)} disabled={saving}
-                          className="px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold disabled:opacity-60 flex-shrink-0">
-                          {saving
-                            ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                            : 'Send'}
-                        </button>
-                      </div>
-
-                      {/* Attach */}
-                      <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.txt" className="hidden"
-                        onChange={e => setReplyFiles(Array.from(e.target.files || []))}/>
-                      <button type="button" onClick={() => fileRef.current?.click()}
-                        className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                        <Paperclip size={12}/>Attach files
-                        {replyFiles.length > 0 && <span className="text-red-500 font-semibold ml-1">{replyFiles.length} file(s)</span>}
-                      </button>
-                      {replyFiles.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {replyFiles.map((f, i) => (
-                            <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-[11px] text-gray-500">
-                              {f.name}
-                              <button onClick={() => setReplyFiles(p => p.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500">
-                                <X size={9}/>
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-
-          {/* Pagination */}
-          {filtered.length > perPage && (
-            <div className="flex items-center justify-between px-2 py-3 text-xs text-gray-500">
-              <div className="flex items-center gap-1">
-                {[10, 25, 50].map(n => (
-                  <button key={n} onClick={() => { setPerPage(n); setPage(1) }}
-                    className={`px-2 py-1 rounded transition-colors ${perPage === n ? 'font-bold text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                    style={perPage === n ? { background: '#d99401' } : {}}>
-                    {n}
+            {/* Filter tabs */}
+            <div className="px-3 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+              <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto">
+                {(['all', 'open', 'in_progress', 'resolved', 'closed'] as const).map(s => (
+                  <button key={s} onClick={() => { setFStatus(s); setPage(1) }}
+                    className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all ${fStatus === s ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'}`}>
+                    {s === 'all' ? `All (${tickets.length})` : `${s.replace('_', ' ')} ${counts[s as keyof typeof counts] > 0 ? `(${counts[s as keyof typeof counts]})` : ''}`}
                   </button>
                 ))}
               </div>
-              <span>{Math.min((page - 1) * perPage + 1, filtered.length)}–{Math.min(page * perPage, filtered.length)} of {filtered.length}</span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => setPage(p => p - 1)} disabled={page === 1}
-                  className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
-                <span className="px-2">{page} / {totalPages}</span>
-                <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
-                  className="px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">→</button>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto">
+              {loading && (
+                <div className="flex justify-center py-10">
+                  <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${GOLD} transparent transparent transparent` }}/>
+                </div>
+              )}
+              {!loading && filtered.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <MessageSquare size={28} className="opacity-30 mb-2"/>
+                  <p className="text-sm">No tickets</p>
+                </div>
+              )}
+
+              {paged.map(t => {
+                const m = members[t.member_id || '']
+                const isActive = activeId === t.id
+                const msgCount = (t.ticket_messages || []).length
+                return (
+                  <div key={t.id} onClick={() => { setActiveId(t.id); setReplyText(''); setReplyFiles([]) }}
+                    className="flex items-center gap-3 px-3 py-3 border-b border-gray-50 dark:border-gray-800/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                    style={isActive ? { background: `${GOLD}12`, borderInlineEndWidth: 2, borderInlineEndColor: GOLD } : {}}>
+                    <MemberAvatar member={m} size={36}/>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{t.subject}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {m && <span className="text-[10px] text-gray-500 truncate">{m.full_name}</span>}
+                        {m && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 flex-shrink-0">{m.member_code}</span>}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: STATUS_COLORS[t.status]+'20', color: STATUS_COLORS[t.status] }}>
+                          {t.status.replace('_', ' ')}
+                        </span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: PRIORITY_COLORS[t.priority]+'20', color: PRIORITY_COLORS[t.priority] }}>
+                          {t.priority}
+                        </span>
+                        {msgCount > 0 && <span className="text-[9px] text-gray-400 ml-auto">{msgCount} msg{msgCount !== 1 ? 's' : ''}</span>}
+                      </div>
+                    </div>
+                    <div className="text-[9px] text-gray-400 flex-shrink-0 text-right">
+                      {new Date(t.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short' })}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Pagination */}
+              {filtered.length > perPage && (
+                <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 dark:border-gray-800 text-[11px] text-gray-500">
+                  <button onClick={() => setPage(p => p - 1)} disabled={page === 1}
+                    className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800">←</button>
+                  <span>{page} / {totalPages}</span>
+                  <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
+                    className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800">→</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Right: conversation panel ── */}
+          {activeId && activeTicket ? (
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+              {/* Conversation header */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111827] flex-shrink-0">
+                <button onClick={() => setActiveId(null)} className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
+                  <ChevronLeft size={18}/>
+                </button>
+                <MemberAvatar member={activeMember} size={36}/>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{activeTicket.subject}</div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    {activeMember && <span>{activeMember.full_name}</span>}
+                    {activeMember && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">{activeMember.member_code}</span>}
+                    {activeTicket.category && <span className="text-gray-400">{CATEGORY_LABELS[activeTicket.category] || activeTicket.category}</span>}
+                  </div>
+                </div>
+
+                {/* Status switcher */}
+                <div className="flex gap-1">
+                  {(['open', 'in_progress', 'resolved', 'closed'] as const).map(s => (
+                    <button key={s} onClick={() => updateStatus(activeTicket.id, s)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                      style={activeTicket.status === s
+                        ? { background: STATUS_COLORS[s], color: '#fff' }
+                        : { background: '#f3f4f6', color: '#6b7280' }}>
+                      {s.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Thread — scrollable, fills remaining space */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f0f2f5' }}>
+                {thread.map(m => (
+                  <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                    {m.sender === 'member' ? (
+                      <MemberAvatar member={activeMember} size={28}/>
+                    ) : (
+                      m.avatar
+                        ? <img src={m.avatar} alt={m.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0"/>
+                        : <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                            {m.name?.charAt(0).toUpperCase() || 'S'}
+                          </div>
+                    )}
+                    <div className={`flex flex-col gap-0.5 max-w-[75%] ${m.sender === 'admin' ? 'items-end' : ''}`}>
+                      <span className={`text-[10px] font-semibold ${m.sender === 'admin' ? 'text-emerald-500' : 'text-gray-500'}`}>
+                        {m.name || (m.sender === 'admin' ? 'Support Team' : 'Member')}
+                        {m.sender === 'member' && activeMember?.member_code && (
+                          <span className="ml-1 text-indigo-400 font-bold">{activeMember.member_code}</span>
+                        )}
+                      </span>
+                      <div className={`rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
+                        m.sender === 'admin'
+                          ? 'bg-emerald-500 text-white rounded-br-sm'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-bl-sm'
+                      }`}>
+                        {m.text}
+                      </div>
+                      <span className="text-[9px] text-gray-400">
+                        {new Date(m.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Attachments */}
+                {memberAtts.length > 0 && (
+                  <div className="flex flex-wrap gap-2 ps-8">{memberAtts.map(a => <FileChip key={a.id} att={a}/>)}</div>
+                )}
+                {adminAtts.length > 0 && (
+                  <div className="flex flex-wrap gap-2 justify-end pe-8">{adminAtts.map(a => <FileChip key={a.id} att={a}/>)}</div>
+                )}
+
+                <div ref={threadEnd}/>
+              </div>
+
+              {/* Reply box — always visible at bottom */}
+              <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111827] px-4 py-3 space-y-2">
+                {/* Admin identity */}
+                <div className="flex items-center gap-2">
+                  {adminProfile?.avatar_url
+                    ? <img src={adminProfile.avatar_url} className="w-5 h-5 rounded-full object-cover" alt=""/>
+                    : <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold">
+                        {adminProfile?.display_name?.charAt(0) || 'S'}
+                      </div>
+                  }
+                  <span className="text-[10px] text-gray-400">
+                    Replying as <span className="font-semibold text-emerald-500">{adminProfile?.display_name || 'Support Team'}</span>
+                  </span>
+                </div>
+
+                {/* Textarea + send */}
+                <div className="flex gap-2 items-end">
+                  <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }}
+                    placeholder="Type your reply… (Enter to send, Shift+Enter for new line)"
+                    rows={3}
+                    className="flex-1 resize-none px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:border-emerald-400 transition-colors"
+                    style={{ minHeight: '72px', maxHeight: '140px' }}/>
+                  <button onClick={sendReply} disabled={saving || !replyText.trim()}
+                    className="p-3 rounded-xl text-white disabled:opacity-40 transition-colors flex-shrink-0"
+                    style={{ background: '#10b981' }}>
+                    {saving
+                      ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                      : <Send size={16}/>}
+                  </button>
+                </div>
+
+                {/* Attach */}
+                <div className="flex items-center gap-3">
+                  <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.txt" className="hidden"
+                    onChange={e => setReplyFiles(Array.from(e.target.files || []))}/>
+                  <button onClick={() => fileRef.current?.click()}
+                    className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <Paperclip size={12}/> Attach
+                    {replyFiles.length > 0 && <span className="text-emerald-500 font-semibold">{replyFiles.length} file(s)</span>}
+                  </button>
+                  {replyFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {replyFiles.map((f, i) => (
+                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-[11px] text-gray-500">
+                          {f.name}
+                          <button onClick={() => setReplyFiles(p => p.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500">
+                            <X size={9}/>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="hidden md:flex flex-1 items-center justify-center text-gray-400">
+              <div className="text-center">
+                <MessageSquare size={48} className="mx-auto mb-4 opacity-20"/>
+                <p className="text-sm font-medium">Select a ticket to view the conversation</p>
               </div>
             </div>
           )}
         </div>
-      </main>
+      </div>
+
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)}/>}
     </div>
   )
