@@ -401,10 +401,10 @@ export default function LandingPageAdmin() {
                       <button onClick={() => setLogoSize(s => Math.max(20, s - 4))}
                         className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-bold transition-colors">−</button>
                       <span className="text-xs font-bold text-gray-700 dark:text-gray-200 tabular-nums w-10 text-center">{logoSize}px</span>
-                      <button onClick={() => setLogoSize(s => Math.min(120, s + 4))}
+                      <button onClick={() => setLogoSize(s => Math.min(300, s + 4))}
                         className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-bold transition-colors">+</button>
                       <div className="flex gap-1 ml-2">
-                        {[32,44,60,80].map(n=>(
+                        {[44,80,120,180,240].map(n=>(
                           <button key={n} onClick={()=>setLogoSize(n)}
                             className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${logoSize===n?'text-white':'border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                             style={logoSize===n?{background:'#d99401'}:{}}>
