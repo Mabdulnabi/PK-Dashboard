@@ -51,14 +51,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [loading,   setLoading]   = useState(true)
   const pendingRef  = useRef<Set<string>>(new Set())
 
-  // Load localStorage immediately on mount (instant — no flicker)
+  // Load localStorage immediately on mount — source of truth until DB write succeeds
   useEffect(() => {
     setCart(readLocal<CartItem>(CART_KEY))
     setFavorites(readLocal<FavoriteItem>(FAV_KEY))
     setLoading(false)
   }, [])
 
-  // Sync from DB (best-effort — never blocks UI)
+  // Sync from DB — only called AFTER a successful write, never on mount alone
   const syncFromDB = useCallback(async () => {
     try {
       const [cr, fr] = await Promise.all([
@@ -68,19 +68,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (cr.ok) {
         const d = await cr.json()
         const items: CartItem[] = d.items || []
-        setCart(items)
-        writeLocal(CART_KEY, items)
+        // Only replace local if DB actually has data (never wipe with empty DB)
+        if (items.length > 0) { setCart(items); writeLocal(CART_KEY, items) }
       }
       if (fr.ok) {
         const d = await fr.json()
         const favs: FavoriteItem[] = d.favorites || []
-        setFavorites(favs)
-        writeLocal(FAV_KEY, favs)
+        if (favs.length > 0) { setFavorites(favs); writeLocal(FAV_KEY, favs) }
       }
     } catch {}
   }, [])
-
-  useEffect(() => { syncFromDB() }, [syncFromDB])
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
   const inCart = (tool_id: string) => cart.some(i => i.tool_id === tool_id)
