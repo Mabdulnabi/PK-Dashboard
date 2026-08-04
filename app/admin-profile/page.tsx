@@ -27,6 +27,7 @@ export default function AdminProfilePage() {
   const [displayName, setDisplayName] = useState('')
   const [fullName,    setFullName]    = useState('')
   const [adminEmail,  setAdminEmail]  = useState('')
+  const [originalEmail, setOriginalEmail] = useState('')
   const [whatsapp,    setWhatsapp]    = useState('')
   const [password,    setPassword]    = useState('')
   const [showPass,    setShowPass]    = useState(false)
@@ -47,7 +48,7 @@ export default function AdminProfilePage() {
       setPreview(d.avatar_url || null)
     })
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setAdminEmail(user.email)
+      if (user?.email) { setAdminEmail(user.email); setOriginalEmail(user.email) }
     })
   }, [])
 
@@ -80,8 +81,8 @@ export default function AdminProfilePage() {
         full_name:    fullName,
         ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         whatsapp:     whatsapp || null,
-        email:        adminEmail || undefined,
-        password:     password || undefined,
+        ...(adminEmail && adminEmail !== originalEmail ? { email: adminEmail } : {}),
+        ...(password ? { password } : {}),
       }),
     })
     setSaving(false)
@@ -166,6 +167,7 @@ export default function AdminProfilePage() {
                 <div className="relative">
                   <input value={password} onChange={e => setPassword(e.target.value)}
                     type={showPass ? 'text' : 'password'}
+                    autoComplete="new-password"
                     placeholder="Leave blank to keep current" className={inp + ' pr-10'}/>
                   <button type="button" onClick={() => setShowPass(p => !p)}
                     className="absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 hover:text-gray-600">
