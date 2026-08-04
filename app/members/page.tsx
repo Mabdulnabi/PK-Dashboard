@@ -22,6 +22,7 @@ interface Member {
   last_charge_amount?: number; last_charge_currency?: string; last_charge_at?: string
   last_deduct_amount?: number; last_deduct_currency?: string; last_deduct_at?: string
   time_remaining?: string
+  next_renew?: string | null
 }
 
 
@@ -109,8 +110,25 @@ export default function MembersPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const mRes = await supabase.from('members_full').select('*').order('created_at', { ascending: false })
-    if (mRes.data) setMembers(mRes.data)
+    const [mRes, subRes] = await Promise.all([
+      supabase.from('members_full').select('*').order('created_at', { ascending: false }),
+      supabase.from('tool_purchases')
+        .select('member_id, expires_at')
+        .eq('status', 'confirmed')
+        .gt('expires_at', new Date().toISOString())
+        .order('expires_at', { ascending: true }),
+    ])
+    // Build next_renew map: earliest upcoming expires_at per member
+    const nextRenewMap: Record<string, string> = {}
+    for (const p of subRes.data || []) {
+      if (!nextRenewMap[p.member_id]) nextRenewMap[p.member_id] = p.expires_at
+    }
+    if (mRes.data) {
+      setMembers(mRes.data.map((m: any) => ({
+        ...m,
+        next_renew: nextRenewMap[m.id] || null,
+      })))
+    }
     setLoading(false)
   }, [])
 
@@ -290,9 +308,19 @@ export default function MembersPage() {
 
                     {/* Next Renew */}
                     <td className="px-4 py-3">
-                      <div className="text-xs text-gray-700 dark:text-gray-300 font-medium">{fmtDate(m.expires_at)}</div>
-                      {m.expires_at && new Date(m.expires_at) > new Date() && (
-                        <div className="text-[10px] text-gray-400">{m.time_remaining}</div>
+                      {m.next_renew ? (
+                        <>
+                          <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{fmtDate(m.next_renew)}</div>
+                          <div className="text-[10px] text-gray-400">
+                            {(() => {
+                              const diff = new Date(m.next_renew).getTime() - Date.now()
+                              const days = Math.ceil(diff / 86400000)
+                              return days <= 0 ? 'Expired' : days === 1 ? 'Tomorrow' : `${days}d left`
+                            })()}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-gray-300">—</span>
                       )}
                     </td>
 
