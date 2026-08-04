@@ -588,13 +588,13 @@ export default function Landing() {
                 )}
               </h2>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20 }} className="lp-feat-grid">
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:28 }} className="lp-feat-grid">
               {features.map((f, i) => (
                 <div key={f.id || i} className="lp-card"
-                  style={{ background:'#fff', border:'1px solid #DCE4F1', borderRadius:16, padding:26, transition:'all .2s' }}>
-                  <div style={{ fontSize:28, marginBottom:16, lineHeight:1 }}>{f.icon}</div>
-                  <h3 style={{ fontSize:16, fontWeight:800, color:'#1B2556', marginBottom:8 }}>{t(f.title_ar, f.title_en)}</h3>
-                  <p style={{ fontSize:13.5, color:'#6B7494', lineHeight:1.75 }}>{t(f.desc_ar, f.desc_en)}</p>
+                  style={{ background:'#fff', border:'1px solid #DCE4F1', borderRadius:20, padding:'40px 36px', transition:'all .2s' }}>
+                  <div style={{ fontSize:48, marginBottom:22, lineHeight:1 }}>{f.icon}</div>
+                  <h3 style={{ fontSize:20, fontWeight:800, color:'#1B2556', marginBottom:12 }}>{t(f.title_ar, f.title_en)}</h3>
+                  <p style={{ fontSize:15, color:'#6B7494', lineHeight:1.85 }}>{t(f.desc_ar, f.desc_en)}</p>
                 </div>
               ))}
             </div>
