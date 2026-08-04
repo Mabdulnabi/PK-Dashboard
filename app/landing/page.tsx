@@ -97,6 +97,7 @@ export default function Landing() {
   }, [revIdx, reviews.length])
 
   const toolLogos: ToolLogo[] = parse(s.lp_tool_logos, [])
+  const logoSize = Number(s.lp_logo_size) || 44
   const features:  Feature[]  = parse(s.lp_features,   [])
   const stats:     Stat[]     = parse(s.lp_stats,      [])
   const faq:       FaqItem[]  = parse(s.lp_faq,        [])
@@ -261,12 +262,12 @@ export default function Landing() {
             <p style={{ textAlign:'center', fontSize:12, fontWeight:700, color:'#6B7494', letterSpacing:2, textTransform:'uppercase', marginBottom:20 }}>
               {t('الأدوات والمنتجات المتاحة','Available Tools & Products')}
             </p>
-            <div className="lp-marquee" style={{ display:'flex', gap:16, width:`${marquee.length * 132}px` }}>
+            <div className="lp-marquee" style={{ display:'flex', gap:32, alignItems:'center', width:`${marquee.length * (logoSize + 40)}px` }}>
               {marquee.map((logo, i) => (
-                <div key={i} style={{ flexShrink:0, width:116, height:68, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:12, border:'1px solid #DCE4F1', background:'#FAFAFA', padding:10, transition:'border-color .2s' }}>
+                <div key={i} style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
                   {logo.url
-                    ? <img src={logo.url} alt={logo.name} style={{ maxHeight:44, maxWidth:'100%', objectFit:'contain' }}/>
-                    : <span style={{ fontSize:12, color:'#6B7494', textAlign:'center' }}>{logo.name}</span>}
+                    ? <img src={logo.url} alt={logo.name} style={{ height:logoSize, maxWidth: logoSize * 2.5, objectFit:'contain', display:'block' }}/>
+                    : <span style={{ fontSize:12, color:'#6B7494', textAlign:'center', whiteSpace:'nowrap' }}>{logo.name}</span>}
                 </div>
               ))}
             </div>

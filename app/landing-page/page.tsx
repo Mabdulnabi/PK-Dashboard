@@ -84,6 +84,7 @@ export default function LandingPageAdmin() {
   const [heroCtaSecEn,   setHeroCtaSecEn]   = useState('Sign up for free')
   const [heroCtaSecUrl,  setHeroCtaSecUrl]  = useState('/u/login')
   const [toolLogos,      setToolLogos]      = useState<ToolLogo[]>([])
+  const [logoSize,       setLogoSize]       = useState(44)
 
   // ── Features ──
   const [features, setFeatures] = useState<Feature[]>(DEFAULT_FEATURES)
@@ -158,6 +159,7 @@ export default function LandingPageAdmin() {
       setHeroCtaSecEn(s.lp_hero_cta2_en || 'Sign up for free')
       setHeroCtaSecUrl(s.lp_hero_cta2_url || '/u/login')
       setToolLogos(safeParse(s.lp_tool_logos, []))
+      setLogoSize(Number(s.lp_logo_size) || 44)
 
       setFeatTitleAr(s.lp_feat_title_ar || 'ليه تختار Pro Keys؟')
       setFeatTitleEn(s.lp_feat_title_en || 'Why Choose Pro Keys?')
@@ -215,6 +217,7 @@ export default function LandingPageAdmin() {
       lp_hero_cta_ar: heroCtaAr, lp_hero_cta_en: heroCtaEn, lp_hero_cta_url: heroCtaUrl,
       lp_hero_cta2_ar: heroCtaSecAr, lp_hero_cta2_en: heroCtaSecEn, lp_hero_cta2_url: heroCtaSecUrl,
       lp_tool_logos: JSON.stringify(toolLogos),
+      lp_logo_size: String(logoSize),
       lp_feat_title_ar: featTitleAr, lp_feat_title_en: featTitleEn,
       lp_features: JSON.stringify(features),
       lp_stats_title_ar: statsTitleAr, lp_stats_title_en: statsTitleEn,
@@ -392,7 +395,24 @@ export default function LandingPageAdmin() {
                   </Card>
 
                   <Card title="سلايدر لوجوهات الأدوات">
-                    <p className="text-xs text-gray-500 mb-3">صور الأدوات تتحرك تلقائياً في شريط متحرك أسفل الهيرو</p>
+                    <p className="text-xs text-gray-500 mb-2">صور الأدوات تتحرك تلقائياً في شريط متحرك أسفل الهيرو</p>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-xs font-semibold text-gray-500">حجم الصور:</span>
+                      <button onClick={() => setLogoSize(s => Math.max(20, s - 4))}
+                        className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-bold transition-colors">−</button>
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-200 tabular-nums w-10 text-center">{logoSize}px</span>
+                      <button onClick={() => setLogoSize(s => Math.min(120, s + 4))}
+                        className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-bold transition-colors">+</button>
+                      <div className="flex gap-1 ml-2">
+                        {[32,44,60,80].map(n=>(
+                          <button key={n} onClick={()=>setLogoSize(n)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${logoSize===n?'text-white':'border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                            style={logoSize===n?{background:'#d99401'}:{}}>
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       {toolLogos.map((logo, i) => (
                         <div key={logo.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
