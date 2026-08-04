@@ -120,8 +120,20 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
   const doLogin = async () => {
     if (!amEmail || !amPass) { setAmError(L.fill); return }
     setAmLoading(true); setAmError(''); setAmOk('')
-    const { error } = await supabase.auth.signInWithPassword({ email: amEmail, password: amPass })
-    if (error) { setAmError(error.message); setAmLoading(false); return }
+    const res = await fetch('/api/auth/member-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: amEmail, password: amPass }),
+    })
+    const d = await res.json()
+    if (!res.ok) {
+      const msg: Record<string,string> = {
+        invalid_credentials: lang==='ar' ? 'بيانات غير صحيحة' : 'Invalid credentials',
+        subscription_expired: lang==='ar' ? 'الاشتراك منتهي' : 'Subscription expired',
+      }
+      setAmError(msg[d.error] || d.error || 'Login failed')
+      setAmLoading(false); return
+    }
     setAmOk(L.redirecting)
     setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
   }
@@ -132,13 +144,19 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
     if (amPass !== amConf) { setAmError(L.mismatch); return }
     if (!amAgree) { setAmError(L.termsErr); return }
     setAmLoading(true); setAmError(''); setAmOk('')
-    const { error, data } = await supabase.auth.signUp({
-      email: amEmail, password: amPass,
-      options: { data: { full_name: amName, whatsapp: amWA } },
+    const res = await fetch('/api/auth/member-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: amEmail, password: amPass, full_name: amName, whatsapp: amWA }),
     })
+    const d = await res.json()
     setAmLoading(false)
-    if (error) { setAmError(error.message); return }
-    if (!data.session) { setAmOk(L.confirmEmail); setTimeout(() => setAuthModal('login'), 2500); return }
+    if (!res.ok) {
+      const msg: Record<string,string> = {
+        email_taken: lang==='ar' ? 'البريد مستخدم بالفعل' : 'Email already registered',
+      }
+      setAmError(msg[d.error] || d.error || 'Signup failed'); return
+    }
     setAmOk(L.created); setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
   }
 
@@ -157,7 +175,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
     setAmLoading(true)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/u/dashboard' },
+      options: { redirectTo: window.location.origin + '/auth/callback' },
     })
   }
 

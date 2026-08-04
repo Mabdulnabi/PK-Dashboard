@@ -78,7 +78,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(()=>{
     if (pathname==='/u/login') { setLoading(false); return }
     fetch('/api/member/verify').then(r=>{
-      if (!r.ok) { router.push('/u/login'); return null }
+      if (!r.ok) { router.push('/landing'); return null }
       return r.json()
     }).then(d=>{ if(d){ setMember(d); setNewEmail(d.email||''); setLoading(false) } })
   },[router,pathname])
@@ -141,7 +141,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
 
   const logout = async()=>{
     await fetch('/api/member/verify',{method:'DELETE'})
-    router.push('/u/login')
+    router.push('/landing')
   }
 
   const saveProfile = async()=>{

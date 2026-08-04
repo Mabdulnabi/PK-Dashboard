@@ -355,9 +355,9 @@ export default function LandingPageAdmin() {
                 <div className={sec}>
                   <SectionHeading>الإعدادات العامة</SectionHeading>
                   <Card>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><label className={lbl}>اسم الموقع</label><input className={inp} value={siteName} onChange={e => setSiteName(e.target.value)}/></div>
-                      <div><label className={lbl}>رابط زرار Sign In</label><input className={inp} value={signinUrl} onChange={e => setSigninUrl(e.target.value)}/></div>
+                    <div>
+                      <label className={lbl}>اسم الموقع</label>
+                      <input className={inp} value={siteName} onChange={e => setSiteName(e.target.value)}/>
                     </div>
                     <div><label className={lbl}>رابط الصفحة (للمعاينة فقط)</label><input className={inp} placeholder="/landing" value={landingUrl} onChange={e => setLandingUrl(e.target.value)}/></div>
                   </Card>
