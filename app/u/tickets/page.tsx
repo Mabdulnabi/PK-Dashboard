@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText,
 } from 'lucide-react'
 
-type Attachment = { id: string; file_path: string; file_name: string; file_size: number; file_type: string; uploaded_by: string }
+type Attachment = { id: string; file_path: string; file_name: string; file_size: number; file_type: string; uploaded_by: string; created_at?: string }
 type TMsg      = { id: string; sender_type: 'member' | 'admin'; message: string; sender_name?: string; sender_avatar?: string; created_at: string }
 type Ticket = {
   id: string; subject: string; message: string; status: string; priority: string
@@ -275,63 +275,65 @@ export default function HelpdeskPage() {
                 {/* Expanded: conversation thread */}
                 {isOpen && (
                   <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-4 space-y-3">
-                    {/* Build chronological message list:
-                        Start with original message, then ticket_messages in order */}
+                    {/* Unified chronological thread: messages + attachments merged by time */}
                     {(() => {
-                      const msgs: { sender: 'member' | 'admin'; text: string; time: string; id: string; name?: string; avatar?: string }[] = [
-                        { sender: 'member', text: ticket.message, time: ticket.created_at, id: 'orig' },
-                        ...((ticket.ticket_messages || [])
-                          .slice()
-                          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                          .map(m => ({
-                            sender: m.sender_type, text: m.message, time: m.created_at, id: m.id,
-                            name:   m.sender_type === 'admin' ? (m.sender_name || adminProfile?.display_name || 'Support') : undefined,
-                            avatar: m.sender_type === 'admin' ? (m.sender_avatar || adminProfile?.avatar_url || undefined) : undefined,
-                          }))
-                        ),
+                      type MsgEntry = { kind: 'msg'; sender: 'member' | 'admin'; text: string; time: string; id: string; name?: string; avatar?: string }
+                      type AttEntry = { kind: 'att'; sender: 'member' | 'admin'; att: Attachment; time: string; id: string; name?: string; avatar?: string }
+                      type Entry = MsgEntry | AttEntry
+
+                      const entries: Entry[] = [
+                        { kind: 'msg', sender: 'member', text: ticket.message, time: ticket.created_at, id: 'orig' },
+                        ...((ticket.ticket_messages || []).map(m => ({
+                          kind: 'msg' as const,
+                          sender: m.sender_type as 'member' | 'admin',
+                          text: m.message, time: m.created_at, id: m.id,
+                          name:   m.sender_type === 'admin' ? (m.sender_name || adminProfile?.display_name || 'Support') : undefined,
+                          avatar: m.sender_type === 'admin' ? (m.sender_avatar || adminProfile?.avatar_url || undefined) : undefined,
+                        }))),
+                        ...((ticket.ticket_attachments || []).map(a => ({
+                          kind: 'att' as const,
+                          sender: a.uploaded_by as 'member' | 'admin',
+                          att: a, time: a.created_at || ticket.created_at,
+                          id: `att-${a.id}`,
+                          name:   a.uploaded_by === 'admin' ? (adminProfile?.display_name || t('Support', 'الدعم')) : undefined,
+                          avatar: a.uploaded_by === 'admin' ? (adminProfile?.avatar_url || undefined) : undefined,
+                        }))),
                       ]
-                      return msgs.map(m => (
-                        <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : 'flex-row'}`} style={{direction:'ltr'}}>
-                          {/* Avatar */}
-                          {m.sender === 'admin' && (
-                            m.avatar
-                              ? <img src={m.avatar} className="w-6 h-6 rounded-full object-cover flex-shrink-0" alt=""/>
+                      entries.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+
+                      return entries.map(entry => (
+                        <div key={entry.id} className={`flex gap-2 ${entry.sender === 'admin' ? 'flex-row-reverse' : 'flex-row'}`} style={{direction:'ltr'}}>
+                          {entry.sender === 'admin' && (
+                            entry.avatar
+                              ? <img src={entry.avatar} className="w-6 h-6 rounded-full object-cover flex-shrink-0" alt=""/>
                               : <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
-                                  {(m.name || 'S').charAt(0).toUpperCase()}
+                                  {(entry.name || 'S').charAt(0).toUpperCase()}
                                 </div>
                           )}
-                          <div className={`flex flex-col gap-0.5 max-w-[85%] ${m.sender === 'admin' ? 'items-end' : 'items-start'}`} style={{direction: dir}}>
-                            <span className={`text-[10px] font-semibold ${m.sender === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
-                              {m.sender === 'member' ? t('You', 'أنت') : (m.name || t('Support', 'الدعم'))}
+                          <div className={`flex flex-col gap-0.5 max-w-[85%] ${entry.sender === 'admin' ? 'items-end' : 'items-start'}`} style={{direction: dir}}>
+                            <span className={`text-[10px] font-semibold ${entry.sender === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
+                              {entry.sender === 'member' ? t('You', 'أنت') : (entry.name || t('Support', 'الدعم'))}
                             </span>
-                            <div className={`rounded-xl p-3.5 text-xs whitespace-pre-wrap ${
-                              m.sender === 'member'
-                                ? 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                                : 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
-                            }`}>{m.text}</div>
+                            {entry.kind === 'msg' ? (
+                              <div className={`rounded-xl p-3.5 text-xs whitespace-pre-wrap ${
+                                entry.sender === 'member'
+                                  ? 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                  : 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                              }`}>{entry.text}</div>
+                            ) : (
+                              <FileChip att={entry.att} inline/>
+                            )}
                             <span className="text-[10px] text-gray-300 dark:text-gray-600">
-                              {new Date(m.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                              {new Date(entry.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                             </span>
                           </div>
                         </div>
                       ))
                     })()}
 
-                    {/* Attachments — shown as inline bubbles */}
-                    {(ticket.ticket_attachments || []).map(a => (
-                      <div key={a.id} className={`flex gap-2 ${a.uploaded_by === 'admin' ? 'flex-row-reverse' : 'flex-row'}`} style={{direction:'ltr'}}>
-                        {a.uploaded_by === 'admin' && (
-                          adminProfile?.avatar_url
-                            ? <img src={adminProfile.avatar_url} className="w-6 h-6 rounded-full object-cover flex-shrink-0" alt=""/>
-                            : <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">S</div>
-                        )}
-                        <div className={`flex flex-col gap-0.5 max-w-[85%] ${a.uploaded_by === 'admin' ? 'items-end' : 'items-start'}`} style={{direction: dir}}>
-                          <span className={`text-[10px] font-semibold ${a.uploaded_by === 'member' ? 'text-gray-400' : 'text-emerald-500'}`}>
-                            {a.uploaded_by === 'member' ? t('You', 'أنت') : (adminProfile?.display_name || t('Support', 'الدعم'))}
-                          </span>
-                          <FileChip att={a} inline/>
-                        </div>
-                      </div>
+                    {/* dummy — replaced by unified list above */}
+                    {([] as Attachment[]).map(a => (
+                      <div key={a.id}/>
                     ))}
 
                     {/* No messages yet — awaiting */}

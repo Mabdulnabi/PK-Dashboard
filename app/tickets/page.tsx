@@ -221,15 +221,19 @@ export default function TicketsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const paged      = filtered.slice((page - 1) * perPage, page * perPage)
 
-  // Build thread for active ticket
+  // Build unified chronological thread (messages + attachments merged by time)
   const activeMember = activeTicket ? members[activeTicket.member_id || ''] : undefined
-  const thread = activeTicket ? [
-    { sender: 'member' as const, text: activeTicket.message, time: activeTicket.created_at, id: 'orig',
+  type ThreadMsg = { kind: 'msg'; sender: 'member'|'admin'; text: string; time: string; id: string; name?: string; avatar?: string }
+  type ThreadAtt = { kind: 'att'; sender: 'member'|'admin'; att: Attachment; time: string; id: string; name?: string; avatar?: string }
+  type ThreadItem = ThreadMsg | ThreadAtt
+  const thread: ThreadMsg[] = activeTicket ? [
+    { kind: 'msg', sender: 'member' as const, text: activeTicket.message, time: activeTicket.created_at, id: 'orig',
       name: activeMember?.full_name, avatar: activeMember?.avatar_url },
     ...((activeTicket.ticket_messages || [])
       .slice()
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       .map(m => ({
+        kind: 'msg' as const,
         sender: m.sender_type as 'member' | 'admin',
         text:   m.message,
         time:   m.created_at,
@@ -244,9 +248,9 @@ export default function TicketsPage() {
     ),
   ] : []
 
-  // Build attachment "messages" sorted by created_at so they interleave with messages
-  const attBubbles = (activeTicket?.ticket_attachments || []).map(a => ({
-    id:     a.id,
+  const attBubbles: ThreadAtt[] = (activeTicket?.ticket_attachments || []).map(a => ({
+    kind: 'att' as const,
+    id:     `att-${a.id}`,
     sender: a.uploaded_by as 'member' | 'admin',
     att:    a,
     time:   a.created_at || activeTicket!.created_at,
@@ -255,6 +259,9 @@ export default function TicketsPage() {
       : (activeMember?.full_name || 'Member'),
     avatar: a.uploaded_by === 'admin' ? adminProfile?.avatar_url : activeMember?.avatar_url,
   }))
+
+  const threadItems: ThreadItem[] = [...thread, ...attBubbles]
+    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -403,96 +410,73 @@ export default function TicketsPage() {
 
               {/* Thread — scrollable, fills remaining space */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f0f2f5' }}>
-                {/* Text messages */}
-                {thread.map(m => (
-                  <div key={m.id} className={`flex gap-2 group/msg ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
-                    {m.sender === 'member' ? (
+                {/* Unified chronological thread: messages + attachments */}
+                {threadItems.map(item => (
+                  <div key={item.id} className={`flex gap-2 group/msg ${item.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                    {item.sender === 'member' ? (
                       <MemberAvatar member={activeMember} size={28}/>
                     ) : (
-                      m.avatar
-                        ? <img src={m.avatar} alt={m.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0"/>
+                      item.avatar
+                        ? <img src={item.avatar} alt={item.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0"/>
                         : <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                            {m.name?.charAt(0).toUpperCase() || 'S'}
+                            {item.name?.charAt(0).toUpperCase() || 'S'}
                           </div>
                     )}
-                    <div className={`flex flex-col gap-0.5 max-w-[75%] ${m.sender === 'admin' ? 'items-end' : ''}`}>
-                      <span className={`text-[10px] font-semibold ${m.sender === 'admin' ? 'text-emerald-500' : 'text-gray-500'}`}>
-                        {m.name || (m.sender === 'admin' ? 'Support Team' : 'Member')}
-                        {m.sender === 'member' && activeMember?.member_code && (
+                    <div className={`flex flex-col gap-0.5 max-w-[75%] ${item.sender === 'admin' ? 'items-end' : ''}`}>
+                      <span className={`text-[10px] font-semibold ${item.sender === 'admin' ? 'text-emerald-500' : 'text-gray-500'}`}>
+                        {item.name || (item.sender === 'admin' ? 'Support Team' : 'Member')}
+                        {item.sender === 'member' && activeMember?.member_code && (
                           <span className="ml-1 text-indigo-400 font-bold">{activeMember.member_code}</span>
                         )}
                       </span>
 
-                      {/* Bubble + action toolbar */}
-                      <div className={`flex items-end gap-1 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
-                        {editMsgId === m.id ? (
-                          <div className="flex flex-col gap-1 min-w-[200px]">
-                            <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)}
-                              autoFocus rows={3}
-                              className="resize-none px-3 py-2 text-sm rounded-xl border border-emerald-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none"
-                              style={{ minWidth: 200 }}/>
-                            <div className="flex gap-1">
-                              <button onClick={saveEditMsg}
-                                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-semibold">
-                                <Check size={10}/> Save
+                      {item.kind === 'att' ? (
+                        <FileChip att={item.att} inline/>
+                      ) : (
+                        <div className={`flex items-end gap-1 ${item.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                          {editMsgId === item.id ? (
+                            <div className="flex flex-col gap-1 min-w-[200px]">
+                              <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)}
+                                autoFocus rows={3}
+                                className="resize-none px-3 py-2 text-sm rounded-xl border border-emerald-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none"
+                                style={{ minWidth: 200 }}/>
+                              <div className="flex gap-1">
+                                <button onClick={saveEditMsg}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-semibold">
+                                  <Check size={10}/> Save
+                                </button>
+                                <button onClick={() => setEditMsgId(null)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
+                                  <X size={10}/> Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={`rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
+                              item.sender === 'admin'
+                                ? 'bg-emerald-500 text-white rounded-br-sm'
+                                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-bl-sm'
+                            }`}>
+                              {item.text}
+                            </div>
+                          )}
+                          {item.id !== 'orig' && editMsgId !== item.id && (
+                            <div className={`flex gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${item.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                              <button onClick={() => startEditMsg(item.id, item.text)}
+                                className="w-5 h-5 rounded-md flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors shadow-sm">
+                                <Pencil size={10}/>
                               </button>
-                              <button onClick={() => setEditMsgId(null)}
-                                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
-                                <X size={10}/> Cancel
+                              <button onClick={() => deleteMsg(item.id)}
+                                className="w-5 h-5 rounded-md flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm">
+                                <Trash2 size={10}/>
                               </button>
                             </div>
-                          </div>
-                        ) : (
-                          <div className={`rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
-                            m.sender === 'admin'
-                              ? 'bg-emerald-500 text-white rounded-br-sm'
-                              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-bl-sm'
-                          }`}>
-                            {m.text}
-                          </div>
-                        )}
-
-                        {/* Hover actions — only for non-original messages */}
-                        {m.id !== 'orig' && editMsgId !== m.id && (
-                          <div className={`flex gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
-                            <button onClick={() => startEditMsg(m.id, m.text)}
-                              className="w-5 h-5 rounded-md flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors shadow-sm">
-                              <Pencil size={10}/>
-                            </button>
-                            <button onClick={() => deleteMsg(m.id)}
-                              className="w-5 h-5 rounded-md flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm">
-                              <Trash2 size={10}/>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      )}
 
                       <span className="text-[9px] text-gray-400">
-                        {new Date(m.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Attachments as inline bubbles */}
-                {attBubbles.map(b => (
-                  <div key={b.id} className={`flex gap-2 ${b.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
-                    {b.sender === 'member' ? (
-                      <MemberAvatar member={activeMember} size={28}/>
-                    ) : (
-                      b.avatar
-                        ? <img src={b.avatar} alt={b.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0"/>
-                        : <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                            {b.name?.charAt(0).toUpperCase() || 'S'}
-                          </div>
-                    )}
-                    <div className={`flex flex-col gap-0.5 max-w-[75%] ${b.sender === 'admin' ? 'items-end' : ''}`}>
-                      <span className={`text-[10px] font-semibold ${b.sender === 'admin' ? 'text-emerald-500' : 'text-gray-500'}`}>
-                        {b.name}
-                      </span>
-                      <FileChip att={b.att} inline/>
-                      <span className="text-[9px] text-gray-400">
-                        {new Date(b.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                        {new Date(item.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                       </span>
                     </div>
                   </div>
