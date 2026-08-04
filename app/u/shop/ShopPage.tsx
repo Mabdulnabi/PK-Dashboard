@@ -216,52 +216,62 @@ export default function ShopPage({ category }: Props) {
               <Stars rating={tool.rating} count={tool.review_count}/>
             </div>
             <div className="px-4 pb-4 space-y-2" dir={lang==='ar'?'rtl':'ltr'}>
-              {/* Quantity controls — private only */}
-              {category === 'private' && !tool.is_out_of_stock && (
-                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty','الكمية')}</span>
+              {tool.is_out_of_stock ? (
+                <button disabled className="w-full py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">
+                  {t('Out of Stock','نفذت الكمية')}
+                </button>
+              ) : (
+                <>
+                  {/* Private: qty controls above buttons */}
+                  {category === 'private' && (
+                    <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty','الكمية')}</span>
+                      <div className="flex items-center gap-2">
+                        <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)-1)} disabled={localQty(tool.id)<=1}
+                          className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                          <Minus size={10}/>
+                        </button>
+                        <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-6 text-center">{localQty(tool.id)}</span>
+                        <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)+1)}
+                          className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                          <Plus size={10}/>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Action row: [Fav] [Buy Now (large)] [Cart (small)] */}
                   <div className="flex items-center gap-2">
-                    <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)-1)} disabled={localQty(tool.id)<=1}
-                      className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                      <Minus size={10}/>
+                    {/* Fav — small icon */}
+                    <button onClick={()=>toggleFav(tool.id)}
+                      className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
+                      style={isFav(tool.id)
+                        ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
+                        : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
+                      <Heart size={13} fill={isFav(tool.id)?'currentColor':'none'}/>
                     </button>
-                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-6 text-center">{localQty(tool.id)}</span>
-                    <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)+1)}
-                      className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                      <Plus size={10}/>
+                    {/* Buy Now — large gold */}
+                    <button onClick={()=>buy(tool)}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
+                      style={{background:'#d99401'}}>
+                      <ShoppingCart size={13}/>{t('Buy Now','شراء الآن')}
+                    </button>
+                    {/* Add to Cart — small */}
+                    <button onClick={()=>handleAddToCart(tool)}
+                      className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors relative"
+                      style={inCart(tool.id)
+                        ? {background:'#d9940120',borderColor:'#d9940170',color:'#d99401'}
+                        : {borderColor:'#e5e7eb',color:'#6b7280'}}>
+                      {inCart(tool.id)
+                        ? <Check size={13}/>
+                        : <Plus size={13}/>}
+                      {inCart(tool.id) && category === 'private' && getQty(tool.id) > 0 && (
+                        <span className="absolute -top-1.5 -end-1.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5" style={{background:'#d99401'}}>
+                          {getQty(tool.id)}
+                        </span>
+                      )}
                     </button>
                   </div>
-                </div>
-              )}
-              {/* Action row */}
-              <div className="flex items-center gap-2">
-                {/* Fav button */}
-                <button onClick={()=>toggleFav(tool.id)}
-                  className="w-10 h-10 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
-                  style={isFav(tool.id)
-                    ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
-                    : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
-                  <Heart size={14} fill={isFav(tool.id)?'currentColor':'none'}/>
-                </button>
-                {tool.is_out_of_stock
-                  ? <button disabled className="flex-1 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
-                  : <button onClick={()=>handleAddToCart(tool)}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5"
-                      style={inCart(tool.id) && category !== 'private'
-                        ? {background:'#d9940120',color:'#d99401',border:'1.5px solid #d9940150'}
-                        : {background:'#d99401',color:'white'}}>
-                      {inCart(tool.id) && category !== 'private'
-                        ? <><Check size={13}/>{t('In Cart','في السلة')}</>
-                        : <><ShoppingCart size={13}/>{t('Add to Cart','أضف للسلة')}</>
-                      }
-                    </button>
-                }
-              </div>
-              {/* Direct buy link */}
-              {!tool.is_out_of_stock && (
-                <button onClick={()=>buy(tool)} className="w-full text-xs text-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-1">
-                  {t('Buy directly →','شراء مباشر →')}
-                </button>
+                </>
               )}
             </div>
           </div>

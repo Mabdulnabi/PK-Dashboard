@@ -4,7 +4,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import {
   MessageSquare, Check, X, AlertCircle, Paperclip,
-  Download, Image as ImageIcon, FileText, ChevronLeft, Send, Trash2, Wifi, WifiOff,
+  Download, Image as ImageIcon, FileText, ChevronLeft, Send, Trash2, Wifi, WifiOff, Pencil,
 } from 'lucide-react'
 
 type Attachment  = { id: string; file_path: string; file_name: string; file_type: string; uploaded_by: string; created_at?: string }
@@ -93,6 +93,8 @@ export default function TicketsPage() {
   const [toast,        setToast]        = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
   const [fStatus,      setFStatus]      = useState('all')
   const [adminProfile, setAdminProfile] = useState<{ id?: string; display_name: string; avatar_url?: string } | null>(null)
+  const [editMsgId,    setEditMsgId]    = useState<string | null>(null)
+  const [editMsgText,  setEditMsgText]  = useState('')
   const [page,         setPage]         = useState(1)
   const perPage = 30
   const fileRef    = useRef<HTMLInputElement>(null)
@@ -169,6 +171,28 @@ export default function TicketsPage() {
     })
     if (activeId === id) setActiveId(null)
     setToast({ msg: 'Ticket deleted', type: 'ok' })
+    load(true)
+  }
+
+  const startEditMsg = (id: string, text: string) => { setEditMsgId(id); setEditMsgText(text) }
+
+  const saveEditMsg = async () => {
+    if (!editMsgId || !editMsgText.trim()) return
+    const res = await fetch(`/api/admin/tickets/messages/${editMsgId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: editMsgText }),
+    })
+    if (!res.ok) { setToast({ msg: 'Failed to edit message', type: 'err' }); return }
+    setEditMsgId(null)
+    setEditMsgText('')
+    load(true)
+  }
+
+  const deleteMsg = async (id: string) => {
+    if (!confirm('Delete this message?')) return
+    const res = await fetch(`/api/admin/tickets/messages/${id}`, { method: 'DELETE' })
+    if (!res.ok) { setToast({ msg: 'Failed to delete message', type: 'err' }); return }
+    setToast({ msg: 'Message deleted', type: 'ok' })
     load(true)
   }
 
@@ -371,7 +395,7 @@ export default function TicketsPage() {
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f0f2f5' }}>
                 {/* Text messages */}
                 {thread.map(m => (
-                  <div key={m.id} className={`flex gap-2 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                  <div key={m.id} className={`flex gap-2 group/msg ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
                     {m.sender === 'member' ? (
                       <MemberAvatar member={activeMember} size={28}/>
                     ) : (
@@ -388,13 +412,51 @@ export default function TicketsPage() {
                           <span className="ml-1 text-indigo-400 font-bold">{activeMember.member_code}</span>
                         )}
                       </span>
-                      <div className={`rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
-                        m.sender === 'admin'
-                          ? 'bg-emerald-500 text-white rounded-br-sm'
-                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-bl-sm'
-                      }`}>
-                        {m.text}
+
+                      {/* Bubble + action toolbar */}
+                      <div className={`flex items-end gap-1 ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                        {editMsgId === m.id ? (
+                          <div className="flex flex-col gap-1 min-w-[200px]">
+                            <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)}
+                              autoFocus rows={3}
+                              className="resize-none px-3 py-2 text-sm rounded-xl border border-emerald-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none"
+                              style={{ minWidth: 200 }}/>
+                            <div className="flex gap-1">
+                              <button onClick={saveEditMsg}
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-semibold">
+                                <Check size={10}/> Save
+                              </button>
+                              <button onClick={() => setEditMsgId(null)}
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
+                                <X size={10}/> Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
+                            m.sender === 'admin'
+                              ? 'bg-emerald-500 text-white rounded-br-sm'
+                              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-bl-sm'
+                          }`}>
+                            {m.text}
+                          </div>
+                        )}
+
+                        {/* Hover actions — only for non-original messages */}
+                        {m.id !== 'orig' && editMsgId !== m.id && (
+                          <div className={`flex gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${m.sender === 'admin' ? 'flex-row-reverse' : ''}`}>
+                            <button onClick={() => startEditMsg(m.id, m.text)}
+                              className="w-5 h-5 rounded-md flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors shadow-sm">
+                              <Pencil size={10}/>
+                            </button>
+                            <button onClick={() => deleteMsg(m.id)}
+                              className="w-5 h-5 rounded-md flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm">
+                              <Trash2 size={10}/>
+                            </button>
+                          </div>
+                        )}
                       </div>
+
                       <span className="text-[9px] text-gray-400">
                         {new Date(m.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                       </span>

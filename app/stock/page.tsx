@@ -6,13 +6,14 @@ import Sidebar from '@/components/layout/Sidebar'
 import Topbar  from '@/components/layout/Topbar'
 import {
   Check, AlertCircle, X, Eye, EyeOff, Plus, Trash2,
-  Archive, AlertTriangle, Database, User, Calendar, Wrench,
+  Archive, AlertTriangle, Database, User, Calendar, Wrench, Pencil, Key,
 } from 'lucide-react'
 
 interface Tool { id: string; name: string; image_url: string|null; available: number; assigned: number }
 interface StockItem {
-  id: string; tool_id: string; email: string; notes: string|null; status: 'available'|'assigned'
+  id: string; tool_id: string; email: string|null; notes: string|null; status: 'available'|'assigned'
   assigned_to: string|null; assigned_at: string|null; created_at: string
+  delivery_type?: 'account'|'key'
   members?: { full_name: string; email: string }
 }
 
@@ -44,6 +45,10 @@ export default function StockPage() {
   const [showPass,  setShowPass]  = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [deleting,  setDeleting]  = useState<string|null>(null)
+  const [editItem,  setEditItem]  = useState<StockItem|null>(null)
+  const [editForm,  setEditForm]  = useState({ delivery_type:'account' as 'account'|'key', email:'', password:'', key:'', notes:'' })
+  const [editPass,  setEditPass]  = useState(false)
+  const [editSaving,setEditSaving]= useState(false)
   const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [page,      setPage]      = useState(1)
   const perPage = 12
@@ -88,6 +93,27 @@ export default function StockPage() {
     if (!res.ok) { setToast({msg:data.error||'Error',type:'err'}); return }
     setToast({msg:'✓ Item added to stock',type:'ok'})
     setAddModal(false)
+    load()
+  }
+
+  const openEdit = (s: StockItem) => {
+    setEditItem(s)
+    setEditForm({ delivery_type: s.delivery_type||'account', email: s.email||'', password:'', key:'', notes: s.notes||'' })
+    setEditPass(false)
+  }
+
+  const saveEdit = async () => {
+    if (!editItem) return
+    setEditSaving(true)
+    const res = await fetch(`/api/admin/stock/${editItem.id}`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(editForm)
+    })
+    const data = await res.json()
+    setEditSaving(false)
+    if (!res.ok) { setToast({msg:data.error||'Error',type:'err'}); return }
+    setToast({msg:'✓ Item updated',type:'ok'})
+    setEditItem(null)
     load()
   }
 
@@ -204,19 +230,31 @@ export default function StockPage() {
                               {s.status==='available' ? 'Available' : 'Assigned'}
                             </span>
                           </div>
-                          <button onClick={()=>deleteItem(s.id)} disabled={s.status==='assigned'||deleting===s.id}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500">
-                            {deleting===s.id
-                              ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/>
-                              : <Trash2 size={13}/>}
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {s.status==='available' && (
+                              <button onClick={()=>openEdit(s)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-500">
+                                <Pencil size={12}/>
+                              </button>
+                            )}
+                            <button onClick={()=>deleteItem(s.id)} disabled={s.status==='assigned'||deleting===s.id}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500">
+                              {deleting===s.id
+                                ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/>
+                                : <Trash2 size={13}/>}
+                            </button>
+                          </div>
                         </div>
 
                         {/* Details */}
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <User size={11} className="flex-shrink-0"/>
-                            <span className="font-mono truncate" dir="ltr">{s.email}</span>
+                            {s.delivery_type==='key'
+                              ? <Key size={11} className="flex-shrink-0 text-amber-500"/>
+                              : <User size={11} className="flex-shrink-0"/>}
+                            <span className="font-mono truncate" dir="ltr">
+                              {s.delivery_type==='key' ? '🔑 Key/License' : (s.email||'—')}
+                            </span>
                           </div>
                           {s.notes && (
                             <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 truncate">
@@ -337,6 +375,79 @@ export default function StockPage() {
                 className="flex-[2] py-3 rounded-xl disabled:opacity-60 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
                 style={{background:GOLD}}>
                 {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</> : <><Plus size={15}/> Add to Stock</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={()=>setEditItem(null)}>
+          <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">Edit Stock Item</h2>
+              <button onClick={()=>setEditItem(null)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white">
+                <X size={14}/>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Item Type</label>
+                <div className="flex gap-2">
+                  {(['account','key'] as const).map(type=>(
+                    <button key={type} onClick={()=>setEditForm(f=>({...f,delivery_type:type}))}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                      style={editForm.delivery_type===type?{background:GOLD,color:'#fff'}:{background:'#f3f4f6',color:'#6b7280'}}>
+                      {type==='account'?'📧 Account':'🔑 Key'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {editForm.delivery_type==='account' ? (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Email</label>
+                    <input value={editForm.email} onChange={e=>setEditForm(f=>({...f,email:e.target.value}))}
+                      placeholder="user@example.com" dir="ltr" className={inp}/>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">New Password (leave blank to keep)</label>
+                    <div className="relative">
+                      <input value={editForm.password} onChange={e=>setEditForm(f=>({...f,password:e.target.value}))}
+                        type={editPass?'text':'password'} placeholder="••••••••" dir="ltr" className={inp + ' pr-10'}/>
+                      <button onClick={()=>setEditPass(s=>!s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {editPass?<EyeOff size={15}/>:<Eye size={15}/>}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">New Key / License (leave blank to keep)</label>
+                  <div className="relative">
+                    <input value={editForm.key} onChange={e=>setEditForm(f=>({...f,key:e.target.value}))}
+                      type={editPass?'text':'password'} placeholder="XXXX-XXXX-XXXX-XXXX" dir="ltr" className={inp + ' pr-10 font-mono'}/>
+                    <button onClick={()=>setEditPass(s=>!s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {editPass?<EyeOff size={15}/>:<Eye size={15}/>}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Notes</label>
+                <textarea value={editForm.notes} onChange={e=>setEditForm(f=>({...f,notes:e.target.value}))}
+                  rows={2} className={inp + ' resize-none'}/>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={()=>setEditItem(null)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button onClick={saveEdit} disabled={editSaving}
+                className="flex-[2] py-3 rounded-xl disabled:opacity-60 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                style={{background:GOLD}}>
+                {editSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</> : <><Check size={15}/> Save Changes</>}
               </button>
             </div>
           </div>
