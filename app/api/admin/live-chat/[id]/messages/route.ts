@@ -73,11 +73,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ message: full })
 }
 
-// PATCH message (edit/delete)
+// PATCH message (edit/delete/mark_read)
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { message_id, content, deleted } = await req.json()
+  const { message_id, content, deleted, mark_read } = await req.json()
   const update: any = {}
-  if (deleted) update.deleted_at = new Date().toISOString()
+  if (mark_read)   update.status = 'read'
+  else if (deleted) update.deleted_at = new Date().toISOString()
   else { update.content = content; update.edited_at = new Date().toISOString() }
 
   const { error } = await db.from('live_chat_messages').update(update).eq('id', message_id).eq('conversation_id', params.id)

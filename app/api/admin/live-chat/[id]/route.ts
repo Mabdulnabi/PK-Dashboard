@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params
 
-  const [{ data: conv }, { data: messages }, { data: notes }] = await Promise.all([
+  const [{ data: conv }, { data: messages }, { data: notes }, { data: labelRows }] = await Promise.all([
     db.from('live_chat_conversations').select('*').eq('id', id).single(),
     db.from('live_chat_messages')
       .select('*, live_chat_attachments(*)')
@@ -15,6 +15,9 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       .select('*')
       .eq('conversation_id', id)
       .order('created_at', { ascending: false }),
+    db.from('conversation_labels')
+      .select('label_id, chat_labels(id, name, color)')
+      .eq('conversation_id', id),
   ])
 
   if (!conv) return NextResponse.json({ error: 'not found' }, { status: 404 })
@@ -27,7 +30,8 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     .eq('sender_type', 'member')
     .neq('status', 'read')
 
-  return NextResponse.json({ conversation: conv, messages: messages || [], notes: notes || [] })
+  const labels = (labelRows || []).map((r: any) => r.chat_labels).filter(Boolean)
+  return NextResponse.json({ conversation: conv, messages: messages || [], notes: notes || [], labels })
 }
 
 // PATCH — update status / assigned_admin

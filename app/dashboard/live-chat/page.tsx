@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import {
   MessageSquare, Search, Send, Paperclip, X, ChevronLeft,
   StickyNote, Zap, Trash2, Edit3, Check, CheckCheck,
-  File, UserCheck,
+  File, UserCheck, Tag, Plus,
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { ar } from 'date-fns/locale'
@@ -98,7 +98,7 @@ export default function LiveChatPage() {
   const [filter, setFilter]         = useState<'all'|'unread'>('all')
   const [loading, setLoading]       = useState(true)
   const [sending, setSending]       = useState(false)
-  const [panel, setPanel]           = useState<'none'|'notes'|'qr'>('none')
+  const [panel, setPanel]           = useState<'none'|'notes'|'qr'|'labels'>('none')
   const [noteInput, setNoteInput]   = useState('')
   const [editNote, setEditNote]     = useState<Note|null>(null)
   const [qrInput, setQrInput]       = useState({ title:'', content:'' })
@@ -111,6 +111,10 @@ export default function LiveChatPage() {
   const [typingConvs, setTyping]    = useState<Set<string>>(new Set())
   const [toast, setToast]           = useState<string | null>(null)
   const [adminProfile, setAdminProfile] = useState<{ id?: string; display_name?: string; avatar_url?: string } | null>(null)
+  const [allLabels,   setAllLabels]   = useState<{ id: string; name: string; color: string }[]>([])
+  const [convLabels,  setConvLabels]  = useState<Record<string, { id: string; name: string; color: string }[]>>({})
+  const [labelForm,   setLabelForm]   = useState({ name: '', color: '#6366f1' })
+  const [editLabel,   setEditLabel]   = useState<{ id: string; name: string; color: string } | null>(null)
   const messagesEndRef  = useRef<HTMLDivElement>(null)
   const fileInputRef    = useRef<HTMLInputElement>(null)
   const textareaRef     = useRef<HTMLTextAreaElement>(null)
@@ -126,9 +130,10 @@ export default function LiveChatPage() {
     toastTimer.current = setTimeout(() => setToast(null), 4000)
   }
 
-  // ── Admin profile ──────────────────────────────────────────────────────────
+  // ── Admin profile + labels ─────────────────────────────────────────────────
   useEffect(() => {
     fetch('/api/admin/profile').then(r => r.json()).then(d => { if (!d.error) setAdminProfile(d) })
+    fetch('/api/admin/live-chat/labels').then(r => r.json()).then(d => setAllLabels(d.labels || []))
   }, [])
 
   // ── Load conversations ──────────────────────────────────────────────────────
@@ -222,7 +227,60 @@ export default function LiveChatPage() {
     const d   = await res.json()
     setMessages(d.messages || [])
     setNotes(d.notes || [])
+    if (d.labels) setConvLabels(prev => ({ ...prev, [id]: d.labels }))
     setConvs(prev => prev.map(c => c.id === id ? { ...c, unread_admin: 0 } : c))
+  }
+
+  const toggleLabel = async (labelId: string) => {
+    if (!activeId) return
+    await fetch('/api/admin/live-chat/labels', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversation_id: activeId, label_id: labelId }),
+    })
+    const cur = convLabels[activeId] || []
+    const has = cur.some(l => l.id === labelId)
+    const label = allLabels.find(l => l.id === labelId)
+    if (!label) return
+    setConvLabels(prev => ({
+      ...prev,
+      [activeId]: has ? cur.filter(l => l.id !== labelId) : [...cur, label],
+    }))
+  }
+
+  const saveLabel = async () => {
+    if (!labelForm.name.trim()) return
+    const body = editLabel
+      ? { id: editLabel.id, name: labelForm.name, color: labelForm.color }
+      : { name: labelForm.name, color: labelForm.color }
+    const res = await fetch('/api/admin/live-chat/labels', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const d = await res.json()
+    if (editLabel) {
+      setAllLabels(prev => prev.map(l => l.id === editLabel.id ? d.label : l))
+    } else if (d.label) {
+      setAllLabels(prev => [...prev, d.label])
+    }
+    setLabelForm({ name: '', color: '#6366f1' })
+    setEditLabel(null)
+  }
+
+  const deleteLabel = async (id: string) => {
+    await fetch('/api/admin/live-chat/labels', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, deleted: true }),
+    })
+    setAllLabels(prev => prev.filter(l => l.id !== id))
+  }
+
+  const markMessageRead = async (msgId: string) => {
+    if (!activeId) return
+    await fetch(`/api/admin/live-chat/${activeId}/messages`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message_id: msgId, mark_read: true }),
+    })
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'read' } : m))
   }
 
   useEffect(() => {
@@ -473,6 +531,15 @@ export default function LiveChatPage() {
                     )}
                   </div>
                   <div className="text-[10px] text-gray-400 mt-0.5">{c.member?.member_code}</div>
+                  {(convLabels[c.id] || []).length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {(convLabels[c.id] || []).map(l => (
+                        <span key={l.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: l.color + '22', color: l.color }}>
+                          {l.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {/* Delete button — absolutely positioned, won't overlap content */}
                 <button onClick={e=>deleteConv(c.id,e)}
@@ -518,6 +585,11 @@ export default function LiveChatPage() {
                 <button onClick={()=>setPanel(p=>p==='notes'?'none':'notes')}
                   className={`p-2 rounded-lg transition-colors ${panel==='notes'?'bg-amber-100 dark:bg-amber-900/30 text-amber-600':'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-amber-500'}`}>
                   <StickyNote size={16}/>
+                </button>
+                <button onClick={()=>setPanel(p=>p==='labels'?'none':'labels')}
+                  className={`p-2 rounded-lg transition-colors`}
+                  style={panel==='labels' ? { background: '#6366f120', color: '#6366f1' } : { color: '#6b7280' }}>
+                  <Tag size={16}/>
                 </button>
                 <button onClick={()=>setPanel(p=>p==='qr'?'none':'qr')}
                   className={`p-2 rounded-lg transition-colors`}
@@ -585,6 +657,12 @@ export default function LiveChatPage() {
                             <button onClick={()=>{ setEditMsg(msg); setInput(msg.content||''); setTimeout(()=>{ if(textareaRef.current){ textareaRef.current.style.height='auto'; textareaRef.current.style.height=Math.min(textareaRef.current.scrollHeight,128)+'px' }},0) }}
                               className="p-1.5 rounded-lg bg-white dark:bg-gray-700 text-gray-500 hover:text-amber-500 shadow-sm">
                               <Edit3 size={11}/>
+                            </button>
+                          )}
+                          {!isAdmin && msg.status !== 'read' && (
+                            <button onClick={()=>markMessageRead(msg.id)} title="Mark as read"
+                              className="p-1.5 rounded-lg bg-white dark:bg-gray-700 text-gray-500 hover:text-blue-500 shadow-sm">
+                              <CheckCheck size={11}/>
                             </button>
                           )}
                           <button onClick={()=>deleteMessage(msg)}
@@ -711,6 +789,89 @@ export default function LiveChatPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </>
+              )}
+
+              {panel === 'labels' && (
+                <>
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <Tag size={14} style={{ color: '#6366f1' }}/> Labels
+                    </h3>
+                    <button onClick={()=>setPanel('none')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"><X size={14}/></button>
+                  </div>
+                  {/* Assigned labels for this conversation */}
+                  {activeId && (convLabels[activeId]||[]).length > 0 && (
+                    <div className="px-3 pt-3 pb-1 flex gap-1.5 flex-wrap">
+                      {(convLabels[activeId]||[]).map(l=>(
+                        <span key={l.id} className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+                          style={{ background: l.color+'22', color: l.color }}>
+                          {l.name}
+                          <button onClick={()=>toggleLabel(l.id)} className="hover:opacity-70"><X size={8}/></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* All labels — toggle on/off */}
+                  <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                    {allLabels.length === 0 && <p className="text-xs text-center text-gray-400 py-4">No labels yet</p>}
+                    {allLabels.map(l => {
+                      const active = (convLabels[activeId||'']||[]).some(x=>x.id===l.id)
+                      return (
+                        <div key={l.id} className="flex items-center gap-2 group">
+                          <button onClick={()=>toggleLabel(l.id)}
+                            className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-start`}
+                            style={active
+                              ? { background: l.color+'22', borderColor: l.color, color: l.color }
+                              : { background: 'transparent', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: l.color }}/>
+                            {editLabel?.id === l.id ? (
+                              <input autoFocus value={editLabel.name} onChange={e=>setEditLabel(v=>v?{...v,name:e.target.value}:v)}
+                                className="flex-1 bg-transparent outline-none text-xs" onClick={e=>e.stopPropagation()}/>
+                            ) : (
+                              <span className="flex-1 truncate">{l.name}</span>
+                            )}
+                            {active && <Check size={10}/>}
+                          </button>
+                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {editLabel?.id === l.id ? (
+                              <>
+                                <input type="color" value={editLabel.color} onChange={e=>setEditLabel(v=>v?{...v,color:e.target.value}:v)}
+                                  className="w-5 h-5 rounded cursor-pointer border-0 p-0" style={{ background: 'none' }}/>
+                                <button onClick={async ()=>{
+                                    await fetch('/api/admin/live-chat/labels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editLabel.id,name:editLabel.name,color:editLabel.color})})
+                                    setAllLabels(prev=>prev.map(x=>x.id===editLabel.id?{...x,name:editLabel.name,color:editLabel.color}:x))
+                                    setEditLabel(null)
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-green-500 rounded"><Check size={10}/></button>
+                                <button onClick={()=>setEditLabel(null)} className="p-1 text-gray-400 hover:text-gray-600 rounded"><X size={10}/></button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={()=>setEditLabel({...l})} className="p-1 text-gray-400 hover:text-indigo-500 rounded"><Edit3 size={10}/></button>
+                                <button onClick={()=>deleteLabel(l.id)} className="p-1 text-gray-400 hover:text-red-500 rounded"><Trash2 size={10}/></button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* Create new label */}
+                  <div className="p-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                    <div className="flex gap-2">
+                      <input type="color" value={labelForm.color} onChange={e=>setLabelForm(v=>({...v,color:e.target.value}))}
+                        className="w-8 h-8 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-700 p-0.5"/>
+                      <input value={labelForm.name} onChange={e=>setLabelForm(v=>({...v,name:e.target.value}))}
+                        onKeyDown={e=>{ if(e.key==='Enter') saveLabel() }}
+                        placeholder="New label name…" className={`${inp} flex-1`}/>
+                    </div>
+                    <button onClick={saveLabel} disabled={!labelForm.name.trim()}
+                      className="w-full py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-40 hover:opacity-90 flex items-center justify-center gap-1"
+                      style={{ background: '#6366f1' }}>
+                      <Plus size={12}/> Create Label
+                    </button>
                   </div>
                 </>
               )}

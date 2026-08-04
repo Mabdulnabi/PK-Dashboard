@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     title:   `رد جديد على تذكرة 💬`,
     message: `رد العضو على التذكرة: "${ticket.subject}"`,
     type:    'info',
-    link:    '/support',
+    link:    '/tickets',
   })
 
   // Reopen if resolved so admin sees it
