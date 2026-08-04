@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { fireAdminNotification } from '@/lib/admin-notify'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,6 +33,13 @@ export async function POST(req: NextRequest) {
       console.error('manual payment update error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    void fireAdminNotification({
+      title:   `دفعة تحتاج مراجعة 💳`,
+      message: `عضو أرسل إشعار دفع يدوي${ref ? ` (مرجع: ${ref})` : ''}`,
+      type:    'info',
+      link:    '/payments',
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {

@@ -43,6 +43,244 @@ function Counter({ target, suffix }: { target: number; suffix: string }) {
   return <span ref={ref}>{n.toLocaleString()}{suffix}</span>
 }
 
+// ─── Auth Modal Component ─────────────────────────────────────────────────────
+interface AuthModalProps {
+  authModal: 'login'|'signup'|'forgot'
+  lang: Lang
+  logo: string
+  siteName: string
+  amEmail: string; setAmEmail: (v:string)=>void
+  amPass: string;  setAmPass:  (v:string)=>void
+  amConf: string;  setAmConf:  (v:string)=>void
+  amName: string;  setAmName:  (v:string)=>void
+  amWA: string;    setAmWA:    (v:string)=>void
+  amAgree: boolean; setAmAgree: (v:boolean)=>void
+  amLoading: boolean; setAmLoading: (v:boolean)=>void
+  amError: string;    setAmError:   (v:string)=>void
+  amOk: string;       setAmOk:      (v:string)=>void
+  amForgotEmail: string; setAmForgotEmail: (v:string)=>void
+  pwState: {length:boolean;upper:boolean;lower:boolean;number:boolean;special:boolean}
+  evalPw: (v:string)=>void
+  isPwStrong: (v:string)=>boolean
+  setAuthModal: (v:'login'|'signup'|'forgot'|null)=>void
+  closeAuth: ()=>void
+}
+
+function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPass, setAmPass, amConf, setAmConf, amName, setAmName, amWA, setAmWA, amAgree, setAmAgree, amLoading, setAmLoading, amError, setAmError, amOk, setAmOk, amForgotEmail, setAmForgotEmail, pwState, evalPw, isPwStrong, setAuthModal, closeAuth }: AuthModalProps) {
+  const t = (ar: string, en: string) => lang === 'ar' ? ar : en
+  const L = {
+    ar: {
+      login:'دخول', signup:'إنشاء حساب',
+      loginTitle:'دخول مستخدم', loginSub:'أدخل بيانات حسابك للمتابعة',
+      signupTitle:'إنشاء حساب جديد', signupSub:'انضم لـ Pro Keys في أقل من دقيقة',
+      forgotTitle:'استعادة كلمة المرور', forgotSub:'هنبعتلك لينك على إيميلك',
+      email:'البريد الإلكتروني', pass:'كلمة المرور', conf:'تأكيد', name:'الاسم الكامل', wa:'رقم الواتساب',
+      forgot:'هل نسيت كلمة المرور؟', loginBtn:'دخول', signupBtn:'إنشاء حساب', sendLink:'إرسال الرابط',
+      googleLogin:'الدخول بحساب Google', googleSignup:'التسجيل بحساب Google',
+      noAccount:'ليس لديك حساب؟', makeAccount:'إنشاء حساب جديد',
+      haveAccount:'لديك حساب؟', doLogin:'تسجيل دخول',
+      backLogin:'← رجوع لتسجيل الدخول',
+      terms:'أوافق على شروط الخدمة',
+      fill:'من فضلك املأ كل الحقول', pwWeak:'كلمة المرور لازم تحقق كل الشروط', mismatch:'كلمتا المرور غير متطابقتين', termsErr:'من فضلك وافق على شروط الخدمة',
+      redirecting:'جاري تحويلك...', created:'تم إنشاء الحساب بنجاح!',
+      confirmEmail:'تحقق من إيميلك عشان تفعّل حسابك.',
+      sent:'اتبعت! تحقق من صندوق الوارد.',
+      ruleLen:'8 أحرف على الأقل', ruleUp:'حرف كبير واحد على الأقل (A-Z)', ruleLo:'حرف صغير واحد على الأقل (a-z)', ruleNum:'رقم واحد على الأقل (0-9)', ruleSpec:'رمز خاص واحد على الأقل (!@#$%^&*)',
+    },
+    en: {
+      login:'Sign In', signup:'Sign Up',
+      loginTitle:'Welcome back', loginSub:'Enter your details to continue',
+      signupTitle:'Create your account', signupSub:'Join Pro Keys in under a minute',
+      forgotTitle:'Reset your password', forgotSub:"We'll email you a reset link",
+      email:'Email address', pass:'Password', conf:'Confirm', name:'Full name', wa:'WhatsApp number',
+      forgot:'Forgot password?', loginBtn:'Sign In', signupBtn:'Create account', sendLink:'Send link',
+      googleLogin:'Sign in with Google', googleSignup:'Sign up with Google',
+      noAccount:"Don't have an account?", makeAccount:'Create one now',
+      haveAccount:'Already have an account?', doLogin:'Sign in',
+      backLogin:'← Back to sign in',
+      terms:'I agree to the Terms of Service',
+      fill:'Please fill in all fields', pwWeak:'Password must meet all requirements', mismatch:'Passwords do not match', termsErr:'Please agree to the Terms of Service',
+      redirecting:'Redirecting...', created:'Account created!',
+      confirmEmail:'Check your email to confirm your account.',
+      sent:'Sent! Check your inbox.',
+      ruleLen:'At least 8 characters', ruleUp:'At least one uppercase (A-Z)', ruleLo:'At least one lowercase (a-z)', ruleNum:'At least one number (0-9)', ruleSpec:'At least one special char (!@#$%^&*)',
+    },
+  }[lang]
+
+  const Spinner = () => <span className="am-spin"/>
+  const GoogleSVG = () => (
+    <svg viewBox="0 0 48 48" style={{ width:17, height:17, flexShrink:0 }}>
+      <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+      <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+      <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+      <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+    </svg>
+  )
+
+  const doLogin = async () => {
+    if (!amEmail || !amPass) { setAmError(L.fill); return }
+    setAmLoading(true); setAmError(''); setAmOk('')
+    const { error } = await supabase.auth.signInWithPassword({ email: amEmail, password: amPass })
+    if (error) { setAmError(error.message); setAmLoading(false); return }
+    setAmOk(L.redirecting)
+    setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
+  }
+
+  const doSignup = async () => {
+    if (!amName || !amEmail || !amWA || !amPass || !amConf) { setAmError(L.fill); return }
+    if (!isPwStrong(amPass)) { setAmError(L.pwWeak); return }
+    if (amPass !== amConf) { setAmError(L.mismatch); return }
+    if (!amAgree) { setAmError(L.termsErr); return }
+    setAmLoading(true); setAmError(''); setAmOk('')
+    const { error, data } = await supabase.auth.signUp({
+      email: amEmail, password: amPass,
+      options: { data: { full_name: amName, whatsapp: amWA } },
+    })
+    setAmLoading(false)
+    if (error) { setAmError(error.message); return }
+    if (!data.session) { setAmOk(L.confirmEmail); setTimeout(() => setAuthModal('login'), 2500); return }
+    setAmOk(L.created); setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
+  }
+
+  const doForgot = async () => {
+    if (!amForgotEmail) { setAmError(L.fill); return }
+    setAmLoading(true); setAmError(''); setAmOk('')
+    const { error } = await supabase.auth.resetPasswordForEmail(amForgotEmail, {
+      redirectTo: window.location.origin + '/u/dashboard',
+    })
+    setAmLoading(false)
+    if (error) { setAmError(error.message); return }
+    setAmOk(L.sent)
+  }
+
+  const doGoogle = async () => {
+    setAmLoading(true)
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/u/dashboard' },
+    })
+  }
+
+  const switchTo = (f: 'login'|'signup'|'forgot') => {
+    setAmError(''); setAmOk(''); setAuthModal(f)
+  }
+
+  const rules = [
+    { key: 'length',  label: L.ruleLen,  ok: pwState.length },
+    { key: 'upper',   label: L.ruleUp,   ok: pwState.upper },
+    { key: 'lower',   label: L.ruleLo,   ok: pwState.lower },
+    { key: 'number',  label: L.ruleNum,  ok: pwState.number },
+    { key: 'special', label: L.ruleSpec, ok: pwState.special },
+  ]
+
+  const titleMap = { login: L.loginTitle, signup: L.signupTitle, forgot: L.forgotTitle }
+  const subMap   = { login: L.loginSub,   signup: L.signupSub,   forgot: L.forgotSub }
+
+  return (
+    <div id="amOverlay" className="am-vis" style={{ fontFamily:"'Cairo',sans-serif" }}
+      onClick={e => { if (e.target === e.currentTarget) closeAuth() }}>
+      <div id="amCard">
+        {/* Header */}
+        <div className="am-hdr">
+          {logo
+            ? <img src={logo} alt={siteName} style={{ height:36, width:'auto' }}/>
+            : <span style={{ fontWeight:900, fontSize:18, color:'#d99401' }}>{siteName}</span>}
+          <button onClick={closeAuth} style={{ border:'none', background:'#F9F6EE', width:30, height:30, borderRadius:'50%', cursor:'pointer', fontSize:14, color:'#3D4A6B', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div className="am-body">
+          <div className="am-title">
+            <h2>{titleMap[authModal]}</h2>
+            <p>{subMap[authModal]}</p>
+          </div>
+
+          {/* Tabs */}
+          {(authModal === 'login' || authModal === 'signup') && (
+            <div className="am-tabs">
+              <button className={`am-tab${authModal==='login'?' on':''}`} onClick={() => switchTo('login')}>{L.login}</button>
+              <button className={`am-tab${authModal==='signup'?' on':''}`} onClick={() => switchTo('signup')}>{L.signup}</button>
+            </div>
+          )}
+
+          {amError && <div className="am-err">{amError}</div>}
+          {amOk    && <div className="am-ok">{amOk}</div>}
+
+          {/* LOGIN FORM */}
+          {authModal === 'login' && (
+            <>
+              <div className="am-grp"><label>{L.email}</label><input type="email" value={amEmail} onChange={e=>setAmEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
+              <div className="am-grp">
+                <label>{L.pass}</label>
+                <input type="password" value={amPass} onChange={e=>setAmPass(e.target.value)} placeholder="••••••••" dir="ltr"/>
+                <button className="am-forgot-link" onClick={() => switchTo('forgot')}>{L.forgot}</button>
+              </div>
+              <button className="am-btn" onClick={doLogin} disabled={amLoading}>
+                {amLoading ? <Spinner/> : <span>{L.loginBtn}</span>}
+              </button>
+              <div className="am-div"><span>{t('أو','or')}</span></div>
+              <button className="am-google" onClick={doGoogle} disabled={amLoading}>
+                <GoogleSVG/><span>{L.googleLogin}</span>
+              </button>
+              <div className="am-footer">
+                <span>{L.noAccount} </span>
+                <button onClick={() => switchTo('signup')}>{L.makeAccount}</button>
+              </div>
+            </>
+          )}
+
+          {/* SIGNUP FORM */}
+          {authModal === 'signup' && (
+            <>
+              <div className="am-grp"><label>{L.name}</label><input type="text" value={amName} onChange={e=>setAmName(e.target.value)} placeholder={lang==='ar'?'محمد علي':'John Smith'}/></div>
+              <div className="am-grp"><label>{L.email}</label><input type="email" value={amEmail} onChange={e=>setAmEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
+              <div className="am-grp"><label>{L.wa}</label><input type="text" value={amWA} onChange={e=>setAmWA(e.target.value)} placeholder="+20 10 000 0000" dir="ltr"/></div>
+              <div className="am-row">
+                <div className="am-grp"><label>{L.pass}</label><input type="password" value={amPass} onChange={e=>{setAmPass(e.target.value);evalPw(e.target.value)}} placeholder="••••••••" dir="ltr"/></div>
+                <div className="am-grp"><label>{L.conf}</label><input type="password" value={amConf} onChange={e=>setAmConf(e.target.value)} placeholder="••••••••" dir="ltr"/></div>
+              </div>
+              <ul className="am-rules">
+                {rules.map(r => (
+                  <li key={r.key} style={{ color: r.ok ? '#0E9F6E' : '#94A3B8' }}>{r.ok ? '✓' : '○'} {r.label}</li>
+                ))}
+              </ul>
+              <label className="am-check">
+                <input type="checkbox" checked={amAgree} onChange={e=>setAmAgree(e.target.checked)}/>
+                {L.terms}
+              </label>
+              <button className="am-btn" onClick={doSignup} disabled={amLoading}>
+                {amLoading ? <Spinner/> : <span>{L.signupBtn}</span>}
+              </button>
+              <div className="am-div"><span>{t('أو','or')}</span></div>
+              <button className="am-google" onClick={doGoogle} disabled={amLoading}>
+                <GoogleSVG/><span>{L.googleSignup}</span>
+              </button>
+              <div className="am-footer">
+                <span>{L.haveAccount} </span>
+                <button onClick={() => switchTo('login')}>{L.doLogin}</button>
+              </div>
+            </>
+          )}
+
+          {/* FORGOT PASSWORD FORM */}
+          {authModal === 'forgot' && (
+            <>
+              <div className="am-forgot-icon">🔑</div>
+              <div className="am-grp"><label>{L.email}</label><input type="email" value={amForgotEmail} onChange={e=>setAmForgotEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
+              <button className="am-btn" onClick={doForgot} disabled={amLoading}>
+                {amLoading ? <Spinner/> : <span>{L.sendLink}</span>}
+              </button>
+              <div className="am-footer">
+                <button onClick={() => switchTo('login')}>{L.backLogin}</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Landing() {
   const [lang,    setLang]    = useState<Lang>('ar')
@@ -634,219 +872,23 @@ export default function Landing() {
       `}</style>
 
       {/* ══ AUTH MODAL ══ */}
-      {authModal && (() => {
-        const L = {
-          ar: {
-            login:'دخول', signup:'إنشاء حساب',
-            loginTitle:'دخول مستخدم', loginSub:'أدخل بيانات حسابك للمتابعة',
-            signupTitle:'إنشاء حساب جديد', signupSub:'انضم لـ Pro Keys في أقل من دقيقة',
-            forgotTitle:'استعادة كلمة المرور', forgotSub:'هنبعتلك لينك على إيميلك',
-            email:'البريد الإلكتروني', pass:'كلمة المرور', conf:'تأكيد', name:'الاسم الكامل', wa:'رقم الواتساب',
-            forgot:'هل نسيت كلمة المرور؟', loginBtn:'دخول', signupBtn:'إنشاء حساب', sendLink:'إرسال الرابط',
-            googleLogin:'الدخول بحساب Google', googleSignup:'التسجيل بحساب Google',
-            noAccount:'ليس لديك حساب؟', makeAccount:'إنشاء حساب جديد',
-            haveAccount:'لديك حساب؟', doLogin:'تسجيل دخول',
-            backLogin:'← رجوع لتسجيل الدخول',
-            terms:'أوافق على شروط الخدمة',
-            fill:'من فضلك املأ كل الحقول', pwWeak:'كلمة المرور لازم تحقق كل الشروط', mismatch:'كلمتا المرور غير متطابقتين', termsErr:'من فضلك وافق على شروط الخدمة',
-            redirecting:'جاري تحويلك...', created:'تم إنشاء الحساب بنجاح!',
-            confirmEmail:'تحقق من إيميلك عشان تفعّل حسابك.',
-            sent:'اتبعت! تحقق من صندوق الوارد.',
-            ruleLen:'8 أحرف على الأقل', ruleUp:'حرف كبير واحد على الأقل (A-Z)', ruleLo:'حرف صغير واحد على الأقل (a-z)', ruleNum:'رقم واحد على الأقل (0-9)', ruleSpec:'رمز خاص واحد على الأقل (!@#$%^&*)',
-          },
-          en: {
-            login:'Sign In', signup:'Sign Up',
-            loginTitle:'Welcome back', loginSub:'Enter your details to continue',
-            signupTitle:'Create your account', signupSub:'Join Pro Keys in under a minute',
-            forgotTitle:'Reset your password', forgotSub:"We'll email you a reset link",
-            email:'Email address', pass:'Password', conf:'Confirm', name:'Full name', wa:'WhatsApp number',
-            forgot:'Forgot password?', loginBtn:'Sign In', signupBtn:'Create account', sendLink:'Send link',
-            googleLogin:'Sign in with Google', googleSignup:'Sign up with Google',
-            noAccount:"Don't have an account?", makeAccount:'Create one now',
-            haveAccount:'Already have an account?', doLogin:'Sign in',
-            backLogin:'← Back to sign in',
-            terms:'I agree to the Terms of Service',
-            fill:'Please fill in all fields', pwWeak:'Password must meet all requirements', mismatch:'Passwords do not match', termsErr:'Please agree to the Terms of Service',
-            redirecting:'Redirecting...', created:'Account created!',
-            confirmEmail:'Check your email to confirm your account.',
-            sent:'Sent! Check your inbox.',
-            ruleLen:'At least 8 characters', ruleUp:'At least one uppercase (A-Z)', ruleLo:'At least one lowercase (a-z)', ruleNum:'At least one number (0-9)', ruleSpec:'At least one special char (!@#$%^&*)',
-          },
-        }[lang]
-
-        const Spinner = () => <span className="am-spin"/>
-        const GoogleSVG = () => (
-          <svg viewBox="0 0 48 48" style={{ width:17, height:17, flexShrink:0 }}>
-            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
-          </svg>
-        )
-
-        const doLogin = async () => {
-          if (!amEmail || !amPass) { setAmError(L.fill); return }
-          setAmLoading(true); setAmError(''); setAmOk('')
-          const { error, data } = await supabase.auth.signInWithPassword({ email: amEmail, password: amPass })
-          if (error) { setAmError(error.message); setAmLoading(false); return }
-          setAmOk(L.redirecting)
-          setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
-        }
-
-        const doSignup = async () => {
-          if (!amName || !amEmail || !amWA || !amPass || !amConf) { setAmError(L.fill); return }
-          if (!isPwStrong(amPass)) { setAmError(L.pwWeak); return }
-          if (amPass !== amConf) { setAmError(L.mismatch); return }
-          if (!amAgree) { setAmError(L.termsErr); return }
-          setAmLoading(true); setAmError(''); setAmOk('')
-          const { error, data } = await supabase.auth.signUp({
-            email: amEmail, password: amPass,
-            options: { data: { full_name: amName, whatsapp: amWA } },
-          })
-          setAmLoading(false)
-          if (error) { setAmError(error.message); return }
-          if (!data.session) { setAmOk(L.confirmEmail); setTimeout(() => setAuthModal('login'), 2500); return }
-          setAmOk(L.created); setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
-        }
-
-        const doForgot = async () => {
-          if (!amForgotEmail) { setAmError(L.fill); return }
-          setAmLoading(true); setAmError(''); setAmOk('')
-          const { error } = await supabase.auth.resetPasswordForEmail(amForgotEmail, {
-            redirectTo: window.location.origin + '/u/dashboard',
-          })
-          setAmLoading(false)
-          if (error) { setAmError(error.message); return }
-          setAmOk(L.sent)
-        }
-
-        const doGoogle = async () => {
-          setAmLoading(true)
-          await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: window.location.origin + '/u/dashboard' },
-          })
-        }
-
-        const switchTo = (f: 'login'|'signup'|'forgot') => {
-          setAmError(''); setAmOk(''); setAuthModal(f)
-        }
-
-        const rules = [
-          { key: 'length',  label: L.ruleLen,  ok: pwState.length },
-          { key: 'upper',   label: L.ruleUp,   ok: pwState.upper },
-          { key: 'lower',   label: L.ruleLo,   ok: pwState.lower },
-          { key: 'number',  label: L.ruleNum,  ok: pwState.number },
-          { key: 'special', label: L.ruleSpec, ok: pwState.special },
-        ]
-
-        const titleMap = { login: L.loginTitle, signup: L.signupTitle, forgot: L.forgotTitle }
-        const subMap   = { login: L.loginSub,   signup: L.signupSub,   forgot: L.forgotSub }
-
-        return (
-          <div id="amOverlay" className="am-vis" style={{ fontFamily:"'Cairo',sans-serif" }}
-            onClick={e => { if (e.target === e.currentTarget) closeAuth() }}>
-            <div id="amCard">
-              {/* Header */}
-              <div className="am-hdr">
-                {logo
-                  ? <img src={logo} alt={siteName} style={{ height:36, width:'auto' }}/>
-                  : <span style={{ fontWeight:900, fontSize:18, color:'#d99401' }}>{siteName}</span>}
-                <button onClick={closeAuth} style={{ border:'none', background:'#F9F6EE', width:30, height:30, borderRadius:'50%', cursor:'pointer', fontSize:14, color:'#3D4A6B', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-              </div>
-
-              {/* Body */}
-              <div className="am-body">
-                <div className="am-title">
-                  <h2>{titleMap[authModal]}</h2>
-                  <p>{subMap[authModal]}</p>
-                </div>
-
-                {/* Tabs */}
-                {(authModal === 'login' || authModal === 'signup') && (
-                  <div className="am-tabs">
-                    <button className={`am-tab${authModal==='login'?' on':''}`} onClick={() => switchTo('login')}>{L.login}</button>
-                    <button className={`am-tab${authModal==='signup'?' on':''}`} onClick={() => switchTo('signup')}>{L.signup}</button>
-                  </div>
-                )}
-
-                {amError && <div className="am-err">{amError}</div>}
-                {amOk    && <div className="am-ok">{amOk}</div>}
-
-                {/* LOGIN FORM */}
-                {authModal === 'login' && (
-                  <>
-                    <div className="am-grp"><label>{L.email}</label><input type="email" value={amEmail} onChange={e=>setAmEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
-                    <div className="am-grp">
-                      <label>{L.pass}</label>
-                      <input type="password" value={amPass} onChange={e=>setAmPass(e.target.value)} placeholder="••••••••" dir="ltr"/>
-                      <button className="am-forgot-link" onClick={() => switchTo('forgot')}>{L.forgot}</button>
-                    </div>
-                    <button className="am-btn" onClick={doLogin} disabled={amLoading}>
-                      {amLoading ? <Spinner/> : <span>{L.loginBtn}</span>}
-                    </button>
-                    <div className="am-div"><span>{t('أو','or')}</span></div>
-                    <button className="am-google" onClick={doGoogle} disabled={amLoading}>
-                      <GoogleSVG/><span>{L.googleLogin}</span>
-                    </button>
-                    <div className="am-footer">
-                      <span>{L.noAccount} </span>
-                      <button onClick={() => switchTo('signup')}>{L.makeAccount}</button>
-                    </div>
-                  </>
-                )}
-
-                {/* SIGNUP FORM */}
-                {authModal === 'signup' && (
-                  <>
-                    <div className="am-grp"><label>{L.name}</label><input type="text" value={amName} onChange={e=>setAmName(e.target.value)} placeholder={lang==='ar'?'محمد علي':'John Smith'}/></div>
-                    <div className="am-grp"><label>{L.email}</label><input type="email" value={amEmail} onChange={e=>setAmEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
-                    <div className="am-grp"><label>{L.wa}</label><input type="text" value={amWA} onChange={e=>setAmWA(e.target.value)} placeholder="+20 10 000 0000" dir="ltr"/></div>
-                    <div className="am-row">
-                      <div className="am-grp"><label>{L.pass}</label><input type="password" value={amPass} onChange={e=>{setAmPass(e.target.value);evalPw(e.target.value)}} placeholder="••••••••" dir="ltr"/></div>
-                      <div className="am-grp"><label>{L.conf}</label><input type="password" value={amConf} onChange={e=>setAmConf(e.target.value)} placeholder="••••••••" dir="ltr"/></div>
-                    </div>
-                    <ul className="am-rules">
-                      {rules.map(r => (
-                        <li key={r.key} style={{ color: r.ok ? '#0E9F6E' : '#94A3B8' }}>{r.ok ? '✓' : '○'} {r.label}</li>
-                      ))}
-                    </ul>
-                    <label className="am-check">
-                      <input type="checkbox" checked={amAgree} onChange={e=>setAmAgree(e.target.checked)}/>
-                      {L.terms}
-                    </label>
-                    <button className="am-btn" onClick={doSignup} disabled={amLoading}>
-                      {amLoading ? <Spinner/> : <span>{L.signupBtn}</span>}
-                    </button>
-                    <div className="am-div"><span>{t('أو','or')}</span></div>
-                    <button className="am-google" onClick={doGoogle} disabled={amLoading}>
-                      <GoogleSVG/><span>{L.googleSignup}</span>
-                    </button>
-                    <div className="am-footer">
-                      <span>{L.haveAccount} </span>
-                      <button onClick={() => switchTo('login')}>{L.doLogin}</button>
-                    </div>
-                  </>
-                )}
-
-                {/* FORGOT PASSWORD FORM */}
-                {authModal === 'forgot' && (
-                  <>
-                    <div className="am-forgot-icon">🔑</div>
-                    <div className="am-grp"><label>{L.email}</label><input type="email" value={amForgotEmail} onChange={e=>setAmForgotEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
-                    <button className="am-btn" onClick={doForgot} disabled={amLoading}>
-                      {amLoading ? <Spinner/> : <span>{L.sendLink}</span>}
-                    </button>
-                    <div className="am-footer">
-                      <button onClick={() => switchTo('login')}>{L.backLogin}</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      {authModal && (
+        <AuthModal
+          authModal={authModal} lang={lang} logo={logo} siteName={siteName}
+          amEmail={amEmail} setAmEmail={setAmEmail}
+          amPass={amPass}   setAmPass={setAmPass}
+          amConf={amConf}   setAmConf={setAmConf}
+          amName={amName}   setAmName={setAmName}
+          amWA={amWA}       setAmWA={setAmWA}
+          amAgree={amAgree} setAmAgree={setAmAgree}
+          amLoading={amLoading} setAmLoading={setAmLoading}
+          amError={amError}     setAmError={setAmError}
+          amOk={amOk}           setAmOk={setAmOk}
+          amForgotEmail={amForgotEmail} setAmForgotEmail={setAmForgotEmail}
+          pwState={pwState} evalPw={evalPw} isPwStrong={isPwStrong}
+          setAuthModal={setAuthModal} closeAuth={closeAuth}
+        />
+      )}
     </div>
   )
 }
