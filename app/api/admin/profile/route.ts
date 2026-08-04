@@ -1,32 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 import { db } from '@/lib/db'
 
-// Create a fresh, isolated Supabase client (anon key) to verify the
-// current user session. Using auth.getUser() (not getSession()) hits
-// the Supabase Auth API directly, so it always returns the correct user
-// even when the local session appears stale. A fresh client is used
-// instead of the shared `db` singleton so that this call cannot mutate
-// the singleton's Authorization header and corrupt service-role access.
-async function getAdminUserId(): Promise<string | null> {
-  const cookieStore = cookies()
-  const sc = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: () => {},
-      },
-    }
-  )
-  const { data: { user } } = await sc.auth.getUser()
-  return user?.id ?? null
+function getUserId(req: NextRequest): string | null {
+  return req.headers.get('x-admin-user-id')
 }
 
-export async function GET() {
-  const userId = await getAdminUserId()
+export async function GET(req: NextRequest) {
+  const userId = getUserId(req)
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { data: profile } = await db
@@ -45,7 +25,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const userId = await getAdminUserId()
+  const userId = getUserId(req)
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { display_name, full_name, avatar_url, whatsapp, email, password } = await req.json()
@@ -62,7 +42,6 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Update auth email/password if provided
   if (email || password) {
     const authUpdate: any = {}
     if (email)    authUpdate.email    = email

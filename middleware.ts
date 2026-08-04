@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-// Project ref extracted from NEXT_PUBLIC_SUPABASE_URL
-// e.g. https://mluqxggjbumtmyfldaon.supabase.co → mluqxggjbumtmyfldaon
-const PROJECT_REF = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
-  .replace('https://', '')
-  .split('.')[0]
-
-export function middleware(req: NextRequest) {
-  // Check for Supabase auth cookie (may be chunked: .0, .1, ...)
-  const cookieName = `sb-${PROJECT_REF}-auth-token`
-  const all = req.cookies.getAll()
-
-  const hasSession = all.some(
-    c => (c.name === cookieName || c.name.startsWith(`${cookieName}.`)) && c.value
+export async function middleware(req: NextRequest) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: () => {}, // session refresh cookies handled client-side
+      },
+    }
   )
 
-  if (!hasSession) {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  return NextResponse.next()
+  const headers = new Headers(req.headers)
+  headers.set('x-admin-user-id', user.id)
+
+  return NextResponse.next({ request: { headers } })
 }
 
 export const config = {
