@@ -262,12 +262,12 @@ export default function Landing() {
             <p style={{ textAlign:'center', fontSize:12, fontWeight:700, color:'#6B7494', letterSpacing:2, textTransform:'uppercase', marginBottom:20 }}>
               {t('الأدوات والمنتجات المتاحة','Available Tools & Products')}
             </p>
-            <div className="lp-marquee" style={{ display:'flex', gap:32, alignItems:'center', width:`${marquee.length * (logoSize + 40)}px` }}>
+            <div className="lp-marquee-track">
               {marquee.map((logo, i) => (
-                <div key={i} style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <div key={i} className="lp-marquee-item" style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
                   {logo.url
                     ? <img src={logo.url} alt={logo.name} style={{ height:logoSize, maxWidth: logoSize * 2.5, objectFit:'contain', display:'block' }}/>
-                    : <span style={{ fontSize:12, color:'#6B7494', textAlign:'center', whiteSpace:'nowrap' }}>{logo.name}</span>}
+                    : <span style={{ fontSize:12, color:'#6B7494', whiteSpace:'nowrap' }}>{logo.name}</span>}
                 </div>
               ))}
             </div>
@@ -537,9 +537,10 @@ export default function Landing() {
         .lp-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -12px rgba(27,37,86,.14);border-color:#EDD98A !important;}
 
         @keyframes lpmarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-        .lp-marquee{animation:lpmarquee 30s linear infinite;}
-        .lp-marquee:hover{animation-play-state:paused;}
-        [dir="rtl"] .lp-marquee{animation-direction:reverse;}
+        .lp-marquee-track{display:flex;width:max-content;animation:lpmarquee 28s linear infinite;}
+        .lp-marquee-track:hover{animation-play-state:paused;}
+        .lp-marquee-item{flex-shrink:0;margin-inline-end:40px;}
+        [dir="rtl"] .lp-marquee-track{animation-direction:reverse;}
 
         @media(max-width:860px){
           .lp-hero-grid{grid-template-columns:1fr !important;}
