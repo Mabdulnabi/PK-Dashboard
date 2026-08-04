@@ -144,7 +144,7 @@ export default function HelpdeskPage() {
   }
 
   const sendMemberReply = async (ticketId: string) => {
-    if (!replyText.trim()) return
+    if (!replyText.trim() && replyFiles.length === 0) return
     setReplySending(true)
     const res = await fetch(`/api/member/tickets/${ticketId}/reply`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -339,7 +339,7 @@ export default function HelpdeskPage() {
                           <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
                             placeholder={t('Write a follow-up message…', 'اكتب رسالة متابعة…')}
                             rows={2} className={inp + ' resize-none flex-1 py-2.5 text-xs'}/>
-                          <button onClick={() => sendMemberReply(ticket.id)} disabled={replySending || !replyText.trim()}
+                          <button onClick={() => sendMemberReply(ticket.id)} disabled={replySending || (!replyText.trim() && replyFiles.length === 0)}
                             className="px-3 rounded-xl disabled:opacity-40 text-white text-xs font-bold transition-colors flex-shrink-0" style={{background:'#d99401'}}>
                             {replySending ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : t('Send', 'إرسال')}
                           </button>

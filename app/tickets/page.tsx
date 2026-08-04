@@ -133,7 +133,8 @@ export default function TicketsPage() {
   const activeTicket = tickets.find(t => t.id === activeId) || null
 
   const sendReply = async () => {
-    if (!replyText.trim() || !activeTicket) return
+    if (!activeTicket) return
+    if (!replyText.trim() && replyFiles.length === 0) return
     setSaving(true)
     const res = await fetch(`/api/admin/tickets/${activeTicket.id}/reply`, {
       method: 'POST',
@@ -514,7 +515,7 @@ export default function TicketsPage() {
                     rows={3}
                     className="flex-1 resize-none px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:border-emerald-400 transition-colors"
                     style={{ minHeight: '72px', maxHeight: '140px' }}/>
-                  <button onClick={sendReply} disabled={saving || !replyText.trim()}
+                  <button onClick={sendReply} disabled={saving || (!replyText.trim() && replyFiles.length === 0)}
                     className="p-3 rounded-xl text-white disabled:opacity-40 transition-colors flex-shrink-0"
                     style={{ background: '#10b981' }}>
                     {saving

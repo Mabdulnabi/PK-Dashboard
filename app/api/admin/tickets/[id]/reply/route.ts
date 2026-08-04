@@ -8,7 +8,7 @@ const service = createClient(
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { reply, status = 'in_progress', admin_id } = await req.json()
-  if (!reply?.trim()) return NextResponse.json({ error: 'reply required' }, { status: 400 })
+  const replyText = reply?.trim() || ''
 
   const { data: ticket } = await service
     .from('support_tickets')
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const { error } = await service.from('support_tickets').update({
-    reply,
+    reply:       replyText || null,
     status,
     replied_by:  admin_id || null,
     replied_at:  new Date().toISOString(),
@@ -42,14 +42,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Insert into conversation thread with admin identity
-  service.from('ticket_messages').insert({
-    ticket_id:     params.id,
-    sender_type:   'admin',
-    message:       reply,
-    sender_name:   adminName,
-    sender_avatar: adminAvatar,
-  }).then(() => {})
+  // Only insert a message bubble if there's text
+  if (replyText) {
+    service.from('ticket_messages').insert({
+      ticket_id:     params.id,
+      sender_type:   'admin',
+      message:       replyText,
+      sender_name:   adminName,
+      sender_avatar: adminAvatar,
+    }).then(() => {})
+  }
 
   // Notify member (bilingual)
   service.from('member_notifications').insert({

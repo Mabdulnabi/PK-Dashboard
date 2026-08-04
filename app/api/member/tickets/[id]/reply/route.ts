@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!sess?.valid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { message } = await req.json()
-  if (!message?.trim()) return NextResponse.json({ error: 'message required' }, { status: 400 })
+  const messageText = message?.trim() || ''
 
   // Verify ticket belongs to member and is not closed
   const { data: ticket } = await service
@@ -30,13 +30,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!ticket) return NextResponse.json({ error: 'ticket not found' }, { status: 404 })
   if (ticket.status === 'closed') return NextResponse.json({ error: 'ticket is closed' }, { status: 403 })
 
-  const { error } = await service.from('ticket_messages').insert({
-    ticket_id:   params.id,
-    sender_type: 'member',
-    message,
-  })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
+  // Only insert message row if there's text (attachment-only replies don't need a row)
+  if (messageText) {
+    const { error } = await service.from('ticket_messages').insert({
+      ticket_id:   params.id,
+      sender_type: 'member',
+      message:     messageText,
+    })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   void fireAdminNotification({
     title:   `رد جديد على تذكرة 💬`,
     message: `رد العضو على التذكرة: "${ticket.subject}"`,
