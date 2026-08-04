@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, X, Check, AlertCircle, ToggleLeft, ToggleRight, Star, Package, Tag, Layout, ChevronUp, ChevronDown, MessageCircle, ThumbsUp, ThumbsDown, Globe2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Star, Package, Tag, Layout, ChevronUp, ChevronDown, MessageCircle, ThumbsUp, ThumbsDown, Globe2 } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 
 interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
@@ -106,6 +106,21 @@ export default function ShopAdminPage() {
   const openEditTool = (t:Tool)=>{
     setToolForm({name:t.name,description:t.description||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock})
     setEdit(t); setModal('edit-tool')
+  }
+
+  const duplicateTool = async (t: Tool) => {
+    const { error } = await supabase.from('shop_tools').insert({
+      name: t.name + ' (Copy)', description: t.description, image_url: t.image_url||null,
+      category_slug: t.category_slug, category_id: t.category_id||null,
+      price_egp: t.price_egp, price_usd: t.price_usd||null, retail_price_egp: t.retail_price_egp||0,
+      duration_label: t.duration_label, duration_days: t.duration_days,
+      delivery_label: t.delivery_label||'INSTANT',
+      rating: t.rating, review_count: t.review_count,
+      video_url: t.video_url||null, features: t.features||[],
+      sort_order: t.sort_order, is_out_of_stock: t.is_out_of_stock,
+    })
+    if (error) setToast({ msg: 'Duplicate failed', type: 'err' })
+    else { setToast({ msg: 'Tool duplicated', type: 'ok' }); load() }
   }
 
   const saveTool = async()=>{
@@ -361,8 +376,9 @@ export default function ShopAdminPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
-                            <button onClick={()=>openEditTool(t)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"><Pencil size={12}/></button>
-                            <button onClick={()=>{setDel(t);setDelType('tool')}} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={12}/></button>
+                            <button onClick={()=>openEditTool(t)} title="Edit" className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"><Pencil size={12}/></button>
+                            <button onClick={()=>duplicateTool(t)} title="Duplicate" className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"><Copy size={12}/></button>
+                            <button onClick={()=>{setDel(t);setDelType('tool')}} title="Delete" className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"><Trash2 size={12}/></button>
                           </div>
                         </td>
                       </tr>
