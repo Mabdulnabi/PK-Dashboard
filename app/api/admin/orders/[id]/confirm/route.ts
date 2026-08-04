@@ -30,6 +30,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     message:    `تم تأكيد دفعتك وتفعيل اشتراكك في ${toolName}. ابدأ الاستخدام الآن من لوحة التحكم.`,
     message_en: `Your payment was confirmed and your ${toolName} subscription is now active. Start using it from your dashboard.`,
     type:       'success',
+    link:       '/u/shop',
   })
 
   void writeAuditLog({

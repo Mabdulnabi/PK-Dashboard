@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data } = await db
     .from('member_notifications')
-    .select('id, title, title_en, message, message_en, type, is_read, created_at')
+    .select('id, title, title_en, message, message_en, type, is_read, link, created_at')
     .eq('member_id', session.member_id)
     .order('created_at', { ascending: false })
     .limit(30)

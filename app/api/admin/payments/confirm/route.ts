@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     message:    `تم تأكيد دفعتك وتفعيل ${name}. يمكنك الاستخدام الآن.`,
     message_en: `Your payment was confirmed and ${name} is now active. You can start using it.`,
     type:       'success',
+    link:       '/u/shop',
   })
 
   return NextResponse.json({ ok: true })

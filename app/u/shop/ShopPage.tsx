@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Star, Zap, Info, X, Search, MessageCircle } from 'lucide-react'
+import { Star, Zap, Info, X, Search, MessageCircle, ShoppingCart, Heart, Plus, Minus, Check } from 'lucide-react'
 import ToolLandingPage from './ToolLandingPage'
+import { useCart } from '@/lib/cart-context'
 
 interface Tool {
   id:string; name:string; description:string; image_url?:string
@@ -34,6 +35,7 @@ function Stars({ rating, count }: { rating:number; count:number }) {
 export default function ShopPage({ category }: Props) {
   const { t, lang, dir, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
+  const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
   const [tools,     setTools]     = useState<Tool[]>([])
   const [loading,   setLoading]   = useState(true)
   const [q,         setQ]         = useState('')
@@ -42,6 +44,16 @@ export default function ShopPage({ category }: Props) {
   const [landing,   setLanding]   = useState<Tool|null>(null)
   const [catFilter, setCatFilter] = useState('all')
   const [categories,setCategories]= useState<DbCategory[]>([])
+  const [qtys,      setQtys]      = useState<Record<string,number>>({})
+  const [toast,     setToast]     = useState('')
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 2200)
+  }
+
+  const localQty = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
+  const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
 
   const CATEGORY_META = {
     shared:  {
@@ -81,6 +93,17 @@ export default function ShopPage({ category }: Props) {
     .sort((a,b)=>sort==='best'?b.rating-a.rating:b.sort_order-a.sort_order)
 
   const buy = (tool:Tool) => { window.location.href=`/u/checkout?tool_id=${tool.id}` }
+
+  const handleAddToCart = async (tool: Tool) => {
+    const qty = category === 'private' ? localQty(tool.id) : 1
+    if (inCart(tool.id) && category !== 'private') {
+      removeFromCart(tool.id)
+      showToast(t('Removed from cart','تمت الإزالة من السلة'))
+    } else {
+      await addToCart(tool.id, qty)
+      showToast(t('Added to cart ✓','تمت الإضافة للسلة ✓'))
+    }
+  }
 
   const openDetails = (tool: Tool) => {
     const hasBlocks = Array.isArray(tool.landing_blocks) && tool.landing_blocks.length > 0
@@ -192,17 +215,65 @@ export default function ShopPage({ category }: Props) {
               </button>
               <Stars rating={tool.rating} count={tool.review_count}/>
             </div>
-            <div className="px-4 pb-4" dir={lang==='ar'?'rtl':'ltr'}>
-              {tool.is_out_of_stock
-                ? <button disabled className="w-full py-3 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
-                : <button onClick={()=>buy(tool)} className="w-full py-3 rounded-xl text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md" style={{background:'#d99401'}}>
-                    🛒 {t('Buy Now','اشتري الآن')}
-                  </button>
-              }
+            <div className="px-4 pb-4 space-y-2" dir={lang==='ar'?'rtl':'ltr'}>
+              {/* Quantity controls — private only */}
+              {category === 'private' && !tool.is_out_of_stock && (
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty','الكمية')}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)-1)} disabled={localQty(tool.id)<=1}
+                      className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                      <Minus size={10}/>
+                    </button>
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-6 text-center">{localQty(tool.id)}</span>
+                    <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)+1)}
+                      className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                      <Plus size={10}/>
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* Action row */}
+              <div className="flex items-center gap-2">
+                {/* Fav button */}
+                <button onClick={()=>toggleFav(tool.id)}
+                  className="w-10 h-10 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
+                  style={isFav(tool.id)
+                    ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
+                    : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
+                  <Heart size={14} fill={isFav(tool.id)?'currentColor':'none'}/>
+                </button>
+                {tool.is_out_of_stock
+                  ? <button disabled className="flex-1 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">{t('Out of Stock','نفذت الكمية')}</button>
+                  : <button onClick={()=>handleAddToCart(tool)}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5"
+                      style={inCart(tool.id) && category !== 'private'
+                        ? {background:'#d9940120',color:'#d99401',border:'1.5px solid #d9940150'}
+                        : {background:'#d99401',color:'white'}}>
+                      {inCart(tool.id) && category !== 'private'
+                        ? <><Check size={13}/>{t('In Cart','في السلة')}</>
+                        : <><ShoppingCart size={13}/>{t('Add to Cart','أضف للسلة')}</>
+                      }
+                    </button>
+                }
+              </div>
+              {/* Direct buy link */}
+              {!tool.is_out_of_stock && (
+                <button onClick={()=>buy(tool)} className="w-full text-xs text-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-1">
+                  {t('Buy directly →','شراء مباشر →')}
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl shadow-lg text-sm font-semibold text-white pointer-events-none" style={{background:'#d99401'}}>
+          {toast}
+        </div>
+      )}
 
       {/* Popup */}
       {popup && (
@@ -246,10 +317,28 @@ export default function ShopPage({ category }: Props) {
                 </div>
                 {popup.is_out_of_stock
                   ? <button disabled className="w-full py-3.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 font-bold text-base cursor-default mb-5">{t('Out of Stock','نفذت الكمية')}</button>
-                  : <button onClick={()=>{ setPopup(null); buy(popup) }}
-                      className="w-full py-3.5 rounded-xl text-white font-bold text-base transition-colors shadow-lg flex items-center justify-center gap-2 mb-5" style={{background:'#d99401'}}>
-                      🛒 {t('Buy Now','اشتري الآن')}
-                    </button>
+                  : <div className="flex gap-2 mb-5">
+                      <button onClick={()=>toggleFav(popup.id)}
+                        className="w-12 h-12 rounded-xl border flex items-center justify-center transition-colors flex-shrink-0"
+                        style={isFav(popup.id)
+                          ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
+                          : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
+                        <Heart size={16} fill={isFav(popup.id)?'currentColor':'none'}/>
+                      </button>
+                      <button onClick={()=>{ handleAddToCart(popup); setPopup(null) }}
+                        className="flex-1 py-3.5 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2"
+                        style={inCart(popup.id) && category !== 'private'
+                          ? {background:'#d9940120',color:'#d99401',border:'1.5px solid #d9940150'}
+                          : {background:'#d99401',color:'white'}}>
+                        {inCart(popup.id) && category !== 'private'
+                          ? <><Check size={15}/>{t('In Cart','في السلة')}</>
+                          : <><ShoppingCart size={15}/>{t('Add to Cart','أضف للسلة')}</>}
+                      </button>
+                      <button onClick={()=>{ setPopup(null); buy(popup) }}
+                        className="flex-1 py-3.5 rounded-xl text-white font-bold text-base transition-colors shadow-lg flex items-center justify-center gap-2" style={{background:'#111827'}}>
+                        {t('Buy Now','اشتري الآن')}
+                      </button>
+                    </div>
                 }
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
                   <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">{popup.description}</p>

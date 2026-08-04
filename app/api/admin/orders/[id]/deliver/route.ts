@@ -48,6 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     message:    `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
     message_en: `Your ${labelEn} for ${toolName} is ready. Go to My Subscriptions to view it.`,
     type:       'success',
+    link:       '/u/shop',
   })
 
   return NextResponse.json({ ok: true })

@@ -7,7 +7,8 @@ import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp } from 'lucide-react'
+import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart } from 'lucide-react'
+import { CartProvider, useCart } from '@/lib/cart-context'
 import {
   HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
   UserCircle, Users, LockKey, Package, Key, GraduationCap,
@@ -29,6 +30,21 @@ const NAV_BASE = [
   { en:'My Account',      ar:'حسابي',         href:'/u/profile',              icon:UserCircle,   color:'#14b8a6' },
 ]
 
+
+function CartIcon() {
+  const { cartCount } = useCart()
+  return (
+    <Link href="/u/cart"
+      className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+      <ShoppingCart size={14}/>
+      {cartCount > 0 && (
+        <span className="absolute -top-1 -end-1 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5 leading-none" style={{background:'#d99401'}}>
+          {cartCount > 99 ? '99+' : cartCount}
+        </span>
+      )}
+    </Link>
+  )
+}
 
 function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const router   = useRouter()
@@ -380,6 +396,8 @@ if (pathname==='/u/login') return <>{children}</>
               style={themeMode === 'auto' ? {color:'#d99401'} : {color: undefined}}>
               {themeMode === 'light' ? <Sun size={14}/> : themeMode === 'dark' ? <Moon size={14}/> : <SunMoon size={14}/>}
             </button>
+            {/* Cart */}
+            <CartIcon/>
             {/* Notifications */}
             <div className="relative">
               <button onClick={()=>{
@@ -410,13 +428,17 @@ if (pathname==='/u/login') return <>{children}</>
                       : notifications.map((n,i)=>{
                           const displayTitle   = (!isRtl && n.title_en)   ? n.title_en   : n.title
                           const displayMessage = (!isRtl && n.message_en) ? n.message_en : n.message
-                          return (
-                            <div key={i} className={`px-4 py-3 ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''}`}>
+                          const inner = (
+                            <>
                               <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{displayTitle}</div>
                               <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{displayMessage}</div>
                               <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</div>
-                            </div>
+                            </>
                           )
+                          const cls = `block px-4 py-3 w-full text-start ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''} ${n.link?'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer':''}`
+                          return n.link
+                            ? <Link key={i} href={n.link} className={cls} onClick={()=>setNotif(false)}>{inner}</Link>
+                            : <div key={i} className={cls}>{inner}</div>
                         })
                     }
                   </div>
@@ -581,8 +603,10 @@ if (pathname==='/u/login') return <>{children}</>
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   return (
     <LangProvider>
-      <UserLayoutInner>{children}</UserLayoutInner>
-      <ChatWidget/>
+      <CartProvider>
+        <UserLayoutInner>{children}</UserLayoutInner>
+        <ChatWidget/>
+      </CartProvider>
     </LangProvider>
   )
 }

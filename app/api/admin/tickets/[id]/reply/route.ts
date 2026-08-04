@@ -59,6 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     message:     `تم الرد على تذكرتك "${ticket.subject}". افتح Help Desk لعرض الرد.`,
     message_en:  `Your ticket "${ticket.subject}" has a new reply. Open Help Desk to view it.`,
     type:        'info',
+    link:        '/u/tickets',
   }).then(() => {})
 
   return NextResponse.json({ ok: true })

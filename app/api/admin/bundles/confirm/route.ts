@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     message:    `تم تأكيد دفعتك وتفعيل جميع أدوات باقة ${bundle.name}. ابدأ الاستخدام الآن.`,
     message_en: `Your payment was confirmed and all tools in the ${bundle.name} bundle are now active.`,
     type:       'success',
+    link:       '/u/shop',
   })
 
   void fireAdminNotification({

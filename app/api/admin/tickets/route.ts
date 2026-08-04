@@ -57,6 +57,7 @@ export async function PATCH(req: NextRequest) {
       message:    `${isClosed ? 'تم إغلاق' : 'تم حل'} التذكرة: ${ticket.subject}`,
       message_en: `Your ticket "${ticket.subject}" has been ${isClosed ? 'closed' : 'resolved'}.`,
       type: 'ticket_update',
+      link: '/u/tickets',
     })
   }
 
