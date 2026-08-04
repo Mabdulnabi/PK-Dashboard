@@ -293,12 +293,24 @@ export default function ChatWidget() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1"
               style={{ background: '#f0f2f5', minHeight: 0 }}>
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 py-8">
-                  <MessageCircle size={32} className="mb-2 opacity-20"/>
-                  <p className="text-xs text-center">{t('Send a message to start chatting', 'أرسل رسالة للبدء في الدردشة')}</p>
+
+              {/* Welcome bubble — always shown at top */}
+              <div className="flex items-end gap-1.5 mb-2">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden"
+                  style={{ background: GOLD, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {adminInfo.avatar
+                    ? <img src={adminInfo.avatar} className="w-full h-full object-cover" alt=""/>
+                    : <span className="text-white text-[9px] font-bold">{adminInfo.name[0]?.toUpperCase()}</span>}
                 </div>
-              )}
+                <div className="max-w-[80%] flex flex-col gap-0.5 items-start">
+                  <div className="rounded-2xl rounded-bl-sm px-3 py-2.5 text-[13px] bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm leading-relaxed">
+                    {lang === 'ar'
+                      ? <>أهلاً بيك في <strong>Pro Keys</strong> 👋<br/>اكتب رسالتك وهيتم الرد عليك في أقرب وقت.</>
+                      : <>Welcome to <strong>Pro Keys</strong> 👋<br/>Write your message and we'll reply as soon as possible.</>
+                    }
+                  </div>
+                </div>
+              </div>
 
               {messages.map((msg, i) => {
                 const isMine    = msg.sender_type === 'member'

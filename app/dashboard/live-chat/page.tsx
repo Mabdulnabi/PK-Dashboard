@@ -133,9 +133,12 @@ export default function LiveChatPage() {
 
   // ── Load conversations ──────────────────────────────────────────────────────
   const loadConvs = useCallback(async () => {
-    const res = await fetch(`/api/admin/live-chat?filter=${filter}&search=${encodeURIComponent(search)}`)
-    const d   = await res.json()
-    setConvs(d.conversations || [])
+    const res   = await fetch(`/api/admin/live-chat?filter=${filter}&search=${encodeURIComponent(search)}`)
+    const d     = await res.json()
+    const list: Conversation[] = d.conversations || []
+    const curId = activeIdRef.current
+    // Always zero out unread for the currently-open conversation
+    setConvs(curId ? list.map(c => c.id === curId ? { ...c, unread_admin: 0 } : c) : list)
     setLoading(false)
   }, [filter, search])
 
@@ -154,15 +157,16 @@ export default function LiveChatPage() {
       }, async payload => {
         const msg = payload.new as Message
         if (!msg) return
-        loadConvs()
-        if (msg.conversation_id === activeIdRef.current) {
-          // Re-fetch full messages with attachments
+        const isActive = msg.conversation_id === activeIdRef.current
+        if (isActive) {
+          // Re-fetch full messages with attachments; GET route also resets unread_admin in DB
           const r = await fetch(`/api/admin/live-chat/${msg.conversation_id}`)
           const d = await r.json()
           if (d.messages) setMessages(d.messages)
         }
-        // Notify if member sent a message
-        if (msg.sender_type === 'member') {
+        await loadConvs() // zero out active conv unread via loadConvs logic above
+        // Only toast/sound for member messages on OTHER conversations
+        if (msg.sender_type === 'member' && !isActive) {
           playSound()
           const convName = convs.find(c => c.id === msg.conversation_id)?.member?.full_name || 'Member'
           showToast(`${convName}: ${msg.content || '📎 Attachment'}`)
@@ -289,6 +293,14 @@ export default function LiveChatPage() {
       body: JSON.stringify({ message_id: msg.id, deleted: true }),
     })
     setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, deleted_at: new Date().toISOString() } : m))
+    // Reset unread badge — deleting while viewing means admin has seen everything
+    if (activeId) {
+      setConvs(prev => prev.map(c => c.id === activeId ? { ...c, unread_admin: 0 } : c))
+      fetch(`/api/admin/live-chat/${activeId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unread_admin: 0 }),
+      })
+    }
   }
 
   // ── Notes ───────────────────────────────────────────────────────────────────

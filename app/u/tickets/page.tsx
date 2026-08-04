@@ -79,16 +79,24 @@ export default function HelpdeskPage() {
   }, [expanded])
 
   const statusIcon = (s:string) =>
-    s==='open'?<AlertCircle size={13} className="text-amber-500"/>:
-    s==='resolved'?<CheckCircle size={13} className="text-emerald-500"/>:
+    s==='open'       ? <AlertCircle size={13} className="text-amber-500"/> :
+    s==='resolved'   ? <CheckCircle size={13} className="text-emerald-500"/> :
+    s==='closed'     ? <X size={13} className="text-gray-500"/> :
+    s==='in_progress'? <Clock size={13} style={{color:'#d99401'}}/> :
     <Clock size={13} className="text-blue-500"/>
 
   const statusLabel = (s:string) =>
-    s==='open'?t('Open','مفتوح'):s==='resolved'?t('Resolved','محلول'):t('Pending','قيد المعالجة')
+    s==='open'        ? t('Open','مفتوح') :
+    s==='resolved'    ? t('Resolved','محلول') :
+    s==='closed'      ? t('Closed','مغلق') :
+    s==='in_progress' ? t('In Progress','قيد المعالجة') :
+    t('Pending','قيد الانتظار')
 
   const statusStyle = (s:string) =>
-    s==='open'?{bg:'#FEF3C7',color:'#92400E'}:
-    s==='resolved'?{bg:'#DCFCE7',color:'#166534'}:
+    s==='open'        ? {bg:'#FEF3C7',color:'#92400E'} :
+    s==='resolved'    ? {bg:'#DCFCE7',color:'#166534'} :
+    s==='closed'      ? {bg:'#F3F4F6',color:'#4B5563'} :
+    s==='in_progress' ? {bg:'#FEF9EC',color:'#92610A'} :
     {bg:'#DBEAFE',color:'#1E40AF'}
 
   const submit = async () => {
