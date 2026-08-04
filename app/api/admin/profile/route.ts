@@ -1,49 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { db } from '@/lib/db'
 
-// Extract the admin user ID from the Supabase auth cookie by decoding
-// the JWT payload directly. Avoids getSession() (which fails on token
-// expiry when setAll is a no-op) and avoids db.auth.getUser() (which
-// can update the shared db singleton's Authorization header, corrupting
-// service-role access on tables with RLS).
-// The middleware already verified the cookie exists; we trust the sub claim.
-function getAdminUserId(): string | null {
+// Create a fresh, isolated Supabase client (anon key) to verify the
+// current user session. Using auth.getUser() (not getSession()) hits
+// the Supabase Auth API directly, so it always returns the correct user
+// even when the local session appears stale. A fresh client is used
+// instead of the shared `db` singleton so that this call cannot mutate
+// the singleton's Authorization header and corrupt service-role access.
+async function getAdminUserId(): Promise<string | null> {
   const cookieStore = cookies()
-  const ref = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
-    .replace('https://', '').split('.')[0]
-  const name = `sb-${ref}-auth-token`
-
-  // Read cookie value, handling chunked storage (.0, .1, ...)
-  let raw = cookieStore.get(name)?.value ?? ''
-  if (!raw) {
-    let i = 0
-    while (true) {
-      const chunk = cookieStore.get(`${name}.${i}`)?.value
-      if (!chunk) break
-      raw += chunk
-      i++
+  const sc = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: () => {},
+      },
     }
-  }
-  if (!raw) return null
-
-  try {
-    const session = JSON.parse(decodeURIComponent(raw))
-    const accessToken: string = session?.access_token
-    if (!accessToken) return null
-    // Decode JWT payload (middle segment) — no signature verification needed
-    // since the middleware already gated on the cookie's existence.
-    const payload = JSON.parse(
-      Buffer.from(accessToken.split('.')[1], 'base64url').toString('utf-8')
-    )
-    return payload?.sub ?? null
-  } catch {
-    return null
-  }
+  )
+  const { data: { user } } = await sc.auth.getUser()
+  return user?.id ?? null
 }
 
 export async function GET() {
-  const userId = getAdminUserId()
+  const userId = await getAdminUserId()
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { data: profile } = await db
@@ -62,7 +45,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const userId = getAdminUserId()
+  const userId = await getAdminUserId()
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { display_name, full_name, avatar_url, whatsapp, email, password } = await req.json()
