@@ -7,7 +7,7 @@ import { useAdminTheme } from '@/lib/admin-theme'
 import {
   Plus, Search, Pencil, Trash2, X, Check, AlertCircle,
   UserCheck, UserX, Wallet, RefreshCw,
-  ArrowUpRight, Users, Activity, Clock, TrendingUp, KeyRound, Mail,
+  ArrowUpRight, Users, Activity, Clock, TrendingUp, KeyRound, Mail, BellRing,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -91,6 +91,7 @@ export default function MembersPage() {
   const [fStatus,   setFStatus]   = useState('all')
   const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [saving,    setSaving]    = useState(false)
+  const [notifying, setNotifying] = useState<string | null>(null)
 
   // modal state: null | 'add' | 'edit' | 'wallet' | 'reset'
   const [modal,  setModal]  = useState<string|null>(null)
@@ -226,6 +227,19 @@ export default function MembersPage() {
     ok('Deleted'); setDelId(null); load()
   }
 
+  const notifyRenewal = async (m: Member) => {
+    if (!m.next_renew) return err('No upcoming subscription found for this member')
+    setNotifying(m.id)
+    const res  = await fetch('/api/admin/members/notify-renewal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: m.id }),
+    })
+    const data = await res.json()
+    setNotifying(null)
+    if (!res.ok) return err(data.error || 'Failed to send notification')
+    ok(`✅ Renewal reminder sent to ${m.full_name}`)
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -337,6 +351,13 @@ export default function MembersPage() {
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button onClick={() => notifyRenewal(m)} title="Send renewal reminder"
+                          disabled={!m.next_renew || notifying === m.id}
+                          className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                          {notifying === m.id
+                            ? <div className="w-2.5 h-2.5 border border-orange-400 border-t-transparent rounded-full animate-spin"/>
+                            : <BellRing size={11}/>}
+                        </button>
                         <button onClick={() => openWallet(m)} title="Wallet — Add / Deduct"
                           className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-[#d99401] hover:bg-[#d9940115] transition-colors">
                           <Wallet size={11}/>

@@ -460,7 +460,13 @@ export default function PaymentsPage() {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200 max-w-[200px] truncate">{p.tool_name||'—'}</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200 max-w-[200px] truncate">
+                    {p.tool_name
+                      ? (p.tool_name.includes(' / ')
+                          ? (lang === 'ar' ? p.tool_name.split(' / ')[0] : p.tool_name.split(' / ')[1])
+                          : p.tool_name)
+                      : '—'}
+                  </td>
                   <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">
                     {isWallet ? fmtAmt(Number(p.amount), p.currency) : formatPrice(Number(p.amount))}
                   </td>

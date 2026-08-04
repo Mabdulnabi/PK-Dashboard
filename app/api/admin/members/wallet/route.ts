@@ -1,15 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+async function getAdminName(): Promise<string> {
+  const cookieStore = cookies()
+  const sc = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  )
+  const { data: { session } } = await sc.auth.getSession()
+  if (!session?.user?.id) return 'Admin'
+  const { data: profile } = await service
+    .from('admin_profiles')
+    .select('display_name')
+    .eq('id', session.user.id)
+    .single()
+  return profile?.display_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Admin'
+}
+
 // POST /api/admin/members/wallet
-// body: { member_id, action: 'charge'|'deduct', amount, currency, note, gateway, gateway_name, tx_ref }
+// body: { member_id, action: 'charge'|'deduct', amount, currency, note, tx_ref }
 export async function POST(req: NextRequest) {
-  const { member_id, action, amount, currency = 'EGP', note, gateway, gateway_name, tx_ref } = await req.json()
+  const { member_id, action, amount, currency = 'EGP', note, tx_ref } = await req.json()
   if (!member_id || !action || !amount) return NextResponse.json({ error: 'missing fields' }, { status: 400 })
 
   const cur = currency.toUpperCase() as 'EGP' | 'USD'
@@ -35,8 +54,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'insufficient balance' }, { status: 400 })
 
   // Verify member exists — user_id may be null for manually-created members
-  const { data: memberRow } = await service.from('members').select('id, user_id').eq('id', member_id).single()
+  const [{ data: memberRow }, adminName] = await Promise.all([
+    service.from('members').select('id, user_id').eq('id', member_id).single(),
+    getAdminName(),
+  ])
   if (!memberRow) return NextResponse.json({ error: 'member not found' }, { status: 404 })
+
+  const description = action === 'charge'
+    ? 'شحن المحفظة / Topup Wallet'
+    : 'خصم رصيد / Deduct Balance'
 
   const { error } = await service.from('wallet_transactions').insert({
     member_id,
@@ -46,10 +72,9 @@ export async function POST(req: NextRequest) {
     currency: cur,
     balance_before: currentBalance,
     balance_after: balanceAfter,
-    description: note || (action === 'charge' ? 'Admin wallet charge' : 'Admin wallet deduction'),
+    description: note || description,
     admin_note: note || null,
-    gateway: gateway || null,
-    gateway_name: gateway_name || null,
+    gateway_name: adminName,
     tx_code: tx_ref || null,
     status: 'completed',
   })

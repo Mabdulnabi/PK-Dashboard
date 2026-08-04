@@ -79,9 +79,7 @@ export async function GET() {
       transaction_id: tx.tx_code || null,
       tool_name:      tx.type === 'deduct'
         ? 'خصم رصيد / Deduct Balance'
-        : tx.admin_id
-          ? 'إضافة رصيد / Add Balance'
-          : 'شحن المحفظة / Topup Wallet',
+        : 'شحن المحفظة / Topup Wallet',
       verified_at:    tx.created_at,
       created_at:     tx.created_at,
     }))
