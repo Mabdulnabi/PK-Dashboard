@@ -136,23 +136,32 @@ export default function TicketsPage() {
     if (!activeTicket) return
     if (!replyText.trim() && replyFiles.length === 0) return
     setSaving(true)
-    const res = await fetch(`/api/admin/tickets/${activeTicket.id}/reply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reply: replyText, status: 'in_progress', admin_id: adminProfile?.id ?? null }),
-    })
-    if (!res.ok) { setSaving(false); setToast({ msg: 'Failed to send reply', type: 'err' }); return }
-    for (const file of replyFiles) {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('ticket_id', activeTicket.id)
-      await fetch('/api/admin/tickets/upload', { method: 'POST', body: fd })
+    try {
+      const res = await fetch(`/api/admin/tickets/${activeTicket.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reply: replyText, status: 'in_progress', admin_id: adminProfile?.id ?? null }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setToast({ msg: `Failed (${res.status}): ${body?.error || 'unknown error'}`, type: 'err' })
+        return
+      }
+      for (const file of replyFiles) {
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('ticket_id', activeTicket.id)
+        await fetch('/api/admin/tickets/upload', { method: 'POST', body: fd })
+      }
+      setToast({ msg: 'Reply sent', type: 'ok' })
+      setReplyText('')
+      setReplyFiles([])
+      load(true)
+    } catch (err: any) {
+      setToast({ msg: `Network error: ${err?.message || 'check connection'}`, type: 'err' })
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setToast({ msg: 'Reply sent', type: 'ok' })
-    setReplyText('')
-    setReplyFiles([])
-    load(true)
   }
 
   const updateStatus = async (id: string, status: string) => {

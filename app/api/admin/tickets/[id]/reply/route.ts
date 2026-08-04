@@ -42,15 +42,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Only insert a message bubble if there's text
+  // Insert message bubble and surface any error to the client
   if (replyText) {
-    service.from('ticket_messages').insert({
+    const { error: msgErr } = await service.from('ticket_messages').insert({
       ticket_id:     params.id,
       sender_type:   'admin',
       message:       replyText,
       sender_name:   adminName,
       sender_avatar: adminAvatar,
-    }).then(() => {})
+    })
+    if (msgErr) return NextResponse.json({ error: msgErr.message }, { status: 500 })
   }
 
   // Notify member (bilingual)
