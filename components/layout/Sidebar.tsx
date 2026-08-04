@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useUISettings } from '@/lib/use-ui-settings'
 import { useAdminTheme } from '@/lib/admin-theme'
 
@@ -56,6 +56,20 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
   const [collapsed, setCollapsed] = useState(false)
   const signOut  = async () => { await supabase.auth.signOut(); router.push('/auth/login') }
 
+  const navRef = useRef<HTMLElement>(null)
+  const SCROLL_KEY = 'sidebar_scroll'
+
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const saved = sessionStorage.getItem(SCROLL_KEY)
+    if (saved) el.scrollTop = parseInt(saved, 10)
+  }, [])
+
+  const handleScroll = useCallback(() => {
+    if (navRef.current) sessionStorage.setItem(SCROLL_KEY, String(navRef.current.scrollTop))
+  }, [])
+
   const adminLogo = dark
     ? (ui.admin_logo_dark_url  || ui.admin_logo_light_url || '')
     : (ui.admin_logo_light_url || ui.admin_logo_dark_url  || '')
@@ -89,7 +103,7 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+      <nav ref={navRef} onScroll={handleScroll} className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
         {nav.map(group => (
           <div key={group.section}>
             {!collapsed && (

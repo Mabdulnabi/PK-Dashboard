@@ -78,7 +78,7 @@ export default function AdminProfilePage() {
       body: JSON.stringify({
         display_name: displayName,
         full_name:    fullName,
-        avatar_url:   avatarUrl || null,
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         whatsapp:     whatsapp || null,
         email:        adminEmail || undefined,
         password:     password || undefined,
