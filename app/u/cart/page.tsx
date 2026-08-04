@@ -102,7 +102,7 @@ export default function CartPage() {
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">{cartCount} {t('items', 'عناصر')}</p>
         </div>
-        <Link href="/u/shop" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <Link href="/u/shop" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors" style={{ border: `1.5px solid ${GOLD}40`, color: GOLD, background: `${GOLD}0d` }}>
           <ArrowRight size={15} className={dir === 'rtl' ? 'rotate-180' : ''}/>
           {t('Continue Shopping', 'متابعة التسوق')}
         </Link>
