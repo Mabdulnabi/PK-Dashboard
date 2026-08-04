@@ -71,6 +71,7 @@ export default function HelpdeskPage() {
   const [fStatus,      setFStatus]      = useState('all')
   const [replyText,    setReplyText]    = useState('')
   const [replySending, setReplySending] = useState(false)
+  const [replyError,   setReplyError]   = useState('')
   const [adminProfile, setAdminProfile] = useState<{ display_name?: string; avatar_url?: string } | null>(null)
   const replyFileRef = useRef<HTMLInputElement>(null)
   const [replyFiles, setReplyFiles] = useState<File[]>([])
@@ -146,12 +147,18 @@ export default function HelpdeskPage() {
   const sendMemberReply = async (ticketId: string) => {
     if (!replyText.trim() && replyFiles.length === 0) return
     setReplySending(true)
-    const res = await fetch(`/api/member/tickets/${ticketId}/reply`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: replyText }),
-    })
-    if (res.ok) {
-      // Upload any reply attachments
+    setReplyError('')
+    try {
+      const res = await fetch(`/api/member/tickets/${ticketId}/reply`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: replyText }),
+      })
+      if (res.status === 401) { window.location.href = '/u/login'; return }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setReplyError(body.error || t('Failed to send reply', 'فشل إرسال الرد'))
+        return
+      }
       if (replyFiles.length > 0) {
         for (const file of replyFiles) {
           const fd = new FormData()
@@ -163,8 +170,11 @@ export default function HelpdeskPage() {
       setReplyText('')
       setReplyFiles([])
       load(true)
+    } catch {
+      setReplyError(t('Network error — check your connection', 'خطأ في الشبكة — تحقق من اتصالك'))
+    } finally {
+      setReplySending(false)
     }
-    setReplySending(false)
   }
 
   const inp = "w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401]"
@@ -336,7 +346,7 @@ export default function HelpdeskPage() {
                     {ticket.status !== 'closed' && (
                       <div className="pt-1 border-t border-gray-100 dark:border-gray-800 space-y-2">
                         <div className="flex gap-2">
-                          <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
+                          <textarea value={replyText} onChange={e => { setReplyText(e.target.value); setReplyError('') }}
                             placeholder={t('Write a follow-up message…', 'اكتب رسالة متابعة…')}
                             rows={2} className={inp + ' resize-none flex-1 py-2.5 text-xs'}/>
                           <button onClick={() => sendMemberReply(ticket.id)} disabled={replySending || (!replyText.trim() && replyFiles.length === 0)}
@@ -344,6 +354,9 @@ export default function HelpdeskPage() {
                             {replySending ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : t('Send', 'إرسال')}
                           </button>
                         </div>
+                        {replyError && (
+                          <p className="text-xs text-red-500 px-1">{replyError}</p>
+                        )}
                         {/* Attach for reply */}
                         <input ref={replyFileRef} type="file" multiple accept="image/*,.pdf,.txt" className="hidden"
                           onChange={e => setReplyFiles(Array.from(e.target.files || []))}/>
