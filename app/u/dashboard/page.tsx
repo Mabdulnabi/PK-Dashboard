@@ -363,7 +363,7 @@ export default function DashboardPage() {
         <div className="mb-8">
           {/* Section header — eye-catching, matches store banner gradient */}
           <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
-            style={{background:'linear-gradient(135deg,#1a3a5c 0%,#1e4f8a 50%,#1e3a8a 100%)'}}>
+            style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
             <div className="absolute inset-0 pointer-events-none opacity-40"
               style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#d9940150,transparent 55%),radial-gradient(ellipse at 80% 50%,#3b82f630,transparent 55%)'}}/>
             <div className="relative flex items-center gap-3">
@@ -406,12 +406,12 @@ export default function DashboardPage() {
           <div key={i} className="mb-8">
             {/* Section banner header — same style as Best Sellers */}
             <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
-              style={{background:'linear-gradient(135deg,#1a3a5c 0%,#1e4f8a 50%,#1e3a8a 100%)'}}>
+              style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
               <div className="absolute inset-0 pointer-events-none opacity-30"
                 style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#3b82f640,transparent 55%),radial-gradient(ellipse at 80% 50%,#d9940120,transparent 55%)'}}/>
               <div className="relative flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                  style={{background:'linear-gradient(135deg,#2563eb,#3b82f6)'}}>
+                  style={{background:'linear-gradient(135deg,#1e3a5f,#2d5a9e)'}}>
                   {emoji}
                 </div>
                 <div>

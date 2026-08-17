@@ -12,20 +12,22 @@ import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, Doll
 import { CartProvider, useCart } from '@/lib/cart-context'
 import {
   HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
-  UserCircle, Key, GraduationCap, ClipboardText,
+  UserCircle, Key, GraduationCap, ClipboardText, Article, LinkSimple,
 } from '@phosphor-icons/react'
 
 interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
 
 const NAV_BASE = [
-  { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',  icon:HouseSimple,  color:'#6366f1' },
-  { en:'Pro Keys Store',       ar:'متجر برو كيز',       href:'/u/store',      icon:ShoppingBag,  color:'#d99401' },
-  { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',     icon:ClipboardText,color:'#0ea5e9' },
-  { en:'Focus Mode',           ar:'وضع التركيز',       href:'/u/focus-mode', icon:GraduationCap,color:'#06b6d4' },
-  { en:'My Wallet',            ar:'محفظتي',            href:'/u/wallet',     icon:Wallet,       color:'#22c55e' },
-  { en:'Tickets',              ar:'تذاكر الدعم',       href:'/u/tickets',    icon:Headset,      color:'#f97316' },
-  { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',  icon:PlayCircle,   color:'#ec4899' },
-  { en:'My Account',           ar:'حسابي',             href:'/u/profile',    icon:UserCircle,   color:'#14b8a6' },
+  { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',     icon:HouseSimple,  color:'#6366f1' },
+  { en:'Pro Keys Store',       ar:'متجر Pro Keys',      href:'/u/store',         icon:ShoppingBag,  color:'#d99401' },
+  { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',        icon:ClipboardText,color:'#0ea5e9' },
+  { en:'Focus Mode',           ar:'وضع التركيز',       href:'/u/focus-mode',    icon:GraduationCap,color:'#06b6d4' },
+  { en:'My Wallet',            ar:'محفظتي',            href:'/u/wallet',        icon:Wallet,       color:'#22c55e' },
+  { en:'Tickets',              ar:'تذاكر الدعم',       href:'/u/tickets',       icon:Headset,      color:'#f97316' },
+  { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',     icon:PlayCircle,   color:'#ec4899' },
+  { en:'Blogs',                ar:'مقالات',            href:'/u/blogs',         icon:Article,      color:'#8b5cf6' },
+  { en:'Quick Links',          ar:'روابط سريعة',       href:'/u/quick-links',   icon:LinkSimple,   color:'#14b8a6' },
+  { en:'My Account',           ar:'حسابي',             href:'/u/profile',       icon:UserCircle,   color:'#64748b' },
 ]
 
 

@@ -272,8 +272,8 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
             <div className="h-0.5 w-full flex-shrink-0" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
 
             <div className="p-5 pb-3">
-              {/* Badges row — top of card */}
-              <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+              {/* Badges row — top-right (LTR) / top-left (RTL) */}
+              <div className={`flex items-center gap-1.5 mb-3 flex-wrap ${lang==='ar' ? 'justify-start' : 'justify-end'}`}>
                 {(tool.sales_count || 0) > 0 && (
                   <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
                     style={{background: category==='private'?'#8b5cf6':category==='bundle'?'#f59e0b':'#d99401'}}>

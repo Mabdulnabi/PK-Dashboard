@@ -4,6 +4,16 @@ import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Star, Package, Tag, Layout, ChevronUp, ChevronDown, MessageCircle, ThumbsUp, ThumbsDown, Globe2 } from 'lucide-react'
+import RichEditor from '@/components/ui/RichEditor'
+
+function PageRichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const uploadImage = async (file: File): Promise<string> => {
+    const form = new FormData(); form.append('file', file)
+    const res = await fetch('/api/member/upload', { method: 'POST', body: form })
+    const j = await res.json(); return j.url || ''
+  }
+  return <RichEditor value={value} onChange={onChange} placeholder="Write page content…" minHeight={350} onImageUpload={uploadImage}/>
+}
 import { v4 as uuid } from 'uuid'
 
 interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
@@ -54,7 +64,7 @@ const LAYOUTS: { value: LandingBlock['layout']; label: string }[] = [
 ]
 
 export default function ShopAdminPage() {
-  const [tab,      setTab]      = useState<'tools'|'categories'|'reviews'|'deals'>('tools')
+  const [tab,      setTab]      = useState<'tools'|'categories'|'reviews'|'deals'|'blogs'|'pages'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
   const [reviews,  setReviews]  = useState<Review[]>([])
@@ -79,6 +89,26 @@ export default function ShopAdminPage() {
   const [featuredIds,   setFeaturedIds]   = useState<string[]>([])
   const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;subtitle_en:string;subtitle_ar:string;emoji:string;tool_ids:string[]}[]>([])
   const [dealSaving,    setDealSaving]    = useState(false)
+
+  // Blogs tab state
+  const [blogPosts,   setBlogPosts]   = useState<any[]>([])
+  const [blogLoad,    setBlogLoad]    = useState(false)
+
+  // Pages tab state
+  const PAGE_SLUGS = ['about-us','contact-us','privacy-policy','refund-policy','delivery-policy','terms-of-use']
+  const PAGE_LABELS: Record<string,{en:string;ar:string}> = {
+    'about-us':        {en:'About Us',ar:'من نحن'},
+    'contact-us':      {en:'Contact Us',ar:'اتصل بنا'},
+    'privacy-policy':  {en:'Privacy Policy',ar:'سياسة الخصوصية'},
+    'refund-policy':   {en:'Refund Policy',ar:'سياسة الاسترداد'},
+    'delivery-policy': {en:'Delivery Policy',ar:'سياسة التسليم'},
+    'terms-of-use':    {en:'Terms of Use',ar:'شروط الاستخدام'},
+  }
+  const [pageSettings,   setPageSettings]   = useState<Record<string,string>>({})
+  const [activePageSlug, setActivePageSlug] = useState('about-us')
+  const [pageLang,       setPageLang]       = useState<'en'|'ar'>('en')
+  const [pageContent,    setPageContent]    = useState('')
+  const [pageSaving,     setPageSaving]     = useState(false)
 
   // Tool form
   const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0' }
@@ -116,6 +146,28 @@ export default function ShopAdminPage() {
       try { setDealSections(JSON.parse(ui?.dashboard_sections||'[]').map((s:any)=>({subtitle_en:'',subtitle_ar:'',emoji:'🔖',...s,id:s.id||uuid()}))) } catch {}
     })
   },[tab])
+
+  useEffect(()=>{
+    if(tab!=='blogs') return
+    setBlogLoad(true)
+    fetch('/api/admin/blogs').then(r=>r.json()).then(d=>{ setBlogPosts(Array.isArray(d)?d:[]); setBlogLoad(false) }).catch(()=>setBlogLoad(false))
+  },[tab])
+
+  useEffect(()=>{
+    if(tab!=='pages') return
+    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+      const ui = (d.settings||{}) as Record<string,string>
+      setPageSettings(ui)
+      const key = `page_${activePageSlug}_${pageLang}`
+      setPageContent(ui[key]||'')
+    })
+  },[tab])
+
+  useEffect(()=>{
+    if(tab!=='pages') return
+    const key = `page_${activePageSlug}_${pageLang}`
+    setPageContent(pageSettings[key]||'')
+  },[activePageSlug,pageLang])
 
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
@@ -312,6 +364,21 @@ export default function ShopAdminPage() {
       ? {...s, tool_ids: s.tool_ids.includes(toolId) ? s.tool_ids.filter(x=>x!==toolId) : [...s.tool_ids, toolId]}
       : s))
 
+  const approveBlog = async (id:string, action:'approve'|'reject', reason?:string) => {
+    const res = await fetch(`/api/admin/blogs/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action,reason}) })
+    if(res.ok) setBlogPosts(prev => prev.map(p => p.id===id ? {...p, status: action==='approve'?'approved':'rejected', rejection_reason:reason||null} : p))
+    else setToast({msg:'Error', type:'err'})
+  }
+
+  const savePage = async () => {
+    setPageSaving(true)
+    const key = `page_${activePageSlug}_${pageLang}`
+    const res = await fetch('/api/admin/ui-settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({[key]: pageContent}) })
+    if(res.ok) { setPageSettings(prev=>({...prev,[key]:pageContent})); setToast({msg:'Page saved!',type:'ok'}) }
+    else setToast({msg:'Error saving page',type:'err'})
+    setPageSaving(false)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar/>
@@ -337,6 +404,15 @@ export default function ShopAdminPage() {
             <button onClick={()=>setTab('deals')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='deals'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
               🎯 Deals Tab
+            </button>
+            <button onClick={()=>setTab('blogs')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='blogs'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
+              ✍️ Blogs
+              {blogPosts.filter((p:any)=>p.status==='pending').length > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-purple-500">{blogPosts.filter((p:any)=>p.status==='pending').length}</span>}
+            </button>
+            <button onClick={()=>setTab('pages')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='pages'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
+              📄 Pages
             </button>
           </div>
 
@@ -599,6 +675,84 @@ export default function ShopAdminPage() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* ── Blogs tab ── */}
+          {tab==='blogs' && (
+            <div className="space-y-3 max-w-4xl">
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 mb-4">✍️ Blog Posts — Moderation</h3>
+                {blogLoad && <div className="flex justify-center py-10"><div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>}
+                {!blogLoad && blogPosts.length===0 && <p className="text-center text-sm text-gray-400 py-8">No blog posts yet</p>}
+                {!blogLoad && blogPosts.map(post=>(
+                  <div key={post.id} className={`border rounded-xl p-4 mb-3 flex items-start gap-4 ${post.status==='pending'?'border-amber-200 dark:border-amber-800/50 bg-amber-50/40 dark:bg-amber-900/10':'border-gray-100 dark:border-gray-800'}`}>
+                    {post.cover_image_url && <img src={post.cover_image_url} alt="" className="w-16 h-14 rounded-lg object-cover flex-shrink-0"/>}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{post.title}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${post.status==='pending'?'bg-amber-100 text-amber-700':post.status==='approved'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}`}>
+                          {post.status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400">By {post.members?.name} · {new Date(post.created_at).toLocaleDateString('en-GB')}</p>
+                      {post.rejection_reason && <p className="text-[11px] text-red-400 mt-1">Rejection: {post.rejection_reason}</p>}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {post.status!=='approved' && (
+                        <button onClick={()=>approveBlog(post.id,'approve')}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                          <Check size={12}/>Approve
+                        </button>
+                      )}
+                      {post.status!=='rejected' && (
+                        <button onClick={()=>{ const r=prompt('Rejection reason:'); if(r!==null) approveBlog(post.id,'reject',r||'Rejected') }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors">
+                          <X size={12}/>Reject
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Pages tab ── */}
+          {tab==='pages' && (
+            <div className="max-w-4xl">
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 mb-4">📄 Quick Link Pages</h3>
+                <div className="flex gap-3 mb-4 flex-wrap">
+                  {PAGE_SLUGS.map(slug=>(
+                    <button key={slug} onClick={()=>setActivePageSlug(slug)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activePageSlug===slug?'bg-teal-500 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/20'}`}>
+                      {PAGE_LABELS[slug].en}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Language:</span>
+                  <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    {(['en','ar'] as const).map(l=>(
+                      <button key={l} onClick={()=>setPageLang(l)}
+                        className={`px-3 py-1 text-xs font-medium transition-colors ${pageLang===l?'bg-teal-500 text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                        {l==='en'?'English':'عربي'}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-400 ms-2">Editing: <strong>{PAGE_LABELS[activePageSlug]?.[pageLang]}</strong></span>
+                </div>
+                {/* Inline import of RichEditor to avoid circular deps */}
+                <PageRichEditor value={pageContent} onChange={setPageContent}/>
+                <div className="flex justify-end mt-3">
+                  <button onClick={savePage} disabled={pageSaving}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors">
+                    {pageSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Check size={14}/>}
+                    Save Page
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
