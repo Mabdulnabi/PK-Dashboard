@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
@@ -26,10 +26,11 @@ interface Props {
 
 export default function RichEditor({
   value, onChange, placeholder = 'Start writing…',
-  minHeight = 300, onImageUpload, dir = 'ltr',
+  minHeight = 300, onImageUpload, dir: initialDir = 'ltr',
 }: Props) {
-  const fileRef   = useRef<HTMLInputElement>(null)
-  const skipSync  = useRef(false)
+  const fileRef  = useRef<HTMLInputElement>(null)
+  const skipSync = useRef(false)
+  const [currentDir, setCurrentDir] = useState<'ltr' | 'rtl'>(initialDir)
 
   const editor = useEditor({
     extensions: [
@@ -45,7 +46,7 @@ export default function RichEditor({
     editorProps: {
       attributes: {
         class: 'rich-editor-body focus:outline-none',
-        style: `min-height:${minHeight}px;direction:${dir};text-align:${dir === 'rtl' ? 'right' : 'left'}`,
+        style: `min-height:${minHeight}px`,
       },
     },
     onUpdate: ({ editor }) => {
@@ -54,14 +55,26 @@ export default function RichEditor({
     },
   })
 
+  // Apply direction to the live DOM node — this is what actually fixes lists/bullets
+  useEffect(() => {
+    if (!editor) return
+    const dom = editor.view.dom as HTMLElement
+    dom.dir = currentDir
+    dom.style.direction  = currentDir
+    dom.style.textAlign  = currentDir === 'rtl' ? 'right' : 'left'
+  }, [editor, currentDir])
+
   // Sync external value changes (e.g. language switch)
   useEffect(() => {
     if (!editor) return
     if (skipSync.current) { skipSync.current = false; return }
-    if (editor.getHTML() !== value) {
-      editor.commands.setContent(value)
-    }
+    if (editor.getHTML() !== value) editor.commands.setContent(value)
   }, [value, editor])
+
+  const applyDir = (d: 'ltr' | 'rtl') => {
+    setCurrentDir(d)
+    editor?.chain().focus().run()
+  }
 
   const insertImage = async (file: File) => {
     if (!editor) return
@@ -103,18 +116,18 @@ export default function RichEditor({
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900 flex flex-col">
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-100 dark:border-gray-800 flex-wrap bg-gray-50 dark:bg-gray-950">
-        <Btn icon={<Undo size={13}/>}       action={() => editor.chain().focus().undo().run()} title="Undo"/>
-        <Btn icon={<Redo size={13}/>}       action={() => editor.chain().focus().redo().run()} title="Redo"/>
+        <Btn icon={<Undo size={13}/>} action={() => editor.chain().focus().undo().run()} title="Undo"/>
+        <Btn icon={<Redo size={13}/>} action={() => editor.chain().focus().redo().run()} title="Redo"/>
         <Sep/>
-        <Btn icon={<Heading1 size={13}/>}   action={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="H1"/>
-        <Btn icon={<Heading2 size={13}/>}   action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="H2"/>
+        <Btn icon={<Heading1 size={13}/>} action={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="H1"/>
+        <Btn icon={<Heading2 size={13}/>} action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="H2"/>
         <Btn icon={<span className="text-[11px] font-semibold">P</span>} action={() => editor.chain().focus().setParagraph().run()} active={editor.isActive('paragraph')} title="Paragraph"/>
         <Sep/>
-        <Btn icon={<Bold size={13}/>}           action={() => editor.chain().focus().toggleBold().run()}          active={editor.isActive('bold')}          title="Bold"/>
-        <Btn icon={<Italic size={13}/>}         action={() => editor.chain().focus().toggleItalic().run()}        active={editor.isActive('italic')}        title="Italic"/>
-        <Btn icon={<UnderlineIcon size={13}/>}  action={() => editor.chain().focus().toggleUnderline().run()}     active={editor.isActive('underline')}     title="Underline"/>
-        <Btn icon={<Strikethrough size={13}/>}  action={() => editor.chain().focus().toggleStrike().run()}        active={editor.isActive('strike')}        title="Strikethrough"/>
-        <Btn icon={<Code size={13}/>}           action={() => editor.chain().focus().toggleCode().run()}          active={editor.isActive('code')}          title="Inline code"/>
+        <Btn icon={<Bold size={13}/>}          action={() => editor.chain().focus().toggleBold().run()}         active={editor.isActive('bold')}      title="Bold"/>
+        <Btn icon={<Italic size={13}/>}        action={() => editor.chain().focus().toggleItalic().run()}       active={editor.isActive('italic')}    title="Italic"/>
+        <Btn icon={<UnderlineIcon size={13}/>} action={() => editor.chain().focus().toggleUnderline().run()}    active={editor.isActive('underline')} title="Underline"/>
+        <Btn icon={<Strikethrough size={13}/>} action={() => editor.chain().focus().toggleStrike().run()}       active={editor.isActive('strike')}    title="Strikethrough"/>
+        <Btn icon={<Code size={13}/>}          action={() => editor.chain().focus().toggleCode().run()}         active={editor.isActive('code')}      title="Inline code"/>
         <Sep/>
         <Btn icon={<List size={13}/>}        action={() => editor.chain().focus().toggleBulletList().run()}  active={editor.isActive('bulletList')}  title="Bullet list"/>
         <Btn icon={<ListOrdered size={13}/>} action={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Numbered list"/>
@@ -123,14 +136,30 @@ export default function RichEditor({
         <Btn icon={<AlignCenter size={13}/>} action={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Center"/>
         <Btn icon={<AlignRight size={13}/>}  action={() => editor.chain().focus().setTextAlign('right').run()}  active={editor.isActive({ textAlign: 'right' })}  title="Align right"/>
         <Sep/>
-        <Btn icon={<Minus size={13}/>}       action={() => editor.chain().focus().setHorizontalRule().run()} title="Divider"/>
-        <Btn icon={<Link2 size={13}/>}       action={insertLink}  title="Insert link"/>
-        <Btn icon={<Video size={13}/>}       action={insertVideo} title="Embed YouTube video"/>
+        <Btn icon={<Minus size={13}/>} action={() => editor.chain().focus().setHorizontalRule().run()} title="Divider"/>
+        <Btn icon={<Link2 size={13}/>} action={insertLink}  title="Insert link"/>
+        <Btn icon={<Video size={13}/>} action={insertVideo} title="Embed YouTube video"/>
         <label title="Insert image"
           className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer flex-shrink-0">
           <ImageIcon size={13}/>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) insertImage(f); e.target.value = '' }}/>
         </label>
+        <Sep/>
+        {/* Direction toggle */}
+        <button type="button" title="Right to Left (Arabic/Hebrew)" onMouseDown={e => { e.preventDefault(); applyDir('rtl') }}
+          className={`px-2 h-7 flex items-center rounded-md text-[11px] font-bold transition-colors flex-shrink-0
+            ${currentDir === 'rtl'
+              ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+          RTL
+        </button>
+        <button type="button" title="Left to Right (English/Latin)" onMouseDown={e => { e.preventDefault(); applyDir('ltr') }}
+          className={`px-2 h-7 flex items-center rounded-md text-[11px] font-bold transition-colors flex-shrink-0
+            ${currentDir === 'ltr'
+              ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+          LTR
+        </button>
       </div>
 
       {/* Tiptap content area */}
