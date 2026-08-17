@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -87,13 +88,15 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (tool_ids) {
-    await service.from('bundle_items').delete().eq('bundle_id', id)
+    const { error: delErr } = await service.from('bundle_items').delete().eq('bundle_id', id)
+    if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
     if (tool_ids.length) {
-      await service.from('bundle_items').insert(
+      const { error: insErr } = await service.from('bundle_items').insert(
         tool_ids.map((tid: string, i: number) => ({
           bundle_id: id, tool_id: tid, sort_order: i,
         }))
       )
+      if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
     }
   }
 
