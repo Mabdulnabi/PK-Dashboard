@@ -3,6 +3,7 @@ import { Bell, Plus, Sun, Moon, X, Check } from 'lucide-react'
 import { useAdminTheme } from '@/lib/admin-theme'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
 
 interface AdminNotif {
   id: string
@@ -43,7 +44,25 @@ export default function Topbar({ title, subtitle, onAdd, addLabel = 'Add New' }:
   useEffect(() => {
     fetchNotifs()
     const interval = setInterval(fetchNotifs, 30_000)
-    return () => clearInterval(interval)
+
+    // Realtime: instant bell ring when new admin notification arrives
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const channel = supabase
+      .channel('admin-notifs-rt')
+      .on('postgres_changes', {
+        event:  'INSERT',
+        schema: 'public',
+        table:  'admin_notifications',
+      }, () => fetchNotifs())
+      .subscribe()
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [fetchNotifs])
 
   // Close on outside click

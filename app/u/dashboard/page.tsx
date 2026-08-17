@@ -11,10 +11,11 @@ import {
   Info, ChevronDown,
 } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
+import ToolLandingPage from '@/app/u/shop/ToolLandingPage'
 import Link from 'next/link'
 
 interface Tool {
-  id: string; name: string; description: string; image_url?: string
+  id: string; name: string; name_ar?: string; description: string; description_ar?: string; image_url?: string
   price_egp: number; price_usd?: number; duration_label: string
   rating: number; review_count: number; category_slug: string
   category_id?: string; is_out_of_stock: boolean
@@ -24,7 +25,7 @@ interface Tool {
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
-  color: string; icon: string; image_url?: string; sort_order: number
+  color: string; icon: string; image_url?: string; image_url_ar?: string; sort_order: number
 }
 
 function Stars({ rating, count }: { rating: number; count: number }) {
@@ -140,7 +141,8 @@ export default function DashboardPage() {
   const [qtys,       setQtys]      = useState<Record<string,number>>({})
   const [addingId,   setAddingId]  = useState<string|null>(null)
   const [toast,      setToast]     = useState('')
-  const [popup,      setPopup]     = useState<Tool|null>(null)
+  const [popup,       setPopup]      = useState<Tool|null>(null)
+  const [landingTool, setLandingTool]= useState<Tool|null>(null)
 
   const localQty    = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
   const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
@@ -193,7 +195,10 @@ export default function DashboardPage() {
 
   const openDetail = (tool: Tool) => {
     if (tool.details_slug) {
-      router.push(`/u/${tool.details_slug}`)
+      // Hard navigation ensures URL bar updates and fresh page load
+      window.location.href = `/u/${tool.details_slug}`
+    } else if (Array.isArray(tool.landing_blocks) && tool.landing_blocks.length > 0) {
+      setLandingTool(tool)
     } else {
       setPopup(tool)
     }
@@ -215,7 +220,7 @@ export default function DashboardPage() {
   const baseList = tools
     .filter(tt => activeTab === 'shared' ? tt.category_slug === 'shared' : activeTab === 'private' ? tt.category_slug === 'private' : true)
     .filter(tt => !activeCat || (catSlugIds[activeCat.slug] || [activeCat.id]).includes(tt.category_id!))
-    .filter(tt => !q || tt.name.toLowerCase().includes(q.toLowerCase()) || tt.description.toLowerCase().includes(q.toLowerCase()))
+    .filter(tt => !q || tt.name.toLowerCase().includes(q.toLowerCase()) || (tt.description||'').toLowerCase().includes(q.toLowerCase()))
 
   const sorted = [...baseList].sort((a, b) => {
     if (sort === 'cheapest')  return a.price_egp - b.price_egp
@@ -286,7 +291,7 @@ export default function DashboardPage() {
                   onClick={() => { setActiveCat(cat); setQ('') }}
                   className="flex-shrink-0 flex flex-col items-center gap-2.5 mx-3 group">
                   <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-[#d99401] transition-all shadow-md group-hover:shadow-lg group-hover:shadow-[#d9940130]">
-                    <img src={cat.image_url!} alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
+                    <img src={(isRtl && cat.image_url_ar) ? cat.image_url_ar : cat.image_url!} alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
                   </div>
                   <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[128px] truncate">
@@ -484,7 +489,7 @@ export default function DashboardPage() {
                   </div>
 
                   <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 leading-tight">{tool.name}</h3>
-                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2 min-h-[2.5rem]">{tool.description}</p>
+                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2 min-h-[2.5rem]">{(isRtl && tool.description_ar) ? tool.description_ar : tool.description}</p>
                 </div>
 
                 <div className="px-4 pb-3">
@@ -583,7 +588,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Tool popup */}
+      {/* Tool popup — simple (no landing_blocks) */}
       {popup && (
         <ToolPopup
           tool={popup}
@@ -593,6 +598,13 @@ export default function DashboardPage() {
           onClose={() => setPopup(null)}
           t={t}
         />
+      )}
+
+      {/* Full landing page inline overlay (has landing_blocks but no details_slug) */}
+      {landingTool && (
+        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-950 overflow-y-auto">
+          <ToolLandingPage tool={landingTool as any} onBack={() => setLandingTool(null)}/>
+        </div>
       )}
 
     </div>

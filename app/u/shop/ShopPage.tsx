@@ -8,7 +8,7 @@ import ToolLandingPage from './ToolLandingPage'
 import { useCart } from '@/lib/cart-context'
 
 interface Tool {
-  id:string; name:string; description:string; image_url?:string
+  id:string; name:string; description:string; description_ar?:string; image_url?:string
   price_egp:number; price_usd?:number; duration_label:string
   delivery_label:string; rating:number; review_count:number
   video_url?:string; features:string[]; is_out_of_stock:boolean
@@ -178,25 +178,22 @@ export default function ShopPage({ category }: Props) {
           {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
         </div>
 
-        {/* Mobile: category buttons + sort dropdown */}
+        {/* Mobile: category dropdown + sort dropdown */}
         <div className="flex items-center gap-2 md:hidden">
-          <div className="flex-1 sp-scroll">
-            <div className="flex items-center gap-1 min-w-max">
-              <button onClick={()=>setCatFilter('all')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter==='all'?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'}`}
-                style={catFilter==='all'?{background:'#d99401'}:{}}>
-                {t('All','الكل')}
-              </button>
-              {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-                <button key={c.id} onClick={()=>setCatFilter(c.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter===c.id?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'}`}
-                  style={catFilter===c.id?{background:'#d99401'}:{}}>
-                  <span className="text-[11px]">{c.icon}</span>
-                  {c.name}
-                </button>
-              ))}
+          {/* Category dropdown */}
+          {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (
+            <div className="relative flex-1">
+              <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
+                className="w-full appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
+                <option value="all">🌐 {t('All Categories','كل التصنيفات')}</option>
+                {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+                  <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={11} className="absolute top-1/2 -translate-y-1/2 end-2 text-gray-400 pointer-events-none"/>
             </div>
-          </div>
+          )}
+          {/* Sort dropdown */}
           <div className="relative flex-shrink-0">
             <select value={sort} onChange={e=>setSort(e.target.value as any)}
               className="appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
@@ -209,7 +206,7 @@ export default function ShopPage({ category }: Props) {
           </div>
         </div>
 
-        {/* Desktop: single row */}
+        {/* Desktop: single row — search + category dropdown + sort buttons */}
         <div className="hidden md:flex items-center gap-2">
           <div className="relative flex-1 min-w-[120px]">
             <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
@@ -219,20 +216,18 @@ export default function ShopPage({ category }: Props) {
           </div>
           <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
 
-          {/* Category buttons */}
+          {/* Category dropdown */}
           {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (<>
-            <button onClick={()=>setCatFilter('all')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter==='all'?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-              style={catFilter==='all'?{background:'#d99401'}:{}}>
-              {t('All','الكل')}
-            </button>
-            {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-              <button key={c.id} onClick={()=>setCatFilter(c.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter===c.id?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                style={catFilter===c.id?{background:'#d99401'}:{}}>
-                <span className="text-sm">{c.icon}</span>{c.name}
-              </button>
-            ))}
+            <div className="relative flex-shrink-0">
+              <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
+                className="appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
+                <option value="all">🌐 {t('All','الكل')}</option>
+                {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+                  <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={11} className="absolute top-1/2 -translate-y-1/2 end-2 text-gray-400 pointer-events-none"/>
+            </div>
             <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
           </>)}
 
@@ -287,7 +282,7 @@ export default function ShopPage({ category }: Props) {
                 }
               </div>
               <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pe-16 leading-tight">{tool.name}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">{tool.description}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">{(lang==='ar'&&tool.description_ar)?tool.description_ar:tool.description}</p>
             </div>
 
             {/* Stars */}
@@ -436,7 +431,7 @@ export default function ShopPage({ category }: Props) {
                     </div>
                 }
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">{popup.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">{(lang==='ar'&&popup.description_ar)?popup.description_ar:popup.description}</p>
                   {popup.features?.length>0 && (
                     <div className="flex flex-col gap-2">
                       {popup.features.map((f,i)=>(

@@ -73,11 +73,11 @@ export default function ShopAdminPage() {
   const [landingBlocks, setLandingBlocks] = useState<LandingBlock[]>([])
 
   // Tool form
-  const emptyTool = { name:'',description:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'' }
+  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'' }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   // Category form
-  const emptyCat = { name:'', name_ar:'', slug:'', color:'#3B82F6', icon:'🔧', image_url:'', sort_order:'0' }
+  const emptyCat = { name:'', name_ar:'', slug:'', color:'#3B82F6', icon:'🔧', image_url:'', image_url_ar:'', sort_order:'0' }
   const [catForm, setCatForm] = useState(emptyCat)
 
   const load = useCallback(async()=>{
@@ -104,7 +104,7 @@ export default function ShopAdminPage() {
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
   const openEditTool = (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||''})
+    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||''})
     setEdit(t); setModal('edit-tool')
   }
 
@@ -127,7 +127,7 @@ export default function ShopAdminPage() {
     if(!toolForm.name||!toolForm.price_egp) return
     setSaving(true)
     const payload:any = {
-      name:toolForm.name, description:toolForm.description||null, image_url:toolForm.image_url||null,
+      name:toolForm.name, description:toolForm.description||null, description_ar:toolForm.description_ar||null, image_url:toolForm.image_url||null,
       category_slug:toolForm.category_slug, category_id:toolForm.category_id||null,
       price_egp:parseFloat(toolForm.price_egp), price_usd:toolForm.price_usd?parseFloat(toolForm.price_usd):null,
       retail_price_egp:toolForm.retail_price_egp?parseFloat(toolForm.retail_price_egp):0,
@@ -199,7 +199,7 @@ export default function ShopAdminPage() {
   // ── Category CRUD ──
   const openAddCat  = ()=>{ setCatForm(emptyCat); setEdit(null); setModal('add-cat') }
   const openEditCat = (c:Category)=>{
-    setCatForm({name:c.name,name_ar:(c as any).name_ar||'',slug:c.slug,color:c.color,icon:c.icon,image_url:(c as any).image_url||'',sort_order:String(c.sort_order)})
+    setCatForm({name:c.name,name_ar:(c as any).name_ar||'',slug:c.slug,color:c.color,icon:c.icon,image_url:(c as any).image_url||'',image_url_ar:(c as any).image_url_ar||'',sort_order:String(c.sort_order)})
     setEdit(c); setModal('edit-cat')
   }
 
@@ -207,7 +207,7 @@ export default function ShopAdminPage() {
     if(!catForm.name) return
     setSaving(true)
     const slug = catForm.slug||catForm.name.toLowerCase().replace(/[^a-z0-9]/g,'_')
-    const payload = {name:catForm.name,name_ar:catForm.name_ar||null,slug,color:catForm.color,icon:catForm.icon,image_url:catForm.image_url||null,sort_order:parseInt(catForm.sort_order)||0}
+    const payload = {name:catForm.name,name_ar:catForm.name_ar||null,slug,color:catForm.color,icon:catForm.icon,image_url:catForm.image_url||null,image_url_ar:catForm.image_url_ar||null,sort_order:parseInt(catForm.sort_order)||0}
     const res = editItem
       ? await supabase.from('tool_categories').update(payload).eq('id',editItem.id)
       : await supabase.from('tool_categories').insert(payload)
@@ -647,8 +647,12 @@ export default function ShopAdminPage() {
                 <input value={toolForm.name} onChange={e=>setToolForm({...toolForm,name:e.target.value})} placeholder="QuillBot Premium - Lite" className={inp}/>
               </div>
               <div className="col-span-2">
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Description</label>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Description (EN)</label>
                 <textarea value={toolForm.description} onChange={e=>setToolForm({...toolForm,description:e.target.value})} className={inp+" resize-none h-16"}/>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">الوصف بالعربي</label>
+                <textarea value={toolForm.description_ar} onChange={e=>setToolForm({...toolForm,description_ar:e.target.value})} className={inp+" resize-none h-16"} dir="rtl" placeholder="أدخل الوصف بالعربي..."/>
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Shop Type</label>
@@ -771,11 +775,20 @@ export default function ShopAdminPage() {
                 <input value={catForm.name_ar} onChange={e=>setCatForm({...catForm,name_ar:e.target.value})} placeholder="الكتابة والذكاء الاصطناعي" className={inp} dir="rtl"/>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Category Image URL</label>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Category Image URL (EN)</label>
                 <input value={catForm.image_url} onChange={e=>setCatForm({...catForm,image_url:e.target.value})} placeholder="https://..." className={inp}/>
                 {catForm.image_url && (
                   <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                     <img src={catForm.image_url} className="w-full h-full object-cover" alt="preview"/>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">صورة الفئة (AR)</label>
+                <input value={catForm.image_url_ar} onChange={e=>setCatForm({...catForm,image_url_ar:e.target.value})} placeholder="https://..." className={inp}/>
+                {catForm.image_url_ar && (
+                  <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <img src={catForm.image_url_ar} className="w-full h-full object-cover" alt="preview ar"/>
                   </div>
                 )}
               </div>

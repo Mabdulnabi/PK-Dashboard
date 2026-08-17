@@ -817,22 +817,25 @@ export default function MyOrdersPage() {
 
         {/* Filter bar */}
         {purchases.length>0 && (
-          <div className="mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 space-y-2">
-            {/* Search — full width */}
-            <div className="relative">
-              <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:10}}/>
-              <input value={orderQ} onChange={e=>setOrderQ(e.target.value)}
-                placeholder={lang==='ar'?'ابحث عن اشتراك…':'Search subscriptions…'}
-                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
-                style={{padding:'7px 8px',[lang==='ar'?'paddingRight':'paddingLeft']:30}}/>
-              {orderQ && (
-                <button onClick={()=>setOrderQ('')} className="absolute top-1/2 -translate-y-1/2 text-gray-400" style={{[lang==='ar'?'left':'right']:8}}>
-                  <X size={11}/>
-                </button>
-              )}
-            </div>
+          <div className="mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5">
+            {/* Single row: search + filter chips */}
+            <div className="flex items-center gap-2 overflow-x-auto" style={{scrollbarWidth:'none'}}>
+              {/* Search */}
+              <div className="relative flex-shrink-0 w-36 sm:w-44">
+                <Search size={12} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:8}}/>
+                <input value={orderQ} onChange={e=>setOrderQ(e.target.value)}
+                  placeholder={lang==='ar'?'بحث…':'Search…'}
+                  className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
+                  style={{padding:'6px 8px',[lang==='ar'?'paddingRight':'paddingLeft']:26}}/>
+                {orderQ && (
+                  <button onClick={()=>setOrderQ('')} className="absolute top-1/2 -translate-y-1/2 text-gray-400" style={{[lang==='ar'?'left':'right']:6}}>
+                    <X size={10}/>
+                  </button>
+                )}
+              </div>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
             {/* Filter chips */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 min-w-max">
               {([
                 {key:'all',      en:'All',           ar:'الكل',          color:'#d99401', count:purchases.length},
                 {key:'shared',   en:'Shared',        ar:'مشتركة',        color:'#d99401', count:purchases.filter(p=>p.category_slug==='shared').length},
@@ -854,6 +857,7 @@ export default function MyOrdersPage() {
                   </button>
                 )
               })}
+            </div>
             </div>
           </div>
         )}
