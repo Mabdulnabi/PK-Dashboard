@@ -73,7 +73,7 @@ export default function ShopAdminPage() {
   const [landingBlocks, setLandingBlocks] = useState<LandingBlock[]>([])
 
   // Tool form
-  const emptyTool = { name:'',description:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'' }
+  const emptyTool = { name:'',description:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'' }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   // Category form
@@ -104,7 +104,7 @@ export default function ShopAdminPage() {
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
   const openEditTool = (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||''})
+    setToolForm({name:t.name,description:t.description||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||''})
     setEdit(t); setModal('edit-tool')
   }
 
@@ -138,6 +138,7 @@ export default function ShopAdminPage() {
       features:toolForm.features.split('\n').map(f=>f.trim()).filter(Boolean),
       sort_order:parseInt(toolForm.sort_order)||0, is_out_of_stock:toolForm.is_out_of_stock,
       details_url:toolForm.details_url||null,
+      details_slug:toolForm.details_slug||null,
     }
     const res = editItem
       ? await supabase.from('shop_tools').update(payload).eq('id',editItem.id)
@@ -712,8 +713,13 @@ export default function ShopAdminPage() {
                   placeholder={"10 daily downloads\nUnlimited licenses"} className={inp+" resize-none h-20"}/>
               </div>
               <div className="col-span-2">
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Details URL (رابط صفحة التفاصيل)</label>
-                <input value={toolForm.details_url} onChange={e=>setToolForm({...toolForm,details_url:e.target.value})} placeholder="https://claude.ai — يظهر في صفحة تفاصيل المنتج" className={inp}/>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Details Slug (مثال: quillbot-pro)</label>
+                <input value={toolForm.details_slug} onChange={e=>setToolForm({...toolForm,details_slug:e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')})} placeholder="quillbot-pro — URL: /u/quillbot-pro" className={inp}/>
+                <p className="text-[10px] text-gray-400 mt-1">الرابط الداخلي للـ landing page — يجب أن يكون فريداً</p>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Official Site URL (رابط الموقع الرسمي)</label>
+                <input value={toolForm.details_url} onChange={e=>setToolForm({...toolForm,details_url:e.target.value})} placeholder="https://quillbot.com" className={inp}/>
               </div>
               <div className="col-span-2">
                 <label className="flex items-center gap-2 cursor-pointer">

@@ -633,11 +633,27 @@ if (pathname==='/u/login') return <>{children}</>
   )
 }
 
+function FloatingCart() {
+  const { cartCount } = useCart()
+  const { lang } = useLang()
+  const isRtl = lang === 'ar'
+  if (cartCount === 0) return null
+  return (
+    <Link href="/u/cart"
+      className={`fixed z-50 ${isRtl ? 'left-5' : 'right-5'} flex items-center gap-2 px-3.5 py-2.5 rounded-2xl shadow-xl text-white font-bold text-sm transition-all hover:scale-105 active:scale-95`}
+      style={{ bottom: '5.5rem', background: '#d99401', boxShadow: '0 4px 20px #d9940150' }}>
+      <ShoppingCart size={16}/>
+      <span>{cartCount}</span>
+    </Link>
+  )
+}
+
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   return (
     <LangProvider>
       <CartProvider>
         <UserLayoutInner>{children}</UserLayoutInner>
+        <FloatingCart/>
         <ChatWidget/>
       </CartProvider>
     </LangProvider>

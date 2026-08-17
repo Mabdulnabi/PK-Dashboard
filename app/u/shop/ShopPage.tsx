@@ -47,7 +47,7 @@ export default function ShopPage({ category }: Props) {
   const [categories,setCategories]= useState<DbCategory[]>([])
   const [qtys,      setQtys]      = useState<Record<string,number>>({})
   const [toast,     setToast]     = useState('')
-  const [secBanners, setSecBanners] = useState<BannerSlide[]>([])
+  const [secBanners, setSecBanners] = useState<BannerSlide[] | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -86,14 +86,16 @@ export default function ShopPage({ category }: Props) {
     const bk = BANNER_KEYS[category]
     fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
       const ui = d.settings as Record<string,string>
+      let parsed: BannerSlide[] = []
       if (bk) {
         try {
-          const parsed = JSON.parse(ui?.[bk.arr] || '[]')
-          if (parsed.length) { setSecBanners(parsed.map((s:any)=>typeof s==='string'?{url:s}:s)); return }
+          const arr = JSON.parse(ui?.[bk.arr] || '[]')
+          if (arr.length) parsed = arr.map((s:any)=>typeof s==='string'?{url:s}:s)
         } catch {}
-        if (ui?.[bk.single]) setSecBanners([{ url: ui[bk.single] }])
+        if (!parsed.length && ui?.[bk.single]) parsed = [{ url: ui[bk.single] }]
       }
-    }).catch(()=>{})
+      setSecBanners(parsed)
+    }).catch(()=>{ setSecBanners([]) })
 
     fetch(`/api/member/shop?category=${category}`)
       .then(r=>r.json())
@@ -136,7 +138,7 @@ export default function ShopPage({ category }: Props) {
   return (
     <div className="p-3 md:p-6" dir={dir}>
       {/* Section banner — replaces gradient hero when images uploaded */}
-      {secBanners.length > 0 ? (
+      {secBanners === null ? null : secBanners.length > 0 ? (
         <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
       ) : (
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
@@ -164,32 +166,41 @@ export default function ShopPage({ category }: Props) {
       </div>
       )}
 
-      {/* Filter bar */}
-      <div className="flex flex-col gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-        {/* Search — full width */}
-        <div className="relative w-full">
-          <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools...','ابحث عن أداة...')}
-            className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
+      {/* Filter bar — one row */}
+      <div className="flex items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2.5 flex-wrap">
+        {/* Search ~50% */}
+        <div className="relative" style={{ minWidth: 140, flex: '0 1 48%' }}>
+          <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search…','بحث…')}
+            className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
         </div>
-        {/* Filters — one row */}
-        <div className="flex items-center gap-2">
+
+        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
+
+        {/* Category select */}
+        {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (
           <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
-            className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-            <option value="all">{t('All','الكل')} ({tools.length})</option>
+            className="text-xs font-semibold px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
+            <option value="all">{t('All cats','كل الأقسام')}</option>
             {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
               <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
             ))}
           </select>
-          <button onClick={()=>setSort('best')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='best'?'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-            ⭐ {t('Top Rated','الأعلى تقييماً')}
-          </button>
-          <button onClick={()=>setSort('recent')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 border ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-200':'text-gray-500 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-            🕐 {t('New','الأحدث')}
-          </button>
-        </div>
+        )}
+
+        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
+
+        {/* Sort buttons */}
+        <button onClick={()=>setSort('best')}
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${sort==='best'?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200'}`}
+          style={sort==='best'?{background:'#d99401'}:{}}>
+          ⭐ {t('Top Rated','الأعلى تقييماً')}
+        </button>
+        <button onClick={()=>setSort('recent')}
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${sort==='recent'?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200'}`}
+          style={sort==='recent'?{background:'#d99401'}:{}}>
+          🕐 {t('Newest','الأحدث')}
+        </button>
       </div>
 
       {/* Section label */}

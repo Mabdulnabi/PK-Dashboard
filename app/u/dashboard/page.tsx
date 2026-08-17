@@ -1,13 +1,13 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
 import {
   Star, Zap, Lock, Users, ArrowRight, ArrowLeft,
   ShoppingCart, Search, Plus, Minus, Check,
-  ChevronLeft, X, ExternalLink, ChevronDown,
+  ChevronLeft, X,
 } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import Link from 'next/link'
@@ -18,7 +18,7 @@ interface Tool {
   rating: number; review_count: number; category_slug: string
   category_id?: string; is_out_of_stock: boolean
   delivery_label?: string; is_active: boolean; created_at?: string
-  features?: string[]; details_url?: string
+  features?: string[]; details_url?: string; details_slug?: string
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -48,139 +48,9 @@ const SORTS: { key: SortKey; en: string; ar: string }[] = [
   { key: 'newest',    en: 'Newest',       ar: 'الأحدث'         },
 ]
 
-/* ── Detail Drawer ───────────────────────────────────────────────────────────── */
-function ToolDrawer({ tool, onClose, isRtl, t, formatPrice, usdRate, addToCart, removeFromCart, inCart, getQty }:
-  { tool: Tool; onClose: () => void; isRtl: boolean
-    t: (en: string, ar: string) => string; formatPrice: (p: number, r: number) => string
-    usdRate: number; addToCart: any; removeFromCart: any; inCart: (id: string) => boolean; getQty: (id: string) => number }) {
-
-  const isPrivate = tool.category_slug === 'private'
-  const accent    = isPrivate ? '#8b5cf6' : '#d99401'
-  const added     = inCart(tool.id)
-  const [busy, setBusy] = useState(false)
-
-  const handleCart = async () => {
-    setBusy(true)
-    added ? await removeFromCart(tool.id) : await addToCart(tool.id, 1, tool as any)
-    setBusy(false)
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" dir={isRtl ? 'rtl' : 'ltr'}>
-      {/* backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
-
-      {/* panel */}
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 md:rounded-2xl rounded-t-2xl shadow-2xl">
-        {/* close */}
-        <button onClick={onClose}
-          className="absolute top-3 end-3 z-10 w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
-          <X size={14}/>
-        </button>
-
-        {/* Hero */}
-        <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${accent}88)` }}/>
-        <div className="p-6">
-          {/* header */}
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-16 h-16 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
-              {tool.image_url
-                ? <img src={tool.image_url} alt={tool.name} className="w-12 h-12 object-contain"/>
-                : <span className="text-lg font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{tool.name}</h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                  isPrivate ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600'
-                }`}>
-                  {isPrivate ? <Lock size={9}/> : <Users size={9}/>}
-                  {isPrivate ? (isRtl ? 'خاص' : 'Private') : (isRtl ? 'مشترك' : 'Shared')}
-                </span>
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">
-                  <Zap size={9} fill="currentColor"/>
-                  {tool.delivery_label || (isRtl ? 'فوري' : 'Instant')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Stars */}
-          <div className="mb-4"><Stars rating={tool.rating} count={tool.review_count}/></div>
-
-          {/* Description */}
-          {tool.description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5">{tool.description}</p>
-          )}
-
-          {/* Features */}
-          {tool.features && tool.features.length > 0 && (
-            <div className="mb-5">
-              <h4 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">{t('Features','المميزات')}</h4>
-              <ul className="space-y-1.5">
-                {tool.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: accent + '20' }}>
-                      <Check size={9} style={{ color: accent }}/>
-                    </span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* External link */}
-          {tool.details_url && (
-            <a href={tool.details_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 mb-5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors hover:opacity-80"
-              style={{ borderColor: accent + '40', color: accent, background: accent + '08' }}>
-              <ExternalLink size={13}/>
-              {isRtl ? 'زيارة الموقع الرسمي' : 'Visit Official Site'}
-            </a>
-          )}
-
-          {/* Price + actions */}
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-            <div className="flex items-baseline justify-between mb-4">
-              <div>
-                <span className="text-2xl font-bold" style={{ color: accent }}>{formatPrice(tool.price_egp, usdRate)}</span>
-                <span className="text-sm text-gray-400 ms-1">/ {tool.duration_label}</span>
-              </div>
-            </div>
-
-            {tool.is_out_of_stock ? (
-              <div className="text-center text-sm font-bold text-gray-400 py-3 rounded-xl bg-gray-100 dark:bg-gray-800">
-                {isRtl ? 'نفد المخزون' : 'Out of Stock'}
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={handleCart} disabled={busy}
-                  className={`w-11 h-11 flex items-center justify-center rounded-xl border flex-shrink-0 transition-all ${
-                    added ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#d99401]/50 hover:text-[#d99401]'
-                  }`}>
-                  {busy ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>
-                        : added ? <Check size={15}/> : <ShoppingCart size={15}/>}
-                </button>
-                <Link href={`/u/checkout?tool_id=${tool.id}`}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold shadow-sm hover:opacity-90 transition-opacity"
-                  style={{ background: accent }}>
-                  {isRtl ? <ArrowLeft size={14}/> : <ArrowRight size={14}/>}
-                  {t('Buy Now', 'اشتري الآن')}
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /* ── Main Page ───────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router        = useRouter()
-  const searchParams  = useSearchParams()
   const { t, lang, formatPrice } = useLang()
   const settings      = useSiteSettings()
   const { addToCart, removeFromCart, inCart, getQty, updateQty } = useCart()
@@ -189,7 +59,7 @@ export default function DashboardPage() {
 
   const [tools,      setTools]     = useState<Tool[]>([])
   const [loading,    setLoading]   = useState(true)
-  const [banners,    setBanners]   = useState<BannerSlide[]>([])
+  const [banners,    setBanners]   = useState<BannerSlide[] | null>(null)
   const [categories, setCategories]= useState<Category[]>([])
   const [activeCat,  setActiveCat] = useState<Category|null>(null)
   const [activeTab,  setActiveTab] = useState<'all'|'shared'|'private'>('all')
@@ -198,7 +68,6 @@ export default function DashboardPage() {
   const [qtys,       setQtys]      = useState<Record<string,number>>({})
   const [addingId,   setAddingId]  = useState<string|null>(null)
   const [toast,      setToast]     = useState('')
-  const [selected,   setSelected]  = useState<Tool|null>(null)
 
   const localQty    = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
   const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
@@ -215,40 +84,29 @@ export default function DashboardPage() {
 
       const ui = uiData.settings as Record<string,string>
       const raw = ui?.dashboard_banners
+      let parsedBanners: BannerSlide[] = []
       if (raw) {
         try {
           const parsed = JSON.parse(raw)
-          setBanners(parsed.map((s: any) => typeof s === 'string' ? { url: s } : s))
+          parsedBanners = parsed.map((s: any) => typeof s === 'string' ? { url: s } : s)
         } catch {}
       } else if (ui?.dashboard_banner_url) {
-        setBanners([{ url: ui.dashboard_banner_url }])
+        parsedBanners = [{ url: ui.dashboard_banner_url }]
       }
+      setBanners(parsedBanners)
 
       const toolCatIds = new Set(allTools.map(tt => tt.category_id).filter(Boolean))
       const cats: Category[] = (catData.categories || [])
-        .filter((c: Category) => toolCatIds.has(c.id) && c.image_url)
+        .filter((c: Category, idx: number, arr: Category[]) =>
+          arr.findIndex(x => x.id === c.id) === idx && toolCatIds.has(c.id) && c.image_url)
         .sort((a: Category, b: Category) => a.sort_order - b.sort_order)
       setCategories(cats)
       setLoading(false)
     })
   }, [])
 
-  // Open tool from URL param ?tool=id
-  useEffect(() => {
-    const toolId = searchParams?.get('tool')
-    if (toolId && tools.length > 0) {
-      const found = tools.find(t => t.id === toolId)
-      if (found) setSelected(found)
-    }
-  }, [searchParams, tools])
-
   const openDetail = (tool: Tool) => {
-    setSelected(tool)
-    router.push(`/u/dashboard?tool=${tool.id}`, { scroll: false })
-  }
-  const closeDetail = () => {
-    setSelected(null)
-    router.push('/u/dashboard', { scroll: false })
+    if (tool.details_slug) router.push(`/u/${tool.details_slug}`)
   }
 
   const handleCart = useCallback(async (tool: Tool) => {
@@ -286,8 +144,8 @@ export default function DashboardPage() {
       <style>{`
         @keyframes marquee-ltr { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         @keyframes marquee-rtl { 0%{transform:translateX(0)} 100%{transform:translateX(50%)} }
-        .marquee-track { display:flex; width:max-content; animation: marquee-ltr 22s linear infinite; }
-        .marquee-track-rtl { display:flex; width:max-content; animation: marquee-rtl 22s linear infinite; }
+        .marquee-track { display:flex; width:max-content; animation: marquee-ltr 12s linear infinite; }
+        .marquee-track-rtl { display:flex; width:max-content; animation: marquee-rtl 12s linear infinite; }
         .marquee-wrap { overflow:hidden; }
         .marquee-wrap:hover .marquee-track,
         .marquee-wrap:hover .marquee-track-rtl { animation-play-state:paused; }
@@ -295,9 +153,9 @@ export default function DashboardPage() {
       `}</style>
 
       {/* ── Banner ── */}
-      {banners.length > 0
+      {banners === null ? null : banners.length > 0
         ? <BannerSlider slides={banners} isRtl={isRtl} className="mb-5" maxHeight={260}/>
-        : !loading && (
+        : (
           <div className="rounded-2xl mb-5 p-8 text-center relative overflow-hidden"
             style={{ background: 'linear-gradient(135deg,#0d0f14 0%,#1a1200 50%,#0f3460 100%)' }}>
             <div className="absolute inset-0 opacity-20 pointer-events-none"
@@ -357,65 +215,70 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Compact filter row ── */}
+      {/* ── Filter bar ── */}
       {!loading && (
-        <div className="flex items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2.5">
+        <div className="mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2.5 space-y-2">
+          {/* Row 1: search (half width) + type buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Search — ~50% */}
+            <div className="relative" style={{ minWidth: 160, flex: '0 1 50%' }}>
+              <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                style={{ [isRtl ? 'right' : 'left']: 9 }}/>
+              <input value={q} onChange={e => setQ(e.target.value)}
+                placeholder={t('Search…','بحث…')}
+                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401]"
+                style={{ padding: '6px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 28 }}/>
+              {q && (
+                <button onClick={() => setQ('')}
+                  className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  style={{ [isRtl ? 'left' : 'right']: 7 }}>
+                  <X size={11}/>
+                </button>
+              )}
+            </div>
 
-          {/* Search */}
-          <div className="relative flex-shrink-0" style={{ width: 160 }}>
-            <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              style={{ [isRtl ? 'right' : 'left']: 9 }}/>
-            <input value={q} onChange={e => setQ(e.target.value)}
-              placeholder={t('Search…','بحث…')}
-              className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401]"
-              style={{ padding: '6px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 28 }}/>
-            {q && (
-              <button onClick={() => setQ('')}
-                className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                style={{ [isRtl ? 'left' : 'right']: 7 }}>
-                <X size={11}/>
-              </button>
-            )}
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
+
+            {/* Type buttons */}
+            {!activeCat && ([
+              { key: 'all',     en: 'All',     ar: 'الكل',   count: tools.length },
+              { key: 'shared',  en: 'Shared',  ar: 'مشتركة', count: sharedCount,  Icon: Users },
+              { key: 'private', en: 'Private', ar: 'خاصة',   count: privateCount, Icon: Lock  },
+            ] as const).map(tab => {
+              const Icon   = 'Icon' in tab ? tab.Icon : null
+              const active = activeTab === tab.key
+              return (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 ${
+                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                  style={active ? { background: '#d99401' } : {}}>
+                  {Icon && <Icon size={10}/>}
+                  {isRtl ? tab.ar : tab.en}
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold ms-0.5 ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                    {tab.count}
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
-
-          {/* Type tabs — hidden when inside a category */}
-          {!activeCat && ([
-            { key: 'all',     en: 'All',     ar: 'الكل',   count: tools.length },
-            { key: 'shared',  en: 'Shared',  ar: 'مشتركة', count: sharedCount,  Icon: Users },
-            { key: 'private', en: 'Private', ar: 'خاصة',   count: privateCount, Icon: Lock  },
-          ] as const).map(tab => {
-            const Icon   = 'Icon' in tab ? tab.Icon : null
-            const active = activeTab === tab.key
-            return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 ${
-                  active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+          {/* Row 2: sort buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide flex-shrink-0 me-1">
+              {isRtl ? 'ترتيب:' : 'Sort:'}
+            </span>
+            {SORTS.map(s => (
+              <button key={s.key} onClick={() => setSort(s.key)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${
+                  sort === s.key
+                    ? 'text-white'
+                    : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
-                style={active ? { background: '#d99401' } : {}}>
-                {Icon && <Icon size={10}/>}
-                {isRtl ? tab.ar : tab.en}
-                <span className={`text-[10px] px-1 py-0.5 rounded font-bold ms-0.5 ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                  {tab.count}
-                </span>
+                style={sort === s.key ? { background: '#d99401' } : {}}>
+                {isRtl ? s.ar : s.en}
               </button>
-            )
-          })}
-
-          {/* Divider */}
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
-
-          {/* Sort select */}
-          <div className="relative flex-shrink-0 ms-auto flex items-center">
-            <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
-              className="appearance-none text-xs font-semibold text-gray-600 dark:text-gray-300 bg-transparent outline-none cursor-pointer pe-5 py-1">
-              {SORTS.map(s => (
-                <option key={s.key} value={s.key}>{isRtl ? s.ar : s.en}</option>
-              ))}
-            </select>
-            <ChevronDown size={11} className="absolute end-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+            ))}
           </div>
         </div>
       )}
@@ -502,11 +365,13 @@ export default function DashboardPage() {
                     )}
 
                     <div className="flex gap-1.5">
-                      {/* Details opens drawer */}
-                      <button onClick={() => openDetail(tool)}
-                        className="flex-shrink-0 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400 hover:border-[#d99401]/40 hover:text-[#d99401] transition-all">
-                        {t('Details','التفاصيل')}
-                      </button>
+                      {/* Details — navigate to landing page slug */}
+                      {tool.details_slug && (
+                        <button onClick={() => openDetail(tool)}
+                          className="flex-shrink-0 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400 hover:border-[#d99401]/40 hover:text-[#d99401] transition-all">
+                          {t('Details','التفاصيل')}
+                        </button>
+                      )}
 
                       <Link href={`/u/checkout?tool_id=${tool.id}`}
                         className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 shadow-sm transition-opacity"
@@ -545,15 +410,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Detail Drawer */}
-      {selected && (
-        <ToolDrawer
-          tool={selected} onClose={closeDetail} isRtl={isRtl} t={t}
-          formatPrice={formatPrice} usdRate={usdRate}
-          addToCart={addToCart} removeFromCart={removeFromCart}
-          inCart={inCart} getQty={getQty}
-        />
-      )}
     </div>
   )
 }
