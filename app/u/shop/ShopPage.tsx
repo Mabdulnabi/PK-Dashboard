@@ -16,7 +16,7 @@ interface Tool {
   landing_blocks?: any[]
 }
 interface DbCategory { id:string; name:string; slug:string; color:string; icon:string }
-interface Props { category: 'shared'|'private'|'bundle'; hideBanner?: boolean; defaultCatId?: string }
+interface Props { category: 'shared'|'private'|'bundle'; hideBanner?: boolean; defaultCatId?: string; compact?: boolean }
 
 function Stars({ rating, count }: { rating:number; count:number }) {
   return (
@@ -33,7 +33,7 @@ function Stars({ rating, count }: { rating:number; count:number }) {
   )
 }
 
-export default function ShopPage({ category, hideBanner, defaultCatId }: Props) {
+export default function ShopPage({ category, hideBanner, defaultCatId, compact }: Props) {
   const { t, lang, dir, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
   const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
@@ -138,7 +138,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId }: Props) 
   if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)}/>
 
   return (
-    <div className="p-3 md:p-6" dir={dir}>
+    <div className={compact ? 'pt-3 px-3 pb-3 md:px-6 md:pb-6' : 'p-3 md:p-6'} dir={dir}>
       {/* Section banner */}
       {!hideBanner && (secBanners === null ? null : secBanners.length > 0 ? (
         <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
@@ -272,10 +272,18 @@ export default function ShopPage({ category, hideBanner, defaultCatId }: Props) 
             <div className="h-0.5 w-full flex-shrink-0" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
 
             <div className="p-5 pb-3 relative">
-              {/* Badge */}
-              <span className="absolute top-4 end-4 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
-                <Zap size={10} fill="white"/>{lang==='ar'?'فوري':(tool.delivery_label||'INSTANT')}
-              </span>
+              {/* Badges top-right */}
+              <div className="absolute top-4 end-4 flex items-center gap-1.5">
+                {(tool.sales_count || 0) > 0 && (
+                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                    style={{background: category==='private'?'#8b5cf6':category==='bundle'?'#f59e0b':'#d99401'}}>
+                    <ShoppingCart size={10} color="white"/>{(tool.sales_count||0).toLocaleString()}
+                  </span>
+                )}
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
+                  <Zap size={10} fill="white"/>{lang==='ar'?'فوري':(tool.delivery_label||'INSTANT')}
+                </span>
+              </div>
               {/* Logo */}
               <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-4 overflow-hidden shadow-sm">
                 {tool.image_url
@@ -287,15 +295,9 @@ export default function ShopPage({ category, hideBanner, defaultCatId }: Props) 
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">{(lang==='ar'&&tool.description_ar)?tool.description_ar:tool.description}</p>
             </div>
 
-            {/* Stars + sales */}
+            {/* Stars */}
             <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
               <Stars rating={tool.rating} count={tool.review_count}/>
-              {(tool.sales_count || 0) > 0 && (
-                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                  style={{background:category==='private'?'#8b5cf6':'#d99401'}}>
-                  🛒 {(tool.sales_count||0).toLocaleString()}
-                </span>
-              )}
             </div>
 
             <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
@@ -349,7 +351,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId }: Props) 
                   <button onClick={()=>buy(tool)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
                     style={{background:accent}}>
-                    <ShoppingCart size={13}/>{t('Buy Now','شراء الآن')}
+                    <ShoppingCart size={13} color="white"/>{t('Buy Now','شراء الآن')}
                   </button>
                   <button onClick={()=>handleAddToCart(tool)}
                     className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all"

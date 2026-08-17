@@ -77,7 +77,7 @@ export default function ShopAdminPage() {
 
   // Deals tab state
   const [featuredIds,   setFeaturedIds]   = useState<string[]>([])
-  const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;tool_ids:string[]}[]>([])
+  const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;subtitle_en:string;subtitle_ar:string;emoji:string;tool_ids:string[]}[]>([])
   const [dealSaving,    setDealSaving]    = useState(false)
 
   // Tool form
@@ -113,7 +113,7 @@ export default function ShopAdminPage() {
     fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
       const ui = d.settings as Record<string,string>
       try { setFeaturedIds(JSON.parse(ui?.dashboard_featured_ids||'[]')) } catch {}
-      try { setDealSections(JSON.parse(ui?.dashboard_sections||'[]').map((s:any)=>({...s,id:s.id||uuid()}))) } catch {}
+      try { setDealSections(JSON.parse(ui?.dashboard_sections||'[]').map((s:any)=>({subtitle_en:'',subtitle_ar:'',emoji:'🔖',...s,id:s.id||uuid()}))) } catch {}
     })
   },[tab])
 
@@ -289,7 +289,7 @@ export default function ShopAdminPage() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         dashboard_featured_ids: JSON.stringify(featuredIds),
-        dashboard_sections:     JSON.stringify(dealSections.map(s=>({title_en:s.title_en,title_ar:s.title_ar,tool_ids:s.tool_ids}))),
+        dashboard_sections:     JSON.stringify(dealSections.map(s=>({title_en:s.title_en,title_ar:s.title_ar,subtitle_en:s.subtitle_en,subtitle_ar:s.subtitle_ar,emoji:s.emoji,tool_ids:s.tool_ids}))),
       })
     })
     setDealSaving(false)
@@ -300,7 +300,7 @@ export default function ShopAdminPage() {
     setFeaturedIds(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id])
 
   const addSection = () =>
-    setDealSections(p=>[...p,{id:uuid(),title_en:'',title_ar:'',tool_ids:[]}])
+    setDealSections(p=>[...p,{id:uuid(),title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:'',emoji:'🔖',tool_ids:[]}])
 
   const removeSection = (id:string) => setDealSections(p=>p.filter(s=>s.id!==id))
 
@@ -559,8 +559,10 @@ export default function ShopAdminPage() {
                 <div className="space-y-4">
                   {dealSections.map((sec, si) => (
                     <div key={sec.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs font-bold text-gray-400">#{si+1}</span>
+                        <input value={sec.emoji||'🔖'} onChange={e=>updateSection(sec.id,'emoji',e.target.value)}
+                          placeholder="🔖" className={`${inp} w-14 text-center text-base`}/>
                         <input value={sec.title_en} onChange={e=>updateSection(sec.id,'title_en',e.target.value)}
                           placeholder="Section title (English)" className={`${inp} flex-1`}/>
                         <input value={sec.title_ar} onChange={e=>updateSection(sec.id,'title_ar',e.target.value)}
@@ -569,6 +571,12 @@ export default function ShopAdminPage() {
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0">
                           <Trash2 size={12}/>
                         </button>
+                      </div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <input value={sec.subtitle_en||''} onChange={e=>updateSection(sec.id,'subtitle_en',e.target.value)}
+                          placeholder="Subtitle (English) — optional" className={`${inp} flex-1`}/>
+                        <input value={sec.subtitle_ar||''} onChange={e=>updateSection(sec.id,'subtitle_ar',e.target.value)}
+                          placeholder="عنوان فرعي (عربي) — اختياري" className={`${inp} flex-1`} dir="rtl"/>
                       </div>
                       <p className="text-[10px] text-gray-400 mb-2">Products in this section ({sec.tool_ids.length} selected):</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">

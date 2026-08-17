@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
-import { ShoppingCart, Heart, Plus, Minus, Check, Star, Zap } from 'lucide-react'
+import { ShoppingCart, Heart, Plus, Minus, Check, Star, Zap, ShoppingBag } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import Link from 'next/link'
 
@@ -20,7 +20,7 @@ interface Category {
   id: string; name: string; name_ar?: string; slug: string
   color: string; icon: string; image_url?: string; image_url_ar?: string; sort_order: number
 }
-interface Section { title_en: string; title_ar: string; tool_ids: string[] }
+interface Section { title_en: string; title_ar: string; subtitle_en?: string; subtitle_ar?: string; emoji?: string; tool_ids: string[] }
 
 function Stars({ rating, count }: { rating: number; count: number }) {
   return (
@@ -45,6 +45,11 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
   const accent = tool.category_slug === 'private' ? '#8b5cf6' : tool.category_slug === 'bundle' ? '#f59e0b' : '#d99401'
   const price  = formatPrice(tool.price_egp, usdRate)
   const sales  = tool.sales_count || 0
+  const typeLabel = tool.category_slug === 'private'
+    ? (isRtl ? 'خاص' : 'Private')
+    : tool.category_slug === 'bundle'
+    ? (isRtl ? 'حزمة' : 'Bundle')
+    : (isRtl ? 'مشترك' : 'Shared')
   return (
     <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
       <div className="h-1 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
@@ -59,12 +64,17 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2">{tool.name}</h3>
             <Stars rating={tool.rating} count={tool.review_count}/>
-            {sales > 0 && (
-              <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
                 style={{background: accent}}>
-                🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+                {tool.category_slug === 'private' ? '🔒' : tool.category_slug === 'bundle' ? '📦' : '🌐'} {typeLabel}
               </div>
-            )}
+              {sales > 0 && (
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+                </div>
+              )}
+            </div>
           </div>
           <div className={`text-end flex-shrink-0`}>
             <div className="text-xl font-extrabold leading-tight" style={{color: accent}}>{price}</div>
@@ -84,7 +94,7 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
           <Link href={`/u/checkout?tool_id=${tool.id}`}
             className="w-full py-3 rounded-xl text-white text-sm font-bold text-center flex items-center justify-center gap-2 transition-opacity hover:opacity-90 shadow-sm"
             style={{background: accent}}>
-            <ShoppingCart size={14}/>{isRtl ? 'اشتري الآن' : 'Buy Now'}
+            <ShoppingBag size={14} className="text-white"/>{isRtl ? 'اشتري الآن' : 'Buy Now'}
           </Link>
         )}
       </div>
@@ -100,6 +110,11 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
   const accent = tool.category_slug === 'private' ? '#8b5cf6' : tool.category_slug === 'bundle' ? '#f59e0b' : '#d99401'
   const price  = formatPrice(tool.price_egp, usdRate)
   const sales  = tool.sales_count || 0
+  const typeLabel = tool.category_slug === 'private'
+    ? (isRtl ? 'خاص' : 'Private')
+    : tool.category_slug === 'bundle'
+    ? (isRtl ? 'حزمة' : 'Bundle')
+    : (isRtl ? 'مشترك' : 'Shared')
   const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
   const [qty, setQty] = useState(1)
   const [toast, setToast] = useState('')
@@ -132,12 +147,17 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2">{tool.name}</h3>
             <Stars rating={tool.rating} count={tool.review_count}/>
-            {sales > 0 && (
-              <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
                 style={{background: accent}}>
-                🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+                {tool.category_slug === 'private' ? '🔒' : tool.category_slug === 'bundle' ? '📦' : '🌐'} {typeLabel}
               </div>
-            )}
+              {sales > 0 && (
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+                </div>
+              )}
+            </div>
           </div>
           <div className="text-end flex-shrink-0">
             <div className="text-xl font-extrabold leading-tight" style={{color: accent}}>{price}</div>
@@ -180,7 +200,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
               <Link href={`/u/checkout?tool_id=${tool.id}`}
                 className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
                 style={{background: accent}}>
-                <ShoppingCart size={13}/>{isRtl ? 'اشتري الآن' : 'Buy Now'}
+                <ShoppingBag size={13} className="text-white"/>{isRtl ? 'اشتري الآن' : 'Buy Now'}
               </Link>
               <button onClick={handleCart}
                 className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all"
@@ -339,11 +359,11 @@ export default function DashboardPage() {
       {/* ── Top Picks — distinctive section ── */}
       {featuredTools.length > 0 && (
         <div className="mb-8">
-          {/* Section header — dark gradient, eye-catching */}
+          {/* Section header — eye-catching, matches store banner gradient */}
           <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
-            style={{background:'linear-gradient(135deg,#0d1117 0%,#1c1400 60%,#0f1f3d 100%)'}}>
-            <div className="absolute inset-0 pointer-events-none opacity-30"
-              style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#d9940140,transparent 55%),radial-gradient(ellipse at 80% 50%,#3b82f620,transparent 55%)'}}/>
+            style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+            <div className="absolute inset-0 pointer-events-none opacity-40"
+              style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#d9940150,transparent 55%),radial-gradient(ellipse at 80% 50%,#3b82f630,transparent 55%)'}}/>
             <div className="relative flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
                 style={{background:'linear-gradient(135deg,#d99401,#f59e0b)'}}>
@@ -377,13 +397,30 @@ export default function DashboardPage() {
       {sections.map((sec, i) => {
         const sectionTools = sec.tool_ids.map(id => toolById(id)).filter(Boolean) as Tool[]
         if (!sectionTools.length) return null
+        const emoji = sec.emoji || '🔖'
+        const title = isRtl ? sec.title_ar : sec.title_en
+        const sub   = isRtl ? (sec.subtitle_ar || '') : (sec.subtitle_en || '')
         return (
           <div key={i} className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-extrabold text-gray-800 dark:text-gray-100">
-                {isRtl ? sec.title_ar : sec.title_en}
-              </h2>
-              <Link href="/u/store" className="text-xs font-bold" style={{color:'#d99401'}}>
+            {/* Section banner header — same style as Best Sellers */}
+            <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
+              style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+              <div className="absolute inset-0 pointer-events-none opacity-30"
+                style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#3b82f640,transparent 55%),radial-gradient(ellipse at 80% 50%,#d9940120,transparent 55%)'}}/>
+              <div className="relative flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                  style={{background:'linear-gradient(135deg,#1e3a5f,#2d5a9e)'}}>
+                  {emoji}
+                </div>
+                <div>
+                  {sub && (
+                    <div className="text-xs font-bold uppercase tracking-widest mb-0.5 text-blue-300">{sub}</div>
+                  )}
+                  <h2 className="text-lg font-extrabold text-white leading-tight">{title}</h2>
+                </div>
+              </div>
+              <Link href="/u/store" className="relative flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg"
+                style={{background:'#3b82f620',color:'#93c5fd',border:'1px solid #3b82f640'}}>
                 {isRtl ? 'عرض الكل ←' : '→ View All'}
               </Link>
             </div>
