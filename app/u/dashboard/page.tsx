@@ -7,7 +7,8 @@ import { useCart } from '@/lib/cart-context'
 import {
   Star, Zap, Lock, Users, ArrowRight, ArrowLeft,
   ShoppingCart, Search, Plus, Minus, Check, Heart,
-  ChevronLeft, X,
+  ChevronLeft, X, Globe, TrendingUp, TrendingDown, Clock,
+  Info, ChevronDown,
 } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import Link from 'next/link'
@@ -19,6 +20,7 @@ interface Tool {
   category_id?: string; is_out_of_stock: boolean
   delivery_label?: string; is_active: boolean; created_at?: string
   features?: string[]; details_url?: string; details_slug?: string
+  video_url?: string; landing_blocks?: any[]
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -41,18 +43,88 @@ function Stars({ rating, count }: { rating: number; count: number }) {
 }
 
 type SortKey = 'best' | 'cheapest' | 'expensive' | 'newest'
-const SORTS: { key: SortKey; en: string; ar: string; emoji: string }[] = [
-  { key: 'best',      en: 'Top Rated',     ar: 'الأعلى تقييماً', emoji: '⭐' },
-  { key: 'cheapest',  en: 'Cheapest',      ar: 'الأقل سعراً',    emoji: '💰' },
-  { key: 'expensive', en: 'Priciest',      ar: 'الأعلى سعراً',   emoji: '💎' },
-  { key: 'newest',    en: 'Newest',        ar: 'الأحدث',         emoji: '🕐' },
+const SORTS: { key: SortKey; en: string; ar: string; Icon: React.FC<any> }[] = [
+  { key: 'best',      en: 'Top Rated',  ar: 'الأعلى تقييماً', Icon: Star        },
+  { key: 'cheapest',  en: 'Cheapest',   ar: 'الأقل سعراً',    Icon: TrendingDown},
+  { key: 'expensive', en: 'Priciest',   ar: 'الأعلى سعراً',   Icon: TrendingUp  },
+  { key: 'newest',    en: 'Newest',     ar: 'الأحدث',         Icon: Clock       },
 ]
 
+/* ── Tool Popup (details fallback) ──────────────────────────────────────── */
+function ToolPopup({ tool, isRtl, formatPrice, usdRate, onClose, t }: {
+  tool: Tool; isRtl: boolean; formatPrice: (n:number,r:number)=>string; usdRate:number
+  onClose: ()=>void; t: (en:string,ar:string)=>string
+}) {
+  const accent = tool.category_slug === 'private' ? '#8b5cf6' : '#d99401'
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
+        onClick={e => e.stopPropagation()} dir={isRtl ? 'rtl' : 'ltr'}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
+              {tool.image_url
+                ? <img src={tool.image_url} alt={tool.name} className="w-9 h-9 object-contain"/>
+                : <span className="text-sm font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>}
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">{tool.name}</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-lg font-bold" style={{ color: accent }}>{formatPrice(tool.price_egp, usdRate)}</span>
+                <span className="text-xs text-gray-400">/ {tool.duration_label}</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors flex-shrink-0">
+            <X size={14}/>
+          </button>
+        </div>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <Stars rating={tool.rating} count={tool.review_count}/>
+          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{tool.description}</p>
+          {tool.features && tool.features.length > 0 && (
+            <ul className="space-y-1.5">
+              {tool.features.map((f, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-emerald-500 font-bold flex-shrink-0 mt-0.5">✓</span>{f}
+                </li>
+              ))}
+            </ul>
+          )}
+          {tool.details_url && (
+            <a href={tool.details_url} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-500 hover:underline">
+              {t('Official Site →','الموقع الرسمي →')}
+            </a>
+          )}
+        </div>
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 dark:border-gray-800 flex gap-2">
+          <Link href={`/u/checkout?tool_id=${tool.id}`}
+            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-white text-sm font-bold hover:opacity-90 transition-opacity"
+            style={{ background: accent }}>
+            {isRtl ? <ArrowLeft size={13}/> : <ArrowRight size={13}/>}
+            {t('Buy Now','اشتري الآن')}
+          </Link>
+          <button onClick={onClose}
+            className="px-5 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            {t('Close','إغلاق')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Main Page ───────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router        = useRouter()
   const { t, lang, formatPrice } = useLang()
   const settings      = useSiteSettings()
-  const { addToCart, removeFromCart, inCart, getQty, updateQty, toggleFav, isFav } = useCart()
+  const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
   const isRtl  = lang === 'ar'
   const usdRate = parseFloat(settings.usd_to_egp_rate || '50')
 
@@ -67,6 +139,7 @@ export default function DashboardPage() {
   const [qtys,       setQtys]      = useState<Record<string,number>>({})
   const [addingId,   setAddingId]  = useState<string|null>(null)
   const [toast,      setToast]     = useState('')
+  const [popup,      setPopup]     = useState<Tool|null>(null)
 
   const localQty    = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
   const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
@@ -96,8 +169,9 @@ export default function DashboardPage() {
 
       const toolCatIds = new Set(allTools.map(tt => tt.category_id).filter(Boolean))
       const cats: Category[] = (catData.categories || [])
+        // dedup by slug (prevents duplicate category rows with same name/slug)
         .filter((c: Category, idx: number, arr: Category[]) =>
-          arr.findIndex(x => x.id === c.id) === idx && toolCatIds.has(c.id) && c.image_url)
+          arr.findIndex(x => x.slug === c.slug) === idx && toolCatIds.has(c.id) && c.image_url)
         .sort((a: Category, b: Category) => a.sort_order - b.sort_order)
       setCategories(cats)
       setLoading(false)
@@ -105,7 +179,11 @@ export default function DashboardPage() {
   }, [])
 
   const openDetail = (tool: Tool) => {
-    if (tool.details_slug) router.push(`/u/${tool.details_slug}`)
+    if (tool.details_slug) {
+      router.push(`/u/${tool.details_slug}`)
+    } else {
+      setPopup(tool)
+    }
   }
 
   const handleCart = useCallback(async (tool: Tool) => {
@@ -136,6 +214,14 @@ export default function DashboardPage() {
   const sharedCount  = tools.filter(tt => tt.category_slug === 'shared').length
   const privateCount = tools.filter(tt => tt.category_slug === 'private').length
 
+  const TYPES = [
+    { key: 'all'    , en: 'All'    , ar: 'الكل'  , Icon: Globe, count: tools.length  },
+    { key: 'shared' , en: 'Shared' , ar: 'مشترك' , Icon: Users, count: sharedCount   },
+    { key: 'private', en: 'Private', ar: 'خاص'   , Icon: Lock , count: privateCount  },
+  ] as const
+
+  const activeSortLabel = SORTS.find(s => s.key === sort)!
+
   return (
     <div className="p-3 md:p-5" dir={isRtl ? 'rtl' : 'ltr'}>
 
@@ -143,16 +229,15 @@ export default function DashboardPage() {
       <style>{`
         @keyframes marquee-ltr { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         @keyframes marquee-rtl { 0%{transform:translateX(0)} 100%{transform:translateX(50%)}  }
-        .marquee-track     { display:flex; width:max-content; animation: marquee-ltr var(--mq-dur,20s) linear infinite; }
-        .marquee-track-rtl { display:flex; width:max-content; animation: marquee-rtl var(--mq-dur,20s) linear infinite; }
-        .marquee-wrap { overflow:hidden; }
-        .marquee-wrap:hover .marquee-track,
-        .marquee-wrap:hover .marquee-track-rtl { animation-play-state:paused; }
-        @media (max-width:639px) { .marquee-wrap { --mq-dur:14s; } }
-        @media (min-width:640px) { .marquee-wrap { --mq-dur:22s; } }
-        @media (min-width:1024px){ .marquee-wrap { --mq-dur:30s; } }
-        .filter-scroll { overflow-x:auto; scrollbar-width:none; }
-        .filter-scroll::-webkit-scrollbar { display:none; }
+        .mq-track     { display:flex; width:max-content; animation: marquee-ltr var(--mq-dur,20s) linear infinite; }
+        .mq-track-rtl { display:flex; width:max-content; animation: marquee-rtl var(--mq-dur,20s) linear infinite; }
+        .mq-wrap { overflow:hidden; }
+        .mq-wrap:hover .mq-track, .mq-wrap:hover .mq-track-rtl { animation-play-state:paused; }
+        @media (max-width:639px)  { .mq-wrap { --mq-dur:14s; } }
+        @media (min-width:640px)  { .mq-wrap { --mq-dur:22s; } }
+        @media (min-width:1024px) { .mq-wrap { --mq-dur:30s; } }
+        .fs-scroll { overflow-x:auto; scrollbar-width:none; }
+        .fs-scroll::-webkit-scrollbar { display:none; }
       `}</style>
 
       {/* ── Banner ── */}
@@ -181,8 +266,8 @@ export default function DashboardPage() {
           <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3">
             {isRtl ? 'نفسك في ايه؟ 🤔' : "What are you looking for? 🤔"}
           </p>
-          <div className="marquee-wrap">
-            <div className={isRtl ? 'marquee-track-rtl' : 'marquee-track'}>
+          <div className="mq-wrap">
+            <div className={isRtl ? 'mq-track-rtl' : 'mq-track'}>
               {[...categories, ...categories].map((cat, i) => (
                 <button key={`${cat.id}-${i}`}
                   onClick={() => { setActiveCat(cat); setQ('') }}
@@ -191,7 +276,7 @@ export default function DashboardPage() {
                     <img src={cat.image_url!} alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
                   </div>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[112px] sm:max-w-[128px] md:max-w-[144px] truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[128px] truncate">
                     {isRtl && cat.name_ar ? cat.name_ar : cat.name}
                   </span>
                 </button>
@@ -225,25 +310,58 @@ export default function DashboardPage() {
           {/* Mobile: search full width */}
           <div className="md:hidden relative">
             <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              style={{ [isRtl ? 'right' : 'left']: 9 }}/>
+              style={{ [isRtl ? 'right' : 'left']: 10 }}/>
             <input value={q} onChange={e => setQ(e.target.value)}
               placeholder={t('Search tools…','ابحث عن أداة…')}
               className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
-              style={{ padding: '7px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 28 }}/>
+              style={{ padding: '7px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 30 }}/>
             {q && (
               <button onClick={() => setQ('')}
-                className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                style={{ [isRtl ? 'left' : 'right']: 7 }}>
+                className="absolute top-1/2 -translate-y-1/2 text-gray-400"
+                style={{ [isRtl ? 'left' : 'right']: 8 }}>
                 <X size={11}/>
               </button>
             )}
           </div>
 
-          {/* Desktop: all in one row | Mobile: scrollable buttons row */}
-          <div className="flex items-center gap-1.5">
+          {/* Mobile row: type buttons + sort dropdown */}
+          <div className="flex items-center gap-2 md:hidden">
+            {/* Type buttons — text labels on mobile */}
+            <div className="flex items-center gap-1 fs-scroll flex-1">
+              <div className="flex gap-1 min-w-max">
+                {TYPES.map(tab => {
+                  const active = activeTab === tab.key
+                  return (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
+                        active ? 'text-white' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'
+                      }`}
+                      style={active ? { background: '#d99401' } : {}}>
+                      {isRtl ? tab.ar : tab.en}
+                      <span className={`text-[10px] px-1 rounded font-bold ${active ? 'bg-white/25 text-white' : 'text-gray-400'}`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            {/* Sort — dropdown on mobile */}
+            <div className="relative flex-shrink-0">
+              <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
+                className="appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
+                {SORTS.map(s => (
+                  <option key={s.key} value={s.key}>{isRtl ? s.ar : s.en}</option>
+                ))}
+              </select>
+              <ChevronDown size={11} className="absolute top-1/2 -translate-y-1/2 end-2 text-gray-400 pointer-events-none"/>
+            </div>
+          </div>
 
-            {/* Desktop search — hidden on mobile */}
-            <div className="hidden md:block relative flex-shrink-0" style={{ width: '30%', minWidth: 140 }}>
+          {/* Desktop: single row */}
+          <div className="hidden md:flex items-center gap-2">
+            {/* Search ~30% */}
+            <div className="relative flex-shrink-0" style={{ width: '30%', minWidth: 150 }}>
               <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 style={{ [isRtl ? 'right' : 'left']: 9 }}/>
               <input value={q} onChange={e => setQ(e.target.value)}
@@ -252,61 +370,56 @@ export default function DashboardPage() {
                 style={{ padding: '6px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 28 }}/>
               {q && (
                 <button onClick={() => setQ('')}
-                  className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute top-1/2 -translate-y-1/2 text-gray-400"
                   style={{ [isRtl ? 'left' : 'right']: 7 }}>
                   <X size={11}/>
                 </button>
               )}
             </div>
 
-            {/* Desktop separator */}
-            <div className="hidden md:block w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-0.5"/>
+            {/* Divider */}
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
 
-            {/* Buttons — scrollable on mobile */}
-            <div className="flex-1 filter-scroll">
-              <div className="flex items-center gap-1 min-w-max">
+            {/* Type buttons */}
+            {!activeCat && TYPES.map(tab => {
+              const Icon   = tab.Icon
+              const active = activeTab === tab.key
+              return (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
+                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                  style={active ? { background: '#d99401' } : {}}>
+                  <Icon size={12}/>
+                  {isRtl ? tab.ar : tab.en}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                    {tab.count}
+                  </span>
+                </button>
+              )
+            })}
 
-                {/* Type buttons */}
-                {!activeCat && ([
-                  { key: 'all',     en: 'All',     ar: 'الكل',   count: tools.length,  emoji: '🌐' },
-                  { key: 'shared',  en: 'Shared',  ar: 'مشترك',  count: sharedCount,   emoji: '👥' },
-                  { key: 'private', en: 'Private', ar: 'خاص',    count: privateCount,  emoji: '🔒' },
-                ] as const).map(tab => {
-                  const active = activeTab === tab.key
-                  return (
-                    <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
-                        active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                      style={active ? { background: '#d99401' } : {}}>
-                      <span className="text-[11px]">{tab.emoji}</span>
-                      <span className="hidden sm:inline">{isRtl ? tab.ar : tab.en}</span>
-                      <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                        {tab.count}
-                      </span>
-                    </button>
-                  )
-                })}
+            {/* Spacer */}
+            <div className="flex-1"/>
 
-                {/* Separator between groups */}
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1"/>
+            {/* Divider */}
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
 
-                {/* Sort buttons */}
-                {SORTS.map(s => {
-                  const active = sort === s.key
-                  return (
-                    <button key={s.key} onClick={() => setSort(s.key)}
-                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
-                        active ? 'text-white' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                      style={active ? { background: '#6366f1' } : {}}>
-                      <span className="text-[11px]">{s.emoji}</span>
-                      <span className="hidden sm:inline">{isRtl ? s.ar : s.en}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            {/* Sort buttons */}
+            {SORTS.map(s => {
+              const SIcon  = s.Icon
+              const active = sort === s.key
+              return (
+                <button key={s.key} onClick={() => setSort(s.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
+                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                  style={active ? { background: '#6366f1' } : {}}>
+                  <SIcon size={12}/>
+                  {isRtl ? s.ar : s.en}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -336,7 +449,6 @@ export default function DashboardPage() {
 
                 <div className="h-0.5 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg,${accent},${accent}88)` }}/>
 
-                {/* Top section — fixed content, no flex-grow yet */}
                 <div className="p-4 pb-3">
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-11 h-11 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
@@ -359,20 +471,17 @@ export default function DashboardPage() {
                   </div>
 
                   <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 leading-tight">{tool.name}</h3>
-                  {/* Flex-grow spacer for description — keeps bottom pinned */}
                   <p className="text-xs text-gray-400 leading-relaxed line-clamp-2 min-h-[2.5rem]">{tool.description}</p>
                 </div>
 
-                {/* Stars — always at same vertical position */}
                 <div className="px-4 pb-3">
                   <Stars rating={tool.rating} count={tool.review_count}/>
                 </div>
 
                 <div className="mx-4 border-t border-gray-100 dark:border-gray-800"/>
 
-                {/* Bottom section — pushes to bottom via mt-auto */}
                 <div className="p-4 pt-3 mt-auto space-y-2">
-                  {/* Price + duration on same line */}
+                  {/* Price + duration */}
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-base font-bold" style={{ color: accent }}>{formatPrice(tool.price_egp, usdRate)}</span>
                     <span className="text-xs text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
@@ -386,12 +495,11 @@ export default function DashboardPage() {
                     {/* Private: Details + Qty row */}
                     {isPrivate && (
                       <div className="flex items-center justify-between gap-2">
-                        {tool.details_slug ? (
-                          <button onClick={() => openDetail(tool)}
-                            className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#8b5cf6]/50 hover:text-[#8b5cf6] transition-all flex-shrink-0">
-                            {t('Details','التفاصيل')}
-                          </button>
-                        ) : <div/>}
+                        <button onClick={() => openDetail(tool)}
+                          className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#8b5cf6]/50 hover:text-[#8b5cf6] transition-all flex-shrink-0">
+                          <Info size={11}/>
+                          {t('Details','التفاصيل')}
+                        </button>
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => setLocalQty(tool.id, qty-1)} disabled={qty<=1}
                             className="w-6 h-6 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
@@ -406,17 +514,17 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Shared: Details link if available */}
-                    {!isPrivate && tool.details_slug && (
+                    {/* Shared: Details button */}
+                    {!isPrivate && (
                       <button onClick={() => openDetail(tool)}
-                        className="w-full text-xs font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#d99401]/50 hover:text-[#d99401] transition-all text-center">
+                        className="w-full flex items-center justify-center gap-1.5 text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#d99401]/50 hover:text-[#d99401] transition-all">
+                        <Info size={11}/>
                         {t('Details','التفاصيل')}
                       </button>
                     )}
 
                     {/* Action row: Fav | Buy Now | Cart */}
                     <div className="flex items-center gap-1.5">
-                      {/* Fav */}
                       <button onClick={() => toggleFav(tool.id, tool as any)}
                         className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
                         style={faved
@@ -425,7 +533,6 @@ export default function DashboardPage() {
                         <Heart size={13} fill={faved ? 'currentColor' : 'none'}/>
                       </button>
 
-                      {/* Buy Now */}
                       <Link href={`/u/checkout?tool_id=${tool.id}`}
                         className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 shadow-sm transition-opacity"
                         style={{ background: accent }}>
@@ -433,7 +540,6 @@ export default function DashboardPage() {
                         {t('Buy Now','اشتري الآن')}
                       </Link>
 
-                      {/* Cart */}
                       <button onClick={() => handleCart(tool)} disabled={busy}
                         className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border transition-all ${
                           added ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#d99401]/50 hover:text-[#d99401]'
@@ -462,6 +568,18 @@ export default function DashboardPage() {
           style={{ background: '#d99401' }}>
           {toast}
         </div>
+      )}
+
+      {/* Tool popup */}
+      {popup && (
+        <ToolPopup
+          tool={popup}
+          isRtl={isRtl}
+          formatPrice={formatPrice}
+          usdRate={usdRate}
+          onClose={() => setPopup(null)}
+          t={t}
+        />
       )}
 
     </div>

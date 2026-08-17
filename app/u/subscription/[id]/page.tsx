@@ -578,7 +578,7 @@ export default function SubscriptionDetailPage() {
                     </div>
                   )}
                   <p className="text-[10px] text-gray-400 text-center">
-                    {t('Delivered','تم التسليم')} {new Date(delivery.delivered_at).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB')}
+                    {t('Delivered','تم التسليم')} {new Date(delivery.delivered_at).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true })}
                   </p>
                 </div>
               ) : (
@@ -689,7 +689,7 @@ export default function SubscriptionDetailPage() {
                     onClick={async () => {
                       if (!reportMsg.trim()) return
                       setReportBusy(true)
-                      await fetch('/api/member/tickets', {
+                      const res = await fetch('/api/member/tickets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -700,7 +700,12 @@ export default function SubscriptionDetailPage() {
                         })
                       })
                       setReportBusy(false)
-                      setReportSent(true)
+                      if (res.ok) {
+                        setReportSent(true)
+                      } else {
+                        const err = await res.json().catch(() => ({}))
+                        alert(err.error || t('Failed to send report','فشل إرسال البلاغ'))
+                      }
                     }}
                     disabled={!reportMsg.trim() || reportBusy}
                     className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"

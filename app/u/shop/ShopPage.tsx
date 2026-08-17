@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Star, Zap, Info, X, Search, MessageCircle, ShoppingCart, Heart, Plus, Minus, Check } from 'lucide-react'
+import { Star, Zap, Info, X, Search, MessageCircle, ShoppingCart, Heart, Plus, Minus, Check, TrendingUp, TrendingDown, Clock, ChevronDown } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import ToolLandingPage from './ToolLandingPage'
 import { useCart } from '@/lib/cart-context'
@@ -167,7 +167,7 @@ export default function ShopPage({ category }: Props) {
       )}
 
       {/* Filter bar */}
-      <style>{`.shop-filter-scroll{overflow-x:auto;scrollbar-width:none;}.shop-filter-scroll::-webkit-scrollbar{display:none;}`}</style>
+      <style>{`.sp-scroll{overflow-x:auto;scrollbar-width:none;}.sp-scroll::-webkit-scrollbar{display:none;}`}</style>
       <div className="mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 space-y-2">
 
         {/* Mobile: search full width */}
@@ -178,51 +178,77 @@ export default function ShopPage({ category }: Props) {
           {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {/* Desktop search */}
-          <div className="hidden md:block relative flex-shrink-0" style={{width:'30%',minWidth:140}}>
+        {/* Mobile: category buttons + sort dropdown */}
+        <div className="flex items-center gap-2 md:hidden">
+          <div className="flex-1 sp-scroll">
+            <div className="flex items-center gap-1 min-w-max">
+              <button onClick={()=>setCatFilter('all')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter==='all'?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'}`}
+                style={catFilter==='all'?{background:'#d99401'}:{}}>
+                {t('All','الكل')}
+              </button>
+              {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+                <button key={c.id} onClick={()=>setCatFilter(c.id)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter===c.id?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'}`}
+                  style={catFilter===c.id?{background:'#d99401'}:{}}>
+                  <span className="text-[11px]">{c.icon}</span>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="relative flex-shrink-0">
+            <select value={sort} onChange={e=>setSort(e.target.value as any)}
+              className="appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
+              <option value="best">{t('Top Rated','الأعلى تقييماً')}</option>
+              <option value="recent">{t('Newest','الأحدث')}</option>
+            </select>
+            <ChevronDown size={11} className="absolute top-1/2 -translate-y-1/2 end-2 text-gray-400 pointer-events-none"/>
+          </div>
+        </div>
+
+        {/* Desktop: single row */}
+        <div className="hidden md:flex items-center gap-2">
+          <div className="relative flex-shrink-0" style={{width:'30%',minWidth:150}}>
             <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search…','بحث…')}
               className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
             {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
           </div>
-          <div className="hidden md:block w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-0.5"/>
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
 
-          {/* Scrollable buttons */}
-          <div className="flex-1 shop-filter-scroll">
-            <div className="flex items-center gap-1 min-w-max">
-              {/* Category filter buttons */}
-              {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (<>
-                <button onClick={()=>setCatFilter('all')}
-                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter==='all'?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                  style={catFilter==='all'?{background:'#d99401'}:{}}>
-                  🌐 <span className="hidden sm:inline">{t('All','الكل')}</span>
-                </button>
-                {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-                  <button key={c.id} onClick={()=>setCatFilter(c.id)}
-                    className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter===c.id?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                    style={catFilter===c.id?{background:'#d99401'}:{}}>
-                    <span>{c.icon}</span>
-                    <span className="hidden sm:inline">{c.name}</span>
-                  </button>
-                ))}
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1"/>
-              </>)}
+          {/* Category buttons */}
+          {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (<>
+            <button onClick={()=>setCatFilter('all')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter==='all'?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              style={catFilter==='all'?{background:'#d99401'}:{}}>
+              {t('All','الكل')}
+            </button>
+            {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+              <button key={c.id} onClick={()=>setCatFilter(c.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter===c.id?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                style={catFilter===c.id?{background:'#d99401'}:{}}>
+                <span className="text-sm">{c.icon}</span>{c.name}
+              </button>
+            ))}
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
+          </>)}
 
-              {/* Sort buttons */}
-              {([
-                { key:'best',   en:'Top Rated', ar:'الأعلى تقييماً', emoji:'⭐' },
-                { key:'recent', en:'Newest',    ar:'الأحدث',         emoji:'🕐' },
-              ] as const).map(s=>(
-                <button key={s.key} onClick={()=>setSort(s.key as any)}
-                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${sort===s.key?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                  style={sort===s.key?{background:'#6366f1'}:{}}>
-                  <span>{s.emoji}</span>
-                  <span className="hidden sm:inline">{lang==='ar'?s.ar:s.en}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Spacer */}
+          <div className="flex-1"/>
+
+          {/* Sort buttons with icons */}
+          {([
+            { key:'best',   en:'Top Rated', ar:'الأعلى تقييماً', Icon: Star        },
+            { key:'recent', en:'Newest',    ar:'الأحدث',         Icon: Clock       },
+          ] as const).map(s=>(
+            <button key={s.key} onClick={()=>setSort(s.key as any)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${sort===s.key?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+              style={sort===s.key?{background:'#6366f1'}:{}}>
+              <s.Icon size={12}/>
+              {lang==='ar'?s.ar:s.en}
+            </button>
+          ))}
         </div>
       </div>
 
