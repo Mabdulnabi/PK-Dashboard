@@ -107,17 +107,22 @@ export default function TicketsPage() {
   const threadEnd  = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async (silent = false) => {
-    const res = await fetch('/api/admin/tickets')
-    if (res.status === 401) { window.location.href = '/auth/login'; return }
-    const json = await res.json()
-    const ticketData = json.tickets
-    if (ticketData) {
-      const memberMap: Record<string, MemberInfo> = {}
-      for (const t of ticketData) {
-        if (t.member) memberMap[t.member_id] = t.member
+    try {
+      const res = await fetch('/api/admin/tickets')
+      if (res.status === 401) { window.location.href = '/auth/login'; return }
+      const json = await res.json()
+      if (!res.ok) { setToast({ msg: json.error || 'Failed to load tickets', type: 'err' }); if (!silent) setLoading(false); return }
+      const ticketData = json.tickets
+      if (ticketData) {
+        const memberMap: Record<string, MemberInfo> = {}
+        for (const t of ticketData) {
+          if (t.member) memberMap[t.member_id] = t.member
+        }
+        setMembers(memberMap)
+        setTickets(ticketData)
       }
-      setMembers(memberMap)
-      setTickets(ticketData)
+    } catch (e) {
+      setToast({ msg: String(e), type: 'err' })
     }
     if (!silent) setLoading(false)
   }, [])

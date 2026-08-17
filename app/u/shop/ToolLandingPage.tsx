@@ -19,6 +19,7 @@ interface Block {
 
 interface Review {
   id: string; member_name: string; stars: number; comment?: string; created_at: string
+  members?: { avatar_url: string | null } | null
 }
 
 interface Tool {
@@ -377,12 +378,21 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               {reviews.map(r=>(
                 <div key={r.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <div>
-                      <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{r.member_name}</span>
-                      <div className="flex gap-0.5 mt-1">
-                        {[1,2,3,4,5].map(i=>(
-                          <Star key={i} size={12} fill={i<=r.stars?'#F59E0B':'none'} stroke={i<=r.stars?'#F59E0B':'#D1D5DB'}/>
-                        ))}
+                    <div className="flex items-center gap-2">
+                      {r.members?.avatar_url ? (
+                        <img src={r.members.avatar_url} alt={r.member_name} className="w-8 h-8 rounded-full object-cover flex-shrink-0"/>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 text-xs font-bold flex-shrink-0">
+                          {r.member_name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{r.member_name}</span>
+                        <div className="flex gap-0.5 mt-1">
+                          {[1,2,3,4,5].map(i=>(
+                            <Star key={i} size={12} fill={i<=r.stars?'#F59E0B':'none'} stroke={i<=r.stars?'#F59E0B':'#D1D5DB'}/>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0">

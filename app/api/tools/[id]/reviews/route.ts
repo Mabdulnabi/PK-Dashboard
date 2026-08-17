@@ -12,7 +12,7 @@ const service = createClient(
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { data: reviews } = await service
     .from('tool_reviews')
-    .select('id,member_name,stars,comment,created_at')
+    .select('id,member_name,stars,comment,created_at,members(avatar_url)')
     .eq('tool_id', params.id)
     .eq('approved', true)
     .order('created_at', { ascending: false })

@@ -147,9 +147,13 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
           {comments.map(c => (
             <div key={c.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 text-xs font-bold">
-                  {c.members?.full_name?.[0]?.toUpperCase() || '?'}
-                </div>
+                {c.members?.avatar_url ? (
+                  <img src={c.members.avatar_url} alt={c.members.full_name} className="w-7 h-7 rounded-full object-cover flex-shrink-0"/>
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 text-xs font-bold flex-shrink-0">
+                    {c.members?.full_name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                )}
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.members?.full_name}</span>
                 {c.rating && (
                   <div className="flex items-center gap-0.5 ms-auto">

@@ -56,7 +56,20 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
   const [collapsed, setCollapsed] = useState(false)
   const [adminName,   setAdminName]   = useState(userName)
   const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null)
+  const [openTickets, setOpenTickets] = useState(0)
   const signOut  = async () => { await supabase.auth.signOut(); router.push('/auth/login') }
+
+  useEffect(() => {
+    const fetchOpenTickets = () =>
+      fetch('/api/admin/tickets').then(r => r.ok ? r.json() : null).then(d => {
+        if (d?.tickets) setOpenTickets(d.tickets.filter((t: any) => t.status === 'open').length)
+      }).catch(() => {})
+    fetchOpenTickets()
+    const ch = supabase.channel('sidebar-tickets-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, fetchOpenTickets)
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [])
 
   useEffect(() => {
     fetch('/api/admin/profile')
@@ -146,7 +159,12 @@ export default function Sidebar({ userName = 'Admin' }: { userName?: string }) {
                     size={15}
                     className={active ? 'text-red-500' : 'text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400'}
                   />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && <span className="flex-1">{item.label}</span>}
+                  {item.href === '/tickets' && openTickets > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white bg-red-500 ${collapsed ? 'absolute top-1 right-1' : ''}`}>
+                      {openTickets}
+                    </span>
+                  )}
                 </Link>
               )
             })}
