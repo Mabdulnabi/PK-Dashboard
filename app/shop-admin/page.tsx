@@ -835,6 +835,15 @@ export default function ShopAdminPage() {
                             className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors">
                             🔒 Note
                           </button>
+                          <button onClick={async()=>{
+                              if(!confirm(`Delete "${post.title}"? This cannot be undone.`)) return
+                              const res = await fetch(`/api/admin/blogs/${post.id}`,{method:'DELETE'})
+                              if(res.ok) { setBlogPosts(prev=>prev.filter((p:any)=>p.id!==post.id)); setToast({msg:'Post deleted',type:'ok'}) }
+                              else { const j=await res.json().catch(()=>({})); setToast({msg:j.error||'Error',type:'err'}) }
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-red-500 text-[11px] font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                            <Trash2 size={11}/>Delete
+                          </button>
                         </div>
                       </div>
 
