@@ -341,7 +341,7 @@ export default function ShopAdminPage() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         dashboard_featured_ids: JSON.stringify(featuredIds),
-        dashboard_sections:     JSON.stringify(dealSections.map(s=>({title_en:s.title_en,title_ar:s.title_ar,subtitle_en:s.subtitle_en,subtitle_ar:s.subtitle_ar,emoji:s.emoji,tool_ids:s.tool_ids}))),
+        dashboard_sections:     JSON.stringify(dealSections.map(s=>({id:s.id,title_en:s.title_en,title_ar:s.title_ar,subtitle_en:s.subtitle_en,subtitle_ar:s.subtitle_ar,emoji:s.emoji,tool_ids:s.tool_ids}))),
       })
     })
     setDealSaving(false)
@@ -634,25 +634,73 @@ export default function ShopAdminPage() {
 
                 <div className="space-y-4">
                   {dealSections.map((sec, si) => (
-                    <div key={sec.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold text-gray-400">#{si+1}</span>
-                        <input value={sec.emoji||'🔖'} onChange={e=>updateSection(sec.id,'emoji',e.target.value)}
-                          placeholder="🔖" className={`${inp} w-14 text-center text-base`}/>
-                        <input value={sec.title_en} onChange={e=>updateSection(sec.id,'title_en',e.target.value)}
-                          placeholder="Section title (English)" className={`${inp} flex-1`}/>
-                        <input value={sec.title_ar} onChange={e=>updateSection(sec.id,'title_ar',e.target.value)}
-                          placeholder="عنوان القسم (عربي)" className={`${inp} flex-1`} dir="rtl"/>
-                        <button onClick={()=>removeSection(sec.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0">
-                          <Trash2 size={12}/>
+                    <div key={sec.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50/50 dark:bg-gray-800/20">
+                      {/* Row 1: number + emoji + delete */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">Section #{si+1}</span>
+                        <button type="button" onClick={()=>removeSection(sec.id)}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs transition-colors">
+                          <Trash2 size={12}/>Remove
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <input value={sec.subtitle_en||''} onChange={e=>updateSection(sec.id,'subtitle_en',e.target.value)}
-                          placeholder="Subtitle (English) — optional" className={`${inp} flex-1`}/>
-                        <input value={sec.subtitle_ar||''} onChange={e=>updateSection(sec.id,'subtitle_ar',e.target.value)}
-                          placeholder="عنوان فرعي (عربي) — اختياري" className={`${inp} flex-1`} dir="rtl"/>
+                      {/* Row 2: emoji */}
+                      <div className="mb-3">
+                        <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Emoji</label>
+                        <input
+                          type="text"
+                          value={sec.emoji}
+                          onChange={e => updateSection(sec.id, 'emoji', e.target.value)}
+                          placeholder="🔖"
+                          className={`${inp} w-24 text-center text-lg`}
+                        />
+                      </div>
+                      {/* Row 3: titles */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Title (EN)</label>
+                          <input
+                            type="text"
+                            value={sec.title_en}
+                            onChange={e => updateSection(sec.id, 'title_en', e.target.value)}
+                            placeholder="Section title in English"
+                            className={inp}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide text-right">العنوان (AR)</label>
+                          <input
+                            type="text"
+                            value={sec.title_ar}
+                            onChange={e => updateSection(sec.id, 'title_ar', e.target.value)}
+                            placeholder="عنوان القسم بالعربية"
+                            dir="rtl"
+                            className={inp}
+                          />
+                        </div>
+                      </div>
+                      {/* Row 4: subtitles */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Subtitle (EN) — optional</label>
+                          <input
+                            type="text"
+                            value={sec.subtitle_en}
+                            onChange={e => updateSection(sec.id, 'subtitle_en', e.target.value)}
+                            placeholder="Short description…"
+                            className={inp}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide text-right">العنوان الفرعي (AR) — اختياري</label>
+                          <input
+                            type="text"
+                            value={sec.subtitle_ar}
+                            onChange={e => updateSection(sec.id, 'subtitle_ar', e.target.value)}
+                            placeholder="وصف مختصر…"
+                            dir="rtl"
+                            className={inp}
+                          />
+                        </div>
                       </div>
                       <p className="text-[10px] text-gray-400 mb-2">Products in this section ({sec.tool_ids.length} selected):</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">

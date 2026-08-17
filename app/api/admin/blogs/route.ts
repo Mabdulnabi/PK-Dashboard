@@ -1,13 +1,18 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { createClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/auth'
 import { unauthorized } from '@/lib/responses'
+
+const service = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET() {
   try { await requireAdmin() } catch { return unauthorized() }
 
-  const { data, error } = await db.from('blog_posts')
+  const { data, error } = await service.from('blog_posts')
     .select('*, members(name, avatar_url)')
     .order('created_at', { ascending: false })
 

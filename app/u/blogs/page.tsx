@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
-import { PenLine, Search, Clock, Star, MessageCircle, ChevronRight, Plus, User } from 'lucide-react'
+import { PenLine, Search, Clock, ChevronRight, Plus, User } from 'lucide-react'
 
 interface Post {
   id: string
@@ -14,6 +14,12 @@ interface Post {
   status: string
   member_id: string
   members: { name: string; avatar_url: string | null } | null
+}
+
+const STATUS_MAP: Record<string, { en: string; ar: string; cls: string }> = {
+  approved: { en: 'Published',     ar: 'منشور',          cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  pending:  { en: 'Under Review',  ar: 'قيد المراجعة',   cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  rejected: { en: 'Rejected',      ar: 'مرفوض',          cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 }
 
 export default function BlogsPage() {
@@ -37,18 +43,13 @@ export default function BlogsPage() {
   }, [search, tab])
 
   const t = (en: string, ar_: string) => ar ? ar_ : en
-  const getTitle = (p: Post) => (ar && p.title_ar ? p.title_ar : p.title)
-  const formatDate = (d: string) => new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  const getTitle  = (p: Post) => (ar && p.title_ar ? p.title_ar : p.title)
+  const fmtDate   = (d: string) => new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, { label: string; label_ar: string; color: string }> = {
-      approved: { label: 'Published', label_ar: 'منشور', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-      pending:  { label: 'Pending',   label_ar: 'قيد المراجعة', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      rejected: { label: 'Rejected',  label_ar: 'مرفوض', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    }
-    const s = map[status]
+  const StatusBadge = ({ status }: { status: string }) => {
+    const s = STATUS_MAP[status]
     if (!s) return null
-    return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.color}`}>{ar ? s.label_ar : s.label}</span>
+    return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{ar ? s.ar : s.en}</span>
   }
 
   return (
@@ -86,9 +87,7 @@ export default function BlogsPage() {
       {/* List */}
       {loading ? (
         <div className="space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse"/>
-          ))}
+          {[...Array(4)].map((_, i) => <div key={i} className="h-28 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse"/>)}
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-16">
@@ -99,20 +98,21 @@ export default function BlogsPage() {
         <div className="space-y-3">
           {posts.map(post => (
             <div key={post.id} onClick={() => router.push(`/u/blogs/${post.id}`)}
-              className="flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800 cursor-pointer transition-all hover:shadow-sm">
+              className={`flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-gray-900 border cursor-pointer transition-all hover:shadow-sm
+                ${post.status === 'pending'  ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50/30 dark:bg-amber-900/5' :
+                  post.status === 'rejected' ? 'border-red-200 dark:border-red-800/40 bg-red-50/30 dark:bg-red-900/5' :
+                  'border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800'}`}>
               {post.cover_image_url && (
                 <img src={post.cover_image_url} alt="" className="w-20 h-16 rounded-xl object-cover flex-shrink-0"/>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  {tab === 'mine' && statusBadge(post.status)}
+                  <StatusBadge status={post.status}/>
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2 leading-snug">{getTitle(post)}</h3>
                 <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400 dark:text-gray-500 flex-wrap">
-                  {post.members && (
-                    <span className="flex items-center gap-1"><User size={11}/>{post.members.name}</span>
-                  )}
-                  <span className="flex items-center gap-1"><Clock size={11}/>{formatDate(post.published_at || post.created_at)}</span>
+                  {post.members && <span className="flex items-center gap-1"><User size={11}/>{post.members.name}</span>}
+                  <span className="flex items-center gap-1"><Clock size={11}/>{fmtDate(post.published_at || post.created_at)}</span>
                 </div>
               </div>
               <ChevronRight size={16} className={`text-gray-300 dark:text-gray-600 flex-shrink-0 ${ar ? 'rotate-180' : ''}`}/>
