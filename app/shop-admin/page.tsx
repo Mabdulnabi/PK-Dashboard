@@ -162,19 +162,26 @@ export default function ShopAdminPage() {
       })
       .catch(e=>{ setBlogError(String(e)); setBlogLoad(false) })
 
+    const reloadBlogs = () =>
+      fetch('/api/admin/blogs').then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setBlogPosts(d) }).catch(()=>{})
+
     // Realtime: new submissions (INSERT) and member deletions (DELETE)
     const channel = supabase
       .channel('admin-blogs-rt')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'blog_posts' }, payload => {
-        // Fetch full post (with members join) instead of using payload directly
-        fetch('/api/admin/blogs')
-          .then(r=>r.json())
-          .then(d=>{ if(Array.isArray(d)) setBlogPosts(d) })
-          .catch(()=>{})
+        // Prepend the new post from payload — avoid full reload to prevent overwriting local approval state
+        const p = payload.new as any
+        if (!p?.id) return
+        setBlogPosts(prev => prev.some((x:any) => x.id === p.id) ? prev : [{ ...p, members: null }, ...prev])
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'blog_posts' }, payload => {
-        const deleted = payload.old as { id: string }
-        if (deleted?.id) setBlogPosts(prev => prev.filter((p:any) => p.id !== deleted.id))
+        // REPLICA IDENTITY FULL ensures payload.old has all columns incl. id
+        const deleted = (payload.old as any)
+        if (deleted?.id) {
+          setBlogPosts(prev => prev.filter((p:any) => p.id !== deleted.id))
+        } else {
+          reloadBlogs() // fallback
+        }
       })
       .subscribe()
 
@@ -396,8 +403,10 @@ export default function ShopAdminPage() {
     const res = await fetch(`/api/admin/blogs/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action,reason}) })
     if(res.ok) {
       const newStatus = action==='approve'?'approved':action==='revision'?'revision_needed':'rejected'
-      setBlogPosts(prev => prev.map(p => p.id===id ? {...p, status:newStatus, rejection_reason:reason||null} : p))
+      setBlogPosts(prev => prev.map(p => p.id===id ? {...p, status:newStatus, rejection_reason:reason||null, updated_at:new Date().toISOString()} : p))
       setBlogAction(null)
+      const msg = action==='approve'?'Post approved ✓':action==='revision'?'Revision requested ✓':'Post rejected'
+      setToast({msg, type: action==='approve'?'ok':action==='revision'?'ok':'err'})
     } else { const j = await res.json().catch(()=>({})); setToast({msg: j.error || 'Error', type:'err'}) }
   }
 
