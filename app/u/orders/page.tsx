@@ -818,10 +818,23 @@ export default function MyOrdersPage() {
         {/* Filter bar */}
         {purchases.length>0 && (
           <div className="mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
-            {/* Filter chips — always first on desktop, below search on mobile */}
-            <div className="flex items-center gap-1.5 overflow-x-auto order-last sm:order-first sm:flex-1" style={{scrollbarWidth:'none'}}>
+            {/* Search — left on desktop, fills remaining space */}
+            <div className="relative w-full sm:flex-1 sm:min-w-0">
+              <Search size={12} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:8}}/>
+              <input value={orderQ} onChange={e=>setOrderQ(e.target.value)}
+                placeholder={lang==='ar'?'بحث في الاشتراكات…':'Search subscriptions…'}
+                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#0ea5e9] transition-all"
+                style={{padding:'6px 8px',[lang==='ar'?'paddingRight':'paddingLeft']:26}}/>
+              {orderQ && (
+                <button onClick={()=>setOrderQ('')} className="absolute top-1/2 -translate-y-1/2 text-gray-400" style={{[lang==='ar'?'left':'right']:6}}>
+                  <X size={10}/>
+                </button>
+              )}
+            </div>
+            {/* Filter chips — right, scroll horizontally on overflow */}
+            <div className="flex items-center gap-1.5 overflow-x-auto flex-shrink-0" style={{scrollbarWidth:'none'}}>
               {([
-                {key:'all',      en:'All',           ar:'الكل',          color:'#d99401', count:purchases.length},
+                {key:'all',      en:'All',           ar:'الكل',          color:'#0ea5e9', count:purchases.length},
                 {key:'shared',   en:'Shared',        ar:'مشتركة',        color:'#d99401', count:purchases.filter(p=>p.category_slug==='shared').length},
                 {key:'private',  en:'Private',       ar:'خاصة',          color:'#8b5cf6', count:purchases.filter(p=>p.category_slug==='private').length},
                 {key:'expiring', en:'Expiring Soon', ar:'تنتهي قريباً',  color:'#f59e0b', count:purchases.filter(p=>{ const d=daysLeft(p.expires_at); return d!==null&&d<=5 }).length},
@@ -842,19 +855,6 @@ export default function MyOrdersPage() {
                   </button>
                 )
               })}
-            </div>
-            {/* Search — full width on mobile (order-first), inline on desktop */}
-            <div className="relative w-full sm:w-44 order-first sm:order-last flex-shrink-0">
-              <Search size={12} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:8}}/>
-              <input value={orderQ} onChange={e=>setOrderQ(e.target.value)}
-                placeholder={lang==='ar'?'بحث في الاشتراكات…':'Search subscriptions…'}
-                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
-                style={{padding:'6px 8px',[lang==='ar'?'paddingRight':'paddingLeft']:26}}/>
-              {orderQ && (
-                <button onClick={()=>setOrderQ('')} className="absolute top-1/2 -translate-y-1/2 text-gray-400" style={{[lang==='ar'?'left':'right']:6}}>
-                  <X size={10}/>
-                </button>
-              )}
             </div>
           </div>
         )}

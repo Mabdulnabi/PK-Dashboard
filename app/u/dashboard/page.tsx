@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { ShoppingCart, Zap } from 'lucide-react'
+import { useCart } from '@/lib/cart-context'
+import { ShoppingCart, Heart, Plus, Minus, Check, Star, Zap } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import Link from 'next/link'
 
@@ -12,6 +13,8 @@ interface Tool {
   image_url?: string; price_egp: number; price_usd?: number
   duration_label: string; category_slug: string; category_id?: string
   is_out_of_stock: boolean; landing_blocks?: any[]
+  rating: number; review_count: number; sales_count?: number
+  delivery_label?: string
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -19,62 +22,182 @@ interface Category {
 }
 interface Section { title_en: string; title_ar: string; tool_ids: string[] }
 
-/* ── small product card (horizontal scroll) ─────────────────────── */
-function MiniCard({ tool, lang, formatPrice, usdRate }: {
+function Stars({ rating, count }: { rating: number; count: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={11}
+          fill={i <= Math.round(rating) ? '#F59E0B' : 'none'}
+          stroke={i <= Math.round(rating) ? '#F59E0B' : '#D1D5DB'}/>
+      ))}
+      <span className="text-[10px] text-gray-400 ms-1 font-medium">
+        {rating.toFixed(1)} ({count >= 1000 ? `${(count/1000).toFixed(1)}k` : count})
+      </span>
+    </div>
+  )
+}
+
+/* ── Top Pick Card — large, no cart controls, Buy Now → checkout ─── */
+function TopPickCard({ tool, lang, formatPrice, usdRate }: {
   tool: Tool; lang: string; formatPrice: (n:number,r:number)=>string; usdRate: number
 }) {
-  const isRtl = lang === 'ar'
-  const accent = tool.category_slug === 'private' ? '#8b5cf6' : '#d99401'
+  const isRtl  = lang === 'ar'
+  const accent = tool.category_slug === 'private' ? '#8b5cf6' : tool.category_slug === 'bundle' ? '#f59e0b' : '#d99401'
   const price  = formatPrice(tool.price_egp, usdRate)
+  const sales  = tool.sales_count || 0
   return (
-    <div className="flex-shrink-0 w-44 sm:w-52 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col">
-      <div className="h-0.5 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
-      <div className="p-3 flex-1 flex flex-col">
-        <div className="flex items-start gap-2.5 mb-2">
-          <div className="w-10 h-10 flex-shrink-0 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+    <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+      <div className="h-1 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
+      <div className="p-5 flex-1 flex flex-col">
+        {/* Header row */}
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-16 h-16 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
             {tool.image_url
-              ? <img src={tool.image_url} alt={tool.name} className="w-8 h-8 object-contain"/>
-              : <span className="text-xs font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>}
+              ? <img src={tool.image_url} alt={tool.name} className="w-12 h-12 object-contain"/>
+              : <span className="text-2xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">{tool.name}</p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-xs font-bold" style={{color:accent}}>{price}</span>
-              <span className="text-[10px] text-gray-400">/ {tool.duration_label}</span>
-            </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2">{tool.name}</h3>
+            <Stars rating={tool.rating} count={tool.review_count}/>
+            {sales > 0 && (
+              <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                style={{background: accent}}>
+                🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+              </div>
+            )}
+          </div>
+          <div className={`text-end flex-shrink-0`}>
+            <div className="text-xl font-extrabold leading-tight" style={{color: accent}}>{price}</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">/ {tool.duration_label}</div>
           </div>
         </div>
-        <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2 flex-1">
+
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 flex-1 mb-4">
           {(isRtl && tool.description_ar) ? tool.description_ar : tool.description}
         </p>
-        <Link href={`/u/checkout?tool_id=${tool.id}`}
-          className="mt-2.5 flex items-center justify-center gap-1.5 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-90"
-          style={{background: tool.is_out_of_stock ? '#9ca3af' : accent}}
-          onClick={e => tool.is_out_of_stock && e.preventDefault()}>
-          {tool.is_out_of_stock
-            ? (isRtl ? 'نفذت الكمية' : 'Out of Stock')
-            : <><ShoppingCart size={11}/>{isRtl ? 'اشتري الآن' : 'Buy Now'}</>}
-        </Link>
+
+        {tool.is_out_of_stock ? (
+          <div className="w-full py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 text-sm font-bold text-center">
+            {isRtl ? 'نفذت الكمية' : 'Out of Stock'}
+          </div>
+        ) : (
+          <Link href={`/u/checkout?tool_id=${tool.id}`}
+            className="w-full py-3 rounded-xl text-white text-sm font-bold text-center flex items-center justify-center gap-2 transition-opacity hover:opacity-90 shadow-sm"
+            style={{background: accent}}>
+            <ShoppingCart size={14}/>{isRtl ? 'اشتري الآن' : 'Buy Now'}
+          </Link>
+        )}
       </div>
     </div>
   )
 }
 
-/* ── horizontal product row ─────────────────────────────────────── */
-function ProductRow({ tools, lang, formatPrice, usdRate }: {
-  tools: Tool[]; lang: string; formatPrice: (n:number,r:number)=>string; usdRate: number
+/* ── Section Card — same size but with qty / fav / cart controls ─── */
+function SectionCard({ tool, lang, formatPrice, usdRate }: {
+  tool: Tool; lang: string; formatPrice: (n:number,r:number)=>string; usdRate: number
 }) {
-  if (!tools.length) return null
+  const isRtl  = lang === 'ar'
+  const accent = tool.category_slug === 'private' ? '#8b5cf6' : tool.category_slug === 'bundle' ? '#f59e0b' : '#d99401'
+  const price  = formatPrice(tool.price_egp, usdRate)
+  const sales  = tool.sales_count || 0
+  const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
+  const [qty, setQty] = useState(1)
+  const [toast, setToast] = useState('')
+
+  const faved = isFav(tool.id)
+  const cartted = inCart(tool.id)
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2000) }
+
+  const handleCart = async () => {
+    if (cartted) { removeFromCart(tool.id); showToast(isRtl ? 'تمت الإزالة' : 'Removed') }
+    else { await addToCart(tool.id, qty, tool as any); showToast(isRtl ? 'أضيف للسلة ✓' : 'Added ✓') }
+  }
+
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2" style={{scrollbarWidth:'none'}}>
-      {tools.map(t => (
-        <MiniCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
-      ))}
+    <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+      {toast && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-xl text-xs font-bold text-white pointer-events-none whitespace-nowrap"
+          style={{background: accent}}>{toast}</div>
+      )}
+      <div className="h-1 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
+      <div className="p-5 flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-16 h-16 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+            {tool.image_url
+              ? <img src={tool.image_url} alt={tool.name} className="w-12 h-12 object-contain"/>
+              : <span className="text-2xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2">{tool.name}</h3>
+            <Stars rating={tool.rating} count={tool.review_count}/>
+            {sales > 0 && (
+              <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                style={{background: accent}}>
+                🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+              </div>
+            )}
+          </div>
+          <div className="text-end flex-shrink-0">
+            <div className="text-xl font-extrabold leading-tight" style={{color: accent}}>{price}</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">/ {tool.duration_label}</div>
+          </div>
+        </div>
+
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 flex-1 mb-4">
+          {(isRtl && tool.description_ar) ? tool.description_ar : tool.description}
+        </p>
+
+        {tool.is_out_of_stock ? (
+          <div className="w-full py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 text-sm font-bold text-center">
+            {isRtl ? 'نفذت الكمية' : 'Out of Stock'}
+          </div>
+        ) : (
+          <div className="space-y-2" dir={isRtl ? 'rtl' : 'ltr'}>
+            {/* Qty */}
+            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+              <span className="text-xs font-semibold text-gray-500">{isRtl ? 'الكمية' : 'Qty'}</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setQty(q => Math.max(1, q-1))} disabled={qty <= 1}
+                  className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                  <Minus size={10}/>
+                </button>
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-5 text-center">{qty}</span>
+                <button onClick={() => setQty(q => q+1)}
+                  className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                  <Plus size={10}/>
+                </button>
+              </div>
+            </div>
+            {/* Actions */}
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => toggleFav(tool.id, tool as any)}
+                className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
+                style={faved ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'} : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
+                <Heart size={13} fill={faved ? 'currentColor' : 'none'}/>
+              </button>
+              <Link href={`/u/checkout?tool_id=${tool.id}`}
+                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
+                style={{background: accent}}>
+                <ShoppingCart size={13}/>{isRtl ? 'اشتري الآن' : 'Buy Now'}
+              </Link>
+              <button onClick={handleCart}
+                className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all"
+                style={cartted
+                  ? {background:'#10b98120',borderColor:'#10b981',color:'#10b981'}
+                  : {borderColor:'#e5e7eb',color:'#6b7280'}}>
+                {cartted ? <Check size={13}/> : <Plus size={13}/>}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-/* ── main page ──────────────────────────────────────────────────── */
+/* ── Main Page ───────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router              = useRouter()
   const { lang, formatPrice } = useLang()
@@ -87,7 +210,7 @@ export default function DashboardPage() {
   const [tools,       setTools]       = useState<Tool[]>([])
   const [featuredIds, setFeaturedIds] = useState<string[]>([])
   const [sections,    setSections]    = useState<Section[]>([])
-  const [catSlugs,    setCatSlugs]    = useState<Record<string,string>>({}) // categoryId → 'shared'|'private'|'bundle'
+  const [catSlugs,    setCatSlugs]    = useState<Record<string,string>>({})
   const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
@@ -99,14 +222,12 @@ export default function DashboardPage() {
       const allTools: Tool[] = shopData.tools || []
       setTools(allTools)
 
-      // build categoryId → category_slug map
       const slugMap: Record<string, string> = {}
       allTools.forEach(t => { if (t.category_id) slugMap[t.category_id] = t.category_slug })
       setCatSlugs(slugMap)
 
       const ui = uiData.settings as Record<string, string>
 
-      // banners
       let parsedBanners: BannerSlide[] = []
       try {
         const raw = JSON.parse(ui?.dashboard_banners || '[]')
@@ -115,13 +236,9 @@ export default function DashboardPage() {
       if (!parsedBanners.length && ui?.dashboard_banner_url) parsedBanners = [{ url: ui.dashboard_banner_url }]
       setBanners(parsedBanners)
 
-      // featured IDs
       try { setFeaturedIds(JSON.parse(ui?.dashboard_featured_ids || '[]')) } catch {}
-
-      // announcement sections
       try { setSections(JSON.parse(ui?.dashboard_sections || '[]')) } catch {}
 
-      // categories marquee (only those with images)
       const usedCatIds = new Set(allTools.map(t => t.category_id).filter(Boolean))
       const cats: Category[] = (catData.categories || [])
         .filter((c: Category) => usedCatIds.has(c.id) && c.image_url)
@@ -135,7 +252,6 @@ export default function DashboardPage() {
 
   const toolById = (id: string) => tools.find(t => t.id === id)
 
-  // category → store tab
   const catTab = (cat: Category) => {
     const slug = catSlugs[cat.id] || 'shared'
     return slug === 'private' ? 'private' : slug === 'bundle' ? 'bundle' : 'shared'
@@ -151,7 +267,6 @@ export default function DashboardPage() {
 
   return (
     <div className="p-3 md:p-5" dir={isRtl ? 'rtl' : 'ltr'}>
-
       <style>{`
         @keyframes marquee-ltr { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         @keyframes marquee-rtl { 0%{transform:translateX(0)} 100%{transform:translateX(50%)}  }
@@ -190,7 +305,7 @@ export default function DashboardPage() {
 
       {/* ── Categories Marquee ── */}
       {!loading && categories.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-7">
           <h2 className="text-xl font-extrabold text-gray-800 dark:text-gray-100 mb-4">
             {isRtl ? 'نفسك في ايه؟ 🤔' : "What are you looking for? 🤔"}
           </h2>
@@ -198,7 +313,7 @@ export default function DashboardPage() {
             <div className={isRtl ? 'mq-track-rtl' : 'mq-track'}>
               {Array.from({ length: marqueeCount }, () => categories).flat().map((cat, i) => (
                 <button key={`${cat.id}-${i}`}
-                  onClick={() => router.push(`/u/store?tab=${catTab(cat)}`)}
+                  onClick={() => router.push(`/u/store?tab=${catTab(cat)}&cat=${cat.id}`)}
                   className="flex-shrink-0 flex flex-col items-center gap-2.5 mx-3 group">
                   <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-[#d99401] transition-all shadow-md group-hover:shadow-lg group-hover:shadow-[#d9940130]">
                     <img src={(isRtl && cat.image_url_ar) ? cat.image_url_ar : cat.image_url!}
@@ -215,18 +330,46 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Featured Products ── */}
+      {loading && (
+        <div className="flex justify-center py-20">
+          <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
+        </div>
+      )}
+
+      {/* ── Top Picks — distinctive section ── */}
       {featuredTools.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-extrabold text-gray-800 dark:text-gray-100">
-              {isRtl ? '⭐ الأكثر مبيعاً' : '⭐ Top Picks'}
-            </h2>
-            <Link href="/u/store" className="text-xs font-bold" style={{color:'#d99401'}}>
+        <div className="mb-8">
+          {/* Section header — dark gradient, eye-catching */}
+          <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
+            style={{background:'linear-gradient(135deg,#0d1117 0%,#1c1400 60%,#0f1f3d 100%)'}}>
+            <div className="absolute inset-0 pointer-events-none opacity-30"
+              style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#d9940140,transparent 55%),radial-gradient(ellipse at 80% 50%,#3b82f620,transparent 55%)'}}/>
+            <div className="relative flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                style={{background:'linear-gradient(135deg,#d99401,#f59e0b)'}}>
+                🔥
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest mb-0.5"
+                  style={{color:'#d99401'}}>
+                  {isRtl ? 'الأكثر مبيعاً' : 'Best Sellers'}
+                </div>
+                <h2 className="text-lg font-extrabold text-white leading-tight">
+                  {isRtl ? 'الأكثر مبيعاً هذا الشهر 🏆' : 'Best Sellers This Month 🏆'}
+                </h2>
+              </div>
+            </div>
+            <Link href="/u/store" className="relative flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+              style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>
               {isRtl ? 'عرض الكل ←' : '→ View All'}
             </Link>
           </div>
-          <ProductRow tools={featuredTools} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredTools.map(t => (
+              <TopPickCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+            ))}
+          </div>
         </div>
       )}
 
@@ -235,8 +378,8 @@ export default function DashboardPage() {
         const sectionTools = sec.tool_ids.map(id => toolById(id)).filter(Boolean) as Tool[]
         if (!sectionTools.length) return null
         return (
-          <div key={i} className="mb-6">
-            <div className="flex items-center justify-between mb-3">
+          <div key={i} className="mb-8">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-extrabold text-gray-800 dark:text-gray-100">
                 {isRtl ? sec.title_ar : sec.title_en}
               </h2>
@@ -244,16 +387,14 @@ export default function DashboardPage() {
                 {isRtl ? 'عرض الكل ←' : '→ View All'}
               </Link>
             </div>
-            <ProductRow tools={sectionTools} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sectionTools.map(t => (
+                <SectionCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+              ))}
+            </div>
           </div>
         )
       })}
-
-      {loading && (
-        <div className="flex justify-center py-20">
-          <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
-        </div>
-      )}
 
       {!loading && featuredTools.length === 0 && sections.length === 0 && (
         <div className="text-center py-12 text-gray-400">

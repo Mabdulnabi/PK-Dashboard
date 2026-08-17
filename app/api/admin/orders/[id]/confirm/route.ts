@@ -21,6 +21,15 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   if (error) return serverError(error.message)
 
+  const toolId2 = (purchase as any).shop_tools?.id
+  if (toolId2) {
+    void db.rpc('increment_sales_count', { tool_id: toolId2 }).catch(() => {
+      void db.from('shop_tools').select('sales_count').eq('id', toolId2).single().then(({ data }) => {
+        if (data) db.from('shop_tools').update({ sales_count: (data.sales_count || 0) + 1 }).eq('id', toolId2)
+      })
+    })
+  }
+
   const toolName    = (purchase as any).shop_tools?.name || 'الأداة'
   const toolId      = (purchase as any).shop_tools?.id
   const memberId    = (purchase as any).member_id

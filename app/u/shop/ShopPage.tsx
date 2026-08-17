@@ -12,11 +12,11 @@ interface Tool {
   price_egp:number; price_usd?:number; duration_label:string
   delivery_label:string; rating:number; review_count:number
   video_url?:string; features:string[]; is_out_of_stock:boolean
-  category_slug:string; sort_order:number
+  category_slug:string; sort_order:number; sales_count?:number
   landing_blocks?: any[]
 }
 interface DbCategory { id:string; name:string; slug:string; color:string; icon:string }
-interface Props { category: 'shared'|'private'|'bundle'; hideBanner?: boolean }
+interface Props { category: 'shared'|'private'|'bundle'; hideBanner?: boolean; defaultCatId?: string }
 
 function Stars({ rating, count }: { rating:number; count:number }) {
   return (
@@ -33,7 +33,7 @@ function Stars({ rating, count }: { rating:number; count:number }) {
   )
 }
 
-export default function ShopPage({ category, hideBanner }: Props) {
+export default function ShopPage({ category, hideBanner, defaultCatId }: Props) {
   const { t, lang, dir, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
   const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
@@ -43,7 +43,7 @@ export default function ShopPage({ category, hideBanner }: Props) {
   const [sort,      setSort]      = useState<'best'|'cheapest'|'expensive'|'recent'>('best')
   const [popup,     setPopup]     = useState<Tool|null>(null)
   const [landing,   setLanding]   = useState<Tool|null>(null)
-  const [catFilter, setCatFilter] = useState('all')
+  const [catFilter, setCatFilter] = useState(defaultCatId || 'all')
   const [categories,setCategories]= useState<DbCategory[]>([])
   const [qtys,      setQtys]      = useState<Record<string,number>>({})
   const [toast,     setToast]     = useState('')
@@ -81,6 +81,8 @@ export default function ShopPage({ category, hideBanner }: Props) {
     private: { arr:'private_store_banners', single:'private_store_banner_url' },
     bundle:  { arr:'bundle_store_banners',  single:'bundle_store_banner_url' },
   }
+
+  useEffect(()=>{ if(defaultCatId) setCatFilter(defaultCatId) },[defaultCatId])
 
   useEffect(()=>{
     const bk = BANNER_KEYS[category]
@@ -285,9 +287,15 @@ export default function ShopPage({ category, hideBanner }: Props) {
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">{(lang==='ar'&&tool.description_ar)?tool.description_ar:tool.description}</p>
             </div>
 
-            {/* Stars */}
-            <div className="px-5 pb-3">
+            {/* Stars + sales */}
+            <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
               <Stars rating={tool.rating} count={tool.review_count}/>
+              {(tool.sales_count || 0) > 0 && (
+                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                  style={{background:category==='private'?'#8b5cf6':'#d99401'}}>
+                  🛒 {(tool.sales_count||0).toLocaleString()}
+                </span>
+              )}
             </div>
 
             <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>

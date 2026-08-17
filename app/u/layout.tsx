@@ -20,7 +20,7 @@ interface Member { id?:string; full_name:string; email:string; plan_slug:string;
 const NAV_BASE = [
   { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',  icon:HouseSimple,  color:'#6366f1' },
   { en:'Pro Keys Store',       ar:'متجر برو كيز',       href:'/u/store',      icon:ShoppingBag,  color:'#d99401' },
-  { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',     icon:ClipboardText,color:'#f59e0b' },
+  { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',     icon:ClipboardText,color:'#0ea5e9' },
   { en:'Focus Mode',           ar:'وضع التركيز',       href:'/u/focus-mode', icon:GraduationCap,color:'#06b6d4' },
   { en:'My Wallet',            ar:'محفظتي',            href:'/u/wallet',     icon:Wallet,       color:'#22c55e' },
   { en:'Tickets',              ar:'تذاكر الدعم',       href:'/u/tickets',    icon:Headset,      color:'#f97316' },

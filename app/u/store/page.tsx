@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import ShopPage from '@/app/u/shop/ShopPage'
-import PrivateStoreContent from '@/app/u/shop/private-store/PrivateStoreContent'
 
 const TABS = [
   { key: 'shared',  en: 'Shared',  ar: 'مشتركة', emoji: '🌐' },
@@ -25,6 +24,7 @@ function StoreInner() {
   const router  = useRouter()
   const params  = useSearchParams()
   const tab     = (params.get('tab') as Tab) || 'shared'
+  const catId   = params.get('cat') || undefined
   const isRtl   = lang === 'ar'
 
   const [banners, setBanners] = useState<BannerSlide[] | null>(null)
@@ -48,9 +48,11 @@ function StoreInner() {
 
   return (
     <div dir={dir}>
-      {/* Banner — always above tabs */}
+      {/* Banner — with margin, rounded, always above tabs */}
       {banners !== null && banners.length > 0 && (
-        <BannerSlider slides={banners} isRtl={isRtl} maxHeight={220} className="mb-0"/>
+        <div className="mx-3 md:mx-6 mt-3 md:mt-6 rounded-2xl overflow-hidden mb-0">
+          <BannerSlider slides={banners} isRtl={isRtl} maxHeight={220}/>
+        </div>
       )}
 
       {/* Tab pills */}
@@ -72,12 +74,8 @@ function StoreInner() {
         })}
       </div>
 
-      {/* Content — banner suppressed inside since we show it above */}
-      {tab === 'private' ? (
-        <PrivateStoreContent hideBanner/>
-      ) : (
-        <ShopPage category={tab} hideBanner/>
-      )}
+      {/* Content — ShopPage for all tabs, banner suppressed inside */}
+      <ShopPage category={tab} hideBanner defaultCatId={catId}/>
     </div>
   )
 }
