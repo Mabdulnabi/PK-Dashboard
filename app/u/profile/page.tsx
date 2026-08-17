@@ -20,7 +20,7 @@ function Toast({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => 
 const PLAN_COLOR: Record<string, string> = { basic: '#3B82F6', vip: '#F59E0B', private: '#8B5CF6' }
 
 export default function MemberProfilePage() {
-  const { t, lang, dir } = useLang()
+  const { t, lang, dir, currency, setLang, setCurrency } = useLang()
   const [profile,    setProfile]    = useState<Profile | null>(null)
   const [fullName,   setFullName]   = useState('')
   const [email,      setEmail]      = useState('')
@@ -191,6 +191,65 @@ export default function MemberProfilePage() {
             className="w-full py-3 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-colors mt-2" style={{background:'#d99401'}}>
             {saving ? t('Saving…', 'جاري الحفظ…') : t('Save Changes', 'حفظ التغييرات')}
           </button>
+        </div>
+      </div>
+
+      {/* Language & Currency */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden mt-5">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('Language & Currency', 'اللغة والعملة')}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t('Changes apply immediately across the site', 'التغييرات تُطبَّق فوراً على الموقع')}</p>
+        </div>
+        <div className="p-6 space-y-5">
+          {/* Language */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2.5">{t('Language', 'اللغة')}</label>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key:'en', flag:'🇬🇧', label:'English', sub:'English'  },
+                { key:'ar', flag:'🇪🇬', label:'العربية', sub:'Arabic'   },
+              ] as const).map(o => (
+                <button key={o.key} onClick={()=>setLang(o.key)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-start ${
+                    lang===o.key
+                      ? 'border-[#d99401] bg-[#d9940110]'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}>
+                  <span className="text-2xl flex-shrink-0">{o.flag}</span>
+                  <div>
+                    <p className={`text-sm font-bold leading-tight ${lang===o.key?'text-[#b37a00]':'text-gray-800 dark:text-gray-100'}`}>{o.label}</p>
+                    <p className="text-[10px] text-gray-400">{o.sub}</p>
+                  </div>
+                  {lang===o.key && <Check size={14} className="ms-auto flex-shrink-0" style={{color:'#d99401'}}/>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Currency */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2.5">{t('Currency', 'العملة')}</label>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key:'egp', flag:'🇪🇬', label:'EGP', sub: t('Egyptian Pound','جنيه مصري') },
+                { key:'usd', flag:'🇺🇸', label:'USD', sub: t('US Dollar','دولار أمريكي')   },
+              ] as const).map(o => (
+                <button key={o.key} onClick={()=>setCurrency(o.key)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-start ${
+                    currency===o.key
+                      ? 'border-[#d99401] bg-[#d9940110]'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}>
+                  <span className="text-2xl flex-shrink-0">{o.flag}</span>
+                  <div>
+                    <p className={`text-sm font-bold leading-tight ${currency===o.key?'text-[#b37a00]':'text-gray-800 dark:text-gray-100'}`}>{o.label}</p>
+                    <p className="text-[10px] text-gray-400">{o.sub}</p>
+                  </div>
+                  {currency===o.key && <Check size={14} className="ms-auto flex-shrink-0" style={{color:'#d99401'}}/>}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

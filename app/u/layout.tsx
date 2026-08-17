@@ -48,6 +48,113 @@ function CartIcon() {
   )
 }
 
+function FirstVisitPopup() {
+  const { lang, currency, setLang, setCurrency } = useLang()
+  const [visible, setVisible] = useState(false)
+  const [selLang, setSelLang] = useState<'en'|'ar'>('en')
+  const [selCurrency, setSelCurrency] = useState<'egp'|'usd'>('egp')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!localStorage.getItem('pk_lang_selected')) {
+      setSelLang((localStorage.getItem('pk_lang') || 'en') as 'en'|'ar')
+      setSelCurrency((localStorage.getItem('pk_currency') || 'egp') as 'egp'|'usd')
+      setVisible(true)
+    }
+  }, [])
+
+  const confirm = () => {
+    setLang(selLang)
+    setCurrency(selCurrency)
+    localStorage.setItem('pk_lang_selected', '1')
+    setVisible(false)
+  }
+
+  if (!visible) return null
+
+  const isAr = selLang === 'ar'
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)'}}>
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden" dir={isAr?'rtl':'ltr'}>
+        {/* Header */}
+        <div className="px-7 pt-8 pb-4 text-center">
+          <div className="text-4xl mb-3">🌍</div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            {isAr ? 'اختر لغتك والعملة' : 'Choose your language & currency'}
+          </h2>
+          <p className="text-sm text-gray-400 mt-1.5">
+            {isAr ? 'يمكنك تغييرهما في أي وقت من صفحة حسابي' : 'You can change these anytime from My Account'}
+          </p>
+        </div>
+
+        <div className="px-6 pb-6 space-y-5">
+          {/* Language */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2.5">
+              {isAr ? 'اللغة' : 'Language'}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key:'en', flag:'🇬🇧', label:'English',  sub:'English' },
+                { key:'ar', flag:'🇪🇬', label:'العربية', sub:'Arabic'  },
+              ] as const).map(o => (
+                <button key={o.key} onClick={()=>setSelLang(o.key)}
+                  className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${
+                    selLang===o.key
+                      ? 'border-[#d99401] bg-[#d9940110]'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}>
+                  <span className="text-3xl">{o.flag}</span>
+                  <div className="text-center">
+                    <p className={`text-sm font-bold ${selLang===o.key?'text-[#b37a00]':'text-gray-800 dark:text-gray-100'}`}>{o.label}</p>
+                    <p className="text-[10px] text-gray-400">{o.sub}</p>
+                  </div>
+                  {selLang===o.key && (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{background:'#d99401'}}>
+                      <ChevronDown size={10} className="text-white -rotate-90"/>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Currency */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2.5">
+              {isAr ? 'العملة' : 'Currency'}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key:'egp', label:'🇪🇬 EGP', sub: isAr?'جنيه مصري':'Egyptian Pound' },
+                { key:'usd', label:'🇺🇸 USD', sub: isAr?'دولار أمريكي':'US Dollar'       },
+              ] as const).map(o => (
+                <button key={o.key} onClick={()=>setSelCurrency(o.key)}
+                  className={`flex flex-col items-center gap-1.5 py-3.5 rounded-2xl border-2 transition-all ${
+                    selCurrency===o.key
+                      ? 'border-[#d99401] bg-[#d9940110]'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}>
+                  <p className={`text-sm font-bold ${selCurrency===o.key?'text-[#b37a00]':'text-gray-800 dark:text-gray-100'}`}>{o.label}</p>
+                  <p className="text-[10px] text-gray-400">{o.sub}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Confirm */}
+          <button onClick={confirm}
+            className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{background:'linear-gradient(135deg,#d99401,#f59e0b)'}}>
+            {isAr ? 'تأكيد والمتابعة ✓' : 'Confirm & Continue ✓'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const router   = useRouter()
   const pathname = usePathname()
@@ -411,16 +518,6 @@ if (pathname==='/u/login') return <>{children}</>
 
           {/* Right: actions */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Currency */}
-            <button onClick={()=>setCurrency(currency==='egp'?'usd':'egp')}
-              className="flex items-center px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              {currency.toUpperCase()}
-            </button>
-            {/* Language */}
-            <button onClick={()=>setLang(lang==='en'?'ar':'en')}
-              className="flex items-center px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              {lang==='en'?'EN':'AR'}
-            </button>
             {/* Theme cycle: auto → light → dark */}
             <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
               className={`w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
@@ -512,6 +609,9 @@ if (pathname==='/u/login') return <>{children}</>
           </AnimatePresence>
         </main>
       </div>
+
+      {/* First-visit language & currency picker */}
+      <FirstVisitPopup/>
 
       {/* ── Profile popup ──────────────────────────── */}
       {profileOpen&&(

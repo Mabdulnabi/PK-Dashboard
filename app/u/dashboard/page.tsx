@@ -286,9 +286,9 @@ export default function DashboardPage() {
       {/* ── Categories marquee ── */}
       {!loading && !activeCat && categories.length > 0 && (
         <div className="mb-5">
-          <p className="text-base font-bold text-gray-700 dark:text-gray-200 mb-3">
+          <h2 className="text-xl font-extrabold text-gray-800 dark:text-gray-100 mb-4">
             {isRtl ? 'نفسك في ايه؟ 🤔' : "What are you looking for? 🤔"}
-          </p>
+          </h2>
           <div className="mq-wrap">
             <div className={isRtl ? 'mq-track-rtl' : 'mq-track'}>
               {(()=>{ const n=Math.max(2,Math.ceil(12/categories.length)); const even=n%2===0?n:n+1; return Array.from({length:even},()=>categories).flat() })().map((cat, i) => (
