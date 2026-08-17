@@ -56,7 +56,7 @@ export default function BlogsPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Realtime: update post status instantly when admin approves/rejects/revises
+  // Realtime: DELETE events on blog_posts (member-deleted posts disappear)
   useEffect(() => {
     const channel = supabase
       .channel('member-blogs-rt')
@@ -65,13 +65,33 @@ export default function BlogsPage() {
         setPosts(prev => {
           const exists = prev.some(p => p.id === updated.id)
           if (exists) return prev.map(p => p.id === updated.id ? { ...p, ...updated } : p)
-          // If a post moved to approved and wasn't in our list, reload
           if (updated.status === 'approved') { load(true); return prev }
           return prev
         })
       })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'blog_posts' }, payload => {
+        const deleted = payload.old as { id: string }
+        if (deleted?.id) setPosts(prev => prev.filter(p => p.id !== deleted.id))
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
+  }, [load])
+
+  // Reload after member submits new/edited post
+  useEffect(() => {
+    const handler = () => load(true)
+    window.addEventListener('blogs-reload', handler)
+    return () => window.removeEventListener('blogs-reload', handler)
+  }, [load])
+
+  // Reload when admin approves/rejects/revises (notified via layout's realtime)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const notif = (e as CustomEvent).detail
+      if (notif?.link?.startsWith('/u/blogs')) load(true)
+    }
+    window.addEventListener('pk-member-notification', handler)
+    return () => window.removeEventListener('pk-member-notification', handler)
   }, [load])
 
   const t = (en: string, ar_: string) => ar ? ar_ : en

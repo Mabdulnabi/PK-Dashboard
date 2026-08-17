@@ -57,7 +57,8 @@ export default function NewBlogPage() {
     const j = await res.json()
     setSaving(false)
     if (!res.ok) { setError(j.error || 'Error'); return }
-    router.push('/u/blogs?mine=1')
+    window.dispatchEvent(new CustomEvent('blogs-reload'))
+    router.push('/u/blogs')
   }
 
   return (

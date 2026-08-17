@@ -161,6 +161,24 @@ export default function ShopAdminPage() {
         else { setBlogError(d?.error||'Failed to load blog posts'); setBlogLoad(false) }
       })
       .catch(e=>{ setBlogError(String(e)); setBlogLoad(false) })
+
+    // Realtime: new submissions (INSERT) and member deletions (DELETE)
+    const channel = supabase
+      .channel('admin-blogs-rt')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'blog_posts' }, payload => {
+        // Fetch full post (with members join) instead of using payload directly
+        fetch('/api/admin/blogs')
+          .then(r=>r.json())
+          .then(d=>{ if(Array.isArray(d)) setBlogPosts(d) })
+          .catch(()=>{})
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'blog_posts' }, payload => {
+        const deleted = payload.old as { id: string }
+        if (deleted?.id) setBlogPosts(prev => prev.filter((p:any) => p.id !== deleted.id))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   },[tab])
 
   useEffect(()=>{
@@ -776,7 +794,7 @@ export default function ShopAdminPage() {
                             <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{post.title}</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusCls}`}>{post.status.replace('_',' ')}</span>
                           </div>
-                          <p className="text-[11px] text-gray-400">By <strong className="text-gray-600 dark:text-gray-300">{post.members?.full_name||'Unknown'}</strong> · {new Date(post.created_at).toLocaleDateString('en-GB')}</p>
+                          <p className="text-[11px] text-gray-400">By <strong className="text-gray-600 dark:text-gray-300">{post.members?.full_name||'Unknown'}</strong> · {new Date(post.updated_at||post.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
                           {post.rejection_reason && <p className="text-[11px] mt-1 text-amber-600 dark:text-amber-400">📝 Feedback: {post.rejection_reason}</p>}
                           {post.admin_note && <p className="text-[11px] mt-1 text-gray-400 italic">🔒 Note: {post.admin_note}</p>}
                         </div>

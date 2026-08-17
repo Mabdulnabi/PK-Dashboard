@@ -261,6 +261,7 @@ const [sidebarOpen,   setSidebar]    = useState(false)
         filter: `member_id=eq.${member.id}`,
       }, (payload) => {
         setNotifs(prev => [payload.new as any, ...prev])
+        window.dispatchEvent(new CustomEvent('pk-member-notification', { detail: payload.new }))
       })
       .subscribe()
 
