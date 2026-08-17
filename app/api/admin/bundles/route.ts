@@ -20,7 +20,7 @@ export async function GET() {
   const { data: items } = bundleIds.length
     ? await service
         .from('bundle_items')
-        .select('bundle_id, tool_id, sort_order, shop_tools(id, name, image_url, category_slug)')
+        .select('bundle_id, tool_id, sort_order, tool:shop_tools!bundle_items_tool_id_fkey(id, name, image_url, category_slug)')
         .in('bundle_id', bundleIds)
         .order('sort_order')
     : { data: [] }
@@ -28,7 +28,7 @@ export async function GET() {
   const itemsByBundle: Record<string, any[]> = {}
   ;(items || []).forEach((i: any) => {
     if (!itemsByBundle[i.bundle_id]) itemsByBundle[i.bundle_id] = []
-    itemsByBundle[i.bundle_id].push(i.shop_tools)
+    if (i.tool) itemsByBundle[i.bundle_id].push(i.tool)
   })
 
   return NextResponse.json({
