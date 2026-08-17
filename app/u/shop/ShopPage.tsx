@@ -166,41 +166,64 @@ export default function ShopPage({ category }: Props) {
       </div>
       )}
 
-      {/* Filter bar — one row */}
-      <div className="flex items-center gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2.5 flex-wrap">
-        {/* Search ~50% */}
-        <div className="relative" style={{ minWidth: 140, flex: '0 1 48%' }}>
+      {/* Filter bar */}
+      <style>{`.shop-filter-scroll{overflow-x:auto;scrollbar-width:none;}.shop-filter-scroll::-webkit-scrollbar{display:none;}`}</style>
+      <div className="mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 space-y-2">
+
+        {/* Mobile: search full width */}
+        <div className="md:hidden relative">
           <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
-          <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search…','بحث…')}
-            className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools…','ابحث عن أداة…')}
+            className="w-full ps-8 pe-3 py-[7px] text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
+          {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
         </div>
 
-        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
+        <div className="flex items-center gap-1.5">
+          {/* Desktop search */}
+          <div className="hidden md:block relative flex-shrink-0" style={{width:'30%',minWidth:140}}>
+            <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+            <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search…','بحث…')}
+              className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
+            {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
+          </div>
+          <div className="hidden md:block w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-0.5"/>
 
-        {/* Category select */}
-        {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (
-          <select value={catFilter} onChange={e=>setCatFilter(e.target.value)}
-            className="text-xs font-semibold px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 outline-none cursor-pointer flex-shrink-0">
-            <option value="all">{t('All cats','كل الأقسام')}</option>
-            {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
-              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-            ))}
-          </select>
-        )}
+          {/* Scrollable buttons */}
+          <div className="flex-1 shop-filter-scroll">
+            <div className="flex items-center gap-1 min-w-max">
+              {/* Category filter buttons */}
+              {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).length > 0 && (<>
+                <button onClick={()=>setCatFilter('all')}
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter==='all'?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                  style={catFilter==='all'?{background:'#d99401'}:{}}>
+                  🌐 <span className="hidden sm:inline">{t('All','الكل')}</span>
+                </button>
+                {categories.filter(c=>tools.some((tool:any)=>tool.category_id===c.id)).map(c=>(
+                  <button key={c.id} onClick={()=>setCatFilter(c.id)}
+                    className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${catFilter===c.id?'text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    style={catFilter===c.id?{background:'#d99401'}:{}}>
+                    <span>{c.icon}</span>
+                    <span className="hidden sm:inline">{c.name}</span>
+                  </button>
+                ))}
+                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1"/>
+              </>)}
 
-        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
-
-        {/* Sort buttons */}
-        <button onClick={()=>setSort('best')}
-          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${sort==='best'?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200'}`}
-          style={sort==='best'?{background:'#d99401'}:{}}>
-          ⭐ {t('Top Rated','الأعلى تقييماً')}
-        </button>
-        <button onClick={()=>setSort('recent')}
-          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${sort==='recent'?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200'}`}
-          style={sort==='recent'?{background:'#d99401'}:{}}>
-          🕐 {t('Newest','الأحدث')}
-        </button>
+              {/* Sort buttons */}
+              {([
+                { key:'best',   en:'Top Rated', ar:'الأعلى تقييماً', emoji:'⭐' },
+                { key:'recent', en:'Newest',    ar:'الأحدث',         emoji:'🕐' },
+              ] as const).map(s=>(
+                <button key={s.key} onClick={()=>setSort(s.key as any)}
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${sort===s.key?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                  style={sort===s.key?{background:'#6366f1'}:{}}>
+                  <span>{s.emoji}</span>
+                  <span className="hidden sm:inline">{lang==='ar'?s.ar:s.en}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Section label */}
@@ -217,106 +240,100 @@ export default function ShopPage({ category }: Props) {
 
       {/* Tool cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-        {filtered.map(tool=>(
-          <div key={tool.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-            {/* Card body - always LTR for layout, content direction handled per element */}
+        {filtered.map(tool=>{
+          const accent = category==='private'?'#8b5cf6':'#d99401'
+          const faved  = isFav(tool.id)
+          return (
+          <div key={tool.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+            <div className="h-0.5 w-full flex-shrink-0" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
+
             <div className="p-5 pb-3 relative">
               {/* Badge */}
               <span className="absolute top-4 end-4 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
                 <Zap size={10} fill="white"/>{lang==='ar'?'فوري':(tool.delivery_label||'INSTANT')}
               </span>
-              {/* Logo - always LTR */}
+              {/* Logo */}
               <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-4 overflow-hidden shadow-sm">
                 {tool.image_url
                   ? <img src={tool.image_url} alt={tool.name} className="w-10 h-10 object-contain"/>
                   : <span className="text-xl font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>
                 }
               </div>
-              {/* Name & description - always LTR */}
               <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pe-16 leading-tight">{tool.name}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2">{tool.description}</p>
-              {/* Price - RTL in Arabic, LTR in English */}
-              <div className="mb-1" dir={lang==='ar'?'rtl':'ltr'}>
-                <span className="text-2xl font-bold" style={{color:'#d99401'}}>{price(tool)}</span>
-                <span className="text-sm text-gray-400 mx-1">/</span>
-                <span className="text-sm text-gray-400">{lang==='ar'?tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة'):tool.duration_label}</span>
-              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">{tool.description}</p>
             </div>
-            <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
-            <div className="px-5 py-3 flex items-center justify-between" dir={lang==='ar'?'rtl':'ltr'}>
-              <button onClick={()=>openDetails(tool)}
-                className="flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors">
-                <Info size={15}/>{t('Details','التفاصيل')}
-              </button>
+
+            {/* Stars */}
+            <div className="px-5 pb-3">
               <Stars rating={tool.rating} count={tool.review_count}/>
             </div>
-            <div className="px-4 pb-4 space-y-2" dir={lang==='ar'?'rtl':'ltr'}>
+
+            <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
+
+            <div className="px-5 py-3 mt-auto space-y-2" dir={lang==='ar'?'rtl':'ltr'}>
+              {/* Price + duration inline */}
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xl font-bold" style={{color:accent}}>{price(tool)}</span>
+                <span className="text-sm text-gray-400 whitespace-nowrap">
+                  / {lang==='ar'?tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة'):tool.duration_label}
+                </span>
+              </div>
+
+              {/* Details link row */}
+              {(Array.isArray(tool.landing_blocks)&&tool.landing_blocks.length>0) && (
+                <button onClick={()=>openDetails(tool)}
+                  className="w-full text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#6366f1]/50 hover:text-[#6366f1] transition-all flex items-center justify-center gap-1.5">
+                  <Info size={12}/>{t('Details','التفاصيل')}
+                </button>
+              )}
+
               {tool.is_out_of_stock ? (
                 <button disabled className="w-full py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">
                   {t('Out of Stock','نفذت الكمية')}
                 </button>
-              ) : (
-                <>
-                  {/* Private: qty controls above buttons */}
-                  {category === 'private' && (
-                    <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty','الكمية')}</span>
-                      <div className="flex items-center gap-2">
-                        <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)-1)} disabled={localQty(tool.id)<=1}
-                          className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                          <Minus size={10}/>
-                        </button>
-                        <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-6 text-center">{localQty(tool.id)}</span>
-                        <button onClick={()=>setLocalQty(tool.id, localQty(tool.id)+1)}
-                          className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                          <Plus size={10}/>
-                        </button>
-                      </div>
+              ) : (<>
+                {/* Private: qty row */}
+                {category === 'private' && (
+                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty','الكمية')}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={()=>setLocalQty(tool.id,localQty(tool.id)-1)} disabled={localQty(tool.id)<=1}
+                        className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <Minus size={10}/>
+                      </button>
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-6 text-center">{localQty(tool.id)}</span>
+                      <button onClick={()=>setLocalQty(tool.id,localQty(tool.id)+1)}
+                        className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <Plus size={10}/>
+                      </button>
                     </div>
-                  )}
-                  {/* Action row: [Fav] [Buy Now (large)] [Cart (small)] */}
-                  <div className="flex items-center gap-2">
-                    {/* Fav — small icon */}
-                    <button onClick={()=>toggleFav(tool.id, tool)}
-                      className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
-                      style={isFav(tool.id)
-                        ? {background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}
-                        : {borderColor:'#e5e7eb',color:'#9ca3af'}}>
-                      <Heart size={13} fill={isFav(tool.id)?'currentColor':'none'}/>
-                    </button>
-                    {/* Buy Now — large gold */}
-                    <button onClick={()=>buy(tool)}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
-                      style={{background:'#d99401'}}>
-                      <ShoppingCart size={13}/>{t('Buy Now','شراء الآن')}
-                    </button>
-                    {/* Add to Cart — interactive +🛒 button */}
-                    <button onClick={()=>handleAddToCart(tool)}
-                      className="flex-shrink-0 h-9 px-2.5 rounded-xl border flex items-center gap-1 transition-all text-xs font-bold relative"
-                      style={inCart(tool.id)
-                        ? {background:'#d9940118',borderColor:'#d99401',color:'#d99401'}
-                        : {borderColor:'#e5e7eb',color:'#6b7280',background:'white'}}>
-                      {inCart(tool.id) ? (
-                        <>
-                          <Check size={11}/>
-                          <ShoppingCart size={12}/>
-                          {(category === 'private' ? getQty(tool.id) : 1) > 0 && (
-                            <span className="text-[10px] font-black">{category === 'private' ? getQty(tool.id) : ''}</span>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={11}/>
-                          <ShoppingCart size={12}/>
-                        </>
-                      )}
-                    </button>
                   </div>
-                </>
-              )}
+                )}
+                {/* Action row: Fav | Buy Now | Cart */}
+                <div className="flex items-center gap-1.5">
+                  <button onClick={()=>toggleFav(tool.id,tool)}
+                    className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
+                    style={faved?{background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}:{borderColor:'#e5e7eb',color:'#9ca3af'}}>
+                    <Heart size={13} fill={faved?'currentColor':'none'}/>
+                  </button>
+                  <button onClick={()=>buy(tool)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
+                    style={{background:accent}}>
+                    <ShoppingCart size={13}/>{t('Buy Now','شراء الآن')}
+                  </button>
+                  <button onClick={()=>handleAddToCart(tool)}
+                    className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all"
+                    style={inCart(tool.id)
+                      ? {background:'#10b98120',borderColor:'#10b981',color:'#10b981'}
+                      : {borderColor:'#e5e7eb',color:'#6b7280'}}>
+                    {inCart(tool.id) ? <Check size={13}/> : <Plus size={13}/>}
+                  </button>
+                </div>
+              </>)}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Toast */}

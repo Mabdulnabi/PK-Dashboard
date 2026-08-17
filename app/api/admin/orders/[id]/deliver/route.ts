@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { badRequest, notFound, serverError } from '@/lib/responses'
 
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { data } = await db
+    .from('account_deliveries')
+    .select('delivery_type, email, password_enc, key_enc, notes')
+    .eq('purchase_id', params.id)
+    .maybeSingle()
+  if (!data) return NextResponse.json({ delivery: null })
+  return NextResponse.json({
+    delivery: {
+      delivery_type: data.delivery_type || 'account',
+      email: data.email,
+      password: data.password_enc,
+      key: data.key_enc,
+      notes: data.notes,
+    }
+  })
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { error: delErr } = await db.from('account_deliveries').delete().eq('purchase_id', params.id)
+  if (delErr) return serverError(delErr.message)
+  await db.from('tool_purchases').update({ status: 'confirmed' }).eq('id', params.id)
+  return NextResponse.json({ ok: true })
+}
+
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { delivery_type = 'account', email, password, key, notes } = await req.json()
 

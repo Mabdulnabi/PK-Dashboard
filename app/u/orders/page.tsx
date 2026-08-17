@@ -776,6 +776,10 @@ export default function MyOrdersPage() {
         <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
       )}
 
+      {/* ── Status cards — always at top ── */}
+      {!loading && <QuickStats purchases={purchases} t={t} lang={lang} currency={currency} formatPrice={formatPrice} usdRate={usdRate}/>}
+
+      {/* ── Action banners — below stats ── */}
       <ReviewPrompt purchases={purchases} t={t} lang={lang}/>
 
       <OnboardingChecklist
@@ -785,8 +789,6 @@ export default function MyOrdersPage() {
       />
 
       <SmartNextAction purchases={purchases} notifications={notifications} loading={loading} t={t} lang={lang}/>
-
-      {!loading && <QuickStats purchases={purchases} t={t} lang={lang} currency={currency} formatPrice={formatPrice} usdRate={usdRate}/>}
 
       {quickError && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400">

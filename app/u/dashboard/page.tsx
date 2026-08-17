@@ -6,7 +6,7 @@ import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
 import {
   Star, Zap, Lock, Users, ArrowRight, ArrowLeft,
-  ShoppingCart, Search, Plus, Minus, Check,
+  ShoppingCart, Search, Plus, Minus, Check, Heart,
   ChevronLeft, X,
 } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
@@ -41,19 +41,18 @@ function Stars({ rating, count }: { rating: number; count: number }) {
 }
 
 type SortKey = 'best' | 'cheapest' | 'expensive' | 'newest'
-const SORTS: { key: SortKey; en: string; ar: string }[] = [
-  { key: 'best',      en: 'Top Rated',    ar: 'الأعلى تقييماً' },
-  { key: 'cheapest',  en: 'Lowest Price', ar: 'الأقل سعراً'    },
-  { key: 'expensive', en: 'Highest Price',ar: 'الأعلى سعراً'   },
-  { key: 'newest',    en: 'Newest',       ar: 'الأحدث'         },
+const SORTS: { key: SortKey; en: string; ar: string; emoji: string }[] = [
+  { key: 'best',      en: 'Top Rated',     ar: 'الأعلى تقييماً', emoji: '⭐' },
+  { key: 'cheapest',  en: 'Cheapest',      ar: 'الأقل سعراً',    emoji: '💰' },
+  { key: 'expensive', en: 'Priciest',      ar: 'الأعلى سعراً',   emoji: '💎' },
+  { key: 'newest',    en: 'Newest',        ar: 'الأحدث',         emoji: '🕐' },
 ]
 
-/* ── Main Page ───────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router        = useRouter()
   const { t, lang, formatPrice } = useLang()
   const settings      = useSiteSettings()
-  const { addToCart, removeFromCart, inCart, getQty, updateQty } = useCart()
+  const { addToCart, removeFromCart, inCart, getQty, updateQty, toggleFav, isFav } = useCart()
   const isRtl  = lang === 'ar'
   const usdRate = parseFloat(settings.usd_to_egp_rate || '50')
 
@@ -143,13 +142,17 @@ export default function DashboardPage() {
       {/* ── Marquee CSS ── */}
       <style>{`
         @keyframes marquee-ltr { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-        @keyframes marquee-rtl { 0%{transform:translateX(0)} 100%{transform:translateX(50%)} }
-        .marquee-track { display:flex; width:max-content; animation: marquee-ltr 12s linear infinite; }
-        .marquee-track-rtl { display:flex; width:max-content; animation: marquee-rtl 12s linear infinite; }
+        @keyframes marquee-rtl { 0%{transform:translateX(0)} 100%{transform:translateX(50%)}  }
+        .marquee-track     { display:flex; width:max-content; animation: marquee-ltr var(--mq-dur,20s) linear infinite; }
+        .marquee-track-rtl { display:flex; width:max-content; animation: marquee-rtl var(--mq-dur,20s) linear infinite; }
         .marquee-wrap { overflow:hidden; }
         .marquee-wrap:hover .marquee-track,
         .marquee-wrap:hover .marquee-track-rtl { animation-play-state:paused; }
-        .scrollbar-hide::-webkit-scrollbar { display:none; }
+        @media (max-width:639px) { .marquee-wrap { --mq-dur:14s; } }
+        @media (min-width:640px) { .marquee-wrap { --mq-dur:22s; } }
+        @media (min-width:1024px){ .marquee-wrap { --mq-dur:30s; } }
+        .filter-scroll { overflow-x:auto; scrollbar-width:none; }
+        .filter-scroll::-webkit-scrollbar { display:none; }
       `}</style>
 
       {/* ── Banner ── */}
@@ -183,12 +186,12 @@ export default function DashboardPage() {
               {[...categories, ...categories].map((cat, i) => (
                 <button key={`${cat.id}-${i}`}
                   onClick={() => { setActiveCat(cat); setQ('') }}
-                  className="flex-shrink-0 flex flex-col items-center gap-2 mx-2.5 group">
-                  <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-[#d99401] transition-all shadow-sm">
+                  className="flex-shrink-0 flex flex-col items-center gap-2.5 mx-3 group">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-[#d99401] transition-all shadow-md group-hover:shadow-lg group-hover:shadow-[#d9940130]">
                     <img src={cat.image_url!} alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"/>
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
                   </div>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[96px] truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[112px] sm:max-w-[128px] md:max-w-[144px] truncate">
                     {isRtl && cat.name_ar ? cat.name_ar : cat.name}
                   </span>
                 </button>
@@ -217,16 +220,35 @@ export default function DashboardPage() {
 
       {/* ── Filter bar ── */}
       {!loading && (
-        <div className="mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2.5 space-y-2">
-          {/* Row 1: search (half width) + type buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Search — ~50% */}
-            <div className="relative" style={{ minWidth: 160, flex: '0 1 50%' }}>
+        <div className="mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 space-y-2">
+
+          {/* Mobile: search full width */}
+          <div className="md:hidden relative">
+            <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              style={{ [isRtl ? 'right' : 'left']: 9 }}/>
+            <input value={q} onChange={e => setQ(e.target.value)}
+              placeholder={t('Search tools…','ابحث عن أداة…')}
+              className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
+              style={{ padding: '7px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 28 }}/>
+            {q && (
+              <button onClick={() => setQ('')}
+                className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                style={{ [isRtl ? 'left' : 'right']: 7 }}>
+                <X size={11}/>
+              </button>
+            )}
+          </div>
+
+          {/* Desktop: all in one row | Mobile: scrollable buttons row */}
+          <div className="flex items-center gap-1.5">
+
+            {/* Desktop search — hidden on mobile */}
+            <div className="hidden md:block relative flex-shrink-0" style={{ width: '30%', minWidth: 140 }}>
               <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 style={{ [isRtl ? 'right' : 'left']: 9 }}/>
               <input value={q} onChange={e => setQ(e.target.value)}
                 placeholder={t('Search…','بحث…')}
-                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401]"
+                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
                 style={{ padding: '6px 8px', [isRtl ? 'paddingRight' : 'paddingLeft']: 28 }}/>
               {q && (
                 <button onClick={() => setQ('')}
@@ -237,48 +259,54 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
+            {/* Desktop separator */}
+            <div className="hidden md:block w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-0.5"/>
 
-            {/* Type buttons */}
-            {!activeCat && ([
-              { key: 'all',     en: 'All',     ar: 'الكل',   count: tools.length },
-              { key: 'shared',  en: 'Shared',  ar: 'مشتركة', count: sharedCount,  Icon: Users },
-              { key: 'private', en: 'Private', ar: 'خاصة',   count: privateCount, Icon: Lock  },
-            ] as const).map(tab => {
-              const Icon   = 'Icon' in tab ? tab.Icon : null
-              const active = activeTab === tab.key
-              return (
-                <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 ${
-                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                  style={active ? { background: '#d99401' } : {}}>
-                  {Icon && <Icon size={10}/>}
-                  {isRtl ? tab.ar : tab.en}
-                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold ms-0.5 ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                    {tab.count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+            {/* Buttons — scrollable on mobile */}
+            <div className="flex-1 filter-scroll">
+              <div className="flex items-center gap-1 min-w-max">
 
-          {/* Row 2: sort buttons */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide flex-shrink-0 me-1">
-              {isRtl ? 'ترتيب:' : 'Sort:'}
-            </span>
-            {SORTS.map(s => (
-              <button key={s.key} onClick={() => setSort(s.key)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${
-                  sort === s.key
-                    ? 'text-white'
-                    : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-                style={sort === s.key ? { background: '#d99401' } : {}}>
-                {isRtl ? s.ar : s.en}
-              </button>
-            ))}
+                {/* Type buttons */}
+                {!activeCat && ([
+                  { key: 'all',     en: 'All',     ar: 'الكل',   count: tools.length,  emoji: '🌐' },
+                  { key: 'shared',  en: 'Shared',  ar: 'مشترك',  count: sharedCount,   emoji: '👥' },
+                  { key: 'private', en: 'Private', ar: 'خاص',    count: privateCount,  emoji: '🔒' },
+                ] as const).map(tab => {
+                  const active = activeTab === tab.key
+                  return (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
+                        active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      style={active ? { background: '#d99401' } : {}}>
+                      <span className="text-[11px]">{tab.emoji}</span>
+                      <span className="hidden sm:inline">{isRtl ? tab.ar : tab.en}</span>
+                      <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  )
+                })}
+
+                {/* Separator between groups */}
+                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1"/>
+
+                {/* Sort buttons */}
+                {SORTS.map(s => {
+                  const active = sort === s.key
+                  return (
+                    <button key={s.key} onClick={() => setSort(s.key)}
+                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
+                        active ? 'text-white' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                      style={active ? { background: '#6366f1' } : {}}>
+                      <span className="text-[11px]">{s.emoji}</span>
+                      <span className="hidden sm:inline">{isRtl ? s.ar : s.en}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -300,14 +328,16 @@ export default function DashboardPage() {
             const added     = inCart(tool.id)
             const busy      = addingId === tool.id
             const qty       = localQty(tool.id)
+            const faved     = isFav(tool.id)
 
             return (
               <div key={tool.id}
-                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
 
-                <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg,${accent},${accent}88)` }}/>
+                <div className="h-0.5 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg,${accent},${accent}88)` }}/>
 
-                <div className="p-4">
+                {/* Top section — fixed content, no flex-grow yet */}
+                <div className="p-4 pb-3">
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-11 h-11 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
                       {tool.image_url
@@ -329,16 +359,23 @@ export default function DashboardPage() {
                   </div>
 
                   <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 leading-tight">{tool.name}</h3>
-                  <p className="text-xs text-gray-400 leading-relaxed mb-2 line-clamp-2">{tool.description}</p>
+                  {/* Flex-grow spacer for description — keeps bottom pinned */}
+                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2 min-h-[2.5rem]">{tool.description}</p>
+                </div>
+
+                {/* Stars — always at same vertical position */}
+                <div className="px-4 pb-3">
                   <Stars rating={tool.rating} count={tool.review_count}/>
                 </div>
 
                 <div className="mx-4 border-t border-gray-100 dark:border-gray-800"/>
 
-                <div className="p-4 pt-3 space-y-2">
-                  <div className="flex items-baseline justify-between">
+                {/* Bottom section — pushes to bottom via mt-auto */}
+                <div className="p-4 pt-3 mt-auto space-y-2">
+                  {/* Price + duration on same line */}
+                  <div className="flex items-baseline justify-between gap-2">
                     <span className="text-base font-bold" style={{ color: accent }}>{formatPrice(tool.price_egp, usdRate)}</span>
-                    <span className="text-xs text-gray-400">/ {tool.duration_label}</span>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
                   </div>
 
                   {tool.is_out_of_stock ? (
@@ -346,40 +383,57 @@ export default function DashboardPage() {
                       {isRtl ? 'نفد المخزون' : 'Out of Stock'}
                     </div>
                   ) : (<>
-                    {/* Qty control — private only */}
+                    {/* Private: Details + Qty row */}
                     {isPrivate && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">{t('Qty','الكمية')}</span>
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between gap-2">
+                        {tool.details_slug ? (
+                          <button onClick={() => openDetail(tool)}
+                            className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#8b5cf6]/50 hover:text-[#8b5cf6] transition-all flex-shrink-0">
+                            {t('Details','التفاصيل')}
+                          </button>
+                        ) : <div/>}
+                        <div className="flex items-center gap-1.5">
                           <button onClick={() => setLocalQty(tool.id, qty-1)} disabled={qty<=1}
-                            className="w-6 h-6 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40">
+                            className="w-6 h-6 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
                             <Minus size={10}/>
                           </button>
                           <span className="text-sm font-bold text-gray-900 dark:text-gray-100 w-5 text-center">{qty}</span>
                           <button onClick={() => setLocalQty(tool.id, qty+1)}
-                            className="w-6 h-6 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                            className="w-6 h-6 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                             <Plus size={10}/>
                           </button>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex gap-1.5">
-                      {/* Details — navigate to landing page slug */}
-                      {tool.details_slug && (
-                        <button onClick={() => openDetail(tool)}
-                          className="flex-shrink-0 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400 hover:border-[#d99401]/40 hover:text-[#d99401] transition-all">
-                          {t('Details','التفاصيل')}
-                        </button>
-                      )}
+                    {/* Shared: Details link if available */}
+                    {!isPrivate && tool.details_slug && (
+                      <button onClick={() => openDetail(tool)}
+                        className="w-full text-xs font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#d99401]/50 hover:text-[#d99401] transition-all text-center">
+                        {t('Details','التفاصيل')}
+                      </button>
+                    )}
 
+                    {/* Action row: Fav | Buy Now | Cart */}
+                    <div className="flex items-center gap-1.5">
+                      {/* Fav */}
+                      <button onClick={() => toggleFav(tool.id, tool as any)}
+                        className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
+                        style={faved
+                          ? { background: '#fee2e2', borderColor: '#fca5a5', color: '#ef4444' }
+                          : { borderColor: '#e5e7eb', color: '#9ca3af' }}>
+                        <Heart size={13} fill={faved ? 'currentColor' : 'none'}/>
+                      </button>
+
+                      {/* Buy Now */}
                       <Link href={`/u/checkout?tool_id=${tool.id}`}
-                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 shadow-sm transition-opacity"
+                        className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 shadow-sm transition-opacity"
                         style={{ background: accent }}>
                         {isRtl ? <ArrowLeft size={11}/> : <ArrowRight size={11}/>}
                         {t('Buy Now','اشتري الآن')}
                       </Link>
 
+                      {/* Cart */}
                       <button onClick={() => handleCart(tool)} disabled={busy}
                         className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border transition-all ${
                           added ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#d99401]/50 hover:text-[#d99401]'

@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Download, Monitor, Smartphone, ExternalLink, Zap, Wifi, WifiOff, Loader2, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, Copy, Check as CheckIcon, MessageCircle, Lock } from 'lucide-react'
+import { ArrowLeft, Download, Monitor, Smartphone, ExternalLink, Zap, Wifi, WifiOff, Loader2, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, Copy, Check as CheckIcon, MessageCircle, Lock, AlertTriangle, Star, X } from 'lucide-react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 
@@ -90,6 +90,18 @@ export default function SubscriptionDetailPage() {
   const [showPass,       setShowPass]        = useState(false)
   const [copied,         setCopied]          = useState<'email'|'pass'|null>(null)
   const [memberId,       setMemberId]        = useState<string|null>(null)
+  // Report not working
+  const [reportOpen,     setReportOpen]      = useState(false)
+  const [reportMsg,      setReportMsg]       = useState('')
+  const [reportBusy,     setReportBusy]      = useState(false)
+  const [reportSent,     setReportSent]      = useState(false)
+  // Rate purchase
+  const [rateOpen,       setRateOpen]        = useState(false)
+  const [rateVal,        setRateVal]         = useState(0)
+  const [rateHover,      setRateHover]       = useState(0)
+  const [rateTxt,        setRateTxt]         = useState('')
+  const [rateBusy,       setRateBusy]        = useState(false)
+  const [rateSent,       setRateSent]        = useState(false)
   const extCheckRef     = useRef(false)
   const fetchServersRef = useRef<(() => void) | null>(null)
   const pollRef         = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -146,7 +158,7 @@ export default function SubscriptionDetailPage() {
   // ── Fetch servers when purchase is loaded ──
   }, [id, fetchDelivery])
 
-  // Supabase Realtime: instant delivery notification via member_notifications
+  // Supabase Realtime: delivery created/updated → refetch credentials
   useEffect(() => {
     if (!memberId) return
     const supabase = createClient(
@@ -155,6 +167,7 @@ export default function SubscriptionDetailPage() {
     )
     const channel = supabase
       .channel(`delivery-watch-${id}`)
+      // Notification trigger (legacy)
       .on('postgres_changes', {
         event:  'INSERT',
         schema: 'public',
@@ -162,11 +175,28 @@ export default function SubscriptionDetailPage() {
         filter: `member_id=eq.${memberId}`,
       }, (payload) => {
         const n = payload.new as any
-        // Delivery notification triggers an immediate credential fetch
-        if (n?.type === 'success' && n?.link === '/u/shop') {
-          fetchDelivery()
-        }
+        if (n?.type === 'success' && n?.link === '/u/shop') fetchDelivery()
       })
+      // Direct delivery insert or update → immediate credential refresh
+      .on('postgres_changes', {
+        event:  'INSERT',
+        schema: 'public',
+        table:  'account_deliveries',
+        filter: `member_id=eq.${memberId}`,
+      }, () => fetchDelivery())
+      .on('postgres_changes', {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  'account_deliveries',
+        filter: `member_id=eq.${memberId}`,
+      }, () => fetchDelivery())
+      // Purchase status change (pending → delivered)
+      .on('postgres_changes', {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  'tool_purchases',
+        filter: `id=eq.${id}`,
+      }, () => fetchDelivery())
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
@@ -588,6 +618,23 @@ export default function SubscriptionDetailPage() {
           </div>
         )}
 
+        {/* ── Private tool action buttons ── */}
+        {purchase.category_slug === 'private' && (
+          <div className="flex gap-3">
+            <button onClick={() => { setReportOpen(true); setReportMsg(''); setReportSent(false) }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-200 dark:border-red-500/30 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+              <AlertTriangle size={14}/>
+              {t('Report Not Working','إبلاغ عن مشكلة')}
+            </button>
+            <button onClick={() => { setRateOpen(true); setRateVal(0); setRateTxt(''); setRateSent(false) }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-colors hover:opacity-90"
+              style={{ background: '#f59e0b' }}>
+              <Star size={14}/>
+              {t('Rate Purchase','تقييم الاشتراك')}
+            </button>
+          </div>
+        )}
+
         {/* ── WhatsApp support ── */}
         <a href={`https://wa.me/${(settings?.whatsapp_number||'').replace(/\D/g,'')}?text=${encodeURIComponent(`مساعدة في: ${purchase.tool_name}`)}`}
           target="_blank"
@@ -601,6 +648,147 @@ export default function SubscriptionDetailPage() {
           </div>
         </a>
       </div>
+
+      {/* ── Report Not Working Modal ── */}
+      {reportOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setReportOpen(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700"
+            onClick={e => e.stopPropagation()} dir={dir}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} className="text-red-500"/>
+                <p className="font-bold text-sm text-gray-900 dark:text-gray-100">{t('Report Issue','إبلاغ عن مشكلة')}</p>
+              </div>
+              <button onClick={() => setReportOpen(false)}
+                className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                <X size={13}/>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {reportSent ? (
+                <div className="text-center py-4">
+                  <CheckCircle size={36} className="text-emerald-500 mx-auto mb-2"/>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">{t('Ticket sent!','تم إرسال التذكرة!')}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('Support team will reply soon','فريق الدعم سيرد قريباً')}</p>
+                  <button onClick={() => setReportOpen(false)}
+                    className="mt-4 px-5 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#d99401' }}>
+                    {t('Close','إغلاق')}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-500">{t('Describe the issue with','اوصف المشكلة في')} <strong>{purchase.tool_name}</strong></p>
+                  <textarea
+                    value={reportMsg}
+                    onChange={e => setReportMsg(e.target.value)}
+                    rows={4}
+                    placeholder={t('e.g. Login not working, account suspended...','مثال: تسجيل الدخول لا يعمل، الحساب معلق...')}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-red-400 resize-none transition-all"/>
+                  <button
+                    onClick={async () => {
+                      if (!reportMsg.trim()) return
+                      setReportBusy(true)
+                      await fetch('/api/member/tickets', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          subject: `مشكلة في ${purchase.tool_name}`,
+                          message: reportMsg.trim(),
+                          priority: 'high',
+                          category: 'technical',
+                        })
+                      })
+                      setReportBusy(false)
+                      setReportSent(true)
+                    }}
+                    disabled={!reportMsg.trim() || reportBusy}
+                    className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: '#ef4444' }}>
+                    {reportBusy
+                      ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> {t('Sending...','جاري الإرسال...')}</>
+                      : <><AlertTriangle size={14}/> {t('Submit Report','إرسال البلاغ')}</>}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rate Purchase Modal ── */}
+      {rateOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setRateOpen(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700"
+            onClick={e => e.stopPropagation()} dir={dir}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <Star size={16} className="text-amber-500"/>
+                <p className="font-bold text-sm text-gray-900 dark:text-gray-100">{t(`Rate ${purchase.tool_name}`, `تقييم ${purchase.tool_name}`)}</p>
+              </div>
+              <button onClick={() => setRateOpen(false)}
+                className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                <X size={13}/>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {rateSent ? (
+                <div className="text-center py-4">
+                  <Star size={36} className="text-amber-400 mx-auto mb-2" fill="#f59e0b"/>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">{t('Thank you! 🎉','شكراً على تقييمك! 🎉')}</p>
+                  <button onClick={() => setRateOpen(false)}
+                    className="mt-4 px-5 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#f59e0b' }}>
+                    {t('Close','إغلاق')}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-2">
+                    {[1,2,3,4,5].map(i => (
+                      <button key={i} type="button"
+                        onMouseEnter={() => setRateHover(i)} onMouseLeave={() => setRateHover(0)}
+                        onClick={() => setRateVal(i)}>
+                        <Star size={32}
+                          fill={(rateHover || rateVal) >= i ? '#F59E0B' : 'none'}
+                          stroke={(rateHover || rateVal) >= i ? '#F59E0B' : '#9CA3AF'}
+                          className="transition-colors"/>
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={rateTxt}
+                    onChange={e => setRateTxt(e.target.value)}
+                    rows={3}
+                    placeholder={t('Add a comment (optional)...','أضف تعليقاً (اختياري)...')}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-amber-400 resize-none transition-all"/>
+                  <button
+                    onClick={async () => {
+                      if (!rateVal) return
+                      setRateBusy(true)
+                      if (purchase.tool_id) {
+                        await fetch(`/api/tools/${purchase.tool_id}/reviews`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ stars: rateVal, comment: rateTxt })
+                        })
+                      }
+                      setRateBusy(false)
+                      setRateSent(true)
+                    }}
+                    disabled={!rateVal || rateBusy}
+                    className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: '#f59e0b' }}>
+                    {rateBusy
+                      ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> {t('Sending...','جاري...')}</>
+                      : <><Star size={14}/> {t('Submit Review','إرسال التقييم')}</>}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import {
@@ -19,10 +20,15 @@ interface Ticket {
   member?: MemberInfo
 }
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 const GOLD = '#d99401'
 const STATUS_COLORS: Record<string, string> = { open: '#EF4444', in_progress: '#F59E0B', resolved: '#10B981', closed: '#6B7280' }
 const PRIORITY_COLORS: Record<string, string> = { low: '#6B7280', normal: '#3B82F6', high: '#F59E0B', urgent: '#EF4444' }
-const CATEGORY_LABELS: Record<string, string> = { subscription: 'Subscription', payment: 'Payment', general: 'General' }
+const CATEGORY_LABELS: Record<string, string> = { subscription: 'Subscription', payment: 'Payment', general: 'General', technical: 'Technical' }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'ok' | 'err'; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [onClose])
@@ -119,11 +125,20 @@ export default function TicketsPage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/admin/profile').then(r => r.json()).then(setAdminProfile) }, [])
 
-  // Poll every 15s; faster (8s) when a ticket is open
+  // Realtime — new tickets + message replies appear instantly
   useEffect(() => {
-    const id = setInterval(() => load(true), activeId ? 8000 : 15000)
+    const channel = supabase.channel('admin-tickets-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_messages' }, () => load(true))
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [load])
+
+  // Fallback poll every 30s
+  useEffect(() => {
+    const id = setInterval(() => load(true), 30000)
     return () => clearInterval(id)
-  }, [load, activeId])
+  }, [load])
 
   // Scroll thread to bottom on open or new messages
   useEffect(() => {

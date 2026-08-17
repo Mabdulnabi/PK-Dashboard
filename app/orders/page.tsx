@@ -38,12 +38,14 @@ export default function OrdersPage() {
   const [orders,   setOrders]   = useState<Order[]>([])
   const [loading,  setLoading]  = useState(true)
   const [filter,   setFilter]   = useState<'all'|'pending'|'delivered'>('all')
-  const [modal,    setModal]    = useState<Order|null>(null)
-  const [form,     setForm]     = useState({ delivery_type:'account' as 'account'|'key', email:'', password:'', key:'', notes:'' })
-  const [showPass, setShowPass] = useState(false)
-  const [saving,   setSaving]   = useState(false)
-  const [toast,    setToast]    = useState<{msg:string;type:'ok'|'err'}|null>(null)
-  const [page,     setPage]     = useState(1)
+  const [modal,        setModal]        = useState<Order|null>(null)
+  const [form,         setForm]         = useState({ delivery_type:'account' as 'account'|'key', email:'', password:'', key:'', notes:'' })
+  const [showPass,     setShowPass]     = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [deleting,     setDeleting]     = useState(false)
+  const [formLoading,  setFormLoading]  = useState(false)
+  const [toast,        setToast]        = useState<{msg:string;type:'ok'|'err'}|null>(null)
+  const [page,         setPage]         = useState(1)
   const perPage = 12
 
   useEffect(()=>{
@@ -60,10 +62,48 @@ export default function OrdersPage() {
 
   useEffect(()=>{ load() },[filter])
 
-  const openDeliver = (order: Order) => {
+  // Realtime: reload when any purchase or delivery changes
+  useEffect(()=>{
+    const channel = supabase
+      .channel('admin-orders-rt')
+      .on('postgres_changes',{ event:'*', schema:'public', table:'tool_purchases' },()=>load())
+      .on('postgres_changes',{ event:'*', schema:'public', table:'account_deliveries' },()=>load())
+      .subscribe()
+    return ()=>{ supabase.removeChannel(channel) }
+  },[])
+
+  const openDeliver = async (order: Order) => {
     setForm({ delivery_type:'account', email:'', password:'', key:'', notes:'' })
     setShowPass(false)
     setModal(order)
+    if (order.delivered) {
+      setFormLoading(true)
+      try {
+        const r = await fetch(`/api/admin/orders/${order.id}/deliver`)
+        const d = await r.json()
+        if (d.delivery) {
+          setForm({
+            delivery_type: d.delivery.delivery_type,
+            email:    d.delivery.email    || '',
+            password: d.delivery.password || '',
+            key:      d.delivery.key      || '',
+            notes:    d.delivery.notes    || '',
+          })
+        }
+      } catch {}
+      setFormLoading(false)
+    }
+  }
+
+  const deleteDelivery = async () => {
+    if (!modal || !window.confirm(`Clear delivery for ${modal.member_name}? This will reset the order to Pending.`)) return
+    setDeleting(true)
+    const res = await fetch(`/api/admin/orders/${modal.id}/deliver`, { method: 'DELETE' })
+    setDeleting(false)
+    if (!res.ok) { setToast({ msg: 'Failed to delete', type: 'err' }); return }
+    setToast({ msg: 'Delivery cleared — order reset to Pending', type: 'ok' })
+    setModal(null)
+    load()
   }
 
   const deliver = async () => {
@@ -289,14 +329,27 @@ export default function OrdersPage() {
               </div>
             </div>
 
+            {formLoading && (
+              <div className="flex items-center justify-center py-4 text-sm text-gray-400">
+                <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin me-2" style={{borderColor:GOLD,borderTopColor:'transparent'}}/>
+                Loading existing delivery…
+              </div>
+            )}
+
             <div className="flex gap-3 mt-5">
+              {modal?.delivered && (
+                <button onClick={deleteDelivery} disabled={deleting}
+                  className="px-4 py-3 rounded-xl border border-red-200 dark:border-red-500/30 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-50">
+                  {deleting ? '…' : '🗑 Clear'}
+                </button>
+              )}
               <button onClick={()=>setModal(null)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 Cancel
               </button>
-              <button onClick={deliver} disabled={saving}
+              <button onClick={deliver} disabled={saving||formLoading}
                 className="flex-[2] py-3 rounded-xl disabled:opacity-60 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
                 style={{background:GOLD}}>
-                {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</> : <><Check size={15}/> Deliver & Notify</>}
+                {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</> : <><Check size={15}/> {modal?.delivered ? 'Update & Notify' : 'Deliver & Notify'}</>}
               </button>
             </div>
           </div>
