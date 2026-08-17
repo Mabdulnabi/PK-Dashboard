@@ -423,8 +423,10 @@ if (pathname==='/u/login') return <>{children}</>
             </button>
             {/* Theme cycle: auto → light → dark */}
             <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
-              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              style={themeMode === 'auto' ? {color:'#d99401'} : {color: undefined}}>
+              className={`w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                themeMode !== 'auto' ? 'text-gray-600 dark:text-white' : ''
+              }`}
+              style={themeMode === 'auto' ? {color:'#d99401'} : {}}>
               {themeMode === 'light' ? <Sun size={14}/> : themeMode === 'dark' ? <Moon size={14}/> : <SunMoon size={14}/>}
             </button>
             {/* Cart */}

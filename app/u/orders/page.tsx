@@ -94,7 +94,7 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
                     onClick={()=>setStars(i)}>
                     <Star size={22}
                       fill={(hover||stars)>=i?'#F59E0B':'none'}
-                      stroke={(hover||stars)>=i?'#F59E0B':'#374151'}
+                      stroke={(hover||stars)>=i?'#F59E0B':'#6b7280'}
                       className="transition-colors"/>
                   </button>
                 ))}
@@ -1024,7 +1024,7 @@ export default function MyOrdersPage() {
                   <button key={i} onClick={()=>setRatingVal(i)} className="transition-transform hover:scale-110">
                     <Star size={30}
                       fill={i<=ratingVal?'#F59E0B':'none'}
-                      stroke={i<=ratingVal?'#F59E0B':'#D1D5DB'}/>
+                      stroke={i<=ratingVal?'#F59E0B':'#9CA3AF'}/>
                   </button>
                 ))}
               </div>

@@ -106,7 +106,7 @@ export default function DashboardPage() {
             { key: 'shared',  labelEn: 'Shared Tools',    labelAr: 'أدوات مشتركة',   count: sharedCount, icon: Users  },
             { key: 'private', labelEn: 'Private Accounts', labelAr: 'حسابات خاصة',   count: privateCount, icon: Lock  },
           ] as const).map(tab => {
-            const Icon = tab.icon
+            const Icon = 'icon' in tab ? tab.icon : null
             const active = activeTab === tab.key
             return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
