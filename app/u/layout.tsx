@@ -12,7 +12,7 @@ import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, Doll
 import { CartProvider, useCart } from '@/lib/cart-context'
 import {
   HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
-  UserCircle, Users, LockKey, Package, Key, GraduationCap, ClipboardText,
+  UserCircle, Key, GraduationCap, ClipboardText,
 } from '@phosphor-icons/react'
 
 interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
@@ -21,11 +21,7 @@ const NAV_BASE = [
   { en:'Dashboard',       ar:'الرئيسية',      href:'/u/dashboard',            icon:HouseSimple,  color:'#6366f1' },
   { en:'My Orders',       ar:'طلباتي',        href:'/u/orders',               icon:ClipboardText,color:'#d99401' },
   { en:'Focus Mode',      ar:'وضع التركيز',   href:'/u/focus-mode',           icon:GraduationCap,color:'#06b6d4' },
-  { en:'Oneclick Access', ar:'بكليك واحد',    href:'/u/shop',                 icon:ShoppingBag,  color:'#d99401', sub:[
-    { en:'Shared Tools',  ar:'أدوات مشتركة',  href:'/u/shop/shared',          icon:Users,        color:'#8b5cf6' },
-    { en:'Bundle Tools',  ar:'حزم الأدوات',   href:'/u/shop/bundle',          icon:Package,      color:'#10b981' },
-  ]},
-  { en:'Private Store',   ar:'المتجر الشخصي', href:'/u/shop/private-store',   icon:LockKey,      color:'#8b5cf6' },
+  { en:'Pro Keys Store',  ar:'متجر برو كيز',   href:'/u/store',                icon:ShoppingBag,  color:'#d99401' },
   { en:'My Wallet',            ar:'محفظتي',           href:'/u/wallet',               icon:Wallet,       color:'#22c55e' },
   { en:'Tickets',              ar:'تذاكر الدعم',      href:'/u/tickets',              icon:Headset,      color:'#f97316' },
   { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',            icon:PlayCircle,   color:'#ec4899' },
@@ -164,13 +160,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const [dark,      setDark]      = useState(false)
   const { lang, currency, setLang, setCurrency } = useLang()
   const ui = useUISettings()
-  const [shopOpen, setShopOpenState] = useState(()=>{
-    if (typeof window === 'undefined') return true
-    const saved = localStorage.getItem('pk_shop_open')
-    return saved === null ? true : saved === '1'
-  })
-  const setShopOpen = (v: boolean) => { setShopOpenState(v); localStorage.setItem('pk_shop_open', v?'1':'0') }
-  const [sidebarOpen,   setSidebar]    = useState(false)
+const [sidebarOpen,   setSidebar]    = useState(false)
   const [collapsed,     setCollapsed]  = useState(false)
   const [profileOpen,   setProfile]    = useState(false)
   const [notifOpen,     setNotif]      = useState(false)
@@ -358,58 +348,6 @@ if (pathname==='/u/login') return <>{children}</>
         {nav.map((item, idx)=>{
           const Icon   = item.icon
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
-          if (item.sub) return (
-            <div key={item.href}>
-              <motion.button
-                onClick={()=>!col && setShopOpen(!shopOpen)}
-                title={col ? (isRtl ? item.ar : item.en) : undefined}
-                whileHover="hover"
-                className={`w-full relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
-                <motion.div
-                  variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
-                  transition={{type:'spring', stiffness:400, damping:15}}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: active ? item.color+'22' : item.color+'18'}}>
-                  <Icon size={15} weight="duotone" style={{color: item.color}}/>
-                </motion.div>
-                {!col && <>
-                  <span className="flex-1 text-start" style={{color: active ? item.color : undefined}}>{isRtl?item.ar:item.en}</span>
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${shopOpen?'rotate-180':''}`} style={{color: item.color}}/>
-                </>}
-              </motion.button>
-              <AnimatePresence initial={false}>
-              {shopOpen && !col && (
-                <motion.div
-                  initial={{opacity:0, height:0}}
-                  animate={{opacity:1, height:'auto'}}
-                  exit={{opacity:0, height:0}}
-                  transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
-                  style={{overflow:'hidden'}}
-                  className="ms-3 mt-0.5 border-s-2 border-gray-100 dark:border-gray-700 ps-3 space-y-0.5">
-                  {item.sub.map((s:any)=>{
-                    const SubIcon = s.icon
-                    const subActive = pathname===s.href
-                    return (
-                      <motion.div key={s.href} whileHover="hover">
-                      <Link href={s.href}
-                        className={`flex items-center gap-2 py-2 px-2 rounded-lg text-[13px] transition-colors ${subActive?'font-semibold':'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                        style={subActive ? {color: s.color, background: s.color+'15'} : {}}>
-                        <motion.div
-                          variants={{hover:{scale:1.2, rotate: isRtl ? -10 : 10}}}
-                          transition={{type:'spring', stiffness:450, damping:14}}
-                          className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{background: s.color+'20'}}>
-                          <SubIcon size={12} weight="duotone" style={{color: s.color}}/>
-                        </motion.div>
-                        {isRtl?s.ar:s.en}
-                      </Link>
-                      </motion.div>
-                    )
-                  })}
-                </motion.div>
-              )}
-              </AnimatePresence>
-            </div>
-          )
           return (
             <motion.div key={item.href} whileHover="hover">
             <Link href={item.href}
