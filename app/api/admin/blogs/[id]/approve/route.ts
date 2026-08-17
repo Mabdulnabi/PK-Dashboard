@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { requireAdmin } from '@/lib/auth'
-import { unauthorized } from '@/lib/responses'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,7 +8,8 @@ const service = createClient(
 )
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  try { await requireAdmin() } catch { return unauthorized() }
+  if (!req.headers.get('x-admin-user-id'))
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const { action, reason } = body

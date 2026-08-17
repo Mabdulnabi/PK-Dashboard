@@ -1,16 +1,16 @@
 export const dynamic = 'force-dynamic'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { requireAdmin } from '@/lib/auth'
-import { unauthorized } from '@/lib/responses'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET() {
-  try { await requireAdmin() } catch { return unauthorized() }
+export async function GET(req: NextRequest) {
+  // Auth is handled by middleware (sets x-admin-user-id header)
+  if (!req.headers.get('x-admin-user-id'))
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { data, error } = await service.from('blog_posts')
     .select('*, members(full_name, avatar_url)')
