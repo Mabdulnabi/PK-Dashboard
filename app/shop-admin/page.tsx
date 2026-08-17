@@ -778,8 +778,14 @@ export default function ShopAdminPage() {
               <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">✍️ Blog Posts — Moderation</h3>
-                  <button onClick={()=>{ setBlogLoad(true); setBlogError(null); fetch('/api/admin/blogs').then(r=>r.json()).then(d=>{ setBlogPosts(Array.isArray(d)?d:[]); if(!Array.isArray(d)) setBlogError(d?.error||'Error'); setBlogLoad(false) }).catch(e=>{ setBlogError(String(e)); setBlogLoad(false) }) }}
-                    className="text-[11px] text-purple-500 hover:text-purple-700 font-semibold">↺ Refresh</button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={()=>{ setBlogLoad(true); setBlogError(null); fetch('/api/admin/blogs').then(r=>r.json()).then(d=>{ setBlogPosts(Array.isArray(d)?d:[]); if(!Array.isArray(d)) setBlogError(d?.error||'Error'); setBlogLoad(false) }).catch(e=>{ setBlogError(String(e)); setBlogLoad(false) }) }}
+                      className="text-[11px] text-purple-500 hover:text-purple-700 font-semibold">↺ Refresh</button>
+                    <a href="/shop-admin/blogs/new"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
+                      <Plus size={11}/>New Post
+                    </a>
+                  </div>
                 </div>
                 {blogLoad && <div className="flex justify-center py-10"><div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>}
                 {blogError && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl p-4 text-xs text-red-600 dark:text-red-400 font-mono mb-3">{blogError}</div>}
@@ -803,7 +809,7 @@ export default function ShopAdminPage() {
                             <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{post.title}</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusCls}`}>{post.status.replace('_',' ')}</span>
                           </div>
-                          <p className="text-[11px] text-gray-400">By <strong className="text-gray-600 dark:text-gray-300">{post.members?.full_name||'Unknown'}</strong> · {new Date(post.updated_at||post.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
+                          <p className="text-[11px] text-gray-400">By <strong className="text-gray-600 dark:text-gray-300">{post.members?.full_name || (post.member_id ? 'Unknown' : '🛡️ Admin')}</strong> · {new Date(post.updated_at||post.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
                           {post.rejection_reason && <p className="text-[11px] mt-1 text-amber-600 dark:text-amber-400">📝 Feedback: {post.rejection_reason}</p>}
                           {post.admin_note && <p className="text-[11px] mt-1 text-gray-400 italic">🔒 Note: {post.admin_note}</p>}
                         </div>

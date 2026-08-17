@@ -19,3 +19,28 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
+
+export async function POST(req: NextRequest) {
+  if (!req.headers.get('x-admin-user-id'))
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const body = await req.json()
+  const { title, title_ar, content, content_ar, cover_image_url } = body
+  if (!title?.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 })
+
+  const now = new Date().toISOString()
+  const { data, error } = await service.from('blog_posts').insert({
+    member_id: null,
+    title: title.trim(),
+    title_ar: title_ar?.trim() || null,
+    content: content || '',
+    content_ar: content_ar || null,
+    cover_image_url: cover_image_url || null,
+    status: 'approved',
+    published_at: now,
+    updated_at: now,
+  }).select().single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data, { status: 201 })
+}
