@@ -6,7 +6,7 @@ import { unauthorized } from '@/lib/responses'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { data, error } = await db.from('blog_posts')
-    .select('*, members(name, avatar_url)')
+    .select('*, members(full_name, avatar_url)')
     .eq('id', params.id)
     .single()
   if (error) return NextResponse.json({ error: 'Not found' }, { status: 404 })

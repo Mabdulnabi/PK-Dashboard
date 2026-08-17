@@ -13,7 +13,7 @@ export async function GET() {
   try { await requireAdmin() } catch { return unauthorized() }
 
   const { data, error } = await service.from('blog_posts')
-    .select('*, members(name, avatar_url)')
+    .select('*, members(full_name, avatar_url)')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

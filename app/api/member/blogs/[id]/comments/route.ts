@@ -6,7 +6,7 @@ import { unauthorized } from '@/lib/responses'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { data, error } = await db.from('blog_comments')
-    .select('*, members(name, avatar_url)')
+    .select('*, members(full_name, avatar_url)')
     .eq('post_id', params.id)
     .eq('approved', true)
     .order('created_at', { ascending: false })
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     content,
     rating,
     approved: true,
-  }).select('*, members(name, avatar_url)').single()
+  }).select('*, members(full_name, avatar_url)').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data, { status: 201 })

@@ -14,14 +14,14 @@ interface Post {
   published_at: string
   created_at: string
   status: string
-  members: { name: string; avatar_url: string | null } | null
+  members: { full_name: string; avatar_url: string | null } | null
 }
 interface Comment {
   id: string
   content: string
   rating: number | null
   created_at: string
-  members: { name: string; avatar_url: string | null } | null
+  members: { full_name: string; avatar_url: string | null } | null
 }
 
 export default function BlogPostPage({ params }: { params: { id: string } }) {
@@ -75,7 +75,9 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
   if (!post)   return <div className="p-6 text-center text-gray-500">{t('Post not found', 'المقال غير موجود')}</div>
 
   const title   = ar && post.title_ar   ? post.title_ar   : post.title
-  const content = ar && post.content_ar ? post.content_ar : post.content
+  const rawContent = ar && post.content_ar ? post.content_ar : post.content
+  const contentDir = rawContent.startsWith('<div data-dir="rtl">') ? 'rtl' : 'ltr'
+  const content = rawContent.replace(/^<div data-dir="(?:rtl|ltr)">/, '').replace(/<\/div>$/, '')
 
   return (
     <div className="p-3 md:p-6 max-w-3xl mx-auto" dir={ar ? 'rtl' : 'ltr'}>
@@ -90,7 +92,7 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight mb-3">{title}</h1>
 
       <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500 mb-2 flex-wrap">
-        {post.members && <span className="flex items-center gap-1"><User size={11}/>{post.members.name}</span>}
+        {post.members && <span className="flex items-center gap-1"><User size={11}/>{post.members.full_name}</span>}
         <span className="flex items-center gap-1"><Clock size={11}/>{formatDate(post.published_at || post.created_at)}</span>
         {comments.filter(c => c.rating).length > 0 && (
           <span className="flex items-center gap-1"><Star size={11} className="text-yellow-400 fill-yellow-400"/>{avgRating.toFixed(1)} ({comments.filter(c => c.rating).length})</span>
@@ -101,7 +103,8 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
 
       {/* Content */}
       <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
-        style={{ direction: ar ? 'rtl' : 'ltr' }}
+        dir={contentDir}
+        style={{ textAlign: contentDir === 'rtl' ? 'right' : 'left' }}
         dangerouslySetInnerHTML={{ __html: content }}/>
 
       {/* Comments */}
@@ -145,9 +148,9 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
             <div key={c.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 text-xs font-bold">
-                  {c.members?.name?.[0]?.toUpperCase() || '?'}
+                  {c.members?.full_name?.[0]?.toUpperCase() || '?'}
                 </div>
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.members?.name}</span>
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.members?.full_name}</span>
                 {c.rating && (
                   <div className="flex items-center gap-0.5 ms-auto">
                     {[1,2,3,4,5].map(s => (

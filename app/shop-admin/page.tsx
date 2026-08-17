@@ -743,7 +743,7 @@ export default function ShopAdminPage() {
                           {post.status}
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-400">By {post.members?.name} · {new Date(post.created_at).toLocaleDateString('en-GB')}</p>
+                      <p className="text-[11px] text-gray-400">By {post.members?.full_name} · {new Date(post.created_at).toLocaleDateString('en-GB')}</p>
                       {post.rejection_reason && <p className="text-[11px] text-red-400 mt-1">Rejection: {post.rejection_reason}</p>}
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">

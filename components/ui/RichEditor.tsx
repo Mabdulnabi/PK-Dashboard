@@ -30,7 +30,14 @@ export default function RichEditor({
 }: Props) {
   const fileRef  = useRef<HTMLInputElement>(null)
   const skipSync = useRef(false)
-  const [currentDir, setCurrentDir] = useState<'ltr' | 'rtl'>(initialDir)
+  // Parse direction from saved HTML wrapper if present
+  const parseDir = (html: string): 'ltr' | 'rtl' => {
+    const m = html.match(/^<div data-dir="(rtl|ltr)">/)
+    return m ? (m[1] as 'ltr' | 'rtl') : initialDir
+  }
+  const stripDir = (html: string) => html.replace(/^<div data-dir="(?:rtl|ltr)">/, '').replace(/<\/div>$/, '')
+
+  const [currentDir, setCurrentDir] = useState<'ltr' | 'rtl'>(() => parseDir(value))
 
   const editor = useEditor({
     extensions: [
@@ -42,7 +49,7 @@ export default function RichEditor({
       Youtube.configure({ width: '100%', controls: true, modestBranding: true }),
       Placeholder.configure({ placeholder }),
     ],
-    content: value,
+    content: stripDir(value),
     editorProps: {
       attributes: {
         class: 'rich-editor-body focus:outline-none',
@@ -51,7 +58,8 @@ export default function RichEditor({
     },
     onUpdate: ({ editor }) => {
       skipSync.current = true
-      onChange(editor.getHTML())
+      const html = editor.getHTML()
+      onChange(currentDir === 'rtl' ? `<div data-dir="rtl">${html}</div>` : html)
     },
   })
 
@@ -68,12 +76,18 @@ export default function RichEditor({
   useEffect(() => {
     if (!editor) return
     if (skipSync.current) { skipSync.current = false; return }
-    if (editor.getHTML() !== value) editor.commands.setContent(value)
+    const clean = stripDir(value)
+    if (editor.getHTML() !== clean) editor.commands.setContent(clean)
+    const d = parseDir(value)
+    if (d !== currentDir) setCurrentDir(d)
   }, [value, editor])
 
   const applyDir = (d: 'ltr' | 'rtl') => {
     setCurrentDir(d)
-    editor?.chain().focus().run()
+    if (!editor) return
+    const html = editor.getHTML()
+    onChange(d === 'rtl' ? `<div data-dir="rtl">${html}</div>` : html)
+    editor.chain().focus().run()
   }
 
   const insertImage = async (file: File) => {
@@ -135,17 +149,7 @@ export default function RichEditor({
         <Btn icon={<AlignLeft size={13}/>}   action={() => editor.chain().focus().setTextAlign('left').run()}   active={editor.isActive({ textAlign: 'left' })}   title="Align left"/>
         <Btn icon={<AlignCenter size={13}/>} action={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Center"/>
         <Btn icon={<AlignRight size={13}/>}  action={() => editor.chain().focus().setTextAlign('right').run()}  active={editor.isActive({ textAlign: 'right' })}  title="Align right"/>
-        <Sep/>
-        <Btn icon={<Minus size={13}/>} action={() => editor.chain().focus().setHorizontalRule().run()} title="Divider"/>
-        <Btn icon={<Link2 size={13}/>} action={insertLink}  title="Insert link"/>
-        <Btn icon={<Video size={13}/>} action={insertVideo} title="Embed YouTube video"/>
-        <label title="Insert image"
-          className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer flex-shrink-0">
-          <ImageIcon size={13}/>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) insertImage(f); e.target.value = '' }}/>
-        </label>
-        <Sep/>
-        {/* Direction toggle */}
+        {/* Direction toggle — next to alignment buttons */}
         <button type="button" title="Right to Left (Arabic/Hebrew)" onMouseDown={e => { e.preventDefault(); applyDir('rtl') }}
           className={`px-2 h-7 flex items-center rounded-md text-[11px] font-bold transition-colors flex-shrink-0
             ${currentDir === 'rtl'
@@ -160,6 +164,15 @@ export default function RichEditor({
               : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
           LTR
         </button>
+        <Sep/>
+        <Btn icon={<Minus size={13}/>} action={() => editor.chain().focus().setHorizontalRule().run()} title="Divider"/>
+        <Btn icon={<Link2 size={13}/>} action={insertLink}  title="Insert link"/>
+        <Btn icon={<Video size={13}/>} action={insertVideo} title="Embed YouTube video"/>
+        <label title="Insert image"
+          className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer flex-shrink-0">
+          <ImageIcon size={13}/>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) insertImage(f); e.target.value = '' }}/>
+        </label>
       </div>
 
       {/* Tiptap content area */}

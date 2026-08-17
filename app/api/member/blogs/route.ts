@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   let session: Awaited<ReturnType<typeof requireMember>> | null = null
   try { session = await requireMember() } catch {}
 
-  const sel = 'id, title, title_ar, cover_image_url, created_at, published_at, status, member_id, members(name, avatar_url)'
+  const sel = 'id, title, title_ar, cover_image_url, created_at, published_at, status, member_id, members(full_name, avatar_url)'
 
   if (mine && session) {
     // My articles: all statuses
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   if (session) {
     // Use service role to bypass RLS and fetch both approved + own
     let q = service.from('blog_posts').select(sel)
-      .or(`status.eq.approved,and(member_id.eq.${session.member_id},status.in.(pending,rejected))`)
+      .or(`status.eq.approved,member_id.eq.${session.member_id}`)
       .order('published_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
     if (search) q = q.ilike('title', `%${search}%`)

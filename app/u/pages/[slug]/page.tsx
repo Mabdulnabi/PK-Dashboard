@@ -52,7 +52,8 @@ export default function StaticPageView({ params }: { params: { slug: string } })
         </div>
       ) : html ? (
         <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: html }}/>
+          dir={html.startsWith('<div data-dir="rtl">') ? 'rtl' : 'ltr'}
+          dangerouslySetInnerHTML={{ __html: html.replace(/^<div data-dir="(?:rtl|ltr)">/, '').replace(/<\/div>$/, '') }}/>
       ) : (
         <div className="text-center py-16">
           <FileText size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>

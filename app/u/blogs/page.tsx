@@ -13,7 +13,7 @@ interface Post {
   published_at: string | null
   status: string
   member_id: string
-  members: { name: string; avatar_url: string | null } | null
+  members: { full_name: string; avatar_url: string | null } | null
 }
 
 const STATUS_MAP: Record<string, { en: string; ar: string; cls: string }> = {
@@ -111,7 +111,7 @@ export default function BlogsPage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2 leading-snug">{getTitle(post)}</h3>
                 <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400 dark:text-gray-500 flex-wrap">
-                  {post.members && <span className="flex items-center gap-1"><User size={11}/>{post.members.name}</span>}
+                  {post.members && <span className="flex items-center gap-1"><User size={11}/>{post.members.full_name}</span>}
                   <span className="flex items-center gap-1"><Clock size={11}/>{fmtDate(post.published_at || post.created_at)}</span>
                 </div>
               </div>
