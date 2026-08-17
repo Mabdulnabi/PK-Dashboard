@@ -837,6 +837,12 @@ export default function ShopAdminPage() {
                               <X size={11}/>Reject
                             </button>
                           )}
+                          {!post.member_id && (
+                            <a href={`/shop-admin/blogs/${post.id}/edit`}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[11px] font-bold hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                              <Pencil size={11}/>Edit
+                            </a>
+                          )}
                           <button onClick={()=>setAdminNote({id:post.id,text:post.admin_note||''})}
                             className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors">
                             🔒 Note
