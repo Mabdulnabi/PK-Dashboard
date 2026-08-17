@@ -195,8 +195,7 @@ export default function DashboardPage() {
 
   const openDetail = (tool: Tool) => {
     if (tool.details_slug) {
-      // Hard navigation ensures URL bar updates and fresh page load
-      window.location.href = `/u/${tool.details_slug}`
+      router.push(`/u/${tool.details_slug}`)
     } else if (Array.isArray(tool.landing_blocks) && tool.landing_blocks.length > 0) {
       setLandingTool(tool)
     } else {
@@ -239,6 +238,12 @@ export default function DashboardPage() {
   ] as const
 
   const activeSortLabel = SORTS.find(s => s.key === sort)!
+
+  if (landingTool) return (
+    <div className="min-h-screen bg-white dark:bg-gray-950">
+      <ToolLandingPage tool={landingTool as any} onBack={() => setLandingTool(null)}/>
+    </div>
+  )
 
   return (
     <div className="p-3 md:p-5" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -286,7 +291,7 @@ export default function DashboardPage() {
           </p>
           <div className="mq-wrap">
             <div className={isRtl ? 'mq-track-rtl' : 'mq-track'}>
-              {[...categories, ...categories].map((cat, i) => (
+              {(()=>{ const n=Math.max(2,Math.ceil(12/categories.length)); const even=n%2===0?n:n+1; return Array.from({length:even},()=>categories).flat() })().map((cat, i) => (
                 <button key={`${cat.id}-${i}`}
                   onClick={() => { setActiveCat(cat); setQ('') }}
                   className="flex-shrink-0 flex flex-col items-center gap-2.5 mx-3 group">
@@ -407,13 +412,13 @@ export default function DashboardPage() {
               const active = activeTab === tab.key
               return (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
-                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap border ${
+                    active ? 'border-[#d99401] text-[#b37a00]' : 'border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
-                  style={active ? { background: '#d99401' } : {}}>
+                  style={active ? { background: '#d9940118' } : {}}>
                   <Icon size={12}/>
                   {isRtl ? tab.ar : tab.en}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${active ? 'bg-white/25 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${active ? 'bg-[#d99401] text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
                     {tab.count}
                   </span>
                 </button>
@@ -429,10 +434,10 @@ export default function DashboardPage() {
               const active = sort === s.key
               return (
                 <button key={s.key} onClick={() => setSort(s.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
-                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap border ${
+                    active ? 'border-[#6366f1] text-[#6366f1]' : 'border-transparent text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
-                  style={active ? { background: '#6366f1' } : {}}>
+                  style={active ? { background: '#6366f110' } : {}}>
                   <SIcon size={12}/>
                   {isRtl ? s.ar : s.en}
                 </button>
@@ -598,13 +603,6 @@ export default function DashboardPage() {
           onClose={() => setPopup(null)}
           t={t}
         />
-      )}
-
-      {/* Full landing page inline overlay (has landing_blocks but no details_slug) */}
-      {landingTool && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-950 overflow-y-auto">
-          <ToolLandingPage tool={landingTool as any} onBack={() => setLandingTool(null)}/>
-        </div>
       )}
 
     </div>

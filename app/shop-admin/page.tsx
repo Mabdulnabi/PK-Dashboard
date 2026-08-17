@@ -745,12 +745,13 @@ export default function ShopAdminPage() {
       {/* ── Add/Edit Category Modal ── */}
       {(modal==='add-cat'||modal==='edit-cat') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" style={{maxHeight:'90vh'}}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
               <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">{modal==='add-cat'?'Add Category':'Edit Category'}</h3>
               <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
             </div>
-            <div className="p-5 flex flex-col gap-3">
+            <div className="p-5 flex flex-col gap-3 overflow-y-auto flex-1">
+              {/* Preview */}
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{background:catForm.color+'15',border:`1px solid ${catForm.color}30`}}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl overflow-hidden" style={{background:catForm.color+'20'}}>
                   {catForm.image_url ? <img src={catForm.image_url} className="w-full h-full object-cover" alt=""/> : catForm.icon}
@@ -760,6 +761,7 @@ export default function ShopAdminPage() {
                   <div className="text-[10px] font-mono text-gray-400">{catForm.slug||'slug'}</div>
                 </div>
               </div>
+              {/* Row 1: Name EN + Icon */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
                   <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Name (EN) *</label>
@@ -770,54 +772,63 @@ export default function ShopAdminPage() {
                   <input value={catForm.icon} onChange={e=>setCatForm({...catForm,icon:e.target.value})} placeholder="✍️" className={inp+" text-center text-xl"}/>
                 </div>
               </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">الاسم بالعربي</label>
-                <input value={catForm.name_ar} onChange={e=>setCatForm({...catForm,name_ar:e.target.value})} placeholder="الكتابة والذكاء الاصطناعي" className={inp} dir="rtl"/>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Category Image URL (EN)</label>
-                <input value={catForm.image_url} onChange={e=>setCatForm({...catForm,image_url:e.target.value})} placeholder="https://..." className={inp}/>
-                {catForm.image_url && (
-                  <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <img src={catForm.image_url} className="w-full h-full object-cover" alt="preview"/>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">صورة الفئة (AR)</label>
-                <input value={catForm.image_url_ar} onChange={e=>setCatForm({...catForm,image_url_ar:e.target.value})} placeholder="https://..." className={inp}/>
-                {catForm.image_url_ar && (
-                  <div className="mt-2 w-full h-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <img src={catForm.image_url_ar} className="w-full h-full object-cover" alt="preview ar"/>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Slug</label>
-                <input value={catForm.slug} onChange={e=>setCatForm({...catForm,slug:e.target.value})} className={inp+" font-mono"}/>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-2 block">Color</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {PRESET_COLORS.map(c=>(
-                    <button key={c} onClick={()=>setCatForm({...catForm,color:c})}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                      style={{background:c,outline:catForm.color===c?`2px solid ${c}`:'none',outlineOffset:2}}>
-                      {catForm.color===c&&<Check size={12} className="text-white"/>}
-                    </button>
-                  ))}
+              {/* Row 2: Name AR + Slug side by side */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">الاسم بالعربي</label>
+                  <input value={catForm.name_ar} onChange={e=>setCatForm({...catForm,name_ar:e.target.value})} placeholder="الكتابة والذكاء" className={inp} dir="rtl"/>
                 </div>
-                <div className="flex gap-2">
-                  <input type="color" value={catForm.color} onChange={e=>setCatForm({...catForm,color:e.target.value})} className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"/>
-                  <input value={catForm.color} onChange={e=>setCatForm({...catForm,color:e.target.value})} className={inp+" flex-1 font-mono"}/>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Slug</label>
+                  <input value={catForm.slug} onChange={e=>setCatForm({...catForm,slug:e.target.value})} className={inp+" font-mono"}/>
                 </div>
               </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Sort Order</label>
-                <input type="number" value={catForm.sort_order} onChange={e=>setCatForm({...catForm,sort_order:e.target.value})} className={inp}/>
+              {/* Row 3: Images side by side */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Image (EN)</label>
+                  <input value={catForm.image_url} onChange={e=>setCatForm({...catForm,image_url:e.target.value})} placeholder="https://..." className={inp}/>
+                  {catForm.image_url && (
+                    <div className="mt-1.5 w-full h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <img src={catForm.image_url} className="w-full h-full object-cover" alt="en"/>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">صورة (AR)</label>
+                  <input value={catForm.image_url_ar} onChange={e=>setCatForm({...catForm,image_url_ar:e.target.value})} placeholder="https://..." className={inp}/>
+                  {catForm.image_url_ar && (
+                    <div className="mt-1.5 w-full h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <img src={catForm.image_url_ar} className="w-full h-full object-cover" alt="ar"/>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Row 4: Color + Sort Order side by side */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1.5 block">Color</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5">
+                    {PRESET_COLORS.map(c=>(
+                      <button key={c} onClick={()=>setCatForm({...catForm,color:c})}
+                        className="w-6 h-6 rounded-md flex items-center justify-center transition-all"
+                        style={{background:c,outline:catForm.color===c?`2px solid ${c}`:'none',outlineOffset:2}}>
+                        {catForm.color===c&&<Check size={10} className="text-white"/>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input type="color" value={catForm.color} onChange={e=>setCatForm({...catForm,color:e.target.value})} className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 flex-shrink-0"/>
+                    <input value={catForm.color} onChange={e=>setCatForm({...catForm,color:e.target.value})} className={inp+" flex-1 font-mono text-xs"}/>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Sort Order</label>
+                  <input type="number" value={catForm.sort_order} onChange={e=>setCatForm({...catForm,sort_order:e.target.value})} className={inp}/>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2 px-5 pb-5">
+            <div className="flex gap-2 px-5 pb-5 pt-3 flex-shrink-0 border-t border-gray-100 dark:border-gray-800">
               <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
               <button onClick={saveCat} disabled={saving} className="flex-[2] py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
                 {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><Check size={13}/>{modal==='add-cat'?'Add':'Save'}</>}

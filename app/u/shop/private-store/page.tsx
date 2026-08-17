@@ -239,11 +239,13 @@ export default function PrivateStorePage() {
             </div>
             <div className="flex items-center gap-2">
               <button onClick={()=>setSort('best')}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${sort==='best'?'bg-purple-50 dark:bg-purple-900/20 text-purple-600 border border-purple-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors border ${sort==='best'?'border-[#6366f1] text-[#6366f1]':'border-transparent text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                style={sort==='best'?{background:'#6366f110'}:{}}>
                 ⭐ {isRtl?'الأعلى تقييماً':'Top Rated'}
               </button>
               <button onClick={()=>setSort('recent')}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${sort==='recent'?'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200':'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors border ${sort==='recent'?'border-[#6366f1] text-[#6366f1]':'border-transparent text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                style={sort==='recent'?{background:'#6366f110'}:{}}>
                 🕐 {isRtl?'الأحدث':'Newest'}
               </button>
             </div>

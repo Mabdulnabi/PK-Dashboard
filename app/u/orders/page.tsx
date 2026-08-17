@@ -821,10 +821,10 @@ export default function MyOrdersPage() {
             {/* Single row: search + filter chips */}
             <div className="flex items-center gap-2 overflow-x-auto" style={{scrollbarWidth:'none'}}>
               {/* Search */}
-              <div className="relative flex-shrink-0 w-36 sm:w-44">
+              <div className="relative flex-1 min-w-0">
                 <Search size={12} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:8}}/>
                 <input value={orderQ} onChange={e=>setOrderQ(e.target.value)}
-                  placeholder={lang==='ar'?'بحث…':'Search…'}
+                  placeholder={lang==='ar'?'بحث في الاشتراكات…':'Search subscriptions…'}
                   className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
                   style={{padding:'6px 8px',[lang==='ar'?'paddingRight':'paddingLeft']:26}}/>
                 {orderQ && (
@@ -846,12 +846,13 @@ export default function MyOrdersPage() {
                 const active = subFilter===f.key
                 return (
                   <button key={f.key} onClick={()=>setSubFilter(f.key)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap border ${
-                      active ? 'text-white border-transparent' : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
-                    }`}
-                    style={active?{background:f.color}:{}}>
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap border`}
+                    style={active
+                      ? {borderColor:f.color,color:f.color,background:f.color+'18'}
+                      : {borderColor:'transparent',color:'#6b7280',background:'#f9fafb'}}>
                     {lang==='ar'?f.ar:f.en}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${active?'bg-white/20 text-white':'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold`}
+                      style={active?{background:f.color,color:'#fff'}:{background:'#f3f4f6',color:'#9ca3af'}}>
                       {f.count}
                     </span>
                   </button>

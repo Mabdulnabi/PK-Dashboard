@@ -239,8 +239,8 @@ export default function ShopPage({ category }: Props) {
             { key:'recent',    en:'Newest',    ar:'الأحدث',         Icon: Clock       },
           ] as const).map(s=>(
             <button key={s.key} onClick={()=>setSort(s.key as any)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${sort===s.key?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-              style={sort===s.key?{background:'#6366f1'}:{}}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap border ${sort===s.key?'border-[#6366f1] text-[#6366f1]':'border-transparent text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+              style={sort===s.key?{background:'#6366f110'}:{}}>
               <s.Icon size={12}/>
               {lang==='ar'?s.ar:s.en}
             </button>
