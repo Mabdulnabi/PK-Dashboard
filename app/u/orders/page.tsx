@@ -701,8 +701,11 @@ export default function MyOrdersPage() {
       if (d.type==='PK_STATE')           { setExtReady(true) }
       if (d.type==='PK_INJECT_RESULT') {
         setConnectingId(null)
-        if (d.success) { setConnectedId(activeRef.current) }
-        else {
+        if (d.success) {
+          setConnectedId(activeRef.current)
+          // confirm state from extension
+          window.postMessage({type:'PK_GET_STATE'},'*')
+        } else {
           setConnectedId(null)
           setQuickError(d.error || t('Connection failed','فشل الاتصال'))
           setTimeout(()=>setQuickError(null), 4000)
@@ -715,13 +718,17 @@ export default function MyOrdersPage() {
       }
     }
     window.addEventListener('message', handler)
+    // Initial burst: ping every 300ms for first 5s, then keep pinging every 3s until detected
     let attempts = 0
-    const poll = setInterval(()=>{
-      if (attempts>=15){ clearInterval(poll); return }
+    const burst = setInterval(()=>{
+      if (attempts>=17){ clearInterval(burst); return }
       attempts++
       window.postMessage({type:'PK_PING'},'*')
     }, 300)
-    return ()=>{ window.removeEventListener('message', handler); clearInterval(poll) }
+    const keepAlive = setInterval(()=>{
+      window.postMessage({type:'PK_PING'},'*')
+    }, 3000)
+    return ()=>{ window.removeEventListener('message', handler); clearInterval(burst); clearInterval(keepAlive) }
   },[])
 
   async function quickConnect(purchase: Purchase) {
@@ -830,7 +837,7 @@ export default function MyOrdersPage() {
                 {key:'all',      en:'All',           ar:'الكل',          color:'#d99401', count:purchases.length},
                 {key:'shared',   en:'Shared',        ar:'مشتركة',        color:'#d99401', count:purchases.filter(p=>p.category_slug==='shared').length},
                 {key:'private',  en:'Private',       ar:'خاصة',          color:'#8b5cf6', count:purchases.filter(p=>p.category_slug==='private').length},
-                {key:'expiring', en:'Expiring Soon', ar:'تنتهي قريباً',  color:'#f59e0b', count:purchases.filter(p=>{ const d=daysLeft(p.expires_at); return d!==null&&d<=7 }).length},
+                {key:'expiring', en:'Expiring Soon', ar:'تنتهي قريباً',  color:'#f59e0b', count:purchases.filter(p=>{ const d=daysLeft(p.expires_at); return d!==null&&d<=5 }).length},
                 {key:'connected',en:'Connected',     ar:'متصل',          color:'#10b981', count:connectedId?1:0},
               ] as const).map(f=>{
                 const active = subFilter===f.key
@@ -874,7 +881,7 @@ export default function MyOrdersPage() {
                 const d = daysLeft(p.expires_at)
                 if (subFilter==='shared')   return p.category_slug==='shared'
                 if (subFilter==='private')  return p.category_slug==='private'
-                if (subFilter==='expiring') return d!==null && d<=7
+                if (subFilter==='expiring') return d!==null && d<=5
                 if (subFilter==='connected')return connectedId===p.id
                 return true
               })

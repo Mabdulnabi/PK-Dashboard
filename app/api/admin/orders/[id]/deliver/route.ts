@@ -86,15 +86,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const toolName = (purchase as any).shop_tools?.name || 'الأداة'
   const label    = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'
   const labelEn  = delivery_type === 'key' ? 'activation key' : 'account credentials'
+  const isUpdate = Boolean(existing)
 
   void db.from('member_notifications').insert({
     member_id:  (purchase as any).member_id,
-    title:      `تم تسليم ${label} 🎉`,
-    title_en:   `Your ${labelEn} has been delivered 🎉`,
-    message:    `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
-    message_en: `Your ${labelEn} for ${toolName} is ready. Go to My Subscriptions to view it.`,
+    title:      isUpdate ? `تم تحديث ${label} 🔄` : `تم تسليم ${label} 🎉`,
+    title_en:   isUpdate ? `Your ${labelEn} has been updated 🔄` : `Your ${labelEn} has been delivered 🎉`,
+    message:    isUpdate
+      ? `تم تحديث بيانات ${toolName}. ادخل على اشتراكاتي لعرض البيانات الجديدة.`
+      : `تم تسليم ${label} الخاص بـ ${toolName}. ادخل على قسم اشتراكاتي لعرض البيانات.`,
+    message_en: isUpdate
+      ? `Your ${toolName} credentials have been updated. Go to My Orders to view the new data.`
+      : `Your ${labelEn} for ${toolName} is ready. Go to My Orders to view it.`,
     type:       'success',
-    link:       '/u/shop',
+    link:       '/u/orders',
   })
 
   return NextResponse.json({ ok: true })

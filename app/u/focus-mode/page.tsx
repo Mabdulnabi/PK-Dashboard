@@ -1372,8 +1372,8 @@ export default function FocusModePage() {
         <Lock size={13} className="flex-shrink-0 mt-0.5" style={{color:'#10b981'}}/>
         <span>
           {lang==='ar'
-            ? 'جميع البيانات المسجَّلة هنا مشفَّرة بالكامل ولا يمكن لأي أحد الاطلاع على تفاصيلها إلا إذا حصل على الملف المصدر منك شخصياً.'
-            : 'All data stored here is fully encrypted. No one can access your information unless you personally share the source file with them.'}
+            ? 'جميع البيانات المسجَّلة هنا مشفَّرة بالكامل — لا يمكن لأي أحد الاطلاع على تفاصيلها إلا إذا حصل على الملف المصدر منك شخصياً أو قمت بمشاركة البورد معه.'
+            : 'All data stored here is fully encrypted — no one can access your information unless you personally share the source file with them or share the board with them.'}
         </span>
       </div>
 

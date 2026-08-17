@@ -20,5 +20,7 @@ export async function GET(req: NextRequest) {
   ])
   const settings: Record<string,string> = {}
   settingsRes.data?.forEach((s:any) => { settings[s.key] = s.value })
-  return NextResponse.json({ tools: toolsRes.data||[], free: freeRes.data||[], settings, videos: vidRes.data||[] })
+  const res = NextResponse.json({ tools: toolsRes.data||[], free: freeRes.data||[], settings, videos: vidRes.data||[] })
+  res.headers.set('Cache-Control', 'no-store')
+  return res
 }

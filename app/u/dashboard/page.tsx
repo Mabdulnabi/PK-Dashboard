@@ -180,10 +180,11 @@ export default function DashboardPage() {
       setCatSlugIds(slugIds)
 
       const cats: Category[] = (catData.categories || [])
-        // dedup by normalized name — handles same category stored with different slugs/IDs
+        // Step 1: only keep categories that have tools AND have an image
+        .filter((c: Category) => toolCatIds.has(c.id) && c.image_url)
+        // Step 2: dedup by normalized name (handles same category stored with different slug/ID)
         .filter((c: Category, idx: number, arr: Category[]) =>
-          arr.findIndex(x => x.name.toLowerCase() === c.name.toLowerCase()) === idx
-          && toolCatIds.has(c.id) && c.image_url)
+          arr.findIndex(x => x.name.toLowerCase().trim() === c.name.toLowerCase().trim()) === idx)
         .sort((a: Category, b: Category) => a.sort_order - b.sort_order)
       setCategories(cats)
       setLoading(false)
@@ -245,9 +246,9 @@ export default function DashboardPage() {
         .mq-track-rtl { display:flex; width:max-content; animation: marquee-rtl var(--mq-dur,20s) linear infinite; }
         .mq-wrap { overflow:hidden; }
         .mq-wrap:hover .mq-track, .mq-wrap:hover .mq-track-rtl { animation-play-state:paused; }
-        @media (max-width:639px)  { .mq-wrap { --mq-dur:14s; } }
-        @media (min-width:640px)  { .mq-wrap { --mq-dur:22s; } }
-        @media (min-width:1024px) { .mq-wrap { --mq-dur:30s; } }
+        @media (max-width:639px)  { .mq-wrap { --mq-dur:8s;  } }
+        @media (min-width:640px)  { .mq-wrap { --mq-dur:12s; } }
+        @media (min-width:1024px) { .mq-wrap { --mq-dur:18s; } }
         .fs-scroll { overflow-x:auto; scrollbar-width:none; }
         .fs-scroll::-webkit-scrollbar { display:none; }
       `}</style>

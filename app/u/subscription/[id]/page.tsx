@@ -693,7 +693,7 @@ export default function SubscriptionDetailPage() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                          subject: `مشكلة في ${purchase.tool_name}`,
+                          subject: lang === 'ar' ? `مشكلة في ${purchase.tool_name}` : `Issue with ${purchase.tool_name}`,
                           message: reportMsg.trim(),
                           priority: 'high',
                           category: 'subscription',

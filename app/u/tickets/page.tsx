@@ -1,11 +1,17 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import {
   Plus, MessageCircle, Clock, CheckCircle, AlertCircle, X,
   ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText,
 } from 'lucide-react'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 type Attachment = { id: string; file_path: string; file_name: string; file_size: number; file_type: string; uploaded_by: string; created_at?: string }
 type TMsg      = { id: string; sender_type: 'member' | 'admin'; message: string; sender_name?: string; sender_avatar?: string; created_at: string }
@@ -73,6 +79,7 @@ export default function HelpdeskPage() {
   const [replySending, setReplySending] = useState(false)
   const [replyError,   setReplyError]   = useState('')
   const [adminProfile, setAdminProfile] = useState<{ display_name?: string; avatar_url?: string } | null>(null)
+  const [memberId, setMemberId] = useState<string | null>(null)
   const replyFileRef = useRef<HTMLInputElement>(null)
   const [replyFiles, setReplyFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
@@ -80,6 +87,9 @@ export default function HelpdeskPage() {
   useEffect(() => {
     fetch('/api/admin/profile').then(r => r.json()).then(d => {
       if (d && !d.error) setAdminProfile(d)
+    }).catch(() => {})
+    fetch('/api/member/verify').then(r => r.json()).then(d => {
+      if (d?.member_id) setMemberId(d.member_id)
     }).catch(() => {})
   }, [])
 
@@ -91,10 +101,26 @@ export default function HelpdeskPage() {
 
   useEffect(() => { load() }, [])
 
-  // Realtime: poll every 8s when a ticket is expanded
+  // Supabase realtime — instant ticket status + new messages without needing to leave/re-enter
+  useEffect(() => {
+    if (!memberId) return
+    const channel = supabase
+      .channel(`member-tickets-rt-${memberId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'support_tickets',
+        filter: `member_id=eq.${memberId}`,
+      }, () => load(true))
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'ticket_messages',
+      }, () => load(true))
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [memberId])
+
+  // Fallback poll every 15s when a ticket is expanded
   useEffect(() => {
     if (!expanded) return
-    const id = setInterval(() => load(true), 8000)
+    const id = setInterval(() => load(true), 15000)
     return () => clearInterval(id)
   }, [expanded])
 
