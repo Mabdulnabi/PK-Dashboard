@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
-import { ShoppingCart, Heart, Plus, Minus, Check, Star, Zap, ShoppingBag } from 'lucide-react'
+import { ShoppingCart, Heart, Plus, Minus, Check, Star, Zap, ShoppingBag, Globe, Lock, Package } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import Link from 'next/link'
 
@@ -56,22 +56,23 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
       <div className="p-5 flex-1 flex flex-col">
         {/* Header row */}
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+          <div className="w-20 h-20 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
             {tool.image_url
-              ? <img src={tool.image_url} alt={tool.name} className="w-12 h-12 object-contain"/>
-              : <span className="text-2xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
+              ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 object-contain"/>
+              : <span className="text-3xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2">{tool.name}</h3>
             <Stars rating={tool.rating} count={tool.review_count}/>
             <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full text-white"
                 style={{background: accent}}>
-                {tool.category_slug === 'private' ? '🔒' : tool.category_slug === 'bundle' ? '📦' : '🌐'} {typeLabel}
+                {tool.category_slug === 'private' ? <Lock size={9} strokeWidth={2.5}/> : tool.category_slug === 'bundle' ? <Package size={9} strokeWidth={2.5}/> : <Globe size={9} strokeWidth={2.5}/>}
+                {typeLabel}
               </div>
               {sales > 0 && (
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                  🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  <ShoppingCart size={9} strokeWidth={2.5}/>{sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
                 </div>
               )}
             </div>
@@ -82,7 +83,7 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 flex-1 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3 flex-1 mb-5">
           {(isRtl && tool.description_ar) ? tool.description_ar : tool.description}
         </p>
 
@@ -139,22 +140,23 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
       <div className="p-5 flex-1 flex flex-col">
         {/* Header */}
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+          <div className="w-20 h-20 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
             {tool.image_url
-              ? <img src={tool.image_url} alt={tool.name} className="w-12 h-12 object-contain"/>
-              : <span className="text-2xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
+              ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 object-contain"/>
+              : <span className="text-3xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2">{tool.name}</h3>
             <Stars rating={tool.rating} count={tool.review_count}/>
             <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full text-white"
                 style={{background: accent}}>
-                {tool.category_slug === 'private' ? '🔒' : tool.category_slug === 'bundle' ? '📦' : '🌐'} {typeLabel}
+                {tool.category_slug === 'private' ? <Lock size={9} strokeWidth={2.5}/> : tool.category_slug === 'bundle' ? <Package size={9} strokeWidth={2.5}/> : <Globe size={9} strokeWidth={2.5}/>}
+                {typeLabel}
               </div>
               {sales > 0 && (
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                  🛒 {sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  <ShoppingCart size={9} strokeWidth={2.5}/>{sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
                 </div>
               )}
             </div>
@@ -165,7 +167,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 flex-1 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3 flex-1 mb-5">
           {(isRtl && tool.description_ar) ? tool.description_ar : tool.description}
         </p>
 
@@ -361,7 +363,7 @@ export default function DashboardPage() {
         <div className="mb-8">
           {/* Section header — eye-catching, matches store banner gradient */}
           <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
-            style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+            style={{background:'linear-gradient(135deg,#1a3a5c 0%,#1e4f8a 50%,#1e3a8a 100%)'}}>
             <div className="absolute inset-0 pointer-events-none opacity-40"
               style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#d9940150,transparent 55%),radial-gradient(ellipse at 80% 50%,#3b82f630,transparent 55%)'}}/>
             <div className="relative flex items-center gap-3">
@@ -404,12 +406,12 @@ export default function DashboardPage() {
           <div key={i} className="mb-8">
             {/* Section banner header — same style as Best Sellers */}
             <div className="relative rounded-2xl overflow-hidden mb-5 px-5 py-4 flex items-center justify-between"
-              style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+              style={{background:'linear-gradient(135deg,#1a3a5c 0%,#1e4f8a 50%,#1e3a8a 100%)'}}>
               <div className="absolute inset-0 pointer-events-none opacity-30"
                 style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#3b82f640,transparent 55%),radial-gradient(ellipse at 80% 50%,#d9940120,transparent 55%)'}}/>
               <div className="relative flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                  style={{background:'linear-gradient(135deg,#1e3a5f,#2d5a9e)'}}>
+                  style={{background:'linear-gradient(135deg,#2563eb,#3b82f6)'}}>
                   {emoji}
                 </div>
                 <div>

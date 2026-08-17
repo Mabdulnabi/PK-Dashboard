@@ -271,13 +271,14 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
           <div key={tool.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
             <div className="h-0.5 w-full flex-shrink-0" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
 
-            <div className="p-5 pb-3 relative">
-              {/* Badges top-right */}
-              <div className="absolute top-4 end-4 flex items-center gap-1.5">
+            <div className="p-5 pb-3">
+              {/* Badges row — top of card */}
+              <div className="flex items-center gap-1.5 mb-3 flex-wrap">
                 {(tool.sales_count || 0) > 0 && (
                   <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
                     style={{background: category==='private'?'#8b5cf6':category==='bundle'?'#f59e0b':'#d99401'}}>
-                    <ShoppingCart size={10} color="white"/>{(tool.sales_count||0).toLocaleString()}
+                    <ShoppingCart size={10} strokeWidth={2.5} color="white"/>
+                    {(tool.sales_count||0).toLocaleString()} {lang==='ar'?'مبيعة':'sold'}
                   </span>
                 )}
                 <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
@@ -285,13 +286,13 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
                 </span>
               </div>
               {/* Logo */}
-              <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-4 overflow-hidden shadow-sm">
+              <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden shadow-sm">
                 {tool.image_url
                   ? <img src={tool.image_url} alt={tool.name} className="w-10 h-10 object-contain"/>
                   : <span className="text-xl font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>
                 }
               </div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pe-16 leading-tight">{tool.name}</h3>
+              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 leading-tight">{tool.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">{(lang==='ar'&&tool.description_ar)?tool.description_ar:tool.description}</p>
             </div>
 

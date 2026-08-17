@@ -2,28 +2,17 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
+import { Globe, Package, Lock } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import ShopPage from '@/app/u/shop/ShopPage'
 
 const TABS = [
-  { key: 'shared',  en: 'Shared',  ar: 'مشتركة', emoji: '🌐', color: '#3b82f6',
-    titleEn: 'Access Premium Shared Tools', titleAr: 'الوصول إلى الأدوات المشتركة',
-    subEn: 'Browse and activate shared premium tools instantly.', subAr: 'تصفح وفعّل الأدوات المميزة المشتركة فوراً.' },
-  { key: 'bundle',  en: 'Bundle',  ar: 'حزم',    emoji: '📦', color: '#f59e0b',
-    titleEn: 'Best Value Tool Bundles', titleAr: 'أفضل قيمة في حزم الأدوات',
-    subEn: 'Curated bundles of top tools at unbeatable prices.', subAr: 'حزم مجمّعة من أفضل الأدوات بأسعار لا تُقارن.' },
-  { key: 'private', en: 'Private', ar: 'خاصة',   emoji: '🔒', color: '#8b5cf6',
-    titleEn: 'Exclusive Private Accounts', titleAr: 'حسابات خاصة حصرية',
-    subEn: 'Private accounts and licenses just for you.', subAr: 'حسابات وتراخيص خاصة حصرية لك.' },
+  { key: 'shared',  en: 'Shared',  ar: 'مشتركة', color: '#3b82f6', Icon: Globe   },
+  { key: 'bundle',  en: 'Bundle',  ar: 'حزم',    color: '#f59e0b', Icon: Package },
+  { key: 'private', en: 'Private', ar: 'خاصة',   color: '#8b5cf6', Icon: Lock    },
 ] as const
 
 type Tab = typeof TABS[number]['key']
-
-const BANNER_KEYS: Record<Tab, { arr: string; single: string }> = {
-  shared:  { arr: 'shared_store_banners',  single: 'shared_store_banner_url'  },
-  bundle:  { arr: 'bundle_store_banners',  single: 'bundle_store_banner_url'  },
-  private: { arr: 'private_store_banners', single: 'private_store_banner_url' },
-}
 
 function StoreInner() {
   const { lang, dir } = useLang()
@@ -35,52 +24,51 @@ function StoreInner() {
 
   const [banners, setBanners] = useState<BannerSlide[] | null>(null)
 
+  // Fetch ONCE — unified store banner, not per-tab
   useEffect(() => {
-    setBanners(null)
     fetch('/api/admin/ui-settings').then(r => r.json()).then(d => {
-      const ui  = d.settings as Record<string, string>
-      const bk  = BANNER_KEYS[tab]
+      const ui = d.settings as Record<string, string>
       let slides: BannerSlide[] = []
+      // Try unified store key first, fall back to shared tab banner
       try {
-        const arr = JSON.parse(ui?.[bk.arr] || '[]')
+        const arr = JSON.parse(ui?.store_banners || ui?.shared_store_banners || '[]')
         if (arr.length) slides = arr.map((s: any) => typeof s === 'string' ? { url: s } : s)
       } catch {}
-      if (!slides.length && ui?.[bk.single]) slides = [{ url: ui[bk.single] }]
+      if (!slides.length) {
+        const url = ui?.store_banner_url || ui?.shared_store_banner_url
+        if (url) slides = [{ url }]
+      }
       setBanners(slides)
     }).catch(() => setBanners([]))
-  }, [tab])
+  }, []) // no tab dependency — banner is fixed
 
   const setTab = (t: Tab) => router.push(`/u/store?tab=${t}`)
 
-  const activeMeta = TABS.find(t => t.key === tab)!
-
   return (
     <div dir={dir}>
-      {/* Banner — always shown above tabs */}
+      {/* Unified banner — fixed, does not change with tab */}
       <div className="mx-3 md:mx-6 mt-3 md:mt-6 rounded-2xl overflow-hidden mb-0">
         {banners === null ? (
           <div className="h-24 rounded-2xl animate-pulse bg-gray-100 dark:bg-gray-800"/>
         ) : banners.length > 0 ? (
           <BannerSlider slides={banners} isRtl={isRtl} maxHeight={220}/>
         ) : (
+          /* Default static store banner */
           <div className="rounded-2xl p-5 md:p-7 relative overflow-hidden"
-            style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
+            style={{background:'linear-gradient(135deg,#1a3a5c 0%,#1e4f8a 50%,#1e3a8a 100%)'}}>
             <div className="absolute inset-0 pointer-events-none"
-              style={{backgroundImage:`radial-gradient(ellipse at 20% 50%,${activeMeta.color}30,transparent 55%)`}}/>
-            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3"
-                  style={{border:`1px solid ${activeMeta.color}50`,background:`${activeMeta.color}18`}}>
-                  <span className="text-sm">{activeMeta.emoji}</span>
-                  <span className="text-xs font-semibold uppercase tracking-wide" style={{color:activeMeta.color}}>
-                    {isRtl ? activeMeta.ar : activeMeta.en}
-                  </span>
-                </div>
-                <h1 className="text-lg md:text-xl font-bold text-white mb-1">
-                  {isRtl ? activeMeta.titleAr : activeMeta.titleEn}
-                </h1>
-                <p className="text-sm text-gray-300">{isRtl ? activeMeta.subAr : activeMeta.subEn}</p>
+              style={{backgroundImage:'radial-gradient(ellipse at 20% 50%,#d9940130,transparent 55%),radial-gradient(ellipse at 80% 50%,#3b82f620,transparent 60%)'}}/>
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3 border border-[#d9940140] bg-[#d9940115]">
+                <Globe size={12} style={{color:'#d99401'}}/>
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{color:'#d99401'}}>Pro Keys Store</span>
               </div>
+              <h1 className="text-lg md:text-xl font-bold text-white mb-1">
+                {isRtl ? 'أدوات احترافية بأسعار مناسبة' : 'Professional Tools at Great Prices'}
+              </h1>
+              <p className="text-sm text-blue-200">
+                {isRtl ? 'اشتراكات مشتركة — حزم — حسابات خاصة' : 'Shared subscriptions · Bundles · Private accounts'}
+              </p>
             </div>
           </div>
         )}
@@ -96,14 +84,14 @@ function StoreInner() {
                 active ? 'text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
               style={active ? { background: t.color } : {}}>
-              <span>{t.emoji}</span>
+              <t.Icon size={14}/>
               <span>{isRtl ? t.ar : t.en}</span>
             </button>
           )
         })}
       </div>
 
-      {/* Content — ShopPage for all tabs, banner suppressed inside, compact top padding */}
+      {/* Content — ShopPage for all tabs, banner suppressed, compact spacing */}
       <ShopPage category={tab} hideBanner compact defaultCatId={catId}/>
     </div>
   )
