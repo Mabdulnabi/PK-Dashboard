@@ -1,9 +1,40 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { LangProvider, useLang } from '@/lib/lang-context'
-const ChatWidget = dynamic(() => import('@/components/live-chat/ChatWidget'), { ssr: false })
+const ChatWidget    = dynamic(() => import('@/components/live-chat/ChatWidget'), { ssr: false })
+
+/* ── Lazy tab panels — loaded once, kept alive ─────────── */
+const TabSpinner = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
+  </div>
+)
+const DashboardTab  = dynamic(() => import('./dashboard/page'),   { ssr:false, loading:()=><TabSpinner/> })
+const StoreTab      = dynamic(() => import('./store/page'),        { ssr:false, loading:()=><TabSpinner/> })
+const OrdersTab     = dynamic(() => import('./orders/page'),       { ssr:false, loading:()=><TabSpinner/> })
+const FocusModeTab  = dynamic(() => import('./focus-mode/page'),   { ssr:false, loading:()=><TabSpinner/> })
+const WalletTab     = dynamic(() => import('./wallet/page'),       { ssr:false, loading:()=><TabSpinner/> })
+const TicketsTab    = dynamic(() => import('./tickets/page'),      { ssr:false, loading:()=><TabSpinner/> })
+const TutorialsTab  = dynamic(() => import('./tutorials/page'),    { ssr:false, loading:()=><TabSpinner/> })
+const BlogsTab      = dynamic(() => import('./blogs/page'),        { ssr:false, loading:()=><TabSpinner/> })
+const QuickLinksTab = dynamic(() => import('./quick-links/page'),  { ssr:false, loading:()=><TabSpinner/> })
+const ProfileTab    = dynamic(() => import('./profile/page'),      { ssr:false, loading:()=><TabSpinner/> })
+
+const TAB_MAP: Record<string, React.ComponentType> = {
+  '/u/dashboard':  DashboardTab,
+  '/u/store':      StoreTab,
+  '/u/orders':     OrdersTab,
+  '/u/focus-mode': FocusModeTab,
+  '/u/wallet':     WalletTab,
+  '/u/tickets':    TicketsTab,
+  '/u/tutorials':  TutorialsTab,
+  '/u/blogs':      BlogsTab,
+  '/u/quick-links': QuickLinksTab,
+  '/u/profile':    ProfileTab,
+}
+const TAB_HREFS = Object.keys(TAB_MAP)
 import { useUISettings } from '@/lib/use-ui-settings'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -187,6 +218,15 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     setNavOrder(o); localStorage.setItem('pk_nav_order', JSON.stringify(o))
   }
   const resetNav = () => { const o = NAV_BASE.map((_,i)=>i); setNavOrder(o); localStorage.removeItem('pk_nav_order') }
+  // Tab keep-alive: track which tabs have been mounted so they stay in DOM
+  const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => {
+    const tab = TAB_HREFS.find(h => pathname === h)
+    return tab ? new Set([tab]) : new Set<string>()
+  })
+  const [activeTab, setActiveTab] = useState<string|null>(() =>
+    TAB_HREFS.find(h => pathname === h) ?? null
+  )
+
   const [newEmail,      setNewEmail]   = useState('')
   const [newPassword,   setNewPassword] = useState('')
   const [profileSaving, setProfileSaving] = useState(false)
@@ -256,6 +296,17 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   // close sidebar on route change
   useEffect(()=>{ setSidebar(false) },[pathname])
 
+  // sync active tab on pathname change (back/forward or direct URL)
+  useEffect(()=>{
+    const tab = TAB_HREFS.find(h => pathname === h)
+    if (tab) {
+      setMountedTabs(prev => { const s = new Set(prev); s.add(tab); return s })
+      setActiveTab(tab)
+    } else {
+      setActiveTab(null)
+    }
+  },[pathname])
+
   // Apply theme on mount + auto-check interval
   useEffect(()=>{
     const applyMode = (m: 'auto'|'dark'|'light') => {
@@ -288,6 +339,16 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   const logout = async()=>{
     await fetch('/api/member/verify',{method:'DELETE'})
     router.push('/landing')
+  }
+
+  const navigateTo = (href: string) => {
+    if (TAB_HREFS.includes(href)) {
+      setMountedTabs(prev => { const s = new Set(prev); s.add(href); return s })
+      setActiveTab(href)
+      router.push(href, { scroll: false })
+    } else {
+      router.push(href)
+    }
   }
 
   const saveProfile = async()=>{
@@ -352,9 +413,9 @@ if (pathname==='/u/login') return <>{children}</>
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
           return (
             <motion.div key={item.href} whileHover="hover">
-            <Link href={item.href}
+            <div role="button" onClick={()=>navigateTo(item.href)}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              className={`cursor-pointer relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
@@ -363,7 +424,7 @@ if (pathname==='/u/login') return <>{children}</>
                 <Icon size={15} weight="duotone" style={{color: item.color}}/>
               </motion.div>
               {!col && <span style={active ? {color: item.color, fontWeight:600} : {}}>{isRtl?item.ar:item.en}</span>}
-            </Link>
+            </div>
             </motion.div>
           )
         })}
@@ -537,16 +598,29 @@ if (pathname==='/u/login') return <>{children}</>
 
         {/* Content */}
         <main className="flex-1 overflow-auto relative">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={pathname}
-              initial={{opacity:0, y:16}}
-              animate={{opacity:1, y:0}}
-              exit={{opacity:0, y:-10}}
-              transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
-              style={{position:'absolute', inset:0, overflowY:'auto'}}>
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          {/* Keep-alive tab panels — mounted once, hidden when inactive */}
+          {Array.from(mountedTabs).map(href => {
+            const TabComp = TAB_MAP[href]
+            const isActive = href === activeTab
+            return (
+              <div key={href} style={{display: isActive ? 'block' : 'none', position:'absolute', inset:0, overflowY:'auto'}}>
+                <TabComp/>
+              </div>
+            )
+          })}
+          {/* Sub-route children (e.g. /u/blogs/123, /u/tickets/456) */}
+          {!activeTab && (
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={pathname}
+                initial={{opacity:0, y:16}}
+                animate={{opacity:1, y:0}}
+                exit={{opacity:0, y:-10}}
+                transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
+                style={{position:'absolute', inset:0, overflowY:'auto'}}>
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </main>
       </div>
 
