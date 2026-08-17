@@ -12,13 +12,14 @@ import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, Doll
 import { CartProvider, useCart } from '@/lib/cart-context'
 import {
   HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
-  UserCircle, Users, LockKey, Package, Key, GraduationCap,
+  UserCircle, Users, LockKey, Package, Key, GraduationCap, ClipboardText,
 } from '@phosphor-icons/react'
 
 interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
 
 const NAV_BASE = [
   { en:'Dashboard',       ar:'الرئيسية',      href:'/u/dashboard',            icon:HouseSimple,  color:'#6366f1' },
+  { en:'My Orders',       ar:'طلباتي',        href:'/u/orders',               icon:ClipboardText,color:'#d99401' },
   { en:'Focus Mode',      ar:'وضع التركيز',   href:'/u/focus-mode',           icon:GraduationCap,color:'#06b6d4' },
   { en:'Oneclick Access', ar:'بكليك واحد',    href:'/u/shop',                 icon:ShoppingBag,  color:'#d99401', sub:[
     { en:'Shared Tools',  ar:'أدوات مشتركة',  href:'/u/shop/shared',          icon:Users,        color:'#8b5cf6' },

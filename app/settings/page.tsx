@@ -26,9 +26,11 @@ const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:bor
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<'quickadd'|'alerts'|'appearance'>('quickadd')
-  const [invoiceLogo,    setInvoiceLogo]    = useState('')
-  const [siteName,       setSiteName]       = useState('')
-  const [logoUploading,  setLogoUploading]  = useState(false)
+  const [invoiceLogo,      setInvoiceLogo]      = useState('')
+  const [siteName,         setSiteName]         = useState('')
+  const [logoUploading,    setLogoUploading]    = useState(false)
+  const [dashBanner,       setDashBanner]       = useState('')
+  const [bannerUploading,  setBannerUploading]  = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading]   = useState(true)
   const [toast,   setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
@@ -69,6 +71,7 @@ export default function SettingsPage() {
     ;(uiData||[]).forEach((r:any)=>{ ui[r.key]=r.value })
     setInvoiceLogo(ui.invoice_logo || '')
     setSiteName(ui.site_name || '')
+    setDashBanner(ui.dashboard_banner_url || '')
 
     setLoading(false)
   },[])
@@ -111,6 +114,23 @@ export default function SettingsPage() {
     }, { onConflict: 'user_id' })
     setSaving(false)
     setToast({ msg:'Alert settings saved', type:'ok' })
+  }
+
+  const uploadBanner = async (file: File) => {
+    setBannerUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('slot', 'dashboard-banner')
+    const res = await fetch('/api/admin/ui-settings/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!res.ok || !data.url) { setToast({ msg: data.error || 'Upload failed', type:'err' }); setBannerUploading(false); return }
+    setDashBanner(data.url)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ dashboard_banner_url: data.url }),
+    })
+    setBannerUploading(false)
+    setToast({ msg: 'Dashboard banner saved', type:'ok' })
   }
 
   const uploadLogo = async (file: File) => {
@@ -341,6 +361,37 @@ export default function SettingsPage() {
                     {saving ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Check size={12}/>}
                     Save Invoice Settings
                   </button>
+                </div>
+
+                {/* Dashboard Banner */}
+                <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-4">
+                  <div>
+                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Dashboard Banner</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Hero image shown at the top of the member dashboard page</div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-32 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                      {dashBanner
+                        ? <img src={dashBanner} alt="banner" className="w-full h-full object-cover"/>
+                        : <span className="text-[10px] text-gray-300 dark:text-gray-600 text-center leading-tight px-1">No banner</span>
+                      }
+                    </div>
+                    <div className="flex flex-col gap-2 flex-1">
+                      <label className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-fit">
+                        {bannerUploading
+                          ? <div className="w-3.5 h-3.5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
+                          : <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">📁 Upload Banner</span>
+                        }
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadBanner(f) }}/>
+                      </label>
+                      {dashBanner && (
+                        <button onClick={()=>{ setDashBanner(''); fetch('/api/admin/ui-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard_banner_url:''})}) }}
+                          className="text-[10px] text-red-400 hover:text-red-500 text-left">Remove banner</button>
+                      )}
+                      <p className="text-[9px] text-gray-400">PNG, JPG — recommended 1200×280px wide format</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
