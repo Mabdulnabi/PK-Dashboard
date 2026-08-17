@@ -29,8 +29,14 @@ export default function SettingsPage() {
   const [invoiceLogo,      setInvoiceLogo]      = useState('')
   const [siteName,         setSiteName]         = useState('')
   const [logoUploading,    setLogoUploading]    = useState(false)
-  const [dashBanner,       setDashBanner]       = useState('')
+  const [dashBanners,      setDashBanners]      = useState<string[]>([])
   const [bannerUploading,  setBannerUploading]  = useState(false)
+  const [sharedBanner,     setSharedBanner]     = useState('')
+  const [sharedUploading,  setSharedUploading]  = useState(false)
+  const [privateBanner,    setPrivateBanner]    = useState('')
+  const [privateUploading, setPrivateUploading] = useState(false)
+  const [ordersBanner,     setOrdersBanner]     = useState('')
+  const [ordersUploading,  setOrdersUploading]  = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading]   = useState(true)
   const [toast,   setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
@@ -71,7 +77,10 @@ export default function SettingsPage() {
     ;(uiData||[]).forEach((r:any)=>{ ui[r.key]=r.value })
     setInvoiceLogo(ui.invoice_logo || '')
     setSiteName(ui.site_name || '')
-    setDashBanner(ui.dashboard_banner_url || '')
+    try { setDashBanners(JSON.parse(ui.dashboard_banners || '[]')) } catch { if (ui.dashboard_banner_url) setDashBanners([ui.dashboard_banner_url]) }
+    setSharedBanner(ui.shared_store_banner_url || '')
+    setPrivateBanner(ui.private_store_banner_url || '')
+    setOrdersBanner(ui.orders_banner_url || '')
 
     setLoading(false)
   },[])
@@ -116,21 +125,50 @@ export default function SettingsPage() {
     setToast({ msg:'Alert settings saved', type:'ok' })
   }
 
-  const uploadBanner = async (file: File) => {
+  const uploadDashBanner = async (file: File) => {
     setBannerUploading(true)
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('slot', 'dashboard-banner')
+    fd.append('slot', `dashboard-banner-${Date.now()}`)
     const res = await fetch('/api/admin/ui-settings/upload', { method: 'POST', body: fd })
     const data = await res.json()
     if (!res.ok || !data.url) { setToast({ msg: data.error || 'Upload failed', type:'err' }); setBannerUploading(false); return }
-    setDashBanner(data.url)
+    const newList = [...dashBanners, data.url]
+    setDashBanners(newList)
     await fetch('/api/admin/ui-settings', {
       method: 'POST', headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ dashboard_banner_url: data.url }),
+      body: JSON.stringify({ dashboard_banners: JSON.stringify(newList) }),
     })
     setBannerUploading(false)
-    setToast({ msg: 'Dashboard banner saved', type:'ok' })
+    setToast({ msg: 'Banner added', type:'ok' })
+  }
+
+  const removeDashBanner = async (url: string) => {
+    const newList = dashBanners.filter(b => b !== url)
+    setDashBanners(newList)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ dashboard_banners: JSON.stringify(newList) }),
+    })
+  }
+
+  const uploadSectionBanner = async (
+    file: File, slot: string, key: string,
+    set: (v:string)=>void, setUpl: (v:boolean)=>void, label: string
+  ) => {
+    setUpl(true)
+    const fd = new FormData()
+    fd.append('file', file); fd.append('slot', slot)
+    const res = await fetch('/api/admin/ui-settings/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!res.ok || !data.url) { setToast({ msg: data.error || 'Upload failed', type:'err' }); setUpl(false); return }
+    set(data.url)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ [key]: data.url }),
+    })
+    setUpl(false)
+    setToast({ msg: `${label} saved`, type:'ok' })
   }
 
   const uploadLogo = async (file: File) => {
@@ -363,35 +401,71 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
-                {/* Dashboard Banner */}
+                {/* Dashboard Banner Slider */}
+                <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-3">
+                  <div>
+                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Dashboard Banner Slider</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Upload multiple images — they auto-rotate in the dashboard. 1200×280px recommended.</div>
+                  </div>
+                  {/* Existing banners */}
+                  {dashBanners.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {dashBanners.map((url, i) => (
+                        <div key={url} className="relative group">
+                          <img src={url} alt={`Slide ${i+1}`} className="w-24 h-14 object-cover rounded-lg border border-gray-200 dark:border-gray-700"/>
+                          <button onClick={()=>removeDashBanner(url)}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold">✕</button>
+                          <span className="absolute bottom-1 left-1 text-[9px] bg-black/50 text-white rounded px-1">{i+1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <label className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-fit">
+                    {bannerUploading
+                      ? <div className="w-3.5 h-3.5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
+                      : <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">📁 Add Banner Slide</span>
+                    }
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadDashBanner(f) }}/>
+                  </label>
+                </div>
+
+                {/* Section Banners */}
                 <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-4">
                   <div>
-                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Dashboard Banner</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">Hero image shown at the top of the member dashboard page</div>
+                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Section Banners</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Banner image for each store section. Shows above the section hero.</div>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-32 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-                      {dashBanner
-                        ? <img src={dashBanner} alt="banner" className="w-full h-full object-cover"/>
-                        : <span className="text-[10px] text-gray-300 dark:text-gray-600 text-center leading-tight px-1">No banner</span>
-                      }
+                  {[
+                    { label:'Shared Store', key:'shared_store_banner_url', slot:'shared-banner', val:sharedBanner, set:setSharedBanner, upl:sharedUploading, setUpl:setSharedUploading },
+                    { label:'Private Store', key:'private_store_banner_url', slot:'private-banner', val:privateBanner, set:setPrivateBanner, upl:privateUploading, setUpl:setPrivateUploading },
+                    { label:'My Orders', key:'orders_banner_url', slot:'orders-banner', val:ordersBanner, set:setOrdersBanner, upl:ordersUploading, setUpl:setOrdersUploading },
+                  ].map(({label,key,slot,val,set,upl,setUpl}) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <div className="w-20 h-12 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {val
+                          ? <img src={val} alt={label} className="w-full h-full object-cover"/>
+                          : <span className="text-[9px] text-gray-400 text-center px-1">{label}</span>}
+                      </div>
+                      <div className="flex flex-col gap-1 flex-1">
+                        <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">{label}</span>
+                        <div className="flex items-center gap-2">
+                          <label className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            {upl
+                              ? <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
+                              : <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">📁 Upload</span>
+                            }
+                            <input type="file" accept="image/*" className="hidden"
+                              onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadSectionBanner(f,slot,key,set,setUpl,label) }}/>
+                          </label>
+                          {val && (
+                            <button onClick={()=>{ set(''); fetch('/api/admin/ui-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:''})}) }}
+                              className="text-[10px] text-red-400 hover:text-red-500">Remove</button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-2 flex-1">
-                      <label className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-fit">
-                        {bannerUploading
-                          ? <div className="w-3.5 h-3.5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
-                          : <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">📁 Upload Banner</span>
-                        }
-                        <input type="file" accept="image/*" className="hidden"
-                          onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadBanner(f) }}/>
-                      </label>
-                      {dashBanner && (
-                        <button onClick={()=>{ setDashBanner(''); fetch('/api/admin/ui-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard_banner_url:''})}) }}
-                          className="text-[10px] text-red-400 hover:text-red-500 text-left">Remove banner</button>
-                      )}
-                      <p className="text-[9px] text-gray-400">PNG, JPG — recommended 1200×280px wide format</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 <div>

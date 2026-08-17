@@ -301,7 +301,7 @@ export default function SubscriptionDetailPage() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <button onClick={() => router.push('/u/dashboard')}
+          <button onClick={() => router.back()}
             className="w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0">
             {dir === 'rtl' ? <ArrowLeft size={16} className="rotate-180"/> : <ArrowLeft size={16}/>}
           </button>

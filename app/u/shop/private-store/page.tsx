@@ -1,22 +1,10 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store, MessageCircle, Heart, Plus, Minus, ShoppingCart, Check, PackageCheck, Clock, CheckCircle2 } from 'lucide-react'
+import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store, MessageCircle, Heart, Plus, Minus, ShoppingCart, Check, Clock } from 'lucide-react'
 import ToolLandingPage from '../ToolLandingPage'
 import { useCart } from '@/lib/cart-context'
-
-interface MyOrder {
-  id: string
-  status: string
-  tool_name: string
-  tool_image?: string
-  duration_label: string
-  amount_egp: number
-  has_delivery: boolean
-  created_at: string
-}
 
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -62,13 +50,7 @@ export default function PrivateStorePage() {
   const [landing,     setLanding]     = useState<Tool|null>(null)
   const [qtys,        setQtys]        = useState<Record<string,number>>({})
   const [toast,       setToast]       = useState('')
-  const [myOrders,    setMyOrders]    = useState<MyOrder[]>([])
-  const [memberId,    setMemberId]    = useState<string|null>(null)
-  const [ratingOrder, setRatingOrder] = useState<MyOrder|null>(null)
-  const [ratingVal,   setRatingVal]   = useState(0)
-  const [ratingTxt,   setRatingTxt]   = useState('')
-  const [ratingBusy,  setRatingBusy]  = useState(false)
-  const [confirmBusy, setConfirmBusy] = useState<string|null>(null)
+  const [secBanner,   setSecBanner]   = useState<string|null>(null)
 
   const localQty = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
   const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
@@ -86,61 +68,24 @@ export default function PrivateStorePage() {
     }
   }
 
-  const fetchOrders = useCallback(() => {
-    fetch('/api/member/purchases')
-      .then(r => r.json())
-      .then(d => {
-        const orders: MyOrder[] = (d.purchases || [])
-          .filter((p: any) => p.category_slug === 'private')
-          .map((p: any) => ({
-            id:             p.id,
-            status:         p.status,
-            tool_name:      p.tool_name,
-            tool_image:     p.tool_image,
-            duration_label: p.duration_label,
-            amount_egp:     p.amount_egp,
-            has_delivery:   p.has_delivery,
-            created_at:     p.created_at,
-          }))
-        setMyOrders(orders)
-      })
-  }, [])
-
   useEffect(()=>{
+    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+      const ui = d.settings as Record<string,string>
+      if (ui?.private_store_banner_url) setSecBanner(ui.private_store_banner_url)
+    }).catch(()=>{})
+
     Promise.all([
       fetch('/api/member/shop?category=private').then(r=>r.json()),
       fetch('/api/member/categories').then(r=>r.json()),
-      fetch('/api/member/verify').then(r=>r.json()),
-    ]).then(([shopData, catData, vData]) => {
+    ]).then(([shopData, catData]) => {
       const allTools: Tool[] = shopData.tools || []
       setTools(allTools)
       const usedCatIds = new Set(allTools.map((t: any) => t.category_id).filter(Boolean))
       const allCats: Category[] = catData.categories || []
       setCategories(allCats.filter(c => usedCatIds.has(c.id)))
-      if (vData?.member_id) setMemberId(vData.member_id)
       setLoading(false)
     })
-    fetchOrders()
-  }, [fetchOrders])
-
-  // Realtime: re-fetch orders when a delivery notification arrives
-  useEffect(() => {
-    if (!memberId) return
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const channel = supabase
-      .channel(`private-store-orders-${memberId}`)
-      .on('postgres_changes', {
-        event:  'INSERT',
-        schema: 'public',
-        table:  'member_notifications',
-        filter: `member_id=eq.${memberId}`,
-      }, () => { fetchOrders() })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [memberId, fetchOrders])
+  }, [])
 
   const price = (tool: Tool) =>
     formatPrice(tool.price_egp, parseFloat(settings.usd_to_egp_rate) || 50)
@@ -152,33 +97,6 @@ export default function PrivateStorePage() {
   const filtered = catTools
     .filter(t => !q || t.name.toLowerCase().includes(q.toLowerCase()))
     .sort((a,b) => sort==='best' ? b.rating-a.rating : b.sort_order-a.sort_order)
-
-  const confirmDelivery = async (orderId: string) => {
-    setConfirmBusy(orderId)
-    await fetch(`/api/member/orders/${orderId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'confirm_delivery' }),
-    })
-    await fetchOrders()
-    setConfirmBusy(null)
-    showToast(isRtl ? 'تم تأكيد الاستلام ✓' : 'Delivery confirmed ✓')
-  }
-
-  const submitRating = async () => {
-    if (!ratingOrder || ratingVal === 0) return
-    setRatingBusy(true)
-    await fetch(`/api/member/orders/${ratingOrder.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'rate', rating: ratingVal, comment: ratingTxt }),
-    })
-    setRatingBusy(false)
-    setRatingOrder(null)
-    setRatingVal(0)
-    setRatingTxt('')
-    showToast(isRtl ? 'شكراً على تقييمك ⭐' : 'Thanks for your review ⭐')
-  }
 
   const buy = (tool: Tool) => { window.location.href = `/u/checkout?tool_id=${tool.id}` }
 
@@ -192,6 +110,13 @@ export default function PrivateStorePage() {
 
   return (
     <div className="p-3 md:p-6" dir={isRtl?'rtl':'ltr'}>
+
+      {/* Section banner image */}
+      {secBanner && (
+        <div className="rounded-2xl overflow-hidden mb-3" style={{maxHeight:200}}>
+          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:200}}/>
+        </div>
+      )}
 
       {/* Banner */}
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
@@ -221,88 +146,6 @@ export default function PrivateStorePage() {
           </a>
         </div>
       </div>
-
-      {/* ── My Orders ── */}
-      {myOrders.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-            <PackageCheck size={15} style={{color:'#8b5cf6'}}/>
-            {isRtl ? 'طلباتي' : 'My Orders'}
-          </h2>
-          <div className="flex flex-col gap-3">
-            {myOrders.map(order => {
-              const isPending   = order.status === 'pending'
-              const isDelivered = order.status === 'delivered'
-              const isCompleted = order.status === 'completed'
-              return (
-                <div key={order.id}
-                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-                  dir={isRtl?'rtl':'ltr'}>
-                  {/* Tool image + info */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {order.tool_image
-                        ? <img src={order.tool_image} alt={order.tool_name} className="w-7 h-7 object-contain"/>
-                        : <span className="text-xs font-bold text-gray-400">{order.tool_name?.slice(0,2).toUpperCase()}</span>}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{order.tool_name}</p>
-                      <p className="text-xs text-gray-400">{order.duration_label} · {order.amount_egp} EGP</p>
-                    </div>
-                  </div>
-
-                  {/* Status badge */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {isPending && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 border border-yellow-200 dark:border-yellow-700">
-                        <Clock size={11}/>{isRtl?'قيد المعالجة':'Pending'}
-                      </span>
-                    )}
-                    {isDelivered && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200 dark:border-blue-700">
-                        <PackageCheck size={11}/>{isRtl?'تم التسليم':'Delivered'}
-                      </span>
-                    )}
-                    {isCompleted && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-200 dark:border-emerald-700">
-                        <CheckCircle2 size={11}/>{isRtl?'مكتمل':'Completed'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* View credentials */}
-                    {(isDelivered || isCompleted) && order.has_delivery && (
-                      <a href={`/u/subscription/${order.id}`}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors"
-                        style={{borderColor:'#8b5cf660',color:'#8b5cf6',background:'#8b5cf610'}}>
-                        {isRtl?'عرض البيانات':'View Credentials'}
-                      </a>
-                    )}
-                    {/* Confirm delivery */}
-                    {isDelivered && (
-                      <button onClick={()=>confirmDelivery(order.id)} disabled={confirmBusy===order.id}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                        style={{background:'#10b981'}}>
-                        {confirmBusy===order.id ? '...' : (isRtl?'تأكيد الاستلام':'Confirm Delivery')}
-                      </button>
-                    )}
-                    {/* Rate */}
-                    {isCompleted && (
-                      <button onClick={()=>{ setRatingOrder(order); setRatingVal(0); setRatingTxt('') }}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
-                        style={{background:'#f59e0b18',borderColor:'#f59e0b60',color:'#f59e0b',border:'1px solid'}}>
-                        ⭐ {isRtl?'قيّم':'Rate'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {loading && (
         <div className="flex justify-center py-20">
@@ -501,48 +344,6 @@ export default function PrivateStorePage() {
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl shadow-lg text-sm font-semibold text-white pointer-events-none" style={{background:'#8b5cf6'}}>
           {toast}
-        </div>
-      )}
-
-      {/* Rating modal */}
-      {ratingOrder && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={()=>setRatingOrder(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-gray-200 dark:border-gray-700"
-            onClick={e=>e.stopPropagation()} dir={isRtl?'rtl':'ltr'}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-              <p className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                {isRtl ? `تقييم ${ratingOrder.tool_name}` : `Rate ${ratingOrder.tool_name}`}
-              </p>
-              <button onClick={()=>setRatingOrder(null)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400"><X size={13}/></button>
-            </div>
-            <div className="p-5 space-y-4">
-              {/* Stars */}
-              <div className="flex items-center justify-center gap-2">
-                {[1,2,3,4,5].map(i => (
-                  <button key={i} onClick={()=>setRatingVal(i)}>
-                    <Star size={28}
-                      fill={i <= ratingVal ? '#F59E0B' : 'none'}
-                      stroke={i <= ratingVal ? '#F59E0B' : '#D1D5DB'}
-                      className="transition-transform hover:scale-110"/>
-                  </button>
-                ))}
-              </div>
-              {/* Comment */}
-              <textarea
-                value={ratingTxt}
-                onChange={e=>setRatingTxt(e.target.value)}
-                rows={3}
-                placeholder={isRtl ? 'أضف تعليقك (اختياري)...' : 'Add a comment (optional)...'}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-yellow-400 resize-none transition-all"/>
-              <button
-                onClick={submitRating}
-                disabled={ratingVal === 0 || ratingBusy}
-                className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-opacity hover:opacity-90"
-                style={{background:'#f59e0b'}}>
-                {ratingBusy ? '...' : (isRtl ? 'إرسال التقييم' : 'Submit Review')}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

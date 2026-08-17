@@ -59,11 +59,10 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
   const isRtl = lang === 'ar'
 
   return (
-    <div className="mb-5 rounded-2xl border overflow-hidden" dir={isRtl?'rtl':'ltr'}
-      style={{borderColor:'#d9940130', background:'linear-gradient(135deg,#1a1200 0%,#111827 100%)'}}>
+    <div className="mb-5 rounded-2xl border border-[#d99401]/20 dark:border-[#d99401]/30 overflow-hidden bg-amber-50 dark:bg-[#1a1200]" dir={isRtl?'rtl':'ltr'}>
       <div className="flex items-start gap-4 p-4 md:p-5">
         {/* Tool image */}
-        <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="w-11 h-11 rounded-xl bg-[#d99401]/10 dark:bg-white/10 border border-[#d99401]/20 dark:border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
           {current.tool_image
             ? <img src={current.tool_image} alt={current.tool_name} className="w-8 h-8 object-contain"/>
             : <span className="text-xs font-bold text-white/40">{current.tool_name?.slice(0,2)}</span>}
@@ -77,14 +76,14 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
           ) : (
             <>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-gray-800 dark:text-white">
                   {t(`How's your experience with `, `كيف تجربتك مع `)}<span style={{color:'#d99401'}}>{current.tool_name}</span>?
                 </p>
-                <button onClick={()=>dismiss(current.tool_id)} className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0 ms-3">
+                <button onClick={()=>dismiss(current.tool_id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0 ms-3">
                   <X size={14}/>
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mb-3">{t("You've been using it for a week — share your feedback",'استخدمتها أسبوع — شارك تجربتك')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">{t("You've been using it for a week — share your feedback",'استخدمتها أسبوع — شارك تجربتك')}</p>
 
               {/* Stars */}
               <div className="flex gap-1 mb-3">
@@ -94,7 +93,7 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
                     onClick={()=>setStars(i)}>
                     <Star size={22}
                       fill={(hover||stars)>=i?'#F59E0B':'none'}
-                      stroke={(hover||stars)>=i?'#F59E0B':'#6b7280'}
+                      stroke={(hover||stars)>=i?'#F59E0B':'#9CA3AF'}
                       className="transition-colors"/>
                   </button>
                 ))}
@@ -104,7 +103,7 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
                 <div className="flex gap-2 items-start">
                   <input value={comment} onChange={e=>setComment(e.target.value)}
                     placeholder={t('Quick comment (optional)','تعليق سريع (اختياري)')}
-                    className="flex-1 px-3 py-2 text-xs rounded-lg bg-white/5 border border-white/10 text-gray-200 placeholder-gray-600 outline-none focus:border-[#d99401] transition-all"/>
+                    className="flex-1 px-3 py-2 text-xs rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 outline-none focus:border-[#d99401] transition-all"/>
                   <button onClick={submit} disabled={sending}
                     className="px-4 py-2 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-50 flex-shrink-0"
                     style={{background:'#d99401'}}>
@@ -627,6 +626,8 @@ export default function MyOrdersPage() {
   const [ratingTxt,     setRatingTxt]     = useState('')
   const [ratingBusy,    setRatingBusy]    = useState(false)
   const [confirmBusy,   setConfirmBusy]   = useState<string|null>(null)
+  const [subFilter,     setSubFilter]     = useState<'all'|'shared'|'private'>('all')
+  const [secBanner,     setSecBanner]     = useState<string|null>(null)
   const activeRef = useRef<string|null>(null)
 
   const fetchPurchases = () => {
@@ -657,6 +658,11 @@ export default function MyOrdersPage() {
   }
 
   useEffect(()=>{
+    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+      const ui = d.settings as Record<string,string>
+      if (ui?.orders_banner_url) setSecBanner(ui.orders_banner_url)
+    }).catch(()=>{})
+
     Promise.all([
       fetch('/api/member/purchases').then(r=>r.ok?r.json():{purchases:[]}),
       fetch('/api/member/shop').then(r=>r.ok?r.json():{free:[]}),
@@ -761,6 +767,12 @@ export default function MyOrdersPage() {
   return (
     <div className="p-3 md:p-6" dir={dir}>
 
+      {secBanner && (
+        <div className="rounded-2xl overflow-hidden mb-5" style={{maxHeight:200}}>
+          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:200}}/>
+        </div>
+      )}
+
       <ReviewPrompt purchases={purchases} t={t} lang={lang}/>
 
       <OnboardingChecklist
@@ -779,16 +791,49 @@ export default function MyOrdersPage() {
         </div>
       )}
 
-      {/* My Orders */}
+      {/* My Active Subscriptions */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide">
-            {t('My Orders','طلباتي')}
+            {t('My Active Subscriptions','اشتراكاتي النشطة')}
           </h2>
           {purchases.length>0 && (
             <span className="text-xs text-gray-400">{purchases.length} {t('order','طلب')}</span>
           )}
         </div>
+
+        {/* Filter tabs */}
+        {purchases.length>0 && (
+          <div className="flex items-center gap-2 mb-4">
+            {(['all','shared','private'] as const).map(f=>{
+              const labels = {
+                all:     {en:'All',ar:'الكل'},
+                shared:  {en:'Shared',ar:'مشتركة'},
+                private: {en:'Private',ar:'خاصة'},
+              }
+              const counts = {
+                all:     purchases.length,
+                shared:  purchases.filter(p=>p.category_slug==='shared').length,
+                private: purchases.filter(p=>p.category_slug==='private').length,
+              }
+              const active = subFilter===f
+              return (
+                <button key={f} onClick={()=>setSubFilter(f)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    active
+                      ? 'text-white border-transparent'
+                      : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'
+                  }`}
+                  style={active?{background:'#d99401'}:{}}>
+                  {lang==='ar'?labels[f].ar:labels[f].en}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${active?'bg-white/20 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                    {counts[f]}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {purchases.length===0 ? (
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-10 text-center">
@@ -809,6 +854,7 @@ export default function MyOrdersPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...purchases]
+              .filter(p => subFilter==='all' || p.category_slug===subFilter)
               .sort((a,b) => new Date(b.created_at||0).getTime() - new Date(a.created_at||0).getTime())
               .map(p=>{
               const days         = daysLeft(p.expires_at)
@@ -935,28 +981,27 @@ export default function MyOrdersPage() {
                           </button>
                         )}
                       </>)}
-
-                      {/* Confirm Delivery — delivered but not yet confirmed by member */}
-                      {isPrivate && isDelivered && (
-                        <button onClick={()=>confirmDelivery(p.id)} disabled={confirmBusy===p.id}
-                          className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-60 transition-all flex items-center justify-center gap-1.5"
-                          style={{background:'#10b981'}}>
-                          {confirmBusy===p.id
-                            ? <><Loader2 size={11} className="animate-spin"/>{t('...','...')}</>
-                            : <><CheckCircle size={11}/>{t('Confirm Delivery','تأكيد الاستلام')}</>
-                          }
-                        </button>
-                      )}
-
-                      {/* Rate — only after member confirmed */}
-                      {isPrivate && isCompleted && (
-                        <button onClick={()=>{ setRatingPurchase(p); setRatingVal(0); setRatingTxt('') }}
-                          className="flex-shrink-0 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1"
-                          style={{background:'#f59e0b18',border:'1px solid #f59e0b60',color:'#f59e0b'}}>
-                          <Star size={11} fill="#f59e0b"/>{t('Rate','تقييم')}
-                        </button>
-                      )}
                     </div>
+
+                    {/* Private action row — full-width below main buttons */}
+                    {isPrivate && isDelivered && (
+                      <button onClick={()=>confirmDelivery(p.id)} disabled={confirmBusy===p.id}
+                        className="w-full mt-2 py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-60 transition-all flex items-center justify-center gap-1.5"
+                        style={{background:'#10b981'}}>
+                        {confirmBusy===p.id
+                          ? <><Loader2 size={11} className="animate-spin"/>{t('...','...')}</>
+                          : <><CheckCircle size={11}/>{t('Confirm Delivery','تأكيد الاستلام')}</>
+                        }
+                      </button>
+                    )}
+
+                    {isPrivate && isCompleted && (
+                      <button onClick={()=>{ setRatingPurchase(p); setRatingVal(0); setRatingTxt('') }}
+                        className="w-full mt-2 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                        style={{background:'#f59e0b18',border:'1px solid #f59e0b60',color:'#f59e0b'}}>
+                        <Star size={11} fill="#f59e0b"/>{t('Rate','تقييم')}
+                      </button>
+                    )}
                   </div>
                 </div>
               )

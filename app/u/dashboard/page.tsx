@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { useUISettings } from '@/lib/use-ui-settings'
-import { Star, Zap, Lock, Users, ArrowRight, ArrowLeft, ShoppingCart, ExternalLink } from 'lucide-react'
+import { Star, Zap, Lock, Users, ArrowRight, ArrowLeft, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
 interface Tool {
@@ -37,8 +37,10 @@ export default function DashboardPage() {
 
   const [tools,    setTools]    = useState<Tool[]>([])
   const [loading,  setLoading]  = useState(true)
-  const [banner,   setBanner]   = useState<string|null>(null)
+  const [banners,  setBanners]  = useState<string[]>([])
+  const [slide,    setSlide]    = useState(0)
   const [activeTab,setActiveTab]= useState<'all'|'shared'|'private'>('all')
+  const timerRef   = useRef<ReturnType<typeof setInterval>|null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -46,10 +48,29 @@ export default function DashboardPage() {
       fetch('/api/admin/ui-settings').then(r => r.json()).catch(() => ({ settings: {} })),
     ]).then(([shopData, uiData]) => {
       setTools(shopData.tools || [])
-      setBanner((uiData.settings as Record<string,string>)?.dashboard_banner_url || null)
+      const ui = uiData.settings as Record<string,string>
+      const raw = ui?.dashboard_banners
+      if (raw) {
+        try { setBanners(JSON.parse(raw)) } catch { /* */ }
+      } else if (ui?.dashboard_banner_url) {
+        setBanners([ui.dashboard_banner_url])
+      }
       setLoading(false)
     })
   }, [])
+
+  // Auto-advance slider
+  useEffect(() => {
+    if (banners.length <= 1) return
+    timerRef.current = setInterval(() => setSlide(s => (s+1) % banners.length), 4500)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [banners.length])
+
+  const goSlide = (i: number) => {
+    setSlide(i)
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+    timerRef.current = setInterval(() => setSlide(s => (s+1) % banners.length), 4500)
+  }
 
   const price = (tool: Tool) => formatPrice(tool.price_egp, usdRate)
 
@@ -65,13 +86,40 @@ export default function DashboardPage() {
   return (
     <div className="p-3 md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
 
-      {/* ── Banner ── */}
-      {banner ? (
-        <div className="relative rounded-2xl overflow-hidden mb-6 w-full"
-          style={{ maxHeight: 280 }}>
-          <img src={banner} alt="Banner" className="w-full object-cover" style={{ maxHeight: 280 }}/>
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.45))' }}/>
+      {/* ── Banner Slider ── */}
+      {banners.length > 0 ? (
+        <div className="relative rounded-2xl overflow-hidden mb-6 w-full group" style={{ maxHeight: 280 }}>
+          {/* Slides */}
+          {banners.map((url, i) => (
+            <div key={url} className="absolute inset-0 transition-opacity duration-700"
+              style={{ opacity: i === slide ? 1 : 0, zIndex: i === slide ? 1 : 0 }}>
+              <img src={url} alt={`Banner ${i+1}`} className="w-full h-full object-cover" style={{ maxHeight: 280 }}/>
+              <div className="absolute inset-0 pointer-events-none"
+                style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.4))' }}/>
+            </div>
+          ))}
+          {/* Spacer to keep height */}
+          <img src={banners[0]} alt="" className="w-full object-cover invisible" style={{ maxHeight: 280 }}/>
+
+          {/* Arrows — only when multiple */}
+          {banners.length > 1 && (<>
+            <button onClick={()=>goSlide((slide-1+banners.length)%banners.length)}
+              className="absolute start-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              {isRtl ? <ChevronRight size={16}/> : <ChevronLeft size={16}/>}
+            </button>
+            <button onClick={()=>goSlide((slide+1)%banners.length)}
+              className="absolute end-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              {isRtl ? <ChevronLeft size={16}/> : <ChevronRight size={16}/>}
+            </button>
+            {/* Dots */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+              {banners.map((_,i)=>(
+                <button key={i} onClick={()=>goSlide(i)}
+                  className="h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: i===slide ? 20 : 6, background: i===slide ? '#fff' : 'rgba(255,255,255,0.5)' }}/>
+              ))}
+            </div>
+          </>)}
         </div>
       ) : !loading && (
         <div className="rounded-2xl mb-6 p-8 md:p-12 text-center relative overflow-hidden"

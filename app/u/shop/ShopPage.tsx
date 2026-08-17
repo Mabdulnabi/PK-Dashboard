@@ -46,6 +46,7 @@ export default function ShopPage({ category }: Props) {
   const [categories,setCategories]= useState<DbCategory[]>([])
   const [qtys,      setQtys]      = useState<Record<string,number>>({})
   const [toast,     setToast]     = useState('')
+  const [secBanner, setSecBanner] = useState<string|null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -74,7 +75,19 @@ export default function ShopPage({ category }: Props) {
   }
   const meta = CATEGORY_META[category]
 
+  const BANNER_KEY: Record<string,string> = {
+    shared: 'shared_store_banner_url',
+    private: 'private_store_banner_url',
+    bundle: 'bundle_store_banner_url',
+  }
+
   useEffect(()=>{
+    const bannerKey = BANNER_KEY[category]
+    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+      const ui = d.settings as Record<string,string>
+      if (ui?.[bannerKey]) setSecBanner(ui[bannerKey])
+    }).catch(()=>{})
+
     fetch(`/api/member/shop?category=${category}`)
       .then(r=>r.json())
       .then(d=>{
@@ -115,6 +128,13 @@ export default function ShopPage({ category }: Props) {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
+      {/* Section banner image */}
+      {secBanner && (
+        <div className="rounded-2xl overflow-hidden mb-3" style={{maxHeight:200}}>
+          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:200}}/>
+        </div>
+      )}
+
       {/* Banner */}
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
