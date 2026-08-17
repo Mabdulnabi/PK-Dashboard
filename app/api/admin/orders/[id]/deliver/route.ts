@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if ((purchase as any).shop_tools?.category_slug !== 'private')
     return badRequest('not a private tool')
 
-  const { error } = await db.from('account_deliveries').upsert({
+  const deliveryPayload = {
     purchase_id:  params.id,
     member_id:    (purchase as any).member_id,
     tool_id:      (purchase as any).shop_tools?.id,
@@ -33,9 +33,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     source:       'manual',
     delivered_at: new Date().toISOString(),
     viewed_at:    null,
-  }, { onConflict: 'purchase_id' })
+  }
 
-  if (error) return serverError(error.message)
+  const { data: existing } = await db
+    .from('account_deliveries')
+    .select('id')
+    .eq('purchase_id', params.id)
+    .maybeSingle()
+
+  let dbError
+  if (existing) {
+    const { error } = await db
+      .from('account_deliveries')
+      .update(deliveryPayload)
+      .eq('purchase_id', params.id)
+    dbError = error
+  } else {
+    const { error } = await db.from('account_deliveries').insert(deliveryPayload)
+    dbError = error
+  }
+
+  if (dbError) return serverError(dbError.message)
 
   const toolName = (purchase as any).shop_tools?.name || 'الأداة'
   const label    = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'

@@ -96,6 +96,7 @@ export interface InvoiceData {
   id: string; amount: number; currency: string; gateway: string
   transaction_id: string | null; tool_name: string | null
   bundle_name: string | null; created_at: string; payment_code?: string | null
+  original_price?: number | null
 }
 export interface MemberData { full_name: string; email: string; phone?: string | null }
 interface Props { payment: InvoiceData; member: MemberData; logoUrl: string | null; siteName: string }
@@ -111,10 +112,17 @@ export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Pro
   const invoiceN  = `INV-${payment.id.slice(0, 8).toUpperCase()}`
   const code      = payment.payment_code || `PK-${payment.id.slice(0, 6).toUpperCase()}`
   const issueDate = new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
-  const currency  = (payment.currency || 'EGP').toUpperCase()
-  const amount    = Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })
-  const method    = GW[payment.gateway] || payment.gateway || '—'
-  const product   = payment.tool_name || payment.bundle_name || 'Digital Subscription'
+  const currency     = (payment.currency || 'EGP').toUpperCase()
+  const isCoupon     = payment.gateway === 'coupon'
+  const paidAmt      = Number(payment.amount)
+  const origAmt      = isCoupon && payment.original_price ? Number(payment.original_price) : paidAmt
+  const discountAmt  = isCoupon ? origAmt - paidAmt : 0
+  const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2 })
+  const amount       = fmt(paidAmt)
+  const unitPrice    = fmt(origAmt)
+  const discount     = fmt(discountAmt)
+  const method       = GW[payment.gateway] || payment.gateway || '—'
+  const product      = payment.tool_name || payment.bundle_name || 'Digital Subscription'
 
   return (
     <Document title={`Invoice ${invoiceN}`} author={siteName}>
@@ -187,8 +195,8 @@ export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Pro
               <Text style={[s.tcell, { flex: 1, color: MUTED }]}>01</Text>
               <Text style={[s.tcell, { flex: 5, fontWeight: 700 }]}>{product}</Text>
               <Text style={[s.tcell, { flex: 2, textAlign: 'center', color: MUTED }]}>1</Text>
-              <Text style={[s.tcell, { flex: 2, textAlign: 'center', color: MUTED }]}>{amount} {currency}</Text>
-              <Text style={[s.tcell, { flex: 2, textAlign: 'right', fontWeight: 700, color: GOLD }]}>{amount} {currency}</Text>
+              <Text style={[s.tcell, { flex: 2, textAlign: 'center', color: MUTED }]}>{unitPrice} {currency}</Text>
+              <Text style={[s.tcell, { flex: 2, textAlign: 'right', fontWeight: 700, color: GOLD }]}>{unitPrice} {currency}</Text>
             </View>
           </View>
 
@@ -197,12 +205,12 @@ export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Pro
             <View style={s.totalsBox}>
               <View style={s.totalRow}>
                 <Text style={s.totalKey}>Subtotal</Text>
-                <Text style={s.totalVal}>{amount} {currency}</Text>
+                <Text style={s.totalVal}>{unitPrice} {currency}</Text>
               </View>
               <View style={{ height: 0.5, backgroundColor: BORDER }}/>
               <View style={s.totalRow}>
                 <Text style={s.totalKey}>Discount</Text>
-                <Text style={s.totalVal}>0.00 {currency}</Text>
+                <Text style={s.totalVal}>{discount} {currency}</Text>
               </View>
               <View style={{ height: 0.5, backgroundColor: BORDER }}/>
               <View style={s.totalRowGold}>

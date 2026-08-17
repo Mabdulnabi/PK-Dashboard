@@ -274,8 +274,8 @@ export default function SubscriptionDetailPage() {
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
 
-        {/* ── Servers Section (shown when extension ready) ── */}
-        {extReady ? (
+        {/* ── Servers / Extension — only for shared tools, not private ── */}
+        {purchase?.category_slug !== 'private' && (extReady ? (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -420,7 +420,7 @@ export default function SubscriptionDetailPage() {
               </p>
             </div>
           </div>
-        )}
+        ))}
 
         {/* ── Private Account Credentials ── */}
         {purchase.category_slug === 'private' && (
