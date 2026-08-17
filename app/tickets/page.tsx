@@ -125,18 +125,20 @@ export default function TicketsPage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/admin/profile').then(r => r.json()).then(setAdminProfile) }, [])
 
-  // Realtime — new tickets + message replies appear instantly
+  // Realtime — listen to admin_notifications (fires on every ticket event reliably)
+  // and ticket_messages (may or may not fire depending on RLS, hence the fallback)
   useEffect(() => {
     const channel = supabase.channel('admin-tickets-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => load(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_messages' }, () => load(true))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => load(true))
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [load])
 
-  // Fallback poll every 30s
+  // Fallback poll every 15s
   useEffect(() => {
-    const id = setInterval(() => load(true), 30000)
+    const id = setInterval(() => load(true), 15000)
     return () => clearInterval(id)
   }, [load])
 

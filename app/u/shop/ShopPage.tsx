@@ -16,7 +16,7 @@ interface Tool {
   landing_blocks?: any[]
 }
 interface DbCategory { id:string; name:string; slug:string; color:string; icon:string }
-interface Props { category: 'shared'|'private'|'bundle' }
+interface Props { category: 'shared'|'private'|'bundle'; hideBanner?: boolean }
 
 function Stars({ rating, count }: { rating:number; count:number }) {
   return (
@@ -33,7 +33,7 @@ function Stars({ rating, count }: { rating:number; count:number }) {
   )
 }
 
-export default function ShopPage({ category }: Props) {
+export default function ShopPage({ category, hideBanner }: Props) {
   const { t, lang, dir, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
   const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
@@ -137,8 +137,8 @@ export default function ShopPage({ category }: Props) {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
-      {/* Section banner — replaces gradient hero when images uploaded */}
-      {secBanners === null ? null : secBanners.length > 0 ? (
+      {/* Section banner */}
+      {!hideBanner && (secBanners === null ? null : secBanners.length > 0 ? (
         <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
       ) : (
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
@@ -164,7 +164,7 @@ export default function ShopPage({ category }: Props) {
           </a>
         </div>
       </div>
-      )}
+      ))}
 
       {/* Filter bar */}
       <style>{`.sp-scroll{overflow-x:auto;scrollbar-width:none;}.sp-scroll::-webkit-scrollbar{display:none;}`}</style>

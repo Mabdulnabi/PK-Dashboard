@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { fireAdminNotification } from '@/lib/admin-notify'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,6 +54,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     })
     if (msgErr) return NextResponse.json({ error: msgErr.message }, { status: 500 })
   }
+
+  // Notify admin channel so other admin tabs reload the ticket list instantly
+  void fireAdminNotification({
+    title:   `رد أُرسل على تذكرة 💬`,
+    message: `تم الرد على التذكرة: "${ticket.subject}"`,
+    type:    'info',
+    link:    '/tickets',
+  })
 
   // Notify member (bilingual)
   service.from('member_notifications').insert({

@@ -72,6 +72,9 @@ export default function ShopAdminPage() {
   const [landingTool,   setLandingTool]   = useState<Tool|null>(null)
   const [landingBlocks, setLandingBlocks] = useState<LandingBlock[]>([])
 
+  // Bundle items state
+  const [bundleItemIds, setBundleItemIds] = useState<string[]>([])
+
   // Tool form
   const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'' }
   const [toolForm, setToolForm] = useState(emptyTool)
@@ -103,8 +106,17 @@ export default function ShopAdminPage() {
 
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
-  const openEditTool = (t:Tool)=>{
+  const openEditTool = async (t:Tool)=>{
     setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||''})
+    // Load bundle items if editing a bundle
+    if (t.category_slug === 'bundle') {
+      const res = await fetch('/api/admin/bundles')
+      const d   = await res.json()
+      const bundle = (d.bundles || []).find((b:any) => b.id === t.id)
+      setBundleItemIds((bundle?.items || []).map((i:any) => i.id))
+    } else {
+      setBundleItemIds([])
+    }
     setEdit(t); setModal('edit-tool')
   }
 
@@ -145,6 +157,16 @@ export default function ShopAdminPage() {
       : await supabase.from('shop_tools').insert(payload)
     setSaving(false)
     if(res.error){setToast({msg:res.error.message,type:'err'});return}
+
+    // Save bundle items if this is a bundle tool being edited
+    if (toolForm.category_slug === 'bundle' && editItem) {
+      await fetch('/api/admin/bundles', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editItem.id, tool_ids: bundleItemIds }),
+      })
+    }
+
     setToast({msg:editItem?'Tool updated':'Tool added',type:'ok'})
     setModal(null); load()
   }
@@ -732,6 +754,29 @@ export default function ShopAdminPage() {
                 </label>
               </div>
             </div>
+            {/* Bundle items picker — only shown when category is bundle */}
+            {toolForm.category_slug === 'bundle' && (
+              <div className="px-5 pb-4">
+                <label className="block text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Bundle Items (select tools to include)</label>
+                <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                  {tools.filter(t => t.category_slug !== 'bundle').map(t => {
+                    const checked = bundleItemIds.includes(t.id)
+                    return (
+                      <label key={t.id} className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0 ${checked ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                        <input type="checkbox" checked={checked}
+                          onChange={e => setBundleItemIds(prev => e.target.checked ? [...prev, t.id] : prev.filter(id => id !== t.id))}
+                          className="rounded accent-blue-500"/>
+                        {t.image_url && <img src={t.image_url} className="w-5 h-5 object-contain rounded flex-shrink-0" alt=""/>}
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">{t.name}</span>
+                        <span className="text-[10px] text-gray-400 flex-shrink-0">{t.category_slug}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">{bundleItemIds.length} tools selected</p>
+              </div>
+            )}
+
             <div className="flex gap-2 px-5 pb-5">
               <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
               <button onClick={saveTool} disabled={saving} className="flex-[2] py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
