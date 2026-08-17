@@ -1,8 +1,14 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
 import { PenLine, Search, Clock, ChevronRight, Plus, User } from 'lucide-react'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface Post {
   id: string
@@ -32,8 +38,8 @@ export default function BlogsPage() {
   const [search, setSearch]   = useState('')
   const [tab, setTab]         = useState<'all' | 'mine'>('all')
 
-  useEffect(() => {
-    setLoading(true)
+  const load = useCallback((silent = false) => {
+    if (!silent) setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (tab === 'mine') params.set('mine', '1')
@@ -42,6 +48,26 @@ export default function BlogsPage() {
       .then(d => { setPosts(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [search, tab])
+
+  useEffect(() => { load() }, [load])
+
+  // Realtime: update post status instantly when admin approves/rejects/revises
+  useEffect(() => {
+    const channel = supabase
+      .channel('member-blogs-rt')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'blog_posts' }, payload => {
+        const updated = payload.new as Post
+        setPosts(prev => {
+          const exists = prev.some(p => p.id === updated.id)
+          if (exists) return prev.map(p => p.id === updated.id ? { ...p, ...updated } : p)
+          // If a post moved to approved and wasn't in our list, reload
+          if (updated.status === 'approved') { load(true); return prev }
+          return prev
+        })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [load])
 
   const t = (en: string, ar_: string) => ar ? ar_ : en
   const getTitle  = (p: Post) => (ar && p.title_ar ? p.title_ar : p.title)
