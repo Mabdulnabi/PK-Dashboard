@@ -17,9 +17,10 @@ interface Post {
 }
 
 const STATUS_MAP: Record<string, { en: string; ar: string; cls: string }> = {
-  approved: { en: 'Published',     ar: 'منشور',          cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  pending:  { en: 'Under Review',  ar: 'قيد المراجعة',   cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  rejected: { en: 'Rejected',      ar: 'مرفوض',          cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  approved:         { en: 'Published',       ar: 'منشور',            cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  pending:          { en: 'Under Review',    ar: 'قيد المراجعة',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  rejected:         { en: 'Rejected',        ar: 'مرفوض',            cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  revision_needed:  { en: 'Needs Revision',  ar: 'يحتاج تعديل',     cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
 }
 
 export default function BlogsPage() {
@@ -99,8 +100,9 @@ export default function BlogsPage() {
           {posts.map(post => (
             <div key={post.id} onClick={() => router.push(`/u/blogs/${post.id}`)}
               className={`flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-gray-900 border cursor-pointer transition-all hover:shadow-sm
-                ${post.status === 'pending'  ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50/30 dark:bg-amber-900/5' :
-                  post.status === 'rejected' ? 'border-red-200 dark:border-red-800/40 bg-red-50/30 dark:bg-red-900/5' :
+                ${post.status === 'pending'         ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50/30 dark:bg-amber-900/5' :
+                  post.status === 'rejected'        ? 'border-red-200 dark:border-red-800/40 bg-red-50/30 dark:bg-red-900/5' :
+                  post.status === 'revision_needed' ? 'border-blue-200 dark:border-blue-800/40 bg-blue-50/30 dark:bg-blue-900/5' :
                   'border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800'}`}>
               {post.cover_image_url && (
                 <img src={post.cover_image_url} alt="" className="w-20 h-16 rounded-xl object-cover flex-shrink-0"/>
