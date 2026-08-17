@@ -329,7 +329,14 @@ function BookmarksPanel({ boardId, memberId }: { boardId:string|null; memberId:s
 
   const qs = boardId ? `?board_id=${boardId}` : ''
 
-  useEffect(()=>{ fetch(`/api/member/focus-bookmarks${qs}`).then(r=>r.json()).then(d=>setItems(d.bookmarks||[])) },[boardId])
+  useEffect(()=>{
+    const cacheKey = `pk_bookmarks_${boardId||'private'}`
+    try { const c=localStorage.getItem(cacheKey); if(c) setItems(JSON.parse(c)) } catch {}
+    fetch(`/api/member/focus-bookmarks${qs}`).then(r=>r.json()).then(d=>{
+      setItems(d.bookmarks||[])
+      try { localStorage.setItem(cacheKey, JSON.stringify(d.bookmarks||[])) } catch {}
+    })
+  },[boardId])
 
   const addBookmark = async ()=>{
     const url=normalizeUrl(scForm.url.trim()); if(!url) return
@@ -520,7 +527,12 @@ function NotesPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
   const qs = boardId ? `?board_id=${boardId}` : ''
 
   useEffect(()=>{
-    fetch(`/api/member/focus-notes${qs}`).then(r=>r.json()).then(d=>setNotes(d.notes||[]))
+    const cacheKey = `pk_notes_${boardId||'private'}`
+    try { const c=localStorage.getItem(cacheKey); if(c) setNotes(JSON.parse(c)) } catch {}
+    fetch(`/api/member/focus-notes${qs}`).then(r=>r.json()).then(d=>{
+      setNotes(d.notes||[])
+      try { localStorage.setItem(cacheKey, JSON.stringify(d.notes||[])) } catch {}
+    })
     setView('list'); setActiveId(null)
   },[boardId])
 
@@ -656,7 +668,14 @@ function TasksPanel({ boardId, memberId }: { boardId:string|null; memberId:strin
 
   const qs = boardId ? `?board_id=${boardId}` : ''
 
-  useEffect(()=>{ fetch(`/api/member/focus-tasks${qs}`).then(r=>r.json()).then(d=>setTasks(d.tasks||[])) },[boardId])
+  useEffect(()=>{
+    const cacheKey = `pk_tasks_${boardId||'private'}`
+    try { const c=localStorage.getItem(cacheKey); if(c) setTasks(JSON.parse(c)) } catch {}
+    fetch(`/api/member/focus-tasks${qs}`).then(r=>r.json()).then(d=>{
+      setTasks(d.tasks||[])
+      try { localStorage.setItem(cacheKey, JSON.stringify(d.tasks||[])) } catch {}
+    })
+  },[boardId])
 
   const addTask=async()=>{
     if(!form.title.trim()) return; setAdding(true)

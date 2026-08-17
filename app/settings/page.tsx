@@ -31,11 +31,11 @@ export default function SettingsPage() {
   const [logoUploading,    setLogoUploading]    = useState(false)
   const [dashBanners,      setDashBanners]      = useState<{url:string;link?:string}[]>([])
   const [bannerUploading,  setBannerUploading]  = useState(false)
-  const [sharedBanner,     setSharedBanner]     = useState('')
+  const [sharedBanners,    setSharedBanners]    = useState<{url:string;link?:string}[]>([])
   const [sharedUploading,  setSharedUploading]  = useState(false)
-  const [privateBanner,    setPrivateBanner]    = useState('')
+  const [privateBanners,   setPrivateBanners]   = useState<{url:string;link?:string}[]>([])
   const [privateUploading, setPrivateUploading] = useState(false)
-  const [ordersBanner,     setOrdersBanner]     = useState('')
+  const [ordersBanners,    setOrdersBanners]    = useState<{url:string;link?:string}[]>([])
   const [ordersUploading,  setOrdersUploading]  = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading]   = useState(true)
@@ -81,9 +81,14 @@ export default function SettingsPage() {
       const parsed = JSON.parse(ui.dashboard_banners || '[]')
       setDashBanners(parsed.map((s: any) => typeof s === 'string' ? { url: s } : s))
     } catch { if (ui.dashboard_banner_url) setDashBanners([{ url: ui.dashboard_banner_url }]) }
-    setSharedBanner(ui.shared_store_banner_url || '')
-    setPrivateBanner(ui.private_store_banner_url || '')
-    setOrdersBanner(ui.orders_banner_url || '')
+    const parseBanners = (raw: string, fallback: string) => {
+      if (!raw && !fallback) return []
+      try { const p = JSON.parse(raw || '[]'); return p.map((s:any)=>typeof s==='string'?{url:s}:s) } catch {}
+      return fallback ? [{url:fallback}] : []
+    }
+    setSharedBanners(parseBanners(ui.shared_store_banners, ui.shared_store_banner_url))
+    setPrivateBanners(parseBanners(ui.private_store_banners, ui.private_store_banner_url))
+    setOrdersBanners(parseBanners(ui.orders_banners, ui.orders_banner_url))
 
     setLoading(false)
   },[])
@@ -165,22 +170,42 @@ export default function SettingsPage() {
   }
 
   const uploadSectionBanner = async (
-    file: File, slot: string, key: string,
-    set: (v:string)=>void, setUpl: (v:boolean)=>void, label: string
+    file: File, slot: string, jsonKey: string,
+    list: {url:string;link?:string}[], setList: (v:{url:string;link?:string}[])=>void,
+    setUpl: (v:boolean)=>void, label: string
   ) => {
     setUpl(true)
     const fd = new FormData()
-    fd.append('file', file); fd.append('slot', slot)
+    fd.append('file', file); fd.append('slot', `${slot}-${Date.now()}`)
     const res = await fetch('/api/admin/ui-settings/upload', { method: 'POST', body: fd })
     const data = await res.json()
     if (!res.ok || !data.url) { setToast({ msg: data.error || 'Upload failed', type:'err' }); setUpl(false); return }
-    set(data.url)
+    const newList = [...list, { url: data.url }]
+    setList(newList)
     await fetch('/api/admin/ui-settings', {
       method: 'POST', headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ [key]: data.url }),
+      body: JSON.stringify({ [jsonKey]: JSON.stringify(newList) }),
     })
     setUpl(false)
-    setToast({ msg: `${label} saved`, type:'ok' })
+    setToast({ msg: `${label} slide added`, type:'ok' })
+  }
+
+  const removeSectionBanner = async (jsonKey: string, url: string, list: {url:string;link?:string}[], setList: (v:{url:string;link?:string}[])=>void) => {
+    const newList = list.filter(b => b.url !== url)
+    setList(newList)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ [jsonKey]: JSON.stringify(newList) }),
+    })
+  }
+
+  const updateSectionBannerLink = async (jsonKey: string, url: string, link: string, list: {url:string;link?:string}[], setList: (v:{url:string;link?:string}[])=>void) => {
+    const newList = list.map(b => b.url === url ? { ...b, link: link || undefined } : b)
+    setList(newList)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ [jsonKey]: JSON.stringify(newList) }),
+    })
   }
 
   const uploadLogo = async (file: File) => {
@@ -450,40 +475,47 @@ export default function SettingsPage() {
                   </label>
                 </div>
 
-                {/* Section Banners */}
-                <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-4">
+                {/* Section Banner Sliders */}
+                <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-5">
                   <div>
-                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Section Banners</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">Banner image for each store section. Shows above the section hero.</div>
+                    <div className="text-xs font-bold text-gray-800 dark:text-gray-100">Section Banner Sliders</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Upload multiple images per section — they auto-rotate. Add a link per image (optional).</div>
                   </div>
-                  {[
-                    { label:'Shared Store', key:'shared_store_banner_url', slot:'shared-banner', val:sharedBanner, set:setSharedBanner, upl:sharedUploading, setUpl:setSharedUploading },
-                    { label:'Private Store', key:'private_store_banner_url', slot:'private-banner', val:privateBanner, set:setPrivateBanner, upl:privateUploading, setUpl:setPrivateUploading },
-                    { label:'My Orders', key:'orders_banner_url', slot:'orders-banner', val:ordersBanner, set:setOrdersBanner, upl:ordersUploading, setUpl:setOrdersUploading },
-                  ].map(({label,key,slot,val,set,upl,setUpl}) => (
-                    <div key={key} className="flex items-center gap-3">
-                      <div className="w-20 h-12 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {val
-                          ? <img src={val} alt={label} className="w-full h-full object-cover"/>
-                          : <span className="text-[9px] text-gray-400 text-center px-1">{label}</span>}
-                      </div>
-                      <div className="flex flex-col gap-1 flex-1">
-                        <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">{label}</span>
-                        <div className="flex items-center gap-2">
-                          <label className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            {upl
-                              ? <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
-                              : <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">📁 Upload</span>
-                            }
-                            <input type="file" accept="image/*" className="hidden"
-                              onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadSectionBanner(f,slot,key,set,setUpl,label) }}/>
-                          </label>
-                          {val && (
-                            <button onClick={()=>{ set(''); fetch('/api/admin/ui-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:''})}) }}
-                              className="text-[10px] text-red-400 hover:text-red-500">Remove</button>
-                          )}
+                  {([
+                    { label:'Shared Store',  jsonKey:'shared_store_banners',  slot:'shared-banner',  list:sharedBanners,  setList:setSharedBanners,  upl:sharedUploading,  setUpl:setSharedUploading },
+                    { label:'Private Store', jsonKey:'private_store_banners', slot:'private-banner', list:privateBanners, setList:setPrivateBanners, upl:privateUploading, setUpl:setPrivateUploading },
+                    { label:'My Orders',     jsonKey:'orders_banners',        slot:'orders-banner',  list:ordersBanners,  setList:setOrdersBanners,  upl:ordersUploading,  setUpl:setOrdersUploading },
+                  ] as const).map(({label,jsonKey,slot,list,setList,upl,setUpl}) => (
+                    <div key={jsonKey}>
+                      <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 mb-2">{label}</div>
+                      {list.length > 0 && (
+                        <div className="flex flex-col gap-2 mb-2">
+                          {list.map((b, i) => (
+                            <div key={b.url} className="flex items-center gap-2 group">
+                              <div className="relative flex-shrink-0">
+                                <img src={b.url} alt={`${label} ${i+1}`} className="w-20 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"/>
+                                <button onClick={()=>removeSectionBanner(jsonKey,b.url,list as any,setList as any)}
+                                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-bold">✕</button>
+                                <span className="absolute bottom-0.5 left-0.5 text-[9px] bg-black/50 text-white rounded px-1">{i+1}</span>
+                              </div>
+                              <input
+                                defaultValue={b.link || ''}
+                                onBlur={e=>updateSectionBannerLink(jsonKey,b.url,e.target.value,list as any,setList as any)}
+                                placeholder="Link URL (optional)"
+                                className="flex-1 text-[11px] px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-[#d99401]"
+                              />
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      )}
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        {upl
+                          ? <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"/>
+                          : <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">📁 Add Slide</span>
+                        }
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={e=>{ const f=e.target.files?.[0]; if(f) uploadSectionBanner(f,slot,jsonKey,list as any,setList as any,setUpl,label) }}/>
+                      </label>
                     </div>
                   ))}
                 </div>

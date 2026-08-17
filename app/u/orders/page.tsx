@@ -10,6 +10,7 @@ const supabase = createClient(
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star, Eye, EyeOff, Copy } from 'lucide-react'
+import BannerSlider from '@/components/ui/BannerSlider'
 
 // ── Review Prompt ─────────────────────────────────────────
 function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: string }) {
@@ -627,7 +628,7 @@ export default function MyOrdersPage() {
   const [ratingBusy,    setRatingBusy]    = useState(false)
   const [confirmBusy,   setConfirmBusy]   = useState<string|null>(null)
   const [subFilter,     setSubFilter]     = useState<'all'|'shared'|'private'>('all')
-  const [secBanner,     setSecBanner]     = useState<string|null>(null)
+  const [secBanners,    setSecBanners]    = useState<{url:string;link?:string}[]>([])
   const activeRef = useRef<string|null>(null)
 
   const fetchPurchases = () => {
@@ -660,7 +661,11 @@ export default function MyOrdersPage() {
   useEffect(()=>{
     fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
       const ui = d.settings as Record<string,string>
-      if (ui?.orders_banner_url) setSecBanner(ui.orders_banner_url)
+      try {
+        const parsed = JSON.parse(ui?.orders_banners || '[]')
+        if (parsed.length) { setSecBanners(parsed.map((s:any)=>typeof s==='string'?{url:s}:s)); return }
+      } catch {}
+      if (ui?.orders_banner_url) setSecBanners([{ url: ui.orders_banner_url }])
     }).catch(()=>{})
 
     Promise.all([
@@ -767,10 +772,8 @@ export default function MyOrdersPage() {
   return (
     <div className="p-3 md:p-6" dir={dir}>
 
-      {secBanner && (
-        <div className="rounded-2xl overflow-hidden mb-5" style={{maxHeight:200}}>
-          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:200}}/>
-        </div>
+      {secBanners.length > 0 && (
+        <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
       )}
 
       <ReviewPrompt purchases={purchases} t={t} lang={lang}/>

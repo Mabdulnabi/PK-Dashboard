@@ -219,7 +219,7 @@ if (pathname==='/u/login') return <>{children}</>
     <>
       {/* Logo — hidden when collapsed */}
       {!col && (
-        <div className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-transparent">
+        <Link href="/u/dashboard" className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-transparent hover:opacity-80 transition-opacity">
           {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
             const w = Number(ui.logo_width) || 40
             const h = Number(ui.logo_height) || 40
@@ -242,7 +242,7 @@ if (pathname==='/u/login') return <>{children}</>
               </div>
             </>
           )}
-        </div>
+        </Link>
       )}
       {col && <div className="h-[57px]"/>}
 

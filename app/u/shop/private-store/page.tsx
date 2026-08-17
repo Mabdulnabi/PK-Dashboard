@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { Star, Zap, Info, X, Search, ArrowLeft, ArrowRight, Store, MessageCircle, Heart, Plus, Minus, ShoppingCart, Check, Clock } from 'lucide-react'
+import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import ToolLandingPage from '../ToolLandingPage'
 import { useCart } from '@/lib/cart-context'
 
@@ -50,7 +51,7 @@ export default function PrivateStorePage() {
   const [landing,     setLanding]     = useState<Tool|null>(null)
   const [qtys,        setQtys]        = useState<Record<string,number>>({})
   const [toast,       setToast]       = useState('')
-  const [secBanner,   setSecBanner]   = useState<string|null>(null)
+  const [secBanners, setSecBanners] = useState<BannerSlide[]>([])
 
   const localQty = (id: string) => qtys[id] ?? (inCart(id) ? getQty(id) : 1)
   const setLocalQty = (id: string, v: number) => setQtys(p => ({ ...p, [id]: Math.max(1, v) }))
@@ -71,7 +72,11 @@ export default function PrivateStorePage() {
   useEffect(()=>{
     fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
       const ui = d.settings as Record<string,string>
-      if (ui?.private_store_banner_url) setSecBanner(ui.private_store_banner_url)
+      try {
+        const parsed = JSON.parse(ui?.private_store_banners || '[]')
+        if (parsed.length) { setSecBanners(parsed.map((s:any)=>typeof s==='string'?{url:s}:s)); return }
+      } catch {}
+      if (ui?.private_store_banner_url) setSecBanners([{ url: ui.private_store_banner_url }])
     }).catch(()=>{})
 
     Promise.all([
@@ -112,10 +117,8 @@ export default function PrivateStorePage() {
     <div className="p-3 md:p-6" dir={isRtl?'rtl':'ltr'}>
 
       {/* Section banner — replaces gradient hero when images uploaded */}
-      {secBanner ? (
-        <div className="rounded-2xl overflow-hidden mb-5" style={{maxHeight:220}}>
-          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:220}}/>
-        </div>
+      {secBanners.length > 0 ? (
+        <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
       ) : (
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
