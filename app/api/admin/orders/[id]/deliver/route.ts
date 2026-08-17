@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .from('tool_purchases')
     .select('id, member_id, shop_tools(id, name, category_slug)')
     .eq('id', params.id)
-    .eq('status', 'confirmed')
+    .in('status', ['confirmed', 'delivered'])
     .single()
 
   if (!purchase) return notFound('purchase not found')
@@ -54,6 +54,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   if (dbError) return serverError(dbError.message)
+
+  // Mark purchase as delivered so member can see it in their orders
+  await db.from('tool_purchases').update({ status: 'delivered' }).eq('id', params.id)
 
   const toolName = (purchase as any).shop_tools?.name || 'الأداة'
   const label    = delivery_type === 'key' ? 'مفتاح التفعيل' : 'بيانات الحساب'

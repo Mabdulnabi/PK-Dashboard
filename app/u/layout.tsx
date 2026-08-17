@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { LangProvider, useLang } from '@/lib/lang-context'
 const ChatWidget = dynamic(() => import('@/components/live-chat/ChatWidget'), { ssr: false })
@@ -14,7 +15,7 @@ import {
   UserCircle, Users, LockKey, Package, Key, GraduationCap,
 } from '@phosphor-icons/react'
 
-interface Member { full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
+interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
 
 const NAV_BASE = [
   { en:'Dashboard',       ar:'الرئيسية',      href:'/u/dashboard',            icon:HouseSimple,  color:'#6366f1' },
@@ -96,17 +97,38 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
     fetch('/api/member/verify').then(r=>{
       if (!r.ok) { router.push('/landing'); return null }
       return r.json()
-    }).then(d=>{ if(d){ setMember(d); setNewEmail(d.email||''); setLoading(false) } })
+    }).then(d=>{ if(d){ setMember({ ...d, id: d.member_id }); setNewEmail(d.email||''); setLoading(false) } })
   },[router,pathname])
 
   useEffect(()=>{
-    if (!member) return
+    if (!member?.id) return
     const fetchNotifs = () =>
       fetch('/api/member/notifications').then(r=>r.json()).then(d=>setNotifs(d.notifications||[]))
     fetchNotifs()
     const interval = setInterval(fetchNotifs, 30_000)
-    return () => clearInterval(interval)
-  },[member])
+
+    // Realtime: instant bell ring when new notification arrives
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const channel = supabase
+      .channel(`member-notifs-${member.id}`)
+      .on('postgres_changes', {
+        event:  'INSERT',
+        schema: 'public',
+        table:  'member_notifications',
+        filter: `member_id=eq.${member.id}`,
+      }, (payload) => {
+        setNotifs(prev => [payload.new as any, ...prev])
+      })
+      .subscribe()
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  },[member?.id])
 
   useEffect(()=>{
     if (!member) return

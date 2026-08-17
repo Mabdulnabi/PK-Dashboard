@@ -1,7 +1,8 @@
 'use client'
 // app/u/subscription/[id]/page.tsx
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Download, Monitor, Smartphone, ExternalLink, Zap, Wifi, WifiOff, Loader2, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, Copy, Check as CheckIcon, MessageCircle, Lock } from 'lucide-react'
 import { useLang } from '@/lib/lang-context'
@@ -84,13 +85,27 @@ export default function SubscriptionDetailPage() {
   const [connError,   setConnError]   = useState('')
   const [activeServer,setActiveServer]= useState<string|null>(null)
   const [loading,     setLoading]     = useState(true)
-  const [delivery,    setDelivery]    = useState<Delivery|null>(null)
-  const [deliveryLoading, setDeliveryLoading] = useState(false)
-  const [showPass,    setShowPass]    = useState(false)
-  const [copied,      setCopied]      = useState<'email'|'pass'|null>(null)
-  const extCheckRef    = useRef(false)
+  const [delivery,       setDelivery]       = useState<Delivery|null>(null)
+  const [deliveryLoading,setDeliveryLoading] = useState(false)
+  const [showPass,       setShowPass]        = useState(false)
+  const [copied,         setCopied]          = useState<'email'|'pass'|null>(null)
+  const [memberId,       setMemberId]        = useState<string|null>(null)
+  const extCheckRef     = useRef(false)
   const fetchServersRef = useRef<(() => void) | null>(null)
-  const pollRef        = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollRef         = useRef<ReturnType<typeof setInterval> | null>(null)
+  const deliveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const fetchDelivery = useCallback(() => {
+    fetch(`/api/member/delivery?purchase_id=${id}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.delivery) {
+          setDelivery(d.delivery)
+          // Stop polling once we have delivery
+          if (deliveryPollRef.current) { clearInterval(deliveryPollRef.current); deliveryPollRef.current = null }
+        }
+      })
+  }, [id])
 
   const copyText = async (text: string, field: 'email'|'pass') => {
     await navigator.clipboard.writeText(text)
@@ -102,23 +117,60 @@ export default function SubscriptionDetailPage() {
     Promise.all([
       fetch('/api/member/purchases').then(r => r.json()),
       fetch('/api/member/shop').then(r => r.json()),
-    ]).then(([pData, sData]) => {
+      fetch('/api/member/verify').then(r => r.json()),
+    ]).then(([pData, sData, vData]) => {
       const p = pData.purchases?.find((x: any) => x.id === id)
+      if (vData?.member_id) setMemberId(vData.member_id)
       if (p) {
         setPurchase(p)
         if (p.category_slug === 'private') {
           setDeliveryLoading(true)
           fetch(`/api/member/delivery?purchase_id=${id}`)
             .then(r=>r.json())
-            .then(d=>{ setDelivery(d.delivery||null) })
+            .then(d=>{
+              setDelivery(d.delivery||null)
+              if (!d.delivery) {
+                // Poll every 4s while waiting for delivery
+                deliveryPollRef.current = setInterval(fetchDelivery, 4000)
+              }
+            })
             .finally(()=>setDeliveryLoading(false))
         }
       }
       setLoading(false)
     })
 
+    return () => {
+      if (deliveryPollRef.current) clearInterval(deliveryPollRef.current)
+    }
   // ── Fetch servers when purchase is loaded ──
-  }, [id])
+  }, [id, fetchDelivery])
+
+  // Supabase Realtime: instant delivery notification via member_notifications
+  useEffect(() => {
+    if (!memberId) return
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const channel = supabase
+      .channel(`delivery-watch-${id}`)
+      .on('postgres_changes', {
+        event:  'INSERT',
+        schema: 'public',
+        table:  'member_notifications',
+        filter: `member_id=eq.${memberId}`,
+      }, (payload) => {
+        const n = payload.new as any
+        // Delivery notification triggers an immediate credential fetch
+        if (n?.type === 'success' && n?.link === '/u/shop') {
+          fetchDelivery()
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [memberId, id, fetchDelivery])
 
   useEffect(() => {
     if (!purchase?.tool_name) return

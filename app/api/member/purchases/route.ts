@@ -26,8 +26,7 @@ export async function GET(req: NextRequest) {
       )
     `)
     .eq('member_id', session.member_id)
-    .eq('status', 'confirmed')
-    .gte('expires_at', new Date().toISOString())
+    .in('status', ['confirmed', 'delivered', 'pending'])
     .order('created_at', { ascending: false })
 
   // Fetch delivery flags for private tools (no side-effects, just read)
@@ -43,6 +42,7 @@ export async function GET(req: NextRequest) {
 
   const formatted = (purchases || []).map((p: any) => ({
     id:              p.id,
+    status:          p.status,
     tool_id:         p.shop_tools?.id,
     tool_name:       p.shop_tools?.name,
     tool_image:      p.shop_tools?.image_url,
