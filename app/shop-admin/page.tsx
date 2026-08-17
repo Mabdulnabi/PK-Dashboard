@@ -54,7 +54,7 @@ const LAYOUTS: { value: LandingBlock['layout']; label: string }[] = [
 ]
 
 export default function ShopAdminPage() {
-  const [tab,      setTab]      = useState<'tools'|'categories'|'reviews'>('tools')
+  const [tab,      setTab]      = useState<'tools'|'categories'|'reviews'|'deals'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
   const [reviews,  setReviews]  = useState<Review[]>([])
@@ -74,6 +74,11 @@ export default function ShopAdminPage() {
 
   // Bundle items state
   const [bundleItemIds, setBundleItemIds] = useState<string[]>([])
+
+  // Deals tab state
+  const [featuredIds,   setFeaturedIds]   = useState<string[]>([])
+  const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;tool_ids:string[]}[]>([])
+  const [dealSaving,    setDealSaving]    = useState(false)
 
   // Tool form
   const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'' }
@@ -103,6 +108,14 @@ export default function ShopAdminPage() {
 
   useEffect(()=>{load()},[load])
   useEffect(()=>{ if(tab==='reviews') loadReviews() },[tab,loadReviews])
+  useEffect(()=>{
+    if(tab!=='deals') return
+    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+      const ui = d.settings as Record<string,string>
+      try { setFeaturedIds(JSON.parse(ui?.dashboard_featured_ids||'[]')) } catch {}
+      try { setDealSections(JSON.parse(ui?.dashboard_sections||'[]').map((s:any)=>({...s,id:s.id||uuid()}))) } catch {}
+    })
+  },[tab])
 
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
@@ -269,6 +282,35 @@ export default function ShopAdminPage() {
   const catName = (id?:string) => cats.find(c=>c.id===id)?.name||'—'
   const pendingReviews = reviews.filter(r=>!r.approved).length
 
+  const saveDeals = async () => {
+    setDealSaving(true)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        dashboard_featured_ids: JSON.stringify(featuredIds),
+        dashboard_sections:     JSON.stringify(dealSections.map(s=>({title_en:s.title_en,title_ar:s.title_ar,tool_ids:s.tool_ids}))),
+      })
+    })
+    setDealSaving(false)
+    setToast({ msg:'Deals saved ✓', type:'ok' })
+  }
+
+  const toggleFeatured = (id: string) =>
+    setFeaturedIds(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id])
+
+  const addSection = () =>
+    setDealSections(p=>[...p,{id:uuid(),title_en:'',title_ar:'',tool_ids:[]}])
+
+  const removeSection = (id:string) => setDealSections(p=>p.filter(s=>s.id!==id))
+
+  const updateSection = (id:string, key:string, val:any) =>
+    setDealSections(p=>p.map(s=>s.id===id?{...s,[key]:val}:s))
+
+  const toggleSectionTool = (secId:string, toolId:string) =>
+    setDealSections(p=>p.map(s=>s.id===secId
+      ? {...s, tool_ids: s.tool_ids.includes(toolId) ? s.tool_ids.filter(x=>x!==toolId) : [...s.tool_ids, toolId]}
+      : s))
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar/>
@@ -291,6 +333,10 @@ export default function ShopAdminPage() {
               <MessageCircle size={12}/>Reviews
               {pendingReviews>0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-red-500">{pendingReviews}</span>}
             </button>
+            <button onClick={()=>setTab('deals')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='deals'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
+              🎯 Deals Tab
+            </button>
           </div>
 
           {tab==='tools' ? (
@@ -310,6 +356,10 @@ export default function ShopAdminPage() {
           ) : tab==='categories' ? (
             <button onClick={openAddCat} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors">
               <Plus size={13}/>Add Category
+            </button>
+          ) : tab==='deals' ? (
+            <button onClick={saveDeals} disabled={dealSaving} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white text-xs font-bold transition-colors">
+              <Check size={13}/>{dealSaving ? 'Saving…' : 'Save Deals'}
             </button>
           ) : null}
         </div>
@@ -450,6 +500,96 @@ export default function ShopAdminPage() {
                   <button onClick={openAddCat} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600"><Plus size={12}/>Add Category</button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Deals tab ── */}
+          {tab==='deals' && (
+            <div className="space-y-6 max-w-4xl">
+
+              {/* Featured Products */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">⭐ Featured Products</h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Products shown as "Top Picks" on the Deals tab ({featuredIds.length} selected)</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
+                  {tools.filter(t=>t.is_active).map(t=>{
+                    const sel = featuredIds.includes(t.id)
+                    return (
+                      <button key={t.id} onClick={()=>toggleFeatured(t.id)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 text-start transition-all ${sel?'border-amber-400 bg-amber-50 dark:bg-amber-900/10':'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'}`}>
+                        <div className="w-8 h-8 rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {t.image_url?<img src={t.image_url} alt={t.name} className="w-6 h-6 object-contain"/>:<span className="text-[9px] font-bold text-gray-400">{t.name.slice(0,2).toUpperCase()}</span>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{t.name}</div>
+                          <div className="text-[10px] text-gray-400 capitalize">{t.category_slug}</div>
+                        </div>
+                        <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${sel?'bg-amber-400':'bg-gray-100 dark:bg-gray-800'}`}>
+                          {sel && <Check size={10} className="text-white"/>}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Sections */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">📂 Product Sections</h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Curated sections shown below featured products on Deals tab</p>
+                  </div>
+                  <button onClick={addSection} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold transition-colors">
+                    <Plus size={12}/>Add Section
+                  </button>
+                </div>
+
+                {dealSections.length===0 && (
+                  <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400">
+                    No sections yet. Click "Add Section" to create one.
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {dealSections.map((sec, si) => (
+                    <div key={sec.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-bold text-gray-400">#{si+1}</span>
+                        <input value={sec.title_en} onChange={e=>updateSection(sec.id,'title_en',e.target.value)}
+                          placeholder="Section title (English)" className={`${inp} flex-1`}/>
+                        <input value={sec.title_ar} onChange={e=>updateSection(sec.id,'title_ar',e.target.value)}
+                          placeholder="عنوان القسم (عربي)" className={`${inp} flex-1`} dir="rtl"/>
+                        <button onClick={()=>removeSection(sec.id)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0">
+                          <Trash2 size={12}/>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mb-2">Products in this section ({sec.tool_ids.length} selected):</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                        {tools.filter(t=>t.is_active).map(t=>{
+                          const sel = sec.tool_ids.includes(t.id)
+                          return (
+                            <button key={t.id} onClick={()=>toggleSectionTool(sec.id, t.id)}
+                              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-start transition-all text-xs ${sel?'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/10':'border-gray-100 dark:border-gray-800 hover:border-gray-200'}`}>
+                              <div className="w-6 h-6 rounded-md border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                {t.image_url?<img src={t.image_url} alt="" className="w-5 h-5 object-contain"/>:<span className="text-[8px] text-gray-400">{t.name.slice(0,2)}</span>}
+                              </div>
+                              <span className="flex-1 truncate text-gray-700 dark:text-gray-300">{t.name}</span>
+                              {sel && <Check size={10} className="text-indigo-500 flex-shrink-0"/>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           )}
 
