@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star, Eye, EyeOff, Copy } from 'lucide-react'
+import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star, Eye, EyeOff, Copy, Search } from 'lucide-react'
 import BannerSlider from '@/components/ui/BannerSlider'
 
 // ── Review Prompt ─────────────────────────────────────────
@@ -627,7 +627,8 @@ export default function MyOrdersPage() {
   const [ratingTxt,     setRatingTxt]     = useState('')
   const [ratingBusy,    setRatingBusy]    = useState(false)
   const [confirmBusy,   setConfirmBusy]   = useState<string|null>(null)
-  const [subFilter,     setSubFilter]     = useState<'all'|'shared'|'private'>('all')
+  const [subFilter,     setSubFilter]     = useState<'all'|'shared'|'private'|'expiring'|'connected'>('all')
+  const [orderQ,        setOrderQ]        = useState('')
   const [secBanners,    setSecBanners]    = useState<{url:string;link?:string}[]>([])
   const activeRef = useRef<string|null>(null)
 
@@ -807,36 +808,46 @@ export default function MyOrdersPage() {
           )}
         </div>
 
-        {/* Filter tabs */}
+        {/* Filter bar */}
         {purchases.length>0 && (
-          <div className="flex items-center gap-2 mb-4">
-            {(['all','shared','private'] as const).map(f=>{
-              const labels = {
-                all:     {en:'All',ar:'الكل'},
-                shared:  {en:'Shared',ar:'مشتركة'},
-                private: {en:'Private',ar:'خاصة'},
-              }
-              const counts = {
-                all:     purchases.length,
-                shared:  purchases.filter(p=>p.category_slug==='shared').length,
-                private: purchases.filter(p=>p.category_slug==='private').length,
-              }
-              const active = subFilter===f
-              return (
-                <button key={f} onClick={()=>setSubFilter(f)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                    active
-                      ? 'text-white border-transparent'
-                      : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'
-                  }`}
-                  style={active?{background:'#d99401'}:{}}>
-                  {lang==='ar'?labels[f].ar:labels[f].en}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${active?'bg-white/20 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                    {counts[f]}
-                  </span>
+          <div className="mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 space-y-2">
+            {/* Search — full width */}
+            <div className="relative">
+              <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:10}}/>
+              <input value={orderQ} onChange={e=>setOrderQ(e.target.value)}
+                placeholder={lang==='ar'?'ابحث عن اشتراك…':'Search subscriptions…'}
+                className="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"
+                style={{padding:'7px 8px',[lang==='ar'?'paddingRight':'paddingLeft']:30}}/>
+              {orderQ && (
+                <button onClick={()=>setOrderQ('')} className="absolute top-1/2 -translate-y-1/2 text-gray-400" style={{[lang==='ar'?'left':'right']:8}}>
+                  <X size={11}/>
                 </button>
-              )
-            })}
+              )}
+            </div>
+            {/* Filter chips */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {([
+                {key:'all',      en:'All',           ar:'الكل',          color:'#d99401', count:purchases.length},
+                {key:'shared',   en:'Shared',        ar:'مشتركة',        color:'#d99401', count:purchases.filter(p=>p.category_slug==='shared').length},
+                {key:'private',  en:'Private',       ar:'خاصة',          color:'#8b5cf6', count:purchases.filter(p=>p.category_slug==='private').length},
+                {key:'expiring', en:'Expiring Soon', ar:'تنتهي قريباً',  color:'#f59e0b', count:purchases.filter(p=>{ const d=daysLeft(p.expires_at); return d!==null&&d<=7 }).length},
+                {key:'connected',en:'Connected',     ar:'متصل',          color:'#10b981', count:connectedId?1:0},
+              ] as const).map(f=>{
+                const active = subFilter===f.key
+                return (
+                  <button key={f.key} onClick={()=>setSubFilter(f.key)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap border ${
+                      active ? 'text-white border-transparent' : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
+                    }`}
+                    style={active?{background:f.color}:{}}>
+                    {lang==='ar'?f.ar:f.en}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${active?'bg-white/20 text-white':'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                      {f.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
@@ -859,7 +870,15 @@ export default function MyOrdersPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...purchases]
-              .filter(p => subFilter==='all' || p.category_slug===subFilter)
+              .filter(p => {
+                const d = daysLeft(p.expires_at)
+                if (subFilter==='shared')   return p.category_slug==='shared'
+                if (subFilter==='private')  return p.category_slug==='private'
+                if (subFilter==='expiring') return d!==null && d<=7
+                if (subFilter==='connected')return connectedId===p.id
+                return true
+              })
+              .filter(p => !orderQ || p.tool_name.toLowerCase().includes(orderQ.toLowerCase()))
               .sort((a,b) => new Date(b.created_at||0).getTime() - new Date(a.created_at||0).getTime())
               .map(p=>{
               const days         = daysLeft(p.expires_at)

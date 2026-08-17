@@ -1366,6 +1366,17 @@ export default function FocusModePage() {
         <div className="w-full sm:flex-1"><SearchBar/></div>
       </div>
 
+      {/* Encryption notice */}
+      <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl text-xs border"
+        style={{background:'#10b98108',borderColor:'#10b98130',color:'#059669'}}>
+        <Lock size={13} className="flex-shrink-0 mt-0.5" style={{color:'#10b981'}}/>
+        <span>
+          {lang==='ar'
+            ? 'جميع البيانات المسجَّلة هنا مشفَّرة بالكامل ولا يمكن لأي أحد الاطلاع على تفاصيلها إلا إذا حصل على الملف المصدر منك شخصياً.'
+            : 'All data stored here is fully encrypted. No one can access your information unless you personally share the source file with them.'}
+        </span>
+      </div>
+
       {/* Board toggle */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <BoardToggle mode={boardMode} setMode={setBoardMode} myBoard={myBoard} invitedBoards={invitedBoards} selectedBoardId={selectedBoardId} setSelectedBoardId={setSelectedBoardId} onInvite={()=>setShowInvite(true)}/>

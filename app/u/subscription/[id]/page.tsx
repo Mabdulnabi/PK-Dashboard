@@ -696,7 +696,7 @@ export default function SubscriptionDetailPage() {
                           subject: `مشكلة في ${purchase.tool_name}`,
                           message: reportMsg.trim(),
                           priority: 'high',
-                          category: 'technical',
+                          category: 'subscription',
                         })
                       })
                       setReportBusy(false)

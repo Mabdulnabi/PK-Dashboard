@@ -40,7 +40,7 @@ export default function ShopPage({ category }: Props) {
   const [tools,     setTools]     = useState<Tool[]>([])
   const [loading,   setLoading]   = useState(true)
   const [q,         setQ]         = useState('')
-  const [sort,      setSort]      = useState<'best'|'recent'>('best')
+  const [sort,      setSort]      = useState<'best'|'cheapest'|'expensive'|'recent'>('best')
   const [popup,     setPopup]     = useState<Tool|null>(null)
   const [landing,   setLanding]   = useState<Tool|null>(null)
   const [catFilter, setCatFilter] = useState('all')
@@ -112,7 +112,7 @@ export default function ShopPage({ category }: Props) {
 
   const filtered = tools
     .filter(tool=>(!q||tool.name.toLowerCase().includes(q.toLowerCase()))&&(catFilter==='all'||(tool as any).category_id===catFilter))
-    .sort((a,b)=>sort==='best'?b.rating-a.rating:b.sort_order-a.sort_order)
+    .sort((a,b)=>sort==='best'?b.rating-a.rating:sort==='cheapest'?a.price_egp-b.price_egp:sort==='expensive'?b.price_egp-a.price_egp:b.sort_order-a.sort_order)
 
   const buy = (tool:Tool) => { window.location.href=`/u/checkout?tool_id=${tool.id}` }
 
@@ -200,8 +200,10 @@ export default function ShopPage({ category }: Props) {
           <div className="relative flex-shrink-0">
             <select value={sort} onChange={e=>setSort(e.target.value as any)}
               className="appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
-              <option value="best">{t('Top Rated','الأعلى تقييماً')}</option>
-              <option value="recent">{t('Newest','الأحدث')}</option>
+              <option value="best">⭐ {t('Top Rated','الأعلى تقييماً')}</option>
+              <option value="cheapest">📉 {t('Cheapest','الأقل سعراً')}</option>
+              <option value="expensive">📈 {t('Priciest','الأعلى سعراً')}</option>
+              <option value="recent">🕐 {t('Newest','الأحدث')}</option>
             </select>
             <ChevronDown size={11} className="absolute top-1/2 -translate-y-1/2 end-2 text-gray-400 pointer-events-none"/>
           </div>
@@ -209,7 +211,7 @@ export default function ShopPage({ category }: Props) {
 
         {/* Desktop: single row */}
         <div className="hidden md:flex items-center gap-2">
-          <div className="relative flex-shrink-0" style={{width:'30%',minWidth:150}}>
+          <div className="relative flex-1 min-w-[120px]">
             <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search…','بحث…')}
               className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
@@ -234,13 +236,12 @@ export default function ShopPage({ category }: Props) {
             <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
           </>)}
 
-          {/* Spacer */}
-          <div className="flex-1"/>
-
           {/* Sort buttons with icons */}
           {([
-            { key:'best',   en:'Top Rated', ar:'الأعلى تقييماً', Icon: Star        },
-            { key:'recent', en:'Newest',    ar:'الأحدث',         Icon: Clock       },
+            { key:'best',      en:'Top Rated', ar:'الأعلى تقييماً', Icon: Star        },
+            { key:'cheapest',  en:'Cheapest',  ar:'الأقل سعراً',    Icon: TrendingDown},
+            { key:'expensive', en:'Priciest',  ar:'الأعلى سعراً',   Icon: TrendingUp  },
+            { key:'recent',    en:'Newest',    ar:'الأحدث',         Icon: Clock       },
           ] as const).map(s=>(
             <button key={s.key} onClick={()=>setSort(s.key as any)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 whitespace-nowrap ${sort===s.key?'text-white':'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
@@ -297,8 +298,8 @@ export default function ShopPage({ category }: Props) {
             <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
 
             <div className="px-5 py-3 mt-auto space-y-2" dir={lang==='ar'?'rtl':'ltr'}>
-              {/* Price + duration inline */}
-              <div className="flex items-baseline justify-between gap-2">
+              {/* Price + duration — tight/adjacent */}
+              <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold" style={{color:accent}}>{price(tool)}</span>
                 <span className="text-sm text-gray-400 whitespace-nowrap">
                   / {lang==='ar'?tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة'):tool.duration_label}

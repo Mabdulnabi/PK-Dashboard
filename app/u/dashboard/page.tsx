@@ -128,11 +128,12 @@ export default function DashboardPage() {
   const isRtl  = lang === 'ar'
   const usdRate = parseFloat(settings.usd_to_egp_rate || '50')
 
-  const [tools,      setTools]     = useState<Tool[]>([])
-  const [loading,    setLoading]   = useState(true)
-  const [banners,    setBanners]   = useState<BannerSlide[] | null>(null)
-  const [categories, setCategories]= useState<Category[]>([])
-  const [activeCat,  setActiveCat] = useState<Category|null>(null)
+  const [tools,       setTools]      = useState<Tool[]>([])
+  const [loading,     setLoading]    = useState(true)
+  const [banners,     setBanners]    = useState<BannerSlide[] | null>(null)
+  const [categories,  setCategories] = useState<Category[]>([])
+  const [catSlugIds,  setCatSlugIds] = useState<Record<string, string[]>>({})
+  const [activeCat,   setActiveCat]  = useState<Category|null>(null)
   const [activeTab,  setActiveTab] = useState<'all'|'shared'|'private'>('all')
   const [q,          setQ]         = useState('')
   const [sort,       setSort]      = useState<SortKey>('best')
@@ -168,10 +169,21 @@ export default function DashboardPage() {
       setBanners(parsedBanners)
 
       const toolCatIds = new Set(allTools.map(tt => tt.category_id).filter(Boolean))
+
+      // build slug → all IDs map for filtering (handles duplicate DB rows with same slug)
+      const slugIds: Record<string, string[]> = {}
+      ;(catData.categories || []).forEach((c: Category) => {
+        if (toolCatIds.has(c.id)) {
+          slugIds[c.slug] = [...(slugIds[c.slug] || []), c.id]
+        }
+      })
+      setCatSlugIds(slugIds)
+
       const cats: Category[] = (catData.categories || [])
-        // dedup by slug (prevents duplicate category rows with same name/slug)
+        // dedup by normalized name — handles same category stored with different slugs/IDs
         .filter((c: Category, idx: number, arr: Category[]) =>
-          arr.findIndex(x => x.slug === c.slug) === idx && toolCatIds.has(c.id) && c.image_url)
+          arr.findIndex(x => x.name.toLowerCase() === c.name.toLowerCase()) === idx
+          && toolCatIds.has(c.id) && c.image_url)
         .sort((a: Category, b: Category) => a.sort_order - b.sort_order)
       setCategories(cats)
       setLoading(false)
@@ -201,7 +213,7 @@ export default function DashboardPage() {
 
   const baseList = tools
     .filter(tt => activeTab === 'shared' ? tt.category_slug === 'shared' : activeTab === 'private' ? tt.category_slug === 'private' : true)
-    .filter(tt => !activeCat || tt.category_id === activeCat.id)
+    .filter(tt => !activeCat || (catSlugIds[activeCat.slug] || [activeCat.id]).includes(tt.category_id!))
     .filter(tt => !q || tt.name.toLowerCase().includes(q.toLowerCase()) || tt.description.toLowerCase().includes(q.toLowerCase()))
 
   const sorted = [...baseList].sort((a, b) => {
@@ -330,13 +342,15 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1 fs-scroll flex-1">
               <div className="flex gap-1 min-w-max">
                 {TYPES.map(tab => {
+                  const TIcon  = tab.Icon
                   const active = activeTab === tab.key
                   return (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap ${
                         active ? 'text-white' : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'
                       }`}
                       style={active ? { background: '#d99401' } : {}}>
+                      <TIcon size={11}/>
                       {isRtl ? tab.ar : tab.en}
                       <span className={`text-[10px] px-1 rounded font-bold ${active ? 'bg-white/25 text-white' : 'text-gray-400'}`}>
                         {tab.count}
@@ -350,9 +364,10 @@ export default function DashboardPage() {
             <div className="relative flex-shrink-0">
               <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
                 className="appearance-none text-xs font-semibold ps-2.5 pe-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
-                {SORTS.map(s => (
-                  <option key={s.key} value={s.key}>{isRtl ? s.ar : s.en}</option>
-                ))}
+                {SORTS.map(s => {
+                  const icon = s.key==='best' ? '⭐' : s.key==='cheapest' ? '📉' : s.key==='expensive' ? '📈' : '🕐'
+                  return <option key={s.key} value={s.key}>{icon} {isRtl ? s.ar : s.en}</option>
+                })}
               </select>
               <ChevronDown size={11} className="absolute top-1/2 -translate-y-1/2 end-2 text-gray-400 pointer-events-none"/>
             </div>
@@ -360,8 +375,8 @@ export default function DashboardPage() {
 
           {/* Desktop: single row */}
           <div className="hidden md:flex items-center gap-2">
-            {/* Search ~30% */}
-            <div className="relative flex-shrink-0" style={{ width: '30%', minWidth: 150 }}>
+            {/* Search — grows to fill space (expands further when activeCat hides type buttons) */}
+            <div className="relative flex-1 min-w-[120px]">
               <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 style={{ [isRtl ? 'right' : 'left']: 9 }}/>
               <input value={q} onChange={e => setQ(e.target.value)}
@@ -398,9 +413,6 @@ export default function DashboardPage() {
                 </button>
               )
             })}
-
-            {/* Spacer */}
-            <div className="flex-1"/>
 
             {/* Divider */}
             <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>
@@ -481,8 +493,8 @@ export default function DashboardPage() {
                 <div className="mx-4 border-t border-gray-100 dark:border-gray-800"/>
 
                 <div className="p-4 pt-3 mt-auto space-y-2">
-                  {/* Price + duration */}
-                  <div className="flex items-baseline justify-between gap-2">
+                  {/* Price + duration — tight/adjacent */}
+                  <div className="flex items-baseline gap-1">
                     <span className="text-base font-bold" style={{ color: accent }}>{formatPrice(tool.price_egp, usdRate)}</span>
                     <span className="text-xs text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
                   </div>
