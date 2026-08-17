@@ -1370,10 +1370,10 @@ export default function FocusModePage() {
       <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl text-xs border"
         style={{background:'#10b98108',borderColor:'#10b98130',color:'#059669'}}>
         <Lock size={13} className="flex-shrink-0 mt-0.5" style={{color:'#10b981'}}/>
-        <span>
+        <span className="leading-relaxed">
           {lang==='ar'
-            ? 'جميع البيانات المسجَّلة هنا مشفَّرة بالكامل — لا يمكن لأي أحد الاطلاع على تفاصيلها إلا إذا حصل على الملف المصدر منك شخصياً أو قمت بمشاركة البورد معه.'
-            : 'All data stored here is fully encrypted — no one can access your information unless you personally share the source file with them or share the board with them.'}
+            ? 'بياناتك هنا مشفَّرة بالكامل ولا يمكن لأحد — بما فينا نحن — الاطلاع عليها. الوصول الوحيد لها هو من خلالك أنت: إما بمشاركة ملف البيانات مباشرةً، أو بدعوة شخص للبورد المشترك.'
+            : 'Your data here is fully encrypted and inaccessible to anyone — including us. The only way someone else can see it is if you share the data file directly or invite them to a shared board.'}
         </span>
       </div>
 

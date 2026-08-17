@@ -286,7 +286,7 @@ export default function DashboardPage() {
       {/* ── Categories marquee ── */}
       {!loading && !activeCat && categories.length > 0 && (
         <div className="mb-5">
-          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3">
+          <p className="text-base font-bold text-gray-700 dark:text-gray-200 mb-3">
             {isRtl ? 'نفسك في ايه؟ 🤔' : "What are you looking for? 🤔"}
           </p>
           <div className="mq-wrap">
