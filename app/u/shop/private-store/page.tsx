@@ -111,14 +111,12 @@ export default function PrivateStorePage() {
   return (
     <div className="p-3 md:p-6" dir={isRtl?'rtl':'ltr'}>
 
-      {/* Section banner image */}
-      {secBanner && (
-        <div className="rounded-2xl overflow-hidden mb-3" style={{maxHeight:200}}>
-          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:200}}/>
+      {/* Section banner — replaces gradient hero when images uploaded */}
+      {secBanner ? (
+        <div className="rounded-2xl overflow-hidden mb-5" style={{maxHeight:220}}>
+          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:220}}/>
         </div>
-      )}
-
-      {/* Banner */}
+      ) : (
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
@@ -146,6 +144,7 @@ export default function PrivateStorePage() {
           </a>
         </div>
       </div>
+      )}
 
       {loading && (
         <div className="flex justify-center py-20">

@@ -128,14 +128,12 @@ export default function ShopPage({ category }: Props) {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
-      {/* Section banner image */}
-      {secBanner && (
-        <div className="rounded-2xl overflow-hidden mb-3" style={{maxHeight:200}}>
-          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:200}}/>
+      {/* Section banner — replaces gradient hero when images uploaded */}
+      {secBanner ? (
+        <div className="rounded-2xl overflow-hidden mb-5" style={{maxHeight:220}}>
+          <img src={secBanner} alt="" className="w-full object-cover" style={{maxHeight:220}}/>
         </div>
-      )}
-
-      {/* Banner */}
+      ) : (
       <div className="rounded-2xl mb-5 p-5 md:p-8" style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)'}}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
@@ -159,6 +157,7 @@ export default function ShopPage({ category }: Props) {
           </a>
         </div>
       </div>
+      )}
 
       {/* Filter bar */}
       <div className="flex flex-col gap-2 mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">

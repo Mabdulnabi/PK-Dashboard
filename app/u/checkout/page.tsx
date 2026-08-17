@@ -131,7 +131,7 @@ function CheckoutInner() {
   const basePrice = ()=> cartMode ? cartTotal : isBundle ? (bundle?.price_egp||0) : (tool?.price_egp||0)
   const finalPriceEgp = ()=>{
     let p = basePrice()
-    if (!isBundle && !cartMode && couponResult?.valid && couponResult.type==='discount') p=p*(1-couponResult.value/100)
+    if (!isBundle && couponResult?.valid && couponResult.type==='discount') p=p*(1-couponResult.value/100)
     return Math.round(p)
   }
   const amountForGateway = ()=> isEgp ? finalPriceEgp() : Math.round(finalPriceEgp()/exchangeRate*100)/100
@@ -139,7 +139,7 @@ function CheckoutInner() {
 
   const applyCoupon = async()=>{
     if (!coupon.trim()) return
-    const res  = await fetch('/api/member/coupon',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code:coupon, tool_id: toolId }) })
+    const res  = await fetch('/api/member/coupon',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code:coupon, tool_id: toolId || null }) })
     const data = await res.json()
     if (!data.valid){ setCouponResult({ error:t('Invalid coupon code','كود خصم غير صالح') }); return }
     setCouponResult(data)
@@ -356,10 +356,25 @@ function CheckoutInner() {
                       )
                     })}
                   </div>
-                  <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <span>{t('Total','الإجمالي')}</span>
-                    <span dir="ltr" style={{color:'#d99401'}}>{formatPrice(cartTotal, exchangeRate)}</span>
+                  <div className="flex flex-col gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    {couponResult?.valid && (
+                      <div className="flex justify-between text-sm text-emerald-500">
+                        <span>{t('Discount','خصم')} ({couponResult.value}%)</span>
+                        <span dir="ltr">-{formatPrice(cartTotal*couponResult.value/100, exchangeRate)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+                      <span>{t('Total','الإجمالي')}</span>
+                      <span dir="ltr" style={{color:'#d99401'}}>{formatPrice(finalPriceEgp(), exchangeRate)}</span>
+                    </div>
                   </div>
+                  <div className="flex gap-2 mt-4 mb-2">
+                    <input value={coupon} onChange={e=>setCoupon(e.target.value.toUpperCase())} placeholder={t('Coupon code (optional)','كود الخصم (اختياري)')}
+                      className="flex-1 px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401]"/>
+                    <button onClick={applyCoupon} className="px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-bold text-gray-700 dark:text-gray-200 transition-colors">{t('Apply','تطبيق')}</button>
+                  </div>
+                  {couponResult?.error && <p className="text-sm text-red-400 mt-1">{couponResult.error}</p>}
+                  {couponResult?.valid && <p className="text-sm text-emerald-500 mt-1">{t(`✓ ${couponResult.value}% off applied`,`✓ تم تطبيق خصم ${couponResult.value}%`)}</p>}
                 </div>
               )}
 
@@ -631,7 +646,7 @@ function CheckoutInner() {
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex flex-col gap-2">
               {!cartMode && <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400"><span>{t('Price','السعر')}</span><span dir="ltr">{formatPrice(basePrice(), exchangeRate)}</span></div>}
-              {!isBundle && !cartMode && couponResult?.valid && <div className="flex justify-between text-sm text-emerald-500"><span>{t('Discount','خصم')}</span><span dir="ltr">-{formatPrice(basePrice()*couponResult.value/100, exchangeRate)}</span></div>}
+              {!isBundle && couponResult?.valid && <div className="flex justify-between text-sm text-emerald-500"><span>{t('Discount','خصم')} ({couponResult.value}%)</span><span dir="ltr">-{formatPrice(basePrice()*couponResult.value/100, exchangeRate)}</span></div>}
               <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white mt-1 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <span>{t('Total','الإجمالي')}</span><span dir="ltr" style={{color:'#d99401'}}>{formatPrice(finalPriceEgp(), exchangeRate)}</span>
               </div>

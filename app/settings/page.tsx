@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const [invoiceLogo,      setInvoiceLogo]      = useState('')
   const [siteName,         setSiteName]         = useState('')
   const [logoUploading,    setLogoUploading]    = useState(false)
-  const [dashBanners,      setDashBanners]      = useState<string[]>([])
+  const [dashBanners,      setDashBanners]      = useState<{url:string;link?:string}[]>([])
   const [bannerUploading,  setBannerUploading]  = useState(false)
   const [sharedBanner,     setSharedBanner]     = useState('')
   const [sharedUploading,  setSharedUploading]  = useState(false)
@@ -77,7 +77,10 @@ export default function SettingsPage() {
     ;(uiData||[]).forEach((r:any)=>{ ui[r.key]=r.value })
     setInvoiceLogo(ui.invoice_logo || '')
     setSiteName(ui.site_name || '')
-    try { setDashBanners(JSON.parse(ui.dashboard_banners || '[]')) } catch { if (ui.dashboard_banner_url) setDashBanners([ui.dashboard_banner_url]) }
+    try {
+      const parsed = JSON.parse(ui.dashboard_banners || '[]')
+      setDashBanners(parsed.map((s: any) => typeof s === 'string' ? { url: s } : s))
+    } catch { if (ui.dashboard_banner_url) setDashBanners([{ url: ui.dashboard_banner_url }]) }
     setSharedBanner(ui.shared_store_banner_url || '')
     setPrivateBanner(ui.private_store_banner_url || '')
     setOrdersBanner(ui.orders_banner_url || '')
@@ -133,7 +136,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/admin/ui-settings/upload', { method: 'POST', body: fd })
     const data = await res.json()
     if (!res.ok || !data.url) { setToast({ msg: data.error || 'Upload failed', type:'err' }); setBannerUploading(false); return }
-    const newList = [...dashBanners, data.url]
+    const newList = [...dashBanners, { url: data.url }]
     setDashBanners(newList)
     await fetch('/api/admin/ui-settings', {
       method: 'POST', headers: { 'Content-Type':'application/json' },
@@ -144,7 +147,16 @@ export default function SettingsPage() {
   }
 
   const removeDashBanner = async (url: string) => {
-    const newList = dashBanners.filter(b => b !== url)
+    const newList = dashBanners.filter(b => b.url !== url)
+    setDashBanners(newList)
+    await fetch('/api/admin/ui-settings', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ dashboard_banners: JSON.stringify(newList) }),
+    })
+  }
+
+  const updateDashBannerLink = async (url: string, link: string) => {
+    const newList = dashBanners.map(b => b.url === url ? { ...b, link: link || undefined } : b)
     setDashBanners(newList)
     await fetch('/api/admin/ui-settings', {
       method: 'POST', headers: { 'Content-Type':'application/json' },
@@ -409,13 +421,21 @@ export default function SettingsPage() {
                   </div>
                   {/* Existing banners */}
                   {dashBanners.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {dashBanners.map((url, i) => (
-                        <div key={url} className="relative group">
-                          <img src={url} alt={`Slide ${i+1}`} className="w-24 h-14 object-cover rounded-lg border border-gray-200 dark:border-gray-700"/>
-                          <button onClick={()=>removeDashBanner(url)}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold">✕</button>
-                          <span className="absolute bottom-1 left-1 text-[9px] bg-black/50 text-white rounded px-1">{i+1}</span>
+                    <div className="flex flex-col gap-2">
+                      {dashBanners.map((b, i) => (
+                        <div key={b.url} className="flex items-center gap-2 group">
+                          <div className="relative flex-shrink-0">
+                            <img src={b.url} alt={`Slide ${i+1}`} className="w-20 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"/>
+                            <button onClick={()=>removeDashBanner(b.url)}
+                              className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-bold">✕</button>
+                            <span className="absolute bottom-0.5 left-0.5 text-[9px] bg-black/50 text-white rounded px-1">{i+1}</span>
+                          </div>
+                          <input
+                            defaultValue={b.link || ''}
+                            onBlur={e => updateDashBannerLink(b.url, e.target.value)}
+                            placeholder="Link URL (optional)"
+                            className="flex-1 text-[11px] px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-[#d99401]"
+                          />
                         </div>
                       ))}
                     </div>
