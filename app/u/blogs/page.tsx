@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang-context'
-import { PenLine, Search, Clock, ChevronRight, Plus, User } from 'lucide-react'
+import { PenLine, Search, Clock, ChevronRight, Plus, User, Pencil, Trash2 } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,10 +33,15 @@ export default function BlogsPage() {
   const { lang } = useLang()
   const ar = lang === 'ar'
   const router = useRouter()
-  const [posts, setPosts]     = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState('')
-  const [tab, setTab]         = useState<'all' | 'mine'>('all')
+  const [posts, setPosts]       = useState<Post[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [search, setSearch]     = useState('')
+  const [tab, setTab]           = useState<'all' | 'mine'>('all')
+  const [myMemberId, setMyId]   = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/member/verify').then(r => r.json()).then(d => { if (d?.member_id) setMyId(d.member_id) }).catch(() => {})
+  }, [])
 
   const load = useCallback((silent = false) => {
     if (!silent) setLoading(true)
@@ -73,8 +78,11 @@ export default function BlogsPage() {
   const getTitle  = (p: Post) => (ar && p.title_ar ? p.title_ar : p.title)
   const fmtDate   = (d: string) => new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 
-  const StatusBadge = ({ status }: { status: string }) => {
-    const s = STATUS_MAP[status]
+  // Show badge only on own posts OR non-approved posts (never "Published" on others' articles)
+  const StatusBadge = ({ post }: { post: Post }) => {
+    const isOwn = myMemberId && post.member_id === myMemberId
+    if (!isOwn && post.status === 'approved') return null
+    const s = STATUS_MAP[post.status]
     if (!s) return null
     return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{ar ? s.ar : s.en}</span>
   }
@@ -135,7 +143,7 @@ export default function BlogsPage() {
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <StatusBadge status={post.status}/>
+                  <StatusBadge post={post}/>
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2 leading-snug">{getTitle(post)}</h3>
                 <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400 dark:text-gray-500 flex-wrap">
@@ -143,7 +151,28 @@ export default function BlogsPage() {
                   <span className="flex items-center gap-1"><Clock size={11}/>{fmtDate(post.published_at || post.created_at)}</span>
                 </div>
               </div>
-              <ChevronRight size={16} className={`text-gray-300 dark:text-gray-600 flex-shrink-0 ${ar ? 'rotate-180' : ''}`}/>
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <ChevronRight size={16} className={`text-gray-300 dark:text-gray-600 ${ar ? 'rotate-180' : ''}`}/>
+                {myMemberId && post.member_id === myMemberId && post.status === 'revision_needed' && (
+                  <button
+                    onClick={e => { e.stopPropagation(); router.push(`/u/blogs/${post.id}/edit`) }}
+                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                    <Pencil size={10}/>{ar ? 'تعديل' : 'Edit'}
+                  </button>
+                )}
+                {myMemberId && post.member_id === myMemberId && post.status === 'rejected' && (
+                  <button
+                    onClick={async e => {
+                      e.stopPropagation()
+                      if (!confirm(ar ? 'هل تريد حذف هذا المقال؟' : 'Delete this article?')) return
+                      await fetch(`/api/member/blogs/${post.id}`, { method: 'DELETE' })
+                      setPosts(prev => prev.filter(p => p.id !== post.id))
+                    }}
+                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                    <Trash2 size={10}/>{ar ? 'حذف' : 'Delete'}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

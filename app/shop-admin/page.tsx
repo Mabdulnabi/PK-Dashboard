@@ -380,7 +380,7 @@ export default function ShopAdminPage() {
       const newStatus = action==='approve'?'approved':action==='revision'?'revision_needed':'rejected'
       setBlogPosts(prev => prev.map(p => p.id===id ? {...p, status:newStatus, rejection_reason:reason||null} : p))
       setBlogAction(null)
-    } else setToast({msg:'Error', type:'err'})
+    } else { const j = await res.json().catch(()=>({})); setToast({msg: j.error || 'Error', type:'err'}) }
   }
 
   const saveAdminNote = async (id:string, note:string) => {

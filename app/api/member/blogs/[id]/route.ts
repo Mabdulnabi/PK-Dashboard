@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: existing } = await db.from('blog_posts').select('member_id, status').eq('id', params.id).single()
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (existing.member_id !== session.member_id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!['draft', 'rejected'].includes(existing.status)) return NextResponse.json({ error: 'Cannot edit published post' }, { status: 400 })
+  if (!['draft', 'rejected', 'revision_needed'].includes(existing.status)) return NextResponse.json({ error: 'Cannot edit published post' }, { status: 400 })
 
   const body = await req.json()
   const { title, title_ar, content, content_ar, cover_image_url } = body
