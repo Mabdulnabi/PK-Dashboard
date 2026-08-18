@@ -51,12 +51,12 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
     ? (isRtl ? 'حزمة' : 'Bundle')
     : (isRtl ? 'مشترك' : 'Shared')
   return (
-    <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+    <div className="relative glass-card rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
       <div className="h-1 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
       <div className="p-5 flex-1 flex flex-col">
         {/* Header row */}
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+          <div className="w-20 h-20 rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-white/5 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
             {tool.image_url
               ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 object-contain"/>
               : <span className="text-3xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
@@ -131,7 +131,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
   }
 
   return (
-    <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+    <div className="relative glass-card rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
       {toast && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-xl text-xs font-bold text-white pointer-events-none whitespace-nowrap"
           style={{background: accent}}>{toast}</div>
@@ -140,7 +140,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
       <div className="p-5 flex-1 flex flex-col">
         {/* Header */}
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+          <div className="w-20 h-20 rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-white/5 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
             {tool.image_url
               ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 object-contain"/>
               : <span className="text-3xl font-bold text-gray-300">{tool.name.slice(0,2)}</span>}
@@ -155,7 +155,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
                 {typeLabel}
               </div>
               {sales > 0 && (
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-white/40 dark:bg-white/10 text-gray-600 dark:text-gray-300">
                   <ShoppingCart size={9} strokeWidth={2.5}/>{sales.toLocaleString()} {isRtl ? 'مبيعة' : 'sold'}
                 </div>
               )}
@@ -178,7 +178,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
         ) : (
           <div className="space-y-2" dir={isRtl ? 'rtl' : 'ltr'}>
             {/* Qty */}
-            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+            <div className="flex items-center justify-between bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-xl px-3 py-2">
               <span className="text-xs font-semibold text-gray-500">{isRtl ? 'الكمية' : 'Qty'}</span>
               <div className="flex items-center gap-2">
                 <button onClick={() => setQty(q => Math.max(1, q-1))} disabled={qty <= 1}
@@ -299,6 +299,26 @@ export default function DashboardPage() {
         @media (max-width:639px)  { .mq-wrap { --mq-dur:8s;  } }
         @media (min-width:640px)  { .mq-wrap { --mq-dur:12s; } }
         @media (min-width:1024px) { .mq-wrap { --mq-dur:18s; } }
+        .glass-card {
+          background: rgba(255,255,255,0.82);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255,255,255,0.65);
+          box-shadow: 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+        .glass-card:hover {
+          background: rgba(255,255,255,0.92);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+        .dark .glass-card {
+          background: rgba(20,22,34,0.72);
+          border-color: rgba(255,255,255,0.07);
+          box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .dark .glass-card:hover {
+          background: rgba(20,22,34,0.88);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
       `}</style>
 
       {/* ── Banner ── */}
