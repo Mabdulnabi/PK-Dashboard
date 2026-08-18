@@ -188,7 +188,7 @@ export default function MemberProfilePage() {
   const nextRank    = RANKS[rankIdx + 1]
   const progress    = nextRank ? Math.min(100, ((spent - rank.min) / (nextRank.min - rank.min)) * 100) : 100
 
-  const inp = `w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
+  const inp = `w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
 
   const glassCard = {
     background: 'rgba(255,255,255,0.88)',
@@ -209,114 +209,104 @@ export default function MemberProfilePage() {
     : `${egp.toLocaleString()} ${t('EGP','جنيه')}`
 
   return (
-    <div className="p-4 md:p-6 min-h-full flex flex-col gap-4" dir={dir}>
+    <div className="p-4 md:p-5 h-full flex flex-col gap-3" dir={dir}>
 
-      <div>
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('Account Settings', 'إعدادات الحساب')}</h1>
-        <p className="text-xs text-gray-400 mt-0.5">{t('Manage your profile, preferences and security', 'إدارة ملفك الشخصي وتفضيلاتك وأمان حسابك')}</p>
+      <div className="flex-shrink-0">
+        <h1 className="text-base font-bold text-gray-900 dark:text-white">{t('Account Settings', 'إعدادات الحساب')}</h1>
+        <p className="text-[11px] text-gray-400">{t('Manage your profile, preferences and security', 'إدارة ملفك الشخصي وتفضيلاتك وأمان حسابك')}</p>
       </div>
 
-      {/* ── Profile card (form + lang/currency at bottom) ── */}
-      <div className="rounded-2xl overflow-hidden" style={glassCard}>
+      {/* ── Profile card ── */}
+      <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
         {/* Avatar hero */}
-        <div className="relative px-6 py-4 flex items-center gap-5" style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>
+        <div className="relative px-5 py-3 flex items-center gap-4" style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>
           <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 80% 50%, #d9940150, transparent 60%)'}}/>
           <div className="relative flex-shrink-0">
-            <div className="w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center ring-2 ring-white/20" style={{background:'#d99401'}}>
-              {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="avatar"/> : <span className="text-lg font-bold text-white">{initials}</span>}
+            <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center ring-2 ring-white/20" style={{background:'#d99401'}}>
+              {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="avatar"/> : <span className="text-base font-bold text-white">{initials}</span>}
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="absolute -bottom-1 -end-1 w-6 h-6 rounded-lg flex items-center justify-center shadow-lg disabled:opacity-60" style={{background:'#d99401'}}>
-              {uploading ? <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Camera size={11} className="text-white"/>}
+              className="absolute -bottom-1 -end-1 w-5 h-5 rounded-lg flex items-center justify-center shadow-lg disabled:opacity-60" style={{background:'#d99401'}}>
+              {uploading ? <div className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Camera size={10} className="text-white"/>}
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }}/>
           </div>
           <div className="relative">
-            <p className="text-white font-bold leading-tight">{profile.full_name}</p>
-            <p className="text-gray-400 text-xs mt-0.5">{profile.email}</p>
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <p className="text-white font-bold text-sm leading-tight">{profile.full_name}</p>
+            <p className="text-gray-400 text-[11px] mt-0.5">{profile.email}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               {profile.member_code && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{profile.member_code}</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{profile.member_code}</span>
               )}
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:`${rank.color}30`,color:rank.light,border:`1px solid ${rank.color}60`}}>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${rank.color}30`,color:rank.light,border:`1px solid ${rank.color}60`}}>
                 {lang==='ar' ? rank.ar : rank.en}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Form fields */}
-        <div className="px-6 pt-4 pb-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Form: 2-col grid */}
+        <div className="px-5 pt-3 pb-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5">
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={10}/>{t('Full Name','الاسم')}</label>
-            <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your name','اسمك')} className={inp}/>
+            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><User size={9}/>{t('Full Name','الاسم الكامل')}</label>
+            <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your full name','اسمك الكامل')} className={inp}/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Mail size={10}/>{t('Email','البريد')}</label>
+            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><Mail size={9}/>{t('Email Address','البريد الإلكتروني')}</label>
             <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="email@example.com" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Phone size={10}/>{t('WhatsApp','واتساب')}</label>
+            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><Phone size={9}/>{t('WhatsApp','واتساب')}</label>
             <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} type="tel" placeholder="+201234567890" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Lock size={10}/>{t('New Password','كلمة المرور')}</label>
+            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><Lock size={9}/>{t('New Password','كلمة مرور جديدة')}</label>
             <div className="relative">
               <input value={password} onChange={e => setPassword(e.target.value)} type={showPass?'text':'password'}
-                placeholder={t('Leave blank…','اتركها فارغة…')} className={inp+' pe-9'}/>
+                placeholder={t('Leave blank to keep current','اتركها فارغة للإبقاء على الحالية')} className={inp+' pe-9'}/>
               <button type="button" onClick={() => setShowPass(p => !p)} className="absolute top-1/2 -translate-y-1/2 end-2.5 text-gray-400 hover:text-gray-600">
-                {showPass ? <EyeOff size={13}/> : <Eye size={13}/>}
+                {showPass ? <EyeOff size={12}/> : <Eye size={12}/>}
               </button>
             </div>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="mx-6 border-t border-gray-100 dark:border-gray-800/60"/>
+        <div className="mx-5 border-t border-gray-100 dark:border-gray-800/60"/>
 
-        {/* Lang + Currency + Save in one row */}
-        <div className="px-6 py-3 flex flex-wrap items-center gap-4">
-          {/* Language */}
-          <div className="flex items-center gap-2">
-            <Globe size={12} className="text-indigo-500 flex-shrink-0"/>
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
-            <div className="flex gap-1.5">
-              {([{ key:'en', flag:'🇬🇧', label:'EN' }, { key:'ar', flag:'🇪🇬', label:'AR' }] as const).map(o => (
-                <button key={o.key} onClick={()=>setLang(o.key)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
-                  <span>{o.flag}</span>{o.label}
-                  {lang===o.key && <Check size={10} style={{color:'#d99401'}}/>}
-                </button>
-              ))}
-            </div>
+        {/* Lang + Currency + Save */}
+        <div className="px-5 py-2.5 flex flex-wrap items-center gap-3">
+          <Globe size={11} className="text-indigo-500 flex-shrink-0"/>
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
+          <div className="flex gap-1">
+            {([{ key:'en', flag:'🇬🇧', label:'EN' }, { key:'ar', flag:'🇪🇬', label:'AR' }] as const).map(o => (
+              <button key={o.key} onClick={()=>setLang(o.key)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                <span className="text-sm">{o.flag}</span>{o.label}{lang===o.key&&<Check size={9} style={{color:'#d99401'}}/>}
+              </button>
+            ))}
           </div>
-
-          {/* Currency */}
-          <div className="flex items-center gap-2">
-            <DollarSign size={12} className="text-emerald-500 flex-shrink-0"/>
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
-            <div className="flex gap-1.5">
-              {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
-                <button key={o.key} onClick={()=>setCurrency(o.key)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
-                  <span>{o.flag}</span>{o.label}
-                  {currency===o.key && <Check size={10} style={{color:'#d99401'}}/>}
-                </button>
-              ))}
-            </div>
+          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700"/>
+          <DollarSign size={11} className="text-emerald-500 flex-shrink-0"/>
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
+          <div className="flex gap-1">
+            {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
+              <button key={o.key} onClick={()=>setCurrency(o.key)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                <span className="text-sm">{o.flag}</span>{o.label}{currency===o.key&&<Check size={9} style={{color:'#d99401'}}/>}
+              </button>
+            ))}
           </div>
-
-          {/* Save button pushed to end */}
           <button onClick={save} disabled={saving}
-            className="ms-auto px-6 py-2 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
+            className="ms-auto px-5 py-1.5 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
             {saving ? t('Saving…','جاري الحفظ…') : t('Save Changes','حفظ التغييرات')}
           </button>
         </div>
       </div>
 
-      {/* ── Rank card — full width ── */}
-      <div className="rounded-2xl overflow-hidden" style={glassCard}>
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5"
+      {/* ── Rank card — fills remaining height ── */}
+      <div className="rounded-2xl overflow-hidden flex-1 min-h-0" style={glassCard}>
+        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5 h-full"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
           <HexBadge rk={rank} size={84} active/>
           <div className="flex-1 min-w-0">
