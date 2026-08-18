@@ -124,10 +124,10 @@ export default function BlogsPage() {
 
       {/* Tabs + search */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <div className="flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900">
           {(['all', 'mine'] as const).map(t_ => (
             <button key={t_} onClick={() => setTab(t_)}
-              className={`px-4 py-1.5 text-sm font-medium transition-colors ${tab === t_ ? 'bg-purple-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              className={`px-4 py-1.5 text-sm font-medium transition-colors ${tab === t_ ? 'bg-purple-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               {t_ === 'all' ? t('All Articles', 'كل المقالات') : t('My Articles', 'مقالاتي')}
             </button>
           ))}

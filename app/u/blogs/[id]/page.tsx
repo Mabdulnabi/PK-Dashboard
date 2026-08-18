@@ -81,8 +81,8 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="p-3 md:p-6 max-w-3xl mx-auto" dir={ar ? 'rtl' : 'ltr'}>
-      <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-purple-600 mb-5">
-        <ChevronLeft size={16} className={ar ? 'rotate-180' : ''}/>  {t('Back to Articles', 'العودة للمقالات')}
+      <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mb-5">
+        <ChevronLeft size={14} className={ar ? 'rotate-180' : ''}/> {t('Back to Articles', 'العودة للمقالات')}
       </button>
 
       {post.cover_image_url && (

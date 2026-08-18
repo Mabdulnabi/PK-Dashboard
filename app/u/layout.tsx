@@ -500,8 +500,8 @@ if (pathname==='/u/login') return <>{children}</>
     : 'radial-gradient(ellipse 100% 80% at 10% 0%, rgba(217,148,1,0.22) 0%, transparent 50%), radial-gradient(ellipse 80% 100% at 90% 100%, rgba(99,102,241,0.16) 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.08) 0%, transparent 60%), #e8eef5'
 
   const sidebarGlassBg = dark
-    ? 'linear-gradient(to bottom, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
-    : 'linear-gradient(to bottom, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.32) 100%)'
+    ? 'linear-gradient(to bottom, rgba(10,14,26,0.97) 0%, rgba(8,12,22,0.99) 100%)'
+    : 'linear-gradient(to bottom, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.99) 100%)'
 
   const headerGlassBg = dark
     ? 'rgba(8,12,22,0.38)'

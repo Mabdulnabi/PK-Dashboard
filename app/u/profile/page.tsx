@@ -202,7 +202,7 @@ export default function MemberProfilePage() {
     : `${egp.toLocaleString()} ${t('EGP','جنيه')}`
 
   return (
-    <div className="p-4 md:p-5 h-full flex flex-col gap-3" dir={dir}>
+    <div className="p-4 md:p-5 flex flex-col gap-3" dir={dir}>
 
       <NotifBanner lang={lang} match={['تقييم','Review','Approved','Rejected','قبول','رفض']}/>
 
@@ -265,10 +265,10 @@ export default function MemberProfilePage() {
       </div>
 
       {/* ── Profile card ── */}
-      <div className="glass-card-themed rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col">
-        {/* Avatar hero — flex-1 grows to absorb extra space */}
-        <div className="relative px-6 flex items-center gap-5 flex-1"
-          style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)', minHeight: '80px'}}>
+      <div className="glass-card-themed rounded-2xl overflow-hidden flex flex-col">
+        {/* Avatar hero */}
+        <div className="relative px-4 md:px-6 py-5 flex items-center gap-4 md:gap-5"
+          style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>
           <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 80% 50%, #d9940150, transparent 60%)'}}/>
           <div className="relative flex-shrink-0">
             <div className="w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center ring-2 ring-white/20" style={{background:'#d99401'}}>
@@ -295,7 +295,7 @@ export default function MemberProfilePage() {
         </div>
 
         {/* Form: 2-col grid */}
-        <div className="px-6 pt-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+        <div className="px-4 md:px-6 pt-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div>
             <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={10}/>{t('Full Name','الاسم الكامل')}</label>
             <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your full name','اسمك الكامل')} className={inp}/>
@@ -346,8 +346,8 @@ export default function MemberProfilePage() {
         </div>
 
         {/* Divider + Save */}
-        <div className="mx-6 border-t border-gray-100 dark:border-gray-800/60"/>
-        <div className="px-6 py-4 flex justify-end">
+        <div className="mx-4 md:mx-6 border-t border-gray-100 dark:border-gray-800/60"/>
+        <div className="px-4 md:px-6 py-4 flex justify-end">
           <button onClick={save} disabled={saving}
             className="px-8 py-2.5 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
             {saving ? t('Saving…','جاري الحفظ…') : t('Save Changes','حفظ التغييرات')}
