@@ -11,17 +11,22 @@ export async function GET(_req: NextRequest) {
     return e instanceof AuthError ? e.response : unauthorized()
   }
 
-  const { data: member } = await db
-    .from('members')
-    .select('member_code, avatar_url, created_at')
-    .eq('id', session.member_id)
-    .single()
+  const [{ data: member }, { data: payments }] = await Promise.all([
+    db.from('members').select('member_code, avatar_url, created_at').eq('id', session.member_id).single(),
+    db.from('payments').select('amount, currency').eq('user_id', session.member_id).in('status', ['confirmed', 'completed']),
+  ])
+
+  const total_spent_egp = (payments ?? []).reduce((sum, p) => {
+    const amt = Number(p.amount) || 0
+    return sum + (p.currency === 'USD' ? amt * 50 : amt)
+  }, 0)
 
   return NextResponse.json({
     ...session,
-    member_code: member?.member_code ?? null,
-    avatar_url:  member?.avatar_url  ?? null,
-    created_at:  member?.created_at  ?? null,
+    member_code:     member?.member_code  ?? null,
+    avatar_url:      member?.avatar_url   ?? null,
+    created_at:      member?.created_at   ?? null,
+    total_spent_egp,
   })
 }
 

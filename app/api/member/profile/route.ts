@@ -28,7 +28,7 @@ export async function GET() {
       .from('payments')
       .select('amount, currency')
       .eq('user_id', sess.member_id)
-      .eq('status', 'confirmed'),
+      .in('status', ['confirmed', 'completed']),
   ])
 
   const total_spent_egp = (payments ?? []).reduce((sum, p) => {

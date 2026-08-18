@@ -46,7 +46,21 @@ import {
   UserCircle, Key, GraduationCap, ClipboardText, Article, LinkSimple,
 } from '@phosphor-icons/react'
 
-interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string }
+interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string; total_spent_egp?:number }
+
+const RANK_TIERS = [
+  { key:'regular',  ar:'عادي',    en:'Regular',  min:0,      color:'#5a8098' },
+  { key:'bronze',   ar:'برونزي',  en:'Bronze',   min:1,      color:'#b06030' },
+  { key:'silver',   ar:'فضي',     en:'Silver',   min:2000,   color:'#8888a0' },
+  { key:'gold',     ar:'ذهبي',    en:'Gold',     min:8000,   color:'#d99401' },
+  { key:'platinum', ar:'بلاتيني', en:'Platinum', min:20000,  color:'#7898b8' },
+  { key:'emerald',  ar:'زمردي',   en:'Emerald',  min:40000,  color:'#18a050' },
+  { key:'diamond',  ar:'ماسي',    en:'Diamond',  min:60000,  color:'#3870b8' },
+] as const
+function getMemberRank(spent = 0) {
+  for (let i = RANK_TIERS.length - 1; i >= 0; i--) if (spent >= RANK_TIERS[i].min) return RANK_TIERS[i]
+  return RANK_TIERS[0]
+}
 
 const NAV_BASE = [
   { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',     icon:HouseSimple,  color:'#6366f1' },
@@ -453,11 +467,16 @@ if (pathname==='/u/login') return <>{children}</>
             <>
               <div className="flex-1 text-start min-w-0">
                 <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
-                {member?.member_code && (
-                  <div className="mt-0.5">
+                <div className="mt-0.5 flex items-center gap-1 flex-wrap">
+                  {member?.member_code && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
-                  </div>
-                )}
+                  )}
+                  {(() => { const r = getMemberRank(member?.total_spent_egp); return (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${r.color}22`,color:r.color,border:`1px solid ${r.color}44`}}>
+                      {isRtl ? r.ar : r.en}
+                    </span>
+                  )})()}
+                </div>
               </div>
               <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
             </>
@@ -697,11 +716,16 @@ if (pathname==='/u/login') return <>{children}</>
                   : member?.full_name?.slice(0,1).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{member?.full_name}</div>
                   {member?.member_code && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
                   )}
+                  {(() => { const r = getMemberRank(member?.total_spent_egp); return (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:`${r.color}22`,color:r.color,border:`1px solid ${r.color}44`}}>
+                      {isRtl ? r.ar : r.en}
+                    </span>
+                  )})()}
                 </div>
                 <div className="text-[11px] text-gray-400 truncate">{member?.email}</div>
               </div>
