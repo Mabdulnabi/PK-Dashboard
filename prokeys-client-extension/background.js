@@ -194,11 +194,12 @@ async function disconnect(toolName) {
   }
   chrome.proxy.settings.clear({ scope: 'regular' })
   chrome.alarms.clear('heartbeat')
-  await setState({ active_tool: null, session_data: null, session_id: null, server_id: null, pending_inject: null, tool_tab_id: null })
+  await setState({ active_tool: null, session_data: null, session_id: null, server_id: null, pending_inject: null, tool_tab_id: null, session_dirty: false })
   chrome.action.setBadgeText({ text: '' })
 
-  // Push updated cookies back to server so next member gets the latest session
-  if (state.server_id && state.dashboard_url && state.session_data?.cookies?.length) {
+  // Only push cookies back to server if they actually rotated during this session.
+  // Pushing stale cookies on every disconnect would overwrite a freshly-captured admin session.
+  if (state.session_dirty && state.server_id && state.dashboard_url && state.session_data?.cookies?.length) {
     fetch(`${state.dashboard_url}/api/member/servers/session/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -298,6 +299,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, info) => {
 })
 
 // Track rotating tokens (grauth, etc.) — update stored session_data when server rotates them
+// Only mark session_dirty=true when a cookie actually changes value during an active session.
+// disconnect() only pushes cookies back to server if session_dirty is set,
+// preventing stale/invalid cookies from overwriting a freshly-captured admin session.
 chrome.cookies.onChanged.addListener(async ({ cookie, removed }) => {
   if (removed) return
   const state = await getState()
@@ -312,9 +316,12 @@ chrome.cookies.onChanged.addListener(async ({ cookie, removed }) => {
   const idx = state.session_data.cookies.findIndex(c => c.name === cookie.name && (c.domain || '').replace(/^\./, '') === cookieDomain)
   if (idx === -1) return
 
+  const existing = state.session_data.cookies[idx]
+  if (existing.value === cookie.value) return // no real change
+
   const updated = [...state.session_data.cookies]
-  updated[idx] = { ...updated[idx], value: cookie.value, expirationDate: cookie.expirationDate }
-  await setState({ session_data: { ...state.session_data, cookies: updated } })
+  updated[idx] = { ...existing, value: cookie.value, expirationDate: cookie.expirationDate }
+  await setState({ session_data: { ...state.session_data, cookies: updated }, session_dirty: true })
 })
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
