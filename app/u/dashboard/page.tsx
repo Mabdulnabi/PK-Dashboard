@@ -336,7 +336,7 @@ export default function DashboardPage() {
                   className="flex-shrink-0 flex flex-col items-center gap-2.5 group">
                   <img src={(isRtl && cat.image_url_ar) ? cat.image_url_ar : cat.image_url!}
                     alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
-                    className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl object-cover shadow-md group-hover:scale-110 transition-transform duration-300"/>
+                    className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl object-cover group-hover:scale-110 transition-transform duration-300"/>
                   <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[128px] truncate">
                     {isRtl && cat.name_ar ? cat.name_ar : cat.name}
                   </span>
