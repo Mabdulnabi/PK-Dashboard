@@ -471,19 +471,29 @@ function CheckoutInner() {
               {gateways.length===0 ? (
                 <div className="text-center py-8 text-gray-400 text-sm">{t('No payment methods available','لا توجد وسائل دفع متاحة حالياً')}</div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-                  {gateways.map(gw=>(
-                    <button key={gw.id} onClick={()=>{ setMethod(gw.id); setTxRef(''); setError('') }}
-                      className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
-                      <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-sm">
-                        {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-3xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
+                {(['USD','EGP'] as const).map(cur => {
+                  const group = gateways.filter(gw => gw.currency === cur)
+                  if (!group.length) return null
+                  return (
+                    <div key={cur} className="mb-6">
+                      <div className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full mb-3 ${cur==='EGP'?'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400':'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'}`}>
+                        {cur==='USD'?'💵':'🇪🇬'} {cur}
                       </div>
-                      <span className={`text-sm font-bold ${method===gw.id?'text-[#d99401]':'text-gray-700 dark:text-gray-200'}`}>{lang==='ar'?gw.name_ar:gw.name_en}</span>
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${gw.currency==='EGP'?'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400':'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>{gw.currency}</span>
-                      {method===gw.id && <Check size={15} style={{color:'#d99401'}}/>}
-                    </button>
-                  ))}
-                </div>
+                      <div className={`grid gap-4 ${group.length<=3?'grid-cols-3':'grid-cols-4'}`}>
+                        {group.map(gw=>(
+                          <button key={gw.id} onClick={()=>{ setMethod(gw.id); setTxRef(''); setError('') }}
+                            className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
+                            <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-sm">
+                              {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-3xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
+                            </div>
+                            <span className={`text-sm font-bold text-center ${method===gw.id?'text-[#d99401]':'text-gray-700 dark:text-gray-200'}`}>{lang==='ar'?gw.name_ar:gw.name_en}</span>
+                            {method===gw.id && <Check size={15} style={{color:'#d99401'}}/>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
               )}
 
               {cfg && (
