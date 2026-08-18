@@ -340,36 +340,36 @@ export default function DashboardPage() {
       {/* ── Categories Scroll ── */}
       {!loading && categories.length > 0 && (
         <div className="mb-7">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-extrabold text-gray-800 dark:text-gray-100">
-              {isRtl ? 'نفسك في ايه؟ 🤔' : "What are you looking for? 🤔"}
-            </h2>
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => scrollCats('left')}
-                className="w-8 h-8 rounded-xl flex items-center justify-center border border-white/60 dark:border-white/10 bg-white/70 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 transition-colors">
-                <ChevronLeft size={16}/>
-              </button>
-              <button onClick={() => scrollCats('right')}
-                className="w-8 h-8 rounded-xl flex items-center justify-center border border-white/60 dark:border-white/10 bg-white/70 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 transition-colors">
-                <ChevronRight size={16}/>
-              </button>
+          <h2 className="text-xl font-extrabold text-gray-800 dark:text-gray-100 mb-4">
+            {isRtl ? 'نفسك في ايه؟ 🤔' : "What are you looking for? 🤔"}
+          </h2>
+          <div className="relative">
+            {/* Left arrow */}
+            <button onClick={() => scrollCats('left')}
+              className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-[#d99401] transition-colors">
+              <ChevronLeft size={18}/>
+            </button>
+            <div ref={catScrollRef} className="cat-scroll flex gap-5 overflow-x-auto px-2 pb-2 scroll-smooth" style={{scrollbarWidth:'none'}}>
+              {categories.map(cat => (
+                <button key={cat.id}
+                  onClick={() => router.push(`/u/store?tab=${catTab(cat)}&cat=${cat.id}`)}
+                  className="flex-shrink-0 flex flex-col items-center gap-2.5 group">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden shadow-md">
+                    <img src={(isRtl && cat.image_url_ar) ? cat.image_url_ar : cat.image_url!}
+                      alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[128px] truncate">
+                    {isRtl && cat.name_ar ? cat.name_ar : cat.name}
+                  </span>
+                </button>
+              ))}
             </div>
-          </div>
-          <div ref={catScrollRef} className="cat-scroll flex gap-4 overflow-x-auto pb-2 scroll-smooth" style={{scrollbarWidth:'none'}}>
-            {categories.map(cat => (
-              <button key={cat.id}
-                onClick={() => router.push(`/u/store?tab=${catTab(cat)}&cat=${cat.id}`)}
-                className="flex-shrink-0 flex flex-col items-center gap-2.5 group">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-[#d99401] transition-all shadow-md group-hover:shadow-lg group-hover:shadow-[#d9940130]">
-                  <img src={(isRtl && cat.image_url_ar) ? cat.image_url_ar : cat.image_url!}
-                    alt={isRtl && cat.name_ar ? cat.name_ar : cat.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight max-w-[128px] truncate">
-                  {isRtl && cat.name_ar ? cat.name_ar : cat.name}
-                </span>
-              </button>
-            ))}
+            {/* Right arrow */}
+            <button onClick={() => scrollCats('right')}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-[#d99401] transition-colors">
+              <ChevronRight size={18}/>
+            </button>
           </div>
         </div>
       )}
