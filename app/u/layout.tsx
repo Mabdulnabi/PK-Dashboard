@@ -214,6 +214,9 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   const [notifications, setNotifs]     = useState<any[]>([])
   const [taskAlert,     setTaskAlert]  = useState<{id:string; title:string} | null>(null)
   const dismissedReminders = useRef(new Set<string>())
+  const [toast, setToast] = useState<{id:string; title:string; message:string; type:string} | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout>|null>(null)
+  const [smartBannerDismissed, setSmartBannerDismissed] = useState(false)
   const [navOrder, setNavOrder] = useState<number[]>(()=>{
     if (typeof window === 'undefined') return NAV_BASE.map((_,i)=>i)
     try {
@@ -274,8 +277,12 @@ const [sidebarOpen,   setSidebar]    = useState(false)
         table:  'member_notifications',
         filter: `member_id=eq.${member.id}`,
       }, (payload) => {
-        setNotifs(prev => [payload.new as any, ...prev])
-        window.dispatchEvent(new CustomEvent('pk-member-notification', { detail: payload.new }))
+        const n = payload.new as any
+        setNotifs(prev => [n, ...prev])
+        window.dispatchEvent(new CustomEvent('pk-member-notification', { detail: n }))
+        if (toastTimer.current) clearTimeout(toastTimer.current)
+        setToast({ id: n.id, title: n.title, message: n.message, type: n.type || 'info' })
+        toastTimer.current = setTimeout(() => setToast(null), 5000)
       })
       .subscribe()
 
@@ -650,6 +657,38 @@ if (pathname==='/u/login') return <>{children}</>
           </div>
         </header>
 
+        {/* ── Realtime toast popup ── */}
+        {toast && (() => {
+          const colors: Record<string, {bg:string; border:string; icon:string}> = {
+            success: { bg:'rgba(16,185,129,0.12)', border:'rgba(16,185,129,0.35)', icon:'#10b981' },
+            warning: { bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.35)', icon:'#f59e0b' },
+            error:   { bg:'rgba(239,68,68,0.12)',  border:'rgba(239,68,68,0.35)',  icon:'#ef4444' },
+            info:    { bg:'rgba(99,102,241,0.12)', border:'rgba(99,102,241,0.35)', icon:'#6366f1' },
+          }
+          const c = colors[toast.type] || colors.info
+          return (
+            <div className="fixed bottom-5 end-5 z-[999] max-w-sm w-full pointer-events-auto"
+              style={{animation:'pk-toast-in 0.35s cubic-bezier(.34,1.56,.64,1) both'}}>
+              <style>{`
+                @keyframes pk-toast-in { from{opacity:0;transform:translateY(16px) scale(.95)} to{opacity:1;transform:none} }
+              `}</style>
+              <div className="rounded-2xl px-4 py-3.5 flex items-start gap-3 shadow-xl"
+                style={{background: dark ? `rgba(14,17,28,0.92)` : 'rgba(255,255,255,0.95)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:`1px solid ${c.border}`}}>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base" style={{background: c.bg, color: c.icon}}>
+                  {toast.type === 'success' ? '✓' : toast.type === 'warning' ? '⚠' : toast.type === 'error' ? '✕' : 'ℹ'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-tight">{isRtl ? toast.title : (toast as any).title_en || toast.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-2">{isRtl ? toast.message : (toast as any).message_en || toast.message}</p>
+                </div>
+                <button onClick={() => setToast(null)} className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0 transition-colors">
+                  <X size={12}/>
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Task reminder banner */}
         {taskAlert && (
           <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-white flex-shrink-0 z-40" style={{
@@ -667,6 +706,53 @@ if (pathname==='/u/login') return <>{children}</>
             </button>
           </div>
         )}
+
+        {/* ── Smart Action Banner ── */}
+        {!smartBannerDismissed && member && (() => {
+          const daysLeft = member.expires_at
+            ? Math.ceil((new Date(member.expires_at).getTime() - Date.now()) / 86400000)
+            : null
+          const rank = getMemberRank(member.total_spent_egp)
+          const nextRank = RANK_TIERS[RANK_TIERS.findIndex(r => r.key === rank.key) + 1]
+
+          let banner: { msg_ar: string; msg_en: string; cta_ar: string; cta_en: string; href: string; color: string } | null = null
+
+          if (daysLeft !== null && daysLeft <= 5 && daysLeft > 0) {
+            banner = {
+              msg_ar: `اشتراكك ينتهي خلال ${daysLeft} ${daysLeft === 1 ? 'يوم' : 'أيام'} — جدد الآن ⚠️`,
+              msg_en: `Your subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'} — renew now ⚠️`,
+              cta_ar: 'تجديد', cta_en: 'Renew',
+              href: '/u/store', color: '#d99401',
+            }
+          } else if (nextRank && member.total_spent_egp !== undefined) {
+            const gap = nextRank.min - (member.total_spent_egp || 0)
+            if (gap > 0 && gap <= 500) {
+              banner = {
+                msg_ar: `أنت على بعد ${gap.toLocaleString()} جنيه من رتبة ${nextRank.ar} 🚀`,
+                msg_en: `Only ${gap.toLocaleString()} EGP away from ${nextRank.en} rank 🚀`,
+                cta_ar: 'تسوق', cta_en: 'Shop',
+                href: '/u/store', color: nextRank.color,
+              }
+            }
+          }
+
+          if (!banner) return null
+          return (
+            <div className="flex items-center gap-3 px-4 py-2 text-xs font-semibold flex-shrink-0 z-40"
+              style={{background: dark ? `${banner.color}20` : `${banner.color}15`, borderBottom: `1px solid ${banner.color}28`, color: banner.color}}>
+              <span className="flex-1">{isRtl ? banner.msg_ar : banner.msg_en}</span>
+              <a href={banner.href}
+                className="px-3 py-1 rounded-lg text-white text-[11px] font-bold flex-shrink-0 hover:opacity-90 transition-opacity"
+                style={{background: banner.color}}>
+                {isRtl ? banner.cta_ar : banner.cta_en}
+              </a>
+              <button onClick={() => setSmartBannerDismissed(true)}
+                className="w-5 h-5 rounded flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity flex-shrink-0">
+                <X size={11}/>
+              </button>
+            </div>
+          )
+        })()}
 
         {/* Content */}
         <main className="flex-1 overflow-auto relative" style={{background: dark ? 'rgba(9,13,24,0.18)' : 'rgba(240,244,248,0.15)'}}>
