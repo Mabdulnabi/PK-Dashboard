@@ -440,7 +440,7 @@ if (pathname==='/u/login') return <>{children}</>
       )}
 
       {/* User */}
-      <div className="border-t border-gray-100 dark:border-gray-800 p-3">
+      <div className="p-3" style={{borderTop: dark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.5)'}}>
         <button onClick={()=>setProfile(o=>!o)}
           title={col ? member?.full_name : undefined}
           className={`w-full flex items-center ${col ? 'justify-center px-0' : 'gap-2.5 px-2'} py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
@@ -468,15 +468,41 @@ if (pathname==='/u/login') return <>{children}</>
   )
   }
 
+  // Glass background gradient — switches with dark state
+  const glassPageBg = dark
+    ? 'radial-gradient(ellipse 90% 70% at 15% 5%, rgba(217,148,1,0.07) 0%, transparent 55%), radial-gradient(ellipse 70% 90% at 85% 95%, rgba(99,102,241,0.06) 0%, transparent 55%), #090d18'
+    : 'radial-gradient(ellipse 90% 70% at 15% 5%, rgba(217,148,1,0.11) 0%, transparent 55%), radial-gradient(ellipse 70% 90% at 85% 95%, rgba(99,102,241,0.07) 0%, transparent 55%), #f0f4f8'
+
+  const sidebarGlassBg = dark
+    ? 'linear-gradient(to bottom, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.022) 100%)'
+    : 'linear-gradient(to bottom, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.72) 100%)'
+
+  const headerGlassBg = dark
+    ? 'rgba(9,13,24,0.45)'
+    : 'rgba(255,255,255,0.72)'
+
   return (
-    <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'}>
+    <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'} style={{background: glassPageBg}}>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
-      <aside className={`hidden md:flex ${collapsed ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 transition-all duration-200 relative`}>
+      <aside className={`hidden md:flex ${collapsed ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen border-r transition-all duration-200 relative z-10`}
+        style={{
+          background: sidebarGlassBg,
+          backdropFilter: 'blur(28px)',
+          WebkitBackdropFilter: 'blur(28px)',
+          borderColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.65)',
+          boxShadow: dark ? '4px 0 40px -4px rgba(0,0,0,0.55)' : '4px 0 32px -4px rgba(0,0,0,0.07)',
+        }}>
         {SidebarContent({})}
         <button
           onClick={() => setCollapsed(c => !c)}
-          className={`absolute -${isRtl ? 'left' : 'right'}-3 bottom-16 w-6 h-6 rounded-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow z-10`}
+          className={`absolute -${isRtl ? 'left' : 'right'}-3 bottom-16 w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow z-10`}
+          style={{
+            background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.7)',
+          }}
         >
           <ChevronLeft size={13} className={`text-gray-500 transition-transform duration-200 ${isRtl ? (collapsed ? '' : 'rotate-180') : (collapsed ? 'rotate-180' : '')}`}/>
         </button>
@@ -486,8 +512,15 @@ if (pathname==='/u/login') return <>{children}</>
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex" dir={isRtl?'rtl':'ltr'}>
           <div className="fixed inset-0 bg-black/40" onClick={()=>setSidebar(false)}/>
-          <div className={`relative w-64 flex flex-col h-full bg-white dark:bg-[#111827] shadow-2xl ${isRtl?'border-l':'ml-0 border-r'} border-gray-200 dark:border-gray-800`}>
-            <button onClick={()=>setSidebar(false)} className="absolute top-3 end-3 w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10">
+          <div className={`relative w-64 flex flex-col h-full ${isRtl?'border-l':'ml-0 border-r'}`}
+            style={{
+              background: sidebarGlassBg,
+              backdropFilter: 'blur(28px)',
+              WebkitBackdropFilter: 'blur(28px)',
+              borderColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.65)',
+              boxShadow: dark ? '8px 0 48px rgba(0,0,0,0.6)' : '8px 0 40px rgba(0,0,0,0.12)',
+            }}>
+            <button onClick={()=>setSidebar(false)} className="absolute top-3 end-3 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 z-10" style={{background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}}>
               <X size={14}/>
             </button>
             {SidebarContent({forMobile:true})}
@@ -496,10 +529,17 @@ if (pathname==='/u/login') return <>{children}</>
       )}
 
       {/* ── Main ────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950 min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Header */}
-        <header className="flex items-center justify-between px-3 md:px-5 bg-white dark:bg-[#111827] border-b border-gray-200 dark:border-gray-800 flex-shrink-0" style={{height:'58px'}}>
+        <header className="flex items-center justify-between px-3 md:px-5 flex-shrink-0 relative z-10" style={{
+          height:'58px',
+          background: headerGlassBg,
+          backdropFilter: 'blur(28px)',
+          WebkitBackdropFilter: 'blur(28px)',
+          borderBottom: dark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(255,255,255,0.65)',
+          boxShadow: dark ? '0 4px 40px -4px rgba(0,0,0,0.45)' : '0 4px 24px -4px rgba(0,0,0,0.06)',
+        }}>
 
           {/* Left: hamburger (mobile) + welcome */}
           <div className="flex items-center gap-2 min-w-0">
@@ -546,7 +586,13 @@ if (pathname==='/u/login') return <>{children}</>
                 {unread>0&&<span className="absolute top-1.5 end-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
               </button>
               {notifOpen&&(
-                <div className="absolute end-0 top-10 w-72 sm:w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="absolute end-0 top-10 w-72 sm:w-80 rounded-xl z-50 overflow-hidden" style={{
+                  background: dark ? 'rgba(12,17,28,0.72)' : 'rgba(255,255,255,0.82)',
+                  backdropFilter: 'blur(32px)',
+                  WebkitBackdropFilter: 'blur(32px)',
+                  border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
+                  boxShadow: dark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 48px rgba(0,0,0,0.12)',
+                }}>
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
@@ -598,7 +644,7 @@ if (pathname==='/u/login') return <>{children}</>
         )}
 
         {/* Content */}
-        <main className="flex-1 overflow-auto relative">
+        <main className="flex-1 overflow-auto relative" style={{background: dark ? 'rgba(9,13,24,0.55)' : 'rgba(240,244,248,0.6)'}}>
           {/* Keep-alive tab panels — mounted once, hidden when inactive */}
           {Array.from(mountedTabs).map(href => {
             const TabComp = TAB_MAP[href]
@@ -631,7 +677,13 @@ if (pathname==='/u/login') return <>{children}</>
       {/* ── Profile popup ──────────────────────────── */}
       {profileOpen&&(
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-start p-4" onClick={()=>setProfile(false)}>
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-72 overflow-hidden" onClick={e=>e.stopPropagation()}>
+          <div className="rounded-2xl w-72 overflow-hidden" style={{
+            background: dark ? 'rgba(12,17,28,0.75)' : 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.72)',
+            boxShadow: dark ? '0 24px 64px rgba(0,0,0,0.65)' : '0 24px 56px rgba(0,0,0,0.14)',
+          }} onClick={e=>e.stopPropagation()}>
             <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
                 {member?.avatar_url
