@@ -1,5 +1,8 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 import { db } from '@/lib/db'
 import { requireMember, AuthError } from '@/lib/auth'
 import { canAccess } from '@/lib/tiers'
