@@ -245,60 +245,65 @@ export default function MemberProfilePage() {
           </div>
         </div>
 
-        {/* Form: 2-col grid — grows to fill card */}
-        <div className="px-5 pt-4 pb-3 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4 flex-1 content-start">
+        {/* Form: 2-col grid */}
+        <div className="px-6 pt-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={9}/>{t('Full Name','الاسم الكامل')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={10}/>{t('Full Name','الاسم الكامل')}</label>
             <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your full name','اسمك الكامل')} className={inp}/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Mail size={9}/>{t('Email Address','البريد الإلكتروني')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Mail size={10}/>{t('Email Address','البريد الإلكتروني')}</label>
             <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="email@example.com" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Phone size={9}/>{t('WhatsApp','واتساب')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Phone size={10}/>{t('WhatsApp','واتساب')}</label>
             <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} type="tel" placeholder="+201234567890" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Lock size={9}/>{t('New Password','كلمة مرور جديدة')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Lock size={10}/>{t('New Password','كلمة مرور جديدة')}</label>
             <div className="relative">
               <input value={password} onChange={e => setPassword(e.target.value)} type={showPass?'text':'password'}
-                placeholder={t('Leave blank to keep current','اتركها فارغة للإبقاء على الحالية')} className={inp+' pe-9'}/>
-              <button type="button" onClick={() => setShowPass(p => !p)} className="absolute top-1/2 -translate-y-1/2 end-2.5 text-gray-400 hover:text-gray-600">
-                {showPass ? <EyeOff size={12}/> : <Eye size={12}/>}
+                placeholder={t('Leave blank to keep current','اتركها فارغة للإبقاء على الحالية')} className={inp+' pe-10'}/>
+              <button type="button" onClick={() => setShowPass(p => !p)} className="absolute top-1/2 -translate-y-1/2 end-3 text-gray-400 hover:text-gray-600">
+                {showPass ? <EyeOff size={13}/> : <Eye size={13}/>}
               </button>
+            </div>
+          </div>
+
+          {/* Lang + Currency inline — col-span-2 */}
+          <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-1">
+            <Globe size={12} className="text-indigo-500 flex-shrink-0"/>
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
+            <div className="flex gap-1.5">
+              {([{ key:'en', flag:'🇬🇧', label:'English' }, { key:'ar', flag:'🇪🇬', label:'العربية' }] as const).map(o => (
+                <button key={o.key} onClick={()=>setLang(o.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
+                  <span>{o.flag}</span>{o.label}{lang===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1"/>
+            <DollarSign size={12} className="text-emerald-500 flex-shrink-0"/>
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
+            <div className="flex gap-1.5">
+              {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
+                <button key={o.key} onClick={()=>setCurrency(o.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
+                  <span>{o.flag}</span>{o.label}{currency===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="mx-5 border-t border-gray-100 dark:border-gray-800/60"/>
+        {/* spacer pushes save button to bottom */}
+        <div className="flex-1"/>
 
-        {/* Lang + Currency + Save */}
-        <div className="px-5 py-2.5 flex flex-wrap items-center gap-3">
-          <Globe size={11} className="text-indigo-500 flex-shrink-0"/>
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
-          <div className="flex gap-1">
-            {([{ key:'en', flag:'🇬🇧', label:'EN' }, { key:'ar', flag:'🇪🇬', label:'AR' }] as const).map(o => (
-              <button key={o.key} onClick={()=>setLang(o.key)}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                <span className="text-sm">{o.flag}</span>{o.label}{lang===o.key&&<Check size={9} style={{color:'#d99401'}}/>}
-              </button>
-            ))}
-          </div>
-          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700"/>
-          <DollarSign size={11} className="text-emerald-500 flex-shrink-0"/>
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
-          <div className="flex gap-1">
-            {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
-              <button key={o.key} onClick={()=>setCurrency(o.key)}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                <span className="text-sm">{o.flag}</span>{o.label}{currency===o.key&&<Check size={9} style={{color:'#d99401'}}/>}
-              </button>
-            ))}
-          </div>
+        {/* Divider + Save */}
+        <div className="mx-6 border-t border-gray-100 dark:border-gray-800/60"/>
+        <div className="px-6 py-4 flex justify-end">
           <button onClick={save} disabled={saving}
-            className="ms-auto px-5 py-1.5 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
+            className="px-8 py-2.5 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
             {saving ? t('Saving…','جاري الحفظ…') : t('Save Changes','حفظ التغييرات')}
           </button>
         </div>
@@ -321,7 +326,7 @@ export default function MemberProfilePage() {
                   <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
                   <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.08)'}}>
+                <div className="h-1.5 rounded-full overflow-hidden w-48 max-w-full" style={{background:'rgba(255,255,255,0.08)'}}>
                   <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
                 </div>
               </>
@@ -329,18 +334,18 @@ export default function MemberProfilePage() {
               <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
             )}
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-[9px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
-            <div className="flex items-end gap-2">
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
+            <div className="flex items-end gap-3">
               {RANKS.map((r, i) => {
                 const isActive = r.key === rank.key
                 const unlocked = i <= rankIdx
                 return (
-                  <div key={r.key} className="flex flex-col items-center gap-1">
-                    <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.18)' : 'scale(1)', transition:'transform .2s'}}>
-                      <HexBadge rk={r} size={isActive ? 48 : 36} active={isActive}/>
+                  <div key={r.key} className="flex flex-col items-center gap-1.5">
+                    <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
+                      <HexBadge rk={r} size={isActive ? 60 : 46} active={isActive}/>
                     </div>
-                    <span className="text-[7px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
+                    <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
                       {lang==='ar' ? r.ar : r.en}
                     </span>
                   </div>
