@@ -471,6 +471,7 @@ function CheckoutInner() {
               {gateways.length===0 ? (
                 <div className="text-center py-8 text-gray-400 text-sm">{t('No payment methods available','لا توجد وسائل دفع متاحة حالياً')}</div>
               ) : (
+                <div className="mb-2">
                 {(['USD','EGP'] as const).map(cur => {
                   const group = gateways.filter(gw => gw.currency === cur)
                   if (!group.length) return null
@@ -494,6 +495,7 @@ function CheckoutInner() {
                     </div>
                   )
                 })}
+                </div>
               )}
 
               {cfg && (
