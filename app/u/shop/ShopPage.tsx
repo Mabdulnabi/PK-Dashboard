@@ -170,13 +170,13 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
 
       {/* Filter bar */}
       <style>{`.sp-scroll{overflow-x:auto;scrollbar-width:none;}.sp-scroll::-webkit-scrollbar{display:none;}`}</style>
-      <div className="mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 space-y-2">
+      <div className="mb-5 rounded-xl p-2.5 space-y-2" style={{background: 'rgba(255,255,255,0.82)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.65)'}}>
 
         {/* Mobile: search full width */}
         <div className="md:hidden relative">
           <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search tools…','ابحث عن أداة…')}
-            className="w-full ps-8 pe-3 py-[7px] text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
+            className="w-full ps-8 pe-3 py-[7px] text-xs rounded-lg border border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/5 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
           {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
         </div>
 
@@ -213,7 +213,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
           <div className="relative flex-1 min-w-[120px]">
             <Search size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('Search…','بحث…')}
-              className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
+              className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/5 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
             {q && <button onClick={()=>setQ('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11}/></button>}
           </div>
           <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>

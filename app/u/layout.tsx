@@ -672,8 +672,8 @@ if (pathname==='/u/login') return <>{children}</>
               <style>{`
                 @keyframes pk-toast-in { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
               `}</style>
-              <div className="rounded-2xl px-4 py-3.5 flex items-start gap-3 shadow-xl"
-                style={{background: dark ? `rgba(14,17,28,0.92)` : 'rgba(255,255,255,0.95)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:`1px solid ${c.border}`}}>
+              <div className="rounded-2xl px-4 py-3.5 flex items-start gap-3"
+                style={{background: dark ? 'rgba(10,13,24,0.75)' : 'rgba(255,255,255,0.75)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:`1px solid ${c.border}`, boxShadow: dark ? `0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)` : `0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)`}}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base" style={{background: c.bg, color: c.icon}}>
                   {toast.type === 'success' ? '✓' : toast.type === 'warning' ? '⚠' : toast.type === 'error' ? '✕' : 'ℹ'}
                 </div>
@@ -691,11 +691,11 @@ if (pathname==='/u/login') return <>{children}</>
 
         {/* Task reminder banner */}
         {taskAlert && (
-          <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-white flex-shrink-0 z-40" style={{
-            background: dark ? 'rgba(180,110,0,0.55)' : 'rgba(217,148,1,0.45)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: dark ? '1px solid rgba(255,200,50,0.15)' : '1px solid rgba(255,210,80,0.4)',
+          <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold flex-shrink-0 z-40" style={{
+            background: dark ? 'rgba(180,110,0,0.22)' : 'rgba(255,255,255,0.55)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            borderBottom: dark ? '1px solid rgba(255,200,50,0.12)' : '1px solid rgba(217,148,1,0.25)',
             color: dark ? '#fde68a' : '#7c4f00',
           }}>
             <AlarmClock size={15} className="flex-shrink-0 animate-pulse"/>
@@ -739,7 +739,7 @@ if (pathname==='/u/login') return <>{children}</>
           if (!banner) return null
           return (
             <div className="flex items-center gap-3 px-4 py-2 text-xs font-semibold flex-shrink-0 z-40"
-              style={{background: dark ? `${banner.color}20` : `${banner.color}15`, borderBottom: `1px solid ${banner.color}28`, color: banner.color}}>
+              style={{background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.6)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', borderBottom: `1px solid ${banner.color}28`, color: banner.color}}>
               <span className="flex-1">{isRtl ? banner.msg_ar : banner.msg_en}</span>
               <a href={banner.href}
                 className="px-3 py-1 rounded-lg text-white text-[11px] font-bold flex-shrink-0 hover:opacity-90 transition-opacity"
