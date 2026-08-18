@@ -17,6 +17,7 @@ interface ToolServer {
   current_active_users: number; status: string
   proxy_host?: string; proxy_port?: number; last_verified_at?: string
   free_slots?: number; load_percent?: number
+  session_data_encrypted?: string | null
 }
 interface LiveSession {
   id: string; user_email: string; user_name: string; tool_name: string
@@ -62,6 +63,7 @@ export default function ServersPage() {
   const [editId, setEditId]       = useState<string|null>(null)
   const [showPass, setShowPass]   = useState(false)
   const [delConfirm, setDel]      = useState<ToolServer|null>(null)
+  const [savedCookieCount, setSavedCookieCount] = useState<number|null>(null)
 
   const emptyForm = {
     shop_tool_id:'', tool_name:'', server_label:'', session_data_encrypted:'',
@@ -96,8 +98,18 @@ export default function ServersPage() {
     return () => { supabase.removeChannel(ch) }
   }, [load])
 
-  const openAdd  = () => { setForm(emptyForm); setEditId(null); setModal('add') }
+  const openAdd  = () => { setForm(emptyForm); setEditId(null); setSavedCookieCount(null); setModal('add') }
   const openEdit = (s: ToolServer) => {
+    // Count cookies already saved so admin can verify without re-pasting
+    let count: number | null = null
+    if (s.session_data_encrypted) {
+      try {
+        const p = JSON.parse(s.session_data_encrypted)
+        const arr: any[] = Array.isArray(p) ? p : (p?.cookies ?? [])
+        count = arr.length || null
+      } catch { /* ignore */ }
+    }
+    setSavedCookieCount(count)
     setForm({
       shop_tool_id: s.shop_tool_id || '',
       tool_name: s.tool_name, server_label: s.server_label,
@@ -460,14 +472,18 @@ export default function ServersPage() {
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
                   Session Data
                   {editId
-                    ? <span className="font-normal normal-case text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">✓ كوكيز محفوظة — اتركه فاضي لو مش هتغير</span>
+                    ? savedCookieCount !== null
+                      ? <span className="font-normal normal-case text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">✓ {savedCookieCount} كوكيز محفوظة — اتركه فاضي لو مش هتغير</span>
+                      : <span className="font-normal normal-case text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded">⚠ مفيش كوكيز — الزم تضيف</span>
                     : <span className="text-red-400">*</span>
                   }
                 </div>
                 <textarea
                   value={form.session_data_encrypted}
                   onChange={e=>setForm({...form,session_data_encrypted:e.target.value})}
-                  placeholder={`{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com", "path": "/", "httpOnly": false, "expirationDate": 1999999999 }\n  ],\n  "localStorage": {},\n  "indexedDB": []\n}`}
+                  placeholder={editId && savedCookieCount !== null
+                    ? `اتركه فاضي للإبقاء على الـ ${savedCookieCount} كوكيز المحفوظة، أو الصق JSON جديد للاستبدال`
+                    : `{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com", "path": "/", "httpOnly": false, "expirationDate": 1999999999 }\n  ],\n  "localStorage": {},\n  "indexedDB": []\n}`}
                   className={inp+" resize-y h-36 font-mono text-[10px] leading-relaxed"}
                   dir="ltr"
                   spellCheck={false}
