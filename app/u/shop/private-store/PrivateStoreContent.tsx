@@ -70,7 +70,7 @@ export default function PrivateStoreContent({ hideBanner }: { hideBanner?: boole
   }
 
   useEffect(()=>{
-    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+    fetch('/api/ui-settings').then(r=>r.json()).then(d=>{
       const ui = d.settings as Record<string,string>
       try {
         const parsed = JSON.parse(ui?.private_store_banners || '[]')

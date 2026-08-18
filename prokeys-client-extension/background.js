@@ -80,6 +80,21 @@ async function setCookies(cookies, storeId) {
   return { ok, fail }
 }
 
+// Wait for a specific tab to finish loading
+function waitForTabLoad(tabId, timeout = 10000) {
+  return new Promise(resolve => {
+    const timer = setTimeout(resolve, timeout)
+    function listener(id, info) {
+      if (id === tabId && info.status === 'complete') {
+        clearTimeout(timer)
+        chrome.tabs.onUpdated.removeListener(listener)
+        setTimeout(resolve, 400)
+      }
+    }
+    chrome.tabs.onUpdated.addListener(listener)
+  })
+}
+
 async function injectSession(toolName, sessionData, proxy) {
   const domain = getDomain(toolName)
   console.log('INJECT:', toolName, '→', domain, 'cookies:', sessionData?.cookies?.length)
@@ -103,7 +118,7 @@ async function injectSession(toolName, sessionData, proxy) {
   // 2. Only clear cookies we're about to replace — preserve device fingerprint cookies
   //    (clearing ALL cookies removes device IDs like CCDA/CDI which causes sites to ask for password)
   const parentDomain = domain.split('.').slice(-2).join('.')
-  const SKIP_COOKIES = new Set(['cf_clearance', '__cf_bm', '__cflb', '__cf_mitigated'])
+  const SKIP_COOKIES = new Set(['cf_clearance', '__cf_bm', '__cflb', '__cf_mitigated', 'redirect_location', 'browser_info', 'funnelType'])
   const cookiesToInject = (sessionData.cookies || []).filter(c => !SKIP_COOKIES.has(c.name))
   const injectNames = new Set(cookiesToInject.map(c => c.name))
   const allOld = await chrome.cookies.getAll({ domain: parentDomain })
@@ -123,7 +138,14 @@ async function injectSession(toolName, sessionData, proxy) {
   console.log(`SET: ${ok} ok, ${fail} failed out of ${(sessionData.cookies||[]).length}`)
 
   const saved = await chrome.cookies.getAll({ domain: parentDomain })
-  console.log(`VERIFY: ${saved.length} cookies in store`)
+  console.log(`VERIFY: ${saved.length} cookies in store:`, saved.map(c => c.name + '@' + c.domain).join(', '))
+
+  // Also check specific subdomains that might have host-only cookies
+  const savedApp  = await chrome.cookies.getAll({ domain: 'app.'  + parentDomain }).catch(() => [])
+  const savedCapi = await chrome.cookies.getAll({ domain: 'capi.' + parentDomain }).catch(() => [])
+  const savedCoda = await chrome.cookies.getAll({ domain: 'coda.' + parentDomain }).catch(() => [])
+  const allSaved  = [...new Map([...saved, ...savedApp, ...savedCapi, ...savedCoda].map(c => [c.name + '|' + c.domain, c])).values()]
+  console.log(`VERIFY ALL subdomains: ${allSaved.length} total unique cookies`)
 
   // 4. Store localStorage/IDB for later injection via onUpdated
   const needsIdb = Array.isArray(sessionData.indexedDB) && sessionData.indexedDB.length > 0
@@ -197,7 +219,7 @@ async function disconnect(toolName) {
   }
 }
 
-// onUpdated only handles localStorage + IDB injection (cookies already set before tab opened)
+// onUpdated: inject localStorage + IDB ONLY on the correct tool subdomain
 chrome.tabs.onUpdated.addListener(async (tabId, info) => {
   if (info.status !== 'complete') return
   const state = await getState()
@@ -212,6 +234,18 @@ chrome.tabs.onUpdated.addListener(async (tabId, info) => {
 
   const parentDomain = domain.split('.').slice(-2).join('.')
   if (!tab.url.includes(parentDomain)) return
+
+  // Determine the exact subdomain the tool lives on (e.g. app.grammarly.com)
+  const toolUrl = TOOL_URLS[toolName] || `https://${domain}/`
+  const toolHostname = new URL(toolUrl).hostname
+
+  // If we're on the wrong subdomain (e.g. www.grammarly.com instead of app.grammarly.com),
+  // navigate to the correct one WITHOUT clearing pending_inject.
+  // The injection will fire properly on the next onUpdated for the right subdomain.
+  if (!tab.url.includes(toolHostname)) {
+    await chrome.tabs.update(tabId, { url: toolUrl }).catch(() => {})
+    return
+  }
 
   await setState({ pending_inject: null })
 
@@ -253,14 +287,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, info) => {
       },
       args: [idbArray]
     }).catch(e => console.warn('IDB inject failed:', e.message))
-
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => { setTimeout(() => location.reload(), 300) }
-    }).catch(() => {})
   }
 
-  console.log('onUpdated: LS/IDB inject done for', toolName)
+  // After injecting LS/IDB on the correct subdomain, reload so the site
+  // picks up the freshly-injected localStorage on its next boot.
+  await new Promise(r => setTimeout(r, 200))
+  await chrome.tabs.reload(tabId).catch(() => {})
+
+  console.log('onUpdated: LS/IDB inject done for', toolName, '→ navigating to', toolUrl)
 })
 
 // Track rotating tokens (grauth, etc.) — update stored session_data when server rotates them
@@ -364,6 +398,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         case 'GET_STATE':
           sendResponse({ state: await getState() })
           break
+
+        case 'PK_GET_PENDING_LS': {
+          // Content script asks for localStorage to inject at document_start
+          const state = await getState()
+          const pi = state.pending_inject
+          if (!pi) { sendResponse({ localStorage: null }); break }
+          const ls = pi.sessionData?.localStorage || null
+          const toolUrl = TOOL_URLS[pi.toolName] || `https://${getDomain(pi.toolName)}/`
+          sendResponse({
+            localStorage: ls && Object.keys(ls).length > 0 ? ls : null,
+            toolHostname: new URL(toolUrl).hostname,
+          })
+          break
+        }
 
         case 'INJECT_FROM_DASHBOARD': {
           const { toolName, sessionData, sessionId, serverId, proxy, dashboardUrl } = msg

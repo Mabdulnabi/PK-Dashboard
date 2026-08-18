@@ -26,7 +26,7 @@ function StoreInner() {
 
   // Fetch ONCE — unified store banner, not per-tab
   useEffect(() => {
-    fetch('/api/admin/ui-settings').then(r => r.json()).then(d => {
+    fetch('/api/ui-settings').then(r => r.json()).then(d => {
       const ui = d.settings as Record<string, string>
       let slides: BannerSlide[] = []
       // Try unified store key first, fall back to shared tab banner

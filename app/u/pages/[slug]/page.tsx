@@ -25,7 +25,7 @@ export default function StaticPageView({ params }: { params: { slug: string } })
   const titles = PAGE_TITLES[params.slug]
 
   useEffect(() => {
-    fetch('/api/admin/ui-settings')
+    fetch('/api/ui-settings')
       .then(r => r.json())
       .then((d: { settings?: Record<string,string> } | Record<string,string>) => {
         const ui = (d as any).settings || d as Record<string,string>

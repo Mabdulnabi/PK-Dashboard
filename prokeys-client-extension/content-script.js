@@ -1,7 +1,28 @@
 // Pro Keys Client — Session Injector + Dashboard Detection
 
-const isDashboard = window.location.hostname === 'localhost' || 
+const isDashboard = window.location.hostname === 'localhost' ||
                     window.location.hostname.includes('vercel.app')
+
+// ── Tool page early injection ────────────────────────────────
+// Runs at document_start BEFORE the site's own JS executes.
+// Grammarly (and similar SPAs) check localStorage/IDB for auth tokens
+// on first paint. If the tokens aren't there yet, they redirect to the
+// marketing/login page before our onUpdated:complete handler fires.
+// Injecting here ensures the auth state is ready when the site reads it.
+if (!isDashboard) {
+  chrome.runtime.sendMessage({ type: 'PK_GET_PENDING_LS' }, res => {
+    if (!res?.localStorage) return
+    // Only inject if this page is the correct tool subdomain.
+    // e.g. app.grammarly.com localStorage ≠ www.grammarly.com localStorage
+    if (res.toolHostname && !window.location.hostname.includes(res.toolHostname)) return
+    try {
+      Object.entries(res.localStorage).forEach(([k, v]) => {
+        localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v))
+      })
+      console.log('[ProKeys] early LS inject:', Object.keys(res.localStorage).length, 'keys on', window.location.hostname)
+    } catch(e) { console.warn('[ProKeys] early LS inject failed:', e) }
+  })
+}
 
 if (isDashboard) {
   // Write to sessionStorage — page can poll this directly without postMessage

@@ -238,7 +238,7 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/member/shop').then(r => r.json()),
-      fetch('/api/admin/ui-settings').then(r => r.json()).catch(() => ({ settings: {} })),
+      fetch('/api/ui-settings').then(r => r.json()).catch(() => ({ settings: {} })),
       fetch('/api/member/categories').then(r => r.json()).catch(() => ({ categories: [] })),
     ]).then(([shopData, uiData, catData]) => {
       const allTools: Tool[] = shopData.tools || []

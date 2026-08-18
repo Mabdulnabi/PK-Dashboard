@@ -86,7 +86,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
 
   useEffect(()=>{
     const bk = BANNER_KEYS[category]
-    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
+    fetch('/api/ui-settings').then(r=>r.json()).then(d=>{
       const ui = d.settings as Record<string,string>
       let parsed: BannerSlide[] = []
       if (bk) {
