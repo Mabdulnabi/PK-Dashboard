@@ -587,7 +587,7 @@ if (pathname==='/u/login') return <>{children}</>
               </button>
               {notifOpen&&(
                 <div className="absolute end-0 top-10 w-72 sm:w-80 rounded-xl z-50 overflow-hidden" style={{
-                  background: dark ? 'rgba(12,17,28,0.55)' : 'rgba(255,255,255,0.58)',
+                  background: dark ? 'rgba(12,17,28,0.88)' : 'rgba(255,255,255,0.90)',
                   backdropFilter: 'blur(32px)',
                   WebkitBackdropFilter: 'blur(32px)',
                   border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
@@ -678,7 +678,7 @@ if (pathname==='/u/login') return <>{children}</>
       {profileOpen&&(
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-start p-4" onClick={()=>setProfile(false)}>
           <div className="rounded-2xl w-72 overflow-hidden" style={{
-            background: dark ? 'rgba(12,17,28,0.58)' : 'rgba(255,255,255,0.60)',
+            background: dark ? 'rgba(12,17,28,0.88)' : 'rgba(255,255,255,0.90)',
             backdropFilter: 'blur(32px)',
             WebkitBackdropFilter: 'blur(32px)',
             border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.72)',
