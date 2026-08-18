@@ -208,10 +208,10 @@ export default function MemberProfilePage() {
 
       {/* ── Rank card — top ── */}
       <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0">
-        <div className="px-4 md:px-6 py-4 md:py-5"
+        <div className="px-4 md:px-6 py-4 md:py-6"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
           {/* Desktop: 3-col grid — Mobile: badge+info row then badges row below */}
-          <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center gap-4 md:gap-5">
+          <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center gap-4 md:gap-6">
             <HexBadge rk={rank} size={72} active/>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
