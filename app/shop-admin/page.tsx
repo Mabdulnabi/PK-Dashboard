@@ -3,18 +3,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Star, Package, Tag, Layout, ChevronUp, ChevronDown, MessageCircle, ThumbsUp, ThumbsDown, Globe2 } from 'lucide-react'
-import RichEditor from '@/components/ui/RichEditor'
-
-function PageRichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const uploadImage = async (file: File): Promise<string> => {
-    const form = new FormData(); form.append('file', file)
-    const res = await fetch('/api/member/upload', { method: 'POST', body: form })
-    const j = await res.json(); return j.url || ''
-  }
-  return <RichEditor value={value} onChange={onChange} placeholder="Write page content…" minHeight={350} onImageUpload={uploadImage}/>
-}
+import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
+import BundlesTab from '@/components/admin/BundlesTab'
 
 interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
 interface Tool {
@@ -35,19 +26,9 @@ interface LandingBlock {
   features?: { icon: string; en: string; ar: string }[]
   faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
 }
-interface Review {
-  id: string; tool_id: string; member_name: string; stars: number
-  comment?: string; approved: boolean; created_at: string
-  shop_tools?: { name: string }
-}
-
 function Toast({msg,type,onClose}:{msg:string;type:'ok'|'err';onClose:()=>void}) {
   useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t)},[onClose])
   return <div className={`fixed bottom-5 right-5 z-[60] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${type==='ok'?'bg-emerald-500':'bg-red-500'}`}>{type==='ok'?<Check size={15}/>:<AlertCircle size={15}/>}{msg}</div>
-}
-
-function StarRow({ n }: { n: number }) {
-  return <div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} size={12} fill={i<=n?'#F59E0B':'none'} stroke={i<=n?'#F59E0B':'#D1D5DB'}/>)}</div>
 }
 
 const inp = "w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 transition-all"
@@ -64,11 +45,9 @@ const LAYOUTS: { value: LandingBlock['layout']; label: string }[] = [
 ]
 
 export default function ShopAdminPage() {
-  const [tab,      setTab]      = useState<'tools'|'categories'|'reviews'|'deals'|'blogs'|'pages'>('tools')
+  const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
-  const [reviews,  setReviews]  = useState<Review[]>([])
-  const [revLoad,  setRevLoad]  = useState(false)
   const [toolCat,  setToolCat]  = useState('all')
   const [loading,  setLoading]  = useState(true)
   const [modal,    setModal]    = useState<'add-tool'|'edit-tool'|'add-cat'|'edit-cat'|'landing'|null>(null)
@@ -90,30 +69,6 @@ export default function ShopAdminPage() {
   const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;subtitle_en:string;subtitle_ar:string;emoji:string;tool_ids:string[]}[]>([])
   const [dealSaving,    setDealSaving]    = useState(false)
 
-  // Blogs tab state
-  const [blogPosts,   setBlogPosts]   = useState<any[]>([])
-  const [blogLoad,    setBlogLoad]    = useState(false)
-  const [blogError,   setBlogError]   = useState<string|null>(null)
-  const [blogAction,  setBlogAction]  = useState<{id:string;type:'reject'|'revision';text:string}|null>(null)
-  const [expandedBlog,setExpandedBlog]= useState<string|null>(null)
-  const [adminNote,   setAdminNote]   = useState<{id:string;text:string}|null>(null)
-
-  // Pages tab state
-  const PAGE_SLUGS = ['about-us','contact-us','privacy-policy','refund-policy','delivery-policy','terms-of-use']
-  const PAGE_LABELS: Record<string,{en:string;ar:string}> = {
-    'about-us':        {en:'About Us',ar:'من نحن'},
-    'contact-us':      {en:'Contact Us',ar:'اتصل بنا'},
-    'privacy-policy':  {en:'Privacy Policy',ar:'سياسة الخصوصية'},
-    'refund-policy':   {en:'Refund Policy',ar:'سياسة الاسترداد'},
-    'delivery-policy': {en:'Delivery Policy',ar:'سياسة التسليم'},
-    'terms-of-use':    {en:'Terms of Use',ar:'شروط الاستخدام'},
-  }
-  const [pageSettings,   setPageSettings]   = useState<Record<string,string>>({})
-  const [activePageSlug, setActivePageSlug] = useState('about-us')
-  const [pageLang,       setPageLang]       = useState<'en'|'ar'>('en')
-  const [pageContent,    setPageContent]    = useState('')
-  const [pageSaving,     setPageSaving]     = useState(false)
-
   // Tool form
   const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0' }
   const [toolForm, setToolForm] = useState(emptyTool)
@@ -132,16 +87,7 @@ export default function ShopAdminPage() {
     setLoading(false)
   },[])
 
-  const loadReviews = useCallback(async()=>{
-    setRevLoad(true)
-    const res = await fetch('/api/admin/reviews')
-    const d   = await res.json()
-    setReviews(d.reviews||[])
-    setRevLoad(false)
-  },[])
-
   useEffect(()=>{load()},[load])
-  useEffect(()=>{ if(tab==='reviews') loadReviews() },[tab,loadReviews])
   useEffect(()=>{
     if(tab!=='deals') return
     fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
@@ -150,59 +96,6 @@ export default function ShopAdminPage() {
       try { setDealSections(JSON.parse(ui?.dashboard_sections||'[]').map((s:any)=>({subtitle_en:'',subtitle_ar:'',emoji:'🔖',...s,id:s.id||uuid()}))) } catch {}
     })
   },[tab])
-
-  useEffect(()=>{
-    if(tab!=='blogs') return
-    setBlogLoad(true); setBlogError(null)
-    fetch('/api/admin/blogs')
-      .then(r=>r.json())
-      .then(d=>{
-        if(Array.isArray(d)) { setBlogPosts(d); setBlogLoad(false) }
-        else { setBlogError(d?.error||'Failed to load blog posts'); setBlogLoad(false) }
-      })
-      .catch(e=>{ setBlogError(String(e)); setBlogLoad(false) })
-
-    const reloadBlogs = () =>
-      fetch('/api/admin/blogs').then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setBlogPosts(d) }).catch(()=>{})
-
-    // Realtime: new submissions (INSERT) and member deletions (DELETE)
-    const channel = supabase
-      .channel('admin-blogs-rt')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'blog_posts' }, payload => {
-        // Prepend the new post from payload — avoid full reload to prevent overwriting local approval state
-        const p = payload.new as any
-        if (!p?.id) return
-        setBlogPosts(prev => prev.some((x:any) => x.id === p.id) ? prev : [{ ...p, members: null }, ...prev])
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'blog_posts' }, payload => {
-        // REPLICA IDENTITY FULL ensures payload.old has all columns incl. id
-        const deleted = (payload.old as any)
-        if (deleted?.id) {
-          setBlogPosts(prev => prev.filter((p:any) => p.id !== deleted.id))
-        } else {
-          reloadBlogs() // fallback
-        }
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  },[tab])
-
-  useEffect(()=>{
-    if(tab!=='pages') return
-    fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
-      const ui = (d.settings||{}) as Record<string,string>
-      setPageSettings(ui)
-      const key = `page_${activePageSlug}_${pageLang}`
-      setPageContent(ui[key]||'')
-    })
-  },[tab])
-
-  useEffect(()=>{
-    if(tab!=='pages') return
-    const key = `page_${activePageSlug}_${pageLang}`
-    setPageContent(pageSettings[key]||'')
-  },[activePageSlug,pageLang])
 
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
@@ -353,22 +246,9 @@ export default function ShopAdminPage() {
     setToast({msg:'Deleted',type:'ok'}); setDel(null); load()
   }
 
-  // ── Reviews ──
-  const approveReview = async(id:string, approved:boolean)=>{
-    await fetch(`/api/admin/reviews/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved})})
-    setToast({msg:approved?'Approved ✓':'Hidden',type:'ok'})
-    loadReviews()
-  }
-  const deleteReview = async(id:string)=>{
-    await fetch(`/api/admin/reviews/${id}`,{method:'DELETE'})
-    setToast({msg:'Deleted',type:'ok'})
-    loadReviews()
-  }
-
   const filtered = toolCat==='all'?tools:tools.filter(t=>t.category_slug===toolCat)
   const counts:any={}; SHOP_CATS.forEach(c=>{counts[c]=tools.filter(t=>t.category_slug===c).length})
   const catName = (id?:string) => cats.find(c=>c.id===id)?.name||'—'
-  const pendingReviews = reviews.filter(r=>!r.approved).length
 
   const saveDeals = async () => {
     setDealSaving(true)
@@ -399,37 +279,11 @@ export default function ShopAdminPage() {
       ? {...s, tool_ids: s.tool_ids.includes(toolId) ? s.tool_ids.filter(x=>x!==toolId) : [...s.tool_ids, toolId]}
       : s))
 
-  const approveBlog = async (id:string, action:'approve'|'reject'|'revision', reason?:string) => {
-    const res = await fetch(`/api/admin/blogs/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action,reason}) })
-    if(res.ok) {
-      const newStatus = action==='approve'?'approved':action==='revision'?'revision_needed':'rejected'
-      setBlogPosts(prev => prev.map(p => p.id===id ? {...p, status:newStatus, rejection_reason:reason||null, updated_at:new Date().toISOString()} : p))
-      setBlogAction(null)
-      const msg = action==='approve'?'Post approved ✓':action==='revision'?'Revision requested ✓':'Post rejected'
-      setToast({msg, type: action==='approve'?'ok':action==='revision'?'ok':'err'})
-    } else { const j = await res.json().catch(()=>({})); setToast({msg: j.error || 'Error', type:'err'}) }
-  }
-
-  const saveAdminNote = async (id:string, note:string) => {
-    const res = await fetch(`/api/admin/blogs/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'note',reason:note}) })
-    if(res.ok) { setBlogPosts(prev=>prev.map(p=>p.id===id?{...p,admin_note:note}:p)); setAdminNote(null); setToast({msg:'Note saved',type:'ok'}) }
-    else setToast({msg:'Error',type:'err'})
-  }
-
-  const savePage = async () => {
-    setPageSaving(true)
-    const key = `page_${activePageSlug}_${pageLang}`
-    const res = await fetch('/api/admin/ui-settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({[key]: pageContent}) })
-    if(res.ok) { setPageSettings(prev=>({...prev,[key]:pageContent})); setToast({msg:'Page saved!',type:'ok'}) }
-    else setToast({msg:'Error saving page',type:'err'})
-    setPageSaving(false)
-  }
-
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar/>
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Topbar title="Shop Manager" subtitle="Manage tools, categories & reviews"/>
+        <Topbar title="Store Manager" subtitle="Manage tools, categories & bundles"/>
 
         {/* Top tabs */}
         <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
@@ -442,23 +296,13 @@ export default function ShopAdminPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='categories'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
               <Tag size={12}/>Categories ({cats.length})
             </button>
-            <button onClick={()=>setTab('reviews')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='reviews'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
-              <MessageCircle size={12}/>Reviews
-              {pendingReviews>0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-red-500">{pendingReviews}</span>}
+            <button onClick={()=>setTab('bundles')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='bundles'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
+              📦 Bundles
             </button>
             <button onClick={()=>setTab('deals')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='deals'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
               🎯 Deals Tab
-            </button>
-            <button onClick={()=>setTab('blogs')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='blogs'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
-              ✍️ Blogs
-              {blogPosts.filter((p:any)=>p.status==='pending').length > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-purple-500">{blogPosts.filter((p:any)=>p.status==='pending').length}</span>}
-            </button>
-            <button onClick={()=>setTab('pages')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${tab==='pages'?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
-              📄 Pages
             </button>
           </div>
 
@@ -772,225 +616,13 @@ export default function ShopAdminPage() {
             </div>
           )}
 
-          {/* ── Blogs tab ── */}
-          {tab==='blogs' && (
-            <div className="space-y-3 max-w-4xl">
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">✍️ Blog Posts — Moderation</h3>
-                  <div className="flex items-center gap-2">
-                    <button onClick={()=>{ setBlogLoad(true); setBlogError(null); fetch('/api/admin/blogs').then(r=>r.json()).then(d=>{ setBlogPosts(Array.isArray(d)?d:[]); if(!Array.isArray(d)) setBlogError(d?.error||'Error'); setBlogLoad(false) }).catch(e=>{ setBlogError(String(e)); setBlogLoad(false) }) }}
-                      className="text-[11px] text-purple-500 hover:text-purple-700 font-semibold">↺ Refresh</button>
-                    <a href="/shop-admin/blogs/new"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
-                      <Plus size={11}/>New Post
-                    </a>
-                  </div>
-                </div>
-                {blogLoad && <div className="flex justify-center py-10"><div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>}
-                {blogError && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl p-4 text-xs text-red-600 dark:text-red-400 font-mono mb-3">{blogError}</div>}
-                {!blogLoad && !blogError && blogPosts.length===0 && <p className="text-center text-sm text-gray-400 py-8">No blog posts yet</p>}
-                {!blogLoad && blogPosts.map(post=>{
-                  const statusCls = post.status==='pending'?'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400':
-                    post.status==='approved'?'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400':
-                    post.status==='revision_needed'?'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400':
-                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  const borderCls = post.status==='pending'?'border-amber-200 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-900/5':
-                    post.status==='revision_needed'?'border-blue-200 dark:border-blue-800/50 bg-blue-50/30 dark:bg-blue-900/5':
-                    'border-gray-100 dark:border-gray-800'
-                  const isExpanded = expandedBlog === post.id
-                  return (
-                    <div key={post.id} className={`border rounded-xl mb-3 overflow-hidden ${borderCls}`}>
-                      {/* Header row */}
-                      <div className="flex items-start gap-3 p-4">
-                        {post.cover_image_url && <img src={post.cover_image_url} alt="" className="w-14 h-12 rounded-lg object-cover flex-shrink-0"/>}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{post.title}</span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusCls}`}>{post.status.replace('_',' ')}</span>
-                          </div>
-                          <p className="text-[11px] text-gray-400">By <strong className="text-gray-600 dark:text-gray-300">{post.members?.full_name || (post.member_id ? 'Unknown' : '🛡️ Admin')}</strong> · {new Date(post.updated_at||post.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</p>
-                          {post.rejection_reason && <p className="text-[11px] mt-1 text-amber-600 dark:text-amber-400">📝 Feedback: {post.rejection_reason}</p>}
-                          {post.admin_note && <p className="text-[11px] mt-1 text-gray-400 italic">🔒 Note: {post.admin_note}</p>}
-                        </div>
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button onClick={()=>setExpandedBlog(isExpanded?null:post.id)}
-                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors">
-                            {isExpanded?'Hide':'Read'}
-                          </button>
-                          {post.status!=='approved' && (
-                            <button onClick={()=>approveBlog(post.id,'approve')}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
-                              <Check size={11}/>Approve
-                            </button>
-                          )}
-                          {post.status!=='revision_needed' && (
-                            <button onClick={()=>setBlogAction({id:post.id,type:'revision',text:''})}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold transition-colors">
-                              <Pencil size={11}/>Revision
-                            </button>
-                          )}
-                          {post.status!=='rejected' && (
-                            <button onClick={()=>setBlogAction({id:post.id,type:'reject',text:''})}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-red-500 text-[11px] font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                              <X size={11}/>Reject
-                            </button>
-                          )}
-                          {!post.member_id && (
-                            <a href={`/shop-admin/blogs/${post.id}/edit`}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[11px] font-bold hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
-                              <Pencil size={11}/>Edit
-                            </a>
-                          )}
-                          <button onClick={()=>setAdminNote({id:post.id,text:post.admin_note||''})}
-                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors">
-                            🔒 Note
-                          </button>
-                          <button onClick={async()=>{
-                              if(!confirm(`Delete "${post.title}"? This cannot be undone.`)) return
-                              const res = await fetch(`/api/admin/blogs/${post.id}`,{method:'DELETE'})
-                              if(res.ok) { setBlogPosts(prev=>prev.filter((p:any)=>p.id!==post.id)); setToast({msg:'Post deleted',type:'ok'}) }
-                              else { const j=await res.json().catch(()=>({})); setToast({msg:j.error||'Error',type:'err'}) }
-                            }}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-red-500 text-[11px] font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                            <Trash2 size={11}/>Delete
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Inline action box */}
-                      {blogAction && blogAction.id === post.id && (
-                        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
-                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
-                            {blogAction.type==='revision'?'Request Revision — what should the member fix?':'Rejection reason for the member:'}
-                          </p>
-                          <textarea value={blogAction.text} onChange={e=>setBlogAction(a=>a?{...a,text:e.target.value}:a)} rows={3}
-                            placeholder={blogAction.type==='revision'?'e.g. Please add more detail in section 2 and fix the spelling in the intro…':'Reason for rejection…'}
-                            className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-purple-400 resize-none mb-2"/>
-                          <div className="flex items-center gap-2">
-                            <button onClick={()=>approveBlog(post.id,blogAction.type,blogAction.text||undefined)}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold transition-colors ${blogAction.type==='revision'?'bg-blue-500 hover:bg-blue-600':'bg-red-500 hover:bg-red-600'}`}>
-                              <Check size={11}/>{blogAction.type==='revision'?'Send Revision Request':'Reject Post'}
-                            </button>
-                            <button onClick={()=>setBlogAction(null)} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Cancel</button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Admin note box */}
-                      {adminNote && adminNote.id === post.id && (
-                        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
-                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">🔒 Internal admin note (not visible to member)</p>
-                          <textarea value={adminNote.text} onChange={e=>setAdminNote(a=>a?{...a,text:e.target.value}:a)} rows={2}
-                            placeholder="Internal notes…"
-                            className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-purple-400 resize-none mb-2"/>
-                          <div className="flex items-center gap-2">
-                            <button onClick={()=>saveAdminNote(post.id,adminNote!.text)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-800 text-white text-xs font-bold transition-colors">
-                              <Check size={11}/>Save Note
-                            </button>
-                            <button onClick={()=>setAdminNote(null)} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Cancel</button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Expanded content preview */}
-                      {isExpanded && (
-                        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
-                          <div className="prose prose-xs dark:prose-invert max-w-none text-xs text-gray-700 dark:text-gray-300 leading-relaxed max-h-80 overflow-y-auto"
-                            dangerouslySetInnerHTML={{__html:(post.content||'').replace(/^<div data-dir="(?:rtl|ltr)">/,'').replace(/<\/div>$/,'')}}/>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+          {/* ── Bundles tab ── */}
+          {tab==='bundles' && (
+            <div>
+              <BundlesTab/>
             </div>
           )}
 
-          {/* ── Pages tab ── */}
-          {tab==='pages' && (
-            <div className="max-w-4xl">
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-                <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 mb-4">📄 Quick Link Pages</h3>
-                <div className="flex gap-3 mb-4 flex-wrap">
-                  {PAGE_SLUGS.map(slug=>(
-                    <button key={slug} onClick={()=>setActivePageSlug(slug)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activePageSlug===slug?'bg-teal-500 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/20'}`}>
-                      {PAGE_LABELS[slug].en}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Language:</span>
-                  <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    {(['en','ar'] as const).map(l=>(
-                      <button key={l} onClick={()=>setPageLang(l)}
-                        className={`px-3 py-1 text-xs font-medium transition-colors ${pageLang===l?'bg-teal-500 text-white':'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                        {l==='en'?'English':'عربي'}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="text-xs text-gray-400 ms-2">Editing: <strong>{PAGE_LABELS[activePageSlug]?.[pageLang]}</strong></span>
-                </div>
-                {/* Inline import of RichEditor to avoid circular deps */}
-                <PageRichEditor value={pageContent} onChange={setPageContent}/>
-                <div className="flex justify-end mt-3">
-                  <button onClick={savePage} disabled={pageSaving}
-                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors">
-                    {pageSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Check size={14}/>}
-                    Save Page
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Reviews tab ── */}
-          {tab==='reviews' && (
-            <div className="space-y-4">
-              {revLoad && <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
-              {!revLoad && reviews.length===0 && (
-                <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-sm text-gray-400">
-                  <MessageCircle size={28} className="text-gray-200 mx-auto mb-3"/>No reviews yet
-                </div>
-              )}
-              {!revLoad && reviews.map(r=>(
-                <div key={r.id} className={`bg-white dark:bg-gray-900 border rounded-xl p-4 flex items-start gap-4 ${!r.approved?'border-amber-200 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-900/10':'border-gray-100 dark:border-gray-800'}`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{r.member_name}</span>
-                      <StarRow n={r.stars}/>
-                      {!r.approved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Pending</span>}
-                      {r.approved  && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Approved</span>}
-                      <span className="text-[10px] text-gray-400 ms-auto">{r.shop_tools?.name}</span>
-                    </div>
-                    {r.comment && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-1">{r.comment}</p>}
-                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1.5">{new Date(r.created_at).toLocaleString('en-GB')}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {!r.approved && (
-                      <button onClick={()=>approveReview(r.id,true)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
-                        <ThumbsUp size={12}/>Approve
-                      </button>
-                    )}
-                    {r.approved && (
-                      <button onClick={()=>approveReview(r.id,false)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 text-xs font-semibold hover:bg-gray-50 transition-colors">
-                        <ThumbsDown size={12}/>Hide
-                      </button>
-                    )}
-                    <button onClick={()=>deleteReview(r.id)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                      <Trash2 size={12}/>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </main>
 

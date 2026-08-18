@@ -2,10 +2,10 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, Users, CreditCard, MessageSquare, ShoppingBag, Tag,
+  LayoutDashboard, MessageSquare, ShoppingBag, Tag,
   PackageCheck, Archive, Globe, Server, BarChart3, Receipt,
-  Bell, Upload, Settings, SlidersHorizontal, Key, LogOut, UserCircle,
-  Gauge, Layers, ChevronLeft, MessagesSquare,
+  Bell, SlidersHorizontal, Key, LogOut, UserCircle,
+  Gauge, ChevronLeft, MessagesSquare, Star, FileText, Mail, Image,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -15,36 +15,35 @@ import { useAdminTheme } from '@/lib/admin-theme'
 
 const nav = [
   { section: 'Overview', items: [
-    { label: 'Dashboard',  href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Dashboard',   href: '/dashboard',         icon: LayoutDashboard },
   ]},
   { section: 'Members', items: [
-    { label: 'Members',    href: '/members',             icon: UserCircle },
-    { label: 'Live Chat',  href: '/dashboard/live-chat', icon: MessagesSquare },
-    { label: 'Tickets',    href: '/tickets',             icon: MessageSquare },
+    { label: 'Members',     href: '/members',             icon: UserCircle },
+    { label: 'Live Chat',   href: '/dashboard/live-chat', icon: MessagesSquare },
+    { label: 'Tickets',     href: '/tickets',             icon: MessageSquare },
+    { label: 'Alerts',      href: '/alerts',              icon: Bell },
+    { label: 'Reviews',     href: '/reviews',             icon: Star },
+    { label: 'Blogs',       href: '/shop-admin/blogs',    icon: FileText },
+    { label: 'Letter Box',  href: '/letter-box',          icon: Mail },
   ]},
-  { section: 'Shop', items: [
-    { label: 'Shop Tools', href: '/shop-admin', icon: ShoppingBag },
-    { label: 'Bundles',    href: '/bundles',    icon: Layers },
-    { label: 'Coupons',    href: '/coupons',    icon: Tag },
-    { label: 'Orders',     href: '/orders',     icon: PackageCheck },
-    { label: 'Stock',      href: '/stock',      icon: Archive },
+  { section: 'Store', items: [
+    { label: 'Store',       href: '/shop-admin',          icon: ShoppingBag },
+    { label: 'Servers',     href: '/servers',             icon: Server },
+    { label: 'Orders',      href: '/orders',              icon: PackageCheck },
+    { label: 'Stock',       href: '/stock',               icon: Archive },
+    { label: 'Coupons',     href: '/coupons',             icon: Tag },
   ]},
-  { section: 'Shared Tools', items: [
-    { label: 'Servers',    href: '/servers',   icon: Server },
+  { section: 'UI Settings', items: [
+    { label: 'UI Settings', href: '/ui-settings',         icon: SlidersHorizontal },
   ]},
   { section: 'Finance', items: [
-    { label: 'Analytics',   href: '/analytics',        icon: BarChart3 },
-    { label: 'Transactions', href: '/transactions',    icon: Receipt },
-    { label: 'Payments',    href: '/payment-gateways', icon: Gauge },
+    { label: 'Analytics',    href: '/analytics',          icon: BarChart3 },
+    { label: 'Transactions', href: '/transactions',       icon: Receipt },
+    { label: 'Payments',     href: '/payment-gateways',   icon: Gauge },
   ]},
   { section: 'System', items: [
-    { label: 'Alerts',       href: '/alerts',        icon: Bell },
-    { label: 'Landing Page', href: '/landing-page',  icon: Layers },
-    { label: 'Site Settings',href: '/site-settings', icon: Globe },
-    { label: 'Import',       href: '/import',        icon: Upload },
-    { label: 'Settings',     href: '/settings',      icon: Settings },
-    { label: 'UI Settings',  href: '/ui-settings',   icon: SlidersHorizontal },
-    { label: 'My Profile',   href: '/admin-profile', icon: UserCircle },
+    { label: 'Site Settings', href: '/site-settings',    icon: Globe },
+    { label: 'My Profile',    href: '/admin-profile',    icon: UserCircle },
   ]},
 ]
 
