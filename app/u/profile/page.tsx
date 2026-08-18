@@ -188,7 +188,7 @@ export default function MemberProfilePage() {
   const nextRank    = RANKS[rankIdx + 1]
   const progress    = nextRank ? Math.min(100, ((spent - rank.min) / (nextRank.min - rank.min)) * 100) : 100
 
-  const inp = `w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
+  const inp = `w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
 
   const glassCard = {
     background: 'rgba(255,255,255,0.88)',
@@ -217,7 +217,7 @@ export default function MemberProfilePage() {
       </div>
 
       {/* ── Profile card ── */}
-      <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
+      <div className="rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col" style={glassCard}>
         {/* Avatar hero */}
         <div className="relative px-5 py-3 flex items-center gap-4" style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>
           <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 80% 50%, #d9940150, transparent 60%)'}}/>
@@ -245,22 +245,22 @@ export default function MemberProfilePage() {
           </div>
         </div>
 
-        {/* Form: 2-col grid */}
-        <div className="px-5 pt-3 pb-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5">
+        {/* Form: 2-col grid — grows to fill card */}
+        <div className="px-5 pt-4 pb-3 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4 flex-1 content-start">
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><User size={9}/>{t('Full Name','الاسم الكامل')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={9}/>{t('Full Name','الاسم الكامل')}</label>
             <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your full name','اسمك الكامل')} className={inp}/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><Mail size={9}/>{t('Email Address','البريد الإلكتروني')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Mail size={9}/>{t('Email Address','البريد الإلكتروني')}</label>
             <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="email@example.com" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><Phone size={9}/>{t('WhatsApp','واتساب')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Phone size={9}/>{t('WhatsApp','واتساب')}</label>
             <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} type="tel" placeholder="+201234567890" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"><Lock size={9}/>{t('New Password','كلمة مرور جديدة')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Lock size={9}/>{t('New Password','كلمة مرور جديدة')}</label>
             <div className="relative">
               <input value={password} onChange={e => setPassword(e.target.value)} type={showPass?'text':'password'}
                 placeholder={t('Leave blank to keep current','اتركها فارغة للإبقاء على الحالية')} className={inp+' pe-9'}/>
@@ -304,9 +304,9 @@ export default function MemberProfilePage() {
         </div>
       </div>
 
-      {/* ── Rank card — fills remaining height ── */}
-      <div className="rounded-2xl overflow-hidden flex-1 min-h-0" style={glassCard}>
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5 h-full"
+      {/* ── Rank card — natural height ── */}
+      <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
+        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
           <HexBadge rk={rank} size={84} active/>
           <div className="flex-1 min-w-0">
