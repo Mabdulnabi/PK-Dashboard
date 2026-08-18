@@ -296,7 +296,7 @@ function CheckoutInner() {
               className="w-full py-3.5 rounded-xl text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
               {lang==='ar' ? 'عرض اشتراكي الحالي ←' : 'View My Subscription ←'}
             </button>
-            <button onClick={()=>router.push('/u/shop')}
+            <button onClick={()=>router.push('/u/store')}
               className="w-full py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               {lang==='ar' ? 'تصفح أدوات أخرى' : 'Browse Other Tools'}
             </button>

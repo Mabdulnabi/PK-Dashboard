@@ -587,7 +587,7 @@ if (pathname==='/u/login') return <>{children}</>
               </button>
               {notifOpen&&(
                 <div className="absolute end-0 top-10 w-72 sm:w-80 rounded-xl z-50 overflow-hidden" style={{
-                  background: dark ? 'rgba(12,17,28,0.88)' : 'rgba(255,255,255,0.90)',
+                  background: dark ? 'rgba(10,14,24,0.96)' : 'rgba(255,255,255,0.97)',
                   backdropFilter: 'blur(32px)',
                   WebkitBackdropFilter: 'blur(32px)',
                   border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
@@ -633,7 +633,13 @@ if (pathname==='/u/login') return <>{children}</>
 
         {/* Task reminder banner */}
         {taskAlert && (
-          <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-white flex-shrink-0 z-40" style={{background:'linear-gradient(90deg,#d99401,#f59e0b)'}}>
+          <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-white flex-shrink-0 z-40" style={{
+            background: dark ? 'rgba(180,110,0,0.55)' : 'rgba(217,148,1,0.45)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderBottom: dark ? '1px solid rgba(255,200,50,0.15)' : '1px solid rgba(255,210,80,0.4)',
+            color: dark ? '#fde68a' : '#7c4f00',
+          }}>
             <AlarmClock size={15} className="flex-shrink-0 animate-pulse"/>
             <span className="flex-1">{isRtl ? 'تذكير: ' : 'Reminder: '}{taskAlert.title}</span>
             <button onClick={()=>{ dismissedReminders.current.add(taskAlert.id); setTaskAlert(null) }}
@@ -678,7 +684,7 @@ if (pathname==='/u/login') return <>{children}</>
       {profileOpen&&(
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-start p-4" onClick={()=>setProfile(false)}>
           <div className="rounded-2xl w-72 overflow-hidden" style={{
-            background: dark ? 'rgba(12,17,28,0.88)' : 'rgba(255,255,255,0.90)',
+            background: dark ? 'rgba(10,14,24,0.96)' : 'rgba(255,255,255,0.97)',
             backdropFilter: 'blur(32px)',
             WebkitBackdropFilter: 'blur(32px)',
             border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.72)',
@@ -731,7 +737,13 @@ if (pathname==='/u/login') return <>{children}</>
       {/* ── Customize sidebar modal ─────────────────── */}
       {customizeOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={()=>setCustomizeOpen(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-80 overflow-hidden border border-gray-200 dark:border-gray-700" onClick={e=>e.stopPropagation()}>
+          <div className="rounded-2xl w-80 overflow-hidden" style={{
+            background: dark ? 'rgba(10,14,24,0.92)' : 'rgba(255,255,255,0.92)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.75)',
+            boxShadow: dark ? '0 24px 64px rgba(0,0,0,0.7)' : '0 24px 56px rgba(0,0,0,0.14)',
+          }} onClick={e=>e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
               <div>
