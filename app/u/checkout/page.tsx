@@ -262,8 +262,8 @@ function CheckoutInner() {
   if (!cartMode && isBundle && !bundle) return <div className="text-center py-32 text-gray-400 text-lg">{t('Bundle not found','الباقة غير موجودة')}</div>
   if (cartMode && cartItems.length === 0) return <div className="text-center py-32 text-gray-400 text-lg">{t('Your cart is empty','السلة فارغة')}</div>
 
-  // ── Duplicate purchase blocker ──────────────────────────
-  if (existingPurchase) {
+  // ── Duplicate purchase blocker — skip for private tools (can repurchase freely) ──
+  if (existingPurchase && tool?.category_slug !== 'private') {
     const daysLeft = existingPurchase.expires_at
       ? Math.ceil((new Date(existingPurchase.expires_at).getTime()-Date.now())/86400000)
       : null
