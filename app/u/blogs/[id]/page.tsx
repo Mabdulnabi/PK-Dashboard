@@ -38,7 +38,7 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
   const [sending, setSending]   = useState(false)
 
   const t = (en: string, ar_: string) => ar ? ar_ : en
-  const formatDate = (d: string) => new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const formatDate = (d: string) => new Date(d).toLocaleString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
 
   useEffect(() => {
     Promise.all([
@@ -164,7 +164,7 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
                 )}
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{c.content}</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1.5">{new Date(c.created_at).toLocaleDateString(ar ? 'ar-EG' : 'en-US')}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1.5">{new Date(c.created_at).toLocaleString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
             </div>
           ))}
           {comments.length === 0 && (

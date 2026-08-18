@@ -96,7 +96,7 @@ export default function BlogsPage() {
 
   const t = (en: string, ar_: string) => ar ? ar_ : en
   const getTitle  = (p: Post) => (ar && p.title_ar ? p.title_ar : p.title)
-  const fmtDate   = (d: string) => new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  const fmtDate   = (d: string) => new Date(d).toLocaleString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
 
   // Show badge only on own posts OR non-approved posts (never "Published" on others' articles)
   const StatusBadge = ({ post }: { post: Post }) => {
