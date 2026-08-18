@@ -307,10 +307,11 @@ function CheckoutInner() {
   }
 
   return (
-    <div dir={dir} style={{fontFamily:lang==='ar'?"'Cairo', sans-serif":"'Inter', system-ui, sans-serif"}} className="p-4 md:p-8 max-w-4xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div dir={dir} style={{fontFamily:lang==='ar'?"'Cairo', sans-serif":"'Inter', system-ui, sans-serif"}} className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
 
-      {/* Steps */}
-      <div className="flex items-center gap-2 mb-8">
+      {/* Steps header */}
+      <div className="px-6 md:px-10 pt-6 pb-0">
+      <div className="flex items-center gap-2 mb-8 max-w-5xl">
         {(['details','payment','done'] as const).map((s,i)=>{
           const labels=[t('Order Details','تفاصيل الطلب'),t('Payment','الدفع'),t('Done','تم')]
           const done  = ['details','payment','done'].indexOf(step)>i
@@ -326,13 +327,16 @@ function CheckoutInner() {
           )
         })}
       </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 flex flex-col gap-5">
+      {/* Main content — full width, two-col on large screens */}
+      <div className="flex-1 px-6 md:px-10 pb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-8 items-start">
+        <div className="flex flex-col gap-6">
 
           {/* Step 1: Details */}
           {step==='details' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">{t('Order Details','تفاصيل الطلب')}</h2>
 
               {/* Cart mode: multiple tools */}
@@ -461,29 +465,29 @@ function CheckoutInner() {
 
           {/* Step 2: Payment */}
           {step==='payment' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">{t('Choose Payment Method','اختر وسيلة الدفع')}</h2>
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Choose Payment Method','اختر وسيلة الدفع')}</h2>
 
               {gateways.length===0 ? (
                 <div className="text-center py-8 text-gray-400 text-sm">{t('No payment methods available','لا توجد وسائل دفع متاحة حالياً')}</div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
                   {gateways.map(gw=>(
                     <button key={gw.id} onClick={()=>{ setMethod(gw.id); setTxRef(''); setError('') }}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500'}`}>
-                      <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-white">
-                        {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-2xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
+                      className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-sm">
+                        {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-3xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
                       </div>
                       <span className={`text-sm font-bold ${method===gw.id?'text-[#d99401]':'text-gray-700 dark:text-gray-200'}`}>{lang==='ar'?gw.name_ar:gw.name_en}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${gw.currency==='EGP'?'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400':'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>{gw.currency}</span>
-                      {method===gw.id && <Check size={14} style={{color:'#d99401'}}/>}
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${gw.currency==='EGP'?'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400':'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>{gw.currency}</span>
+                      {method===gw.id && <Check size={15} style={{color:'#d99401'}}/>}
                     </button>
                   ))}
                 </div>
               )}
 
               {cfg && (
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-5 mb-5 border border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 mb-6 border border-gray-200 dark:border-gray-700">
                   {cfg.uid && (
                     <div className="mb-4">
                       <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{lang==='ar'?(cfg.uid_label_ar||'العنوان'):(cfg.uid_label_en||'Address')}</div>
@@ -597,14 +601,14 @@ function CheckoutInner() {
 
         {/* Summary sidebar */}
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl p-5 sticky top-4" style={{
+          <div className="rounded-2xl p-6 sticky top-6" style={{
             background:'rgba(255,255,255,0.88)',
             backdropFilter:'blur(24px)',
             WebkitBackdropFilter:'blur(24px)',
             border:'1px solid rgba(255,255,255,0.65)',
             boxShadow:'0 16px 48px rgba(0,0,0,0.1)',
           }}>
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-4">{t('Order Summary','ملخص الطلب')}</h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">{t('Order Summary','ملخص الطلب')}</h3>
 
             {/* Cart mode: list all items */}
             {cartMode ? (
@@ -672,6 +676,7 @@ function CheckoutInner() {
             </div>
           </a>
         </div>
+      </div>
       </div>
     </div>
   )
