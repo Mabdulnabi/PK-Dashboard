@@ -115,16 +115,15 @@ async function injectSession(toolName, sessionData, proxy) {
     await new Promise(r => setTimeout(r, 600))
   }
 
-  // 2. Only clear cookies we're about to replace — preserve device fingerprint cookies
-  //    (clearing ALL cookies removes device IDs like CCDA/CDI which causes sites to ask for password)
+  // 2. Clear ALL existing cookies for this domain to guarantee a clean slate.
+  //    Previous failed sessions (invalid grauth, sign-out redirects) leave behind
+  //    state cookies that interfere with the fresh injection.
   const parentDomain = domain.split('.').slice(-2).join('.')
-  const SKIP_COOKIES = new Set(['cf_clearance', '__cf_bm', '__cflb', '__cf_mitigated', 'redirect_location', 'browser_info', 'funnelType'])
+  const SKIP_COOKIES = new Set(['cf_clearance', '__cf_bm', '__cflb', '__cf_mitigated'])
   const cookiesToInject = (sessionData.cookies || []).filter(c => !SKIP_COOKIES.has(c.name))
-  const injectNames = new Set(cookiesToInject.map(c => c.name))
   const allOld = await chrome.cookies.getAll({ domain: parentDomain })
-  const toRemove = allOld.filter(c => injectNames.has(c.name))
-  console.log('CLEAR:', toRemove.length, 'auth cookies for', parentDomain, '(keeping', allOld.length - toRemove.length, 'device cookies)')
-  await Promise.all(toRemove.map(c => {
+  console.log('CLEAR:', allOld.length, 'cookies for', parentDomain)
+  await Promise.all(allOld.map(c => {
     const p = { url: `https://${c.domain.replace(/^\./, '')}${c.path}`, name: c.name }
     if (c.storeId) p.storeId = c.storeId
     return chrome.cookies.remove(p).catch(() => null)
