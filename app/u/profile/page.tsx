@@ -208,46 +208,52 @@ export default function MemberProfilePage() {
 
       {/* ── Rank card — top ── */}
       <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0">
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5"
+        <div className="flex flex-col px-4 md:px-6 py-4 md:py-5 gap-4"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
-          <HexBadge rk={rank} size={84} active/>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
-            <p className="text-xl font-bold mb-1" style={{color: rank.light}}>{lang==='ar' ? rank.ar : rank.en}</p>
-            <p className="text-sm mb-3" style={{color: rank.color}}>
-              {t('Total spent','إجمالي الإنفاق')}: <span className="font-bold">{fmtAmt(spent)}</span>
-            </p>
-            {nextRank ? (
-              <>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
-                  <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
-                </div>
-                <div className="h-1.5 rounded-full overflow-hidden w-full" style={{background:'rgba(255,255,255,0.08)'}}>
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
-            )}
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
-            <div className="flex items-end gap-3">
-              {RANKS.map((r, i) => {
-                const isActive = r.key === rank.key
-                const unlocked = i <= rankIdx
-                return (
-                  <div key={r.key} className="flex flex-col items-center gap-1.5">
-                    <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
-                      <HexBadge rk={r} size={isActive ? 60 : 46} active={isActive}/>
-                    </div>
-                    <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
-                      {lang==='ar' ? r.ar : r.en}
-                    </span>
+          {/* Top row: badge + rank info */}
+          <div className="flex items-center gap-4">
+            <HexBadge rk={rank} size={72} active/>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
+              <p className="text-xl font-bold mb-1" style={{color: rank.light}}>{lang==='ar' ? rank.ar : rank.en}</p>
+              <p className="text-sm mb-3" style={{color: rank.color}}>
+                {t('Total spent','إجمالي الإنفاق')}: <span className="font-bold">{fmtAmt(spent)}</span>
+              </p>
+              {nextRank ? (
+                <>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
+                    <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
                   </div>
-                )
-              })}
+                  <div className="h-1.5 rounded-full overflow-hidden w-full" style={{background:'rgba(255,255,255,0.08)'}}>
+                    <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
+              )}
+            </div>
+          </div>
+          {/* All ranks — horizontal scroll on mobile */}
+          <div>
+            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">{t('All ranks','كل الرتب')}</p>
+            <div className="overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+              <div className="flex items-end gap-3 min-w-max">
+                {RANKS.map((r, i) => {
+                  const isActive = r.key === rank.key
+                  const unlocked = i <= rankIdx
+                  return (
+                    <div key={r.key} className="flex flex-col items-center gap-1.5">
+                      <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
+                        <HexBadge rk={r} size={isActive ? 56 : 42} active={isActive}/>
+                      </div>
+                      <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
+                        {lang==='ar' ? r.ar : r.en}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>

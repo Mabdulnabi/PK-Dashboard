@@ -310,8 +310,8 @@ function CheckoutInner() {
     <div dir={dir} style={{fontFamily:lang==='ar'?"'Cairo', sans-serif":"'Inter', system-ui, sans-serif"}} className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
 
       {/* Steps header */}
-      <div className="px-6 md:px-10 pt-6 pb-0">
-      <div className="flex items-center gap-2 mb-8 max-w-5xl">
+      <div className="px-4 md:px-10 pt-4 md:pt-6 pb-0">
+      <div className="flex items-center gap-2 mb-4 md:mb-8 max-w-5xl">
         {(['details','payment','done'] as const).map((s,i)=>{
           const labels=[t('Order Details','تفاصيل الطلب'),t('Payment','الدفع'),t('Done','تم')]
           const done  = ['details','payment','done'].indexOf(step)>i
@@ -330,13 +330,13 @@ function CheckoutInner() {
       </div>
 
       {/* Main content — full width, two-col on large screens */}
-      <div className="flex-1 px-6 md:px-10 pb-10">
+      <div className="flex-1 px-4 md:px-10 pb-10">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-8 items-start">
         <div className="flex flex-col gap-6">
 
           {/* Step 1: Details */}
           {step==='details' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 md:p-8 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">{t('Order Details','تفاصيل الطلب')}</h2>
 
               {/* Cart mode: multiple tools */}
@@ -465,7 +465,7 @@ function CheckoutInner() {
 
           {/* Step 2: Payment */}
           {step==='payment' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 md:p-8 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Choose Payment Method','اختر وسيلة الدفع')}</h2>
 
               {gateways.length===0 ? (
@@ -480,10 +480,10 @@ function CheckoutInner() {
                       <div className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full mb-3 ${cur==='EGP'?'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400':'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'}`}>
                         {cur==='USD'?'💵':'🇪🇬'} {cur}
                       </div>
-                      <div className={`grid gap-4 ${group.length<=3?'grid-cols-3':'grid-cols-4'}`}>
+                      <div className={`grid gap-3 ${group.length<=3?'grid-cols-3 sm:grid-cols-3':'grid-cols-2 sm:grid-cols-4'}`}>
                         {group.map(gw=>(
                           <button key={gw.id} onClick={()=>{ setMethod(gw.id); setTxRef(''); setError('') }}
-                            className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
+                            className={`flex flex-col items-center gap-2 p-3 md:p-5 rounded-2xl border-2 transition-all ${method===gw.id?'border-[#d99401] bg-[#d9940108]':'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
                             <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-sm">
                               {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-3xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
                             </div>
@@ -586,7 +586,7 @@ function CheckoutInner() {
 
           {/* Done */}
           {step==='done' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-10 text-center shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 md:p-10 text-center shadow-sm">
               <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/20 flex items-center justify-center mx-auto mb-5">
                 <Check size={36} className="text-emerald-500"/>
               </div>
