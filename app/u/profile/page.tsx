@@ -208,10 +208,10 @@ export default function MemberProfilePage() {
 
       {/* ── Rank card — top ── */}
       <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0">
-        <div className="flex flex-col px-4 md:px-6 py-4 md:py-5 gap-4"
+        <div className="px-4 md:px-6 py-4 md:py-5"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
-          {/* Top row: badge + rank info */}
-          <div className="flex items-center gap-4">
+          {/* Desktop: 3-col grid — Mobile: badge+info row then badges row below */}
+          <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center gap-4 md:gap-5">
             <HexBadge rk={rank} size={72} active/>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
@@ -233,26 +233,26 @@ export default function MemberProfilePage() {
                 <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
               )}
             </div>
-          </div>
-          {/* All ranks — horizontal scroll on mobile */}
-          <div>
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">{t('All ranks','كل الرتب')}</p>
-            <div className="overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
-              <div className="flex items-end gap-3 min-w-max">
-                {RANKS.map((r, i) => {
-                  const isActive = r.key === rank.key
-                  const unlocked = i <= rankIdx
-                  return (
-                    <div key={r.key} className="flex flex-col items-center gap-1.5">
-                      <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
-                        <HexBadge rk={r} size={isActive ? 56 : 42} active={isActive}/>
+            {/* All ranks — side column on desktop, horizontal scroll below on mobile */}
+            <div className="flex flex-col items-start md:items-center gap-2">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
+              <div className="overflow-x-auto pb-1 w-full md:w-auto" style={{scrollbarWidth:'none'}}>
+                <div className="flex items-end gap-3 min-w-max">
+                  {RANKS.map((r, i) => {
+                    const isActive = r.key === rank.key
+                    const unlocked = i <= rankIdx
+                    return (
+                      <div key={r.key} className="flex flex-col items-center gap-1.5">
+                        <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
+                          <HexBadge rk={r} size={isActive ? 60 : 46} active={isActive}/>
+                        </div>
+                        <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
+                          {lang==='ar' ? r.ar : r.en}
+                        </span>
                       </div>
-                      <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
-                        {lang==='ar' ? r.ar : r.en}
-                      </span>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>
