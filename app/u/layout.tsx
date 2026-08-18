@@ -417,7 +417,7 @@ if (pathname==='/u/login') return <>{children}</>
             <div role="button" onClick={()=>navigateTo(item.href)}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
               className={`cursor-pointer relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-              {active && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
+              {active && <motion.div layoutId={`nav-pill-${isRtl}`} className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                 transition={{type:'spring', stiffness:400, damping:15}}

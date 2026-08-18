@@ -488,6 +488,7 @@ function CheckoutInner() {
                               {gw.logo_url?<img src={gw.logo_url} alt={gw.name_ar} className="w-full h-full object-contain"/>:<span className="text-3xl">{FALLBACK_ICONS[gw.id]||'💳'}</span>}
                             </div>
                             <span className={`text-sm font-bold text-center ${method===gw.id?'text-[#d99401]':'text-gray-700 dark:text-gray-200'}`}>{lang==='ar'?gw.name_ar:gw.name_en}</span>
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${gw.currency==='EGP'?'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400':'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>{gw.currency}</span>
                             {method===gw.id && <Check size={15} style={{color:'#d99401'}}/>}
                           </button>
                         ))}
