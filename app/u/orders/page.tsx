@@ -827,7 +827,7 @@ export default function MyOrdersPage() {
 
         {/* Filter bar */}
         {purchases.length>0 && (
-          <div className="mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="mb-4 rounded-xl p-2.5 flex flex-col sm:flex-row sm:items-center gap-2 glass-filter-bar">
             {/* Search — left on desktop, fills remaining space */}
             <div className="relative w-full sm:flex-1 sm:min-w-0">
               <Search size={12} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{[lang==='ar'?'right':'left']:8}}/>
@@ -856,10 +856,10 @@ export default function MyOrdersPage() {
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap border"
                     style={active
                       ? {borderColor:f.color,color:f.color,background:f.color+'18'}
-                      : {borderColor:'transparent',color:'#6b7280',background:'#f9fafb'}}>
+                      : {borderColor:'transparent',color:'#6b7280',background:'rgba(128,128,128,0.1)'}}>
                     {lang==='ar'?f.ar:f.en}
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                      style={active?{background:f.color,color:'#fff'}:{background:'#f3f4f6',color:'#9ca3af'}}>
+                      style={active?{background:f.color,color:'#fff'}:{background:'rgba(128,128,128,0.15)',color:'#9ca3af'}}>
                       {f.count}
                     </span>
                   </button>

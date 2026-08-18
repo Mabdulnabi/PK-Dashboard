@@ -191,14 +191,6 @@ export default function MemberProfilePage() {
 
   const inp = `w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
 
-  const glassCard = {
-    background: 'rgba(255,255,255,0.88)',
-    backdropFilter: 'blur(24px)',
-    WebkitBackdropFilter: 'blur(24px)',
-    border: '1px solid rgba(255,255,255,0.65)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.07)',
-  }
-
   if (!profile) return (
     <div className="flex justify-center items-center h-64">
       <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
@@ -215,7 +207,7 @@ export default function MemberProfilePage() {
       <NotifBanner lang={lang} match={['تقييم','Review','Approved','Rejected','قبول','رفض']}/>
 
       {/* ── Rank card — top ── */}
-      <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
+      <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0">
         <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
           <HexBadge rk={rank} size={84} active/>
@@ -267,7 +259,7 @@ export default function MemberProfilePage() {
       </div>
 
       {/* ── Profile card ── */}
-      <div className="rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col" style={glassCard}>
+      <div className="glass-card-themed rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col">
         {/* Avatar hero — flex-1 grows to absorb extra space */}
         <div className="relative px-6 flex items-center gap-5 flex-1"
           style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)', minHeight: '80px'}}>

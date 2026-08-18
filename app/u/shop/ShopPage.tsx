@@ -170,7 +170,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
 
       {/* Filter bar */}
       <style>{`.sp-scroll{overflow-x:auto;scrollbar-width:none;}.sp-scroll::-webkit-scrollbar{display:none;}`}</style>
-      <div className="mb-5 rounded-xl p-2.5 space-y-2" style={{background: 'rgba(255,255,255,0.82)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.65)'}}>
+      <div className="glass-filter-bar mb-5 rounded-xl p-2.5 space-y-2">
 
         {/* Mobile: search full width */}
         <div className="md:hidden relative">
