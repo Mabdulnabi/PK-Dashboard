@@ -319,28 +319,34 @@ export default function MemberProfilePage() {
             </div>
           </div>
 
-          {/* Lang + Currency inline — col-span-2 */}
-          <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-1">
-            <Globe size={12} className="text-indigo-500 flex-shrink-0"/>
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
-            <div className="flex gap-1.5">
-              {([{ key:'en', flag:'🇬🇧', label:'English' }, { key:'ar', flag:'🇪🇬', label:'العربية' }] as const).map(o => (
-                <button key={o.key} onClick={()=>setLang(o.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
-                  <span>{o.flag}</span>{o.label}{lang===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
-                </button>
-              ))}
+          {/* Lang + Currency — stacked on mobile, inline on md+ */}
+          <div className="md:col-span-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 pt-1">
+            {/* Language */}
+            <div className="flex items-center gap-2">
+              <Globe size={12} className="text-indigo-500 flex-shrink-0"/>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
+              <div className="flex gap-1.5">
+                {([{ key:'en', flag:'🇬🇧', label:'English' }, { key:'ar', flag:'🇪🇬', label:'العربية' }] as const).map(o => (
+                  <button key={o.key} onClick={()=>setLang(o.key)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
+                    <span>{o.flag}</span>{o.label}{lang===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1"/>
-            <DollarSign size={12} className="text-emerald-500 flex-shrink-0"/>
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
-            <div className="flex gap-1.5">
-              {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
-                <button key={o.key} onClick={()=>setCurrency(o.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
-                  <span>{o.flag}</span>{o.label}{currency===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
-                </button>
-              ))}
+            <div className="hidden sm:block w-px h-5 bg-gray-200 dark:bg-gray-700"/>
+            {/* Currency */}
+            <div className="flex items-center gap-2">
+              <DollarSign size={12} className="text-emerald-500 flex-shrink-0"/>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
+              <div className="flex gap-1.5">
+                {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
+                  <button key={o.key} onClick={()=>setCurrency(o.key)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
+                    <span>{o.flag}</span>{o.label}{currency===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
