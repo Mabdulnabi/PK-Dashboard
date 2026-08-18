@@ -668,9 +668,9 @@ if (pathname==='/u/login') return <>{children}</>
           const c = colors[toast.type] || colors.info
           return (
             <div className="fixed bottom-5 end-5 z-[999] max-w-sm w-full pointer-events-auto"
-              style={{animation:'pk-toast-in 0.35s cubic-bezier(.34,1.56,.64,1) both'}}>
+              style={{animation:'pk-toast-in 0.3s cubic-bezier(0.16,1,0.3,1) both'}}>
               <style>{`
-                @keyframes pk-toast-in { from{opacity:0;transform:translateY(16px) scale(.95)} to{opacity:1;transform:none} }
+                @keyframes pk-toast-in { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
               `}</style>
               <div className="rounded-2xl px-4 py-3.5 flex items-start gap-3 shadow-xl"
                 style={{background: dark ? `rgba(14,17,28,0.92)` : 'rgba(255,255,255,0.95)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:`1px solid ${c.border}`}}>
