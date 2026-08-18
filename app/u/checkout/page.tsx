@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-interface Tool { id:string; name:string; description:string; price_egp:number; price_usd?:number; duration_label:string; duration_days:number; image_url?:string }
+interface Tool { id:string; name:string; description:string; price_egp:number; price_usd?:number; duration_label:string; duration_days:number; image_url?:string; category_slug?:string }
 interface BundleTool { id:string; name:string; image_url?:string }
 interface Bundle { id:string; name:string; name_ar?:string; price_egp:number; duration_days:number; included_tools:BundleTool[] }
 interface Settings { whatsapp_number:string; usd_to_egp_rate:string }
