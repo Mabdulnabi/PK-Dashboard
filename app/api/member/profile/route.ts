@@ -18,13 +18,25 @@ export async function GET() {
   const sess = await getSession()
   if (!sess) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { data } = await service
-    .from('members')
-    .select('id, full_name, email, phone, whatsapp, avatar_url, member_code, plan_slug, expires_at')
-    .eq('id', sess.member_id)
-    .single()
+  const [{ data }, { data: payments }] = await Promise.all([
+    service
+      .from('members')
+      .select('id, full_name, email, phone, whatsapp, avatar_url, member_code, plan_slug, expires_at')
+      .eq('id', sess.member_id)
+      .single(),
+    service
+      .from('payments')
+      .select('amount, currency')
+      .eq('user_id', sess.member_id)
+      .eq('status', 'confirmed'),
+  ])
 
-  return NextResponse.json(data ?? {})
+  const total_spent_egp = (payments ?? []).reduce((sum, p) => {
+    const amt = Number(p.amount) || 0
+    return sum + (p.currency === 'USD' ? amt * 50 : amt)
+  }, 0)
+
+  return NextResponse.json({ ...(data ?? {}), total_spent_egp })
 }
 
 export async function PATCH(req: NextRequest) {
