@@ -426,7 +426,7 @@ export default function HelpdeskPage() {
       {/* New ticket modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="rounded-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto" style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(32px)',WebkitBackdropFilter:'blur(32px)',border:'1px solid rgba(255,255,255,0.7)',boxShadow:'0 32px 80px rgba(0,0,0,0.18)'}} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
               <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('New Support Ticket', 'تذكرة دعم جديدة')}</h2>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={18}/></button>

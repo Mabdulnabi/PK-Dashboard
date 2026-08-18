@@ -597,7 +597,13 @@ function CheckoutInner() {
 
         {/* Summary sidebar */}
         <div className="flex flex-col gap-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 sticky top-4 shadow-sm">
+          <div className="rounded-2xl p-5 sticky top-4" style={{
+            background:'rgba(255,255,255,0.88)',
+            backdropFilter:'blur(24px)',
+            WebkitBackdropFilter:'blur(24px)',
+            border:'1px solid rgba(255,255,255,0.65)',
+            boxShadow:'0 16px 48px rgba(0,0,0,0.1)',
+          }}>
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-4">{t('Order Summary','ملخص الطلب')}</h3>
 
             {/* Cart mode: list all items */}

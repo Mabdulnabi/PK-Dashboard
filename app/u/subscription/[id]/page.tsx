@@ -653,7 +653,7 @@ export default function SubscriptionDetailPage() {
       {reportOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setReportOpen(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700"
+          <div className="rounded-2xl w-full max-w-sm" style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(32px)',WebkitBackdropFilter:'blur(32px)',border:'1px solid rgba(255,255,255,0.7)',boxShadow:'0 24px 64px rgba(0,0,0,0.18)'}}
             onClick={e => e.stopPropagation()} dir={dir}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -725,7 +725,7 @@ export default function SubscriptionDetailPage() {
       {rateOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setRateOpen(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700"
+          <div className="rounded-2xl w-full max-w-sm" style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(32px)',WebkitBackdropFilter:'blur(32px)',border:'1px solid rgba(255,255,255,0.7)',boxShadow:'0 24px 64px rgba(0,0,0,0.18)'}}
             onClick={e => e.stopPropagation()} dir={dir}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
