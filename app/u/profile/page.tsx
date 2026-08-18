@@ -336,13 +336,24 @@ export default function MemberProfilePage() {
             <p className="text-xs text-gray-400 mb-1">{t('Your rank','رتبتك الحالية')}</p>
             <p className="text-2xl font-bold mb-1" style={{color: rank.light}}>{lang==='ar' ? rank.ar : rank.en}</p>
             <p className="text-sm mb-4" style={{color: rank.color}}>
-              {t('Total spent','إجمالي الإنفاق')}: <span className="font-bold">{spent.toLocaleString()}</span> {t('EGP','جنيه')}
+              {t('Total spent','إجمالي الإنفاق')}:{' '}
+              <span className="font-bold">
+                {currency === 'usd'
+                  ? (spent / 50).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+                  : spent.toLocaleString()}
+              </span>{' '}
+              {currency === 'usd' ? 'USD' : t('EGP','جنيه')}
             </p>
             {nextRank ? (
               <>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
-                  <span className="text-xs text-gray-500">{(nextRank.min - spent).toLocaleString()} {t('EGP remaining','جنيه متبقي')}</span>
+                  <span className="text-xs text-gray-500">
+                    {currency === 'usd'
+                      ? ((nextRank.min - spent) / 50).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+                      : (nextRank.min - spent).toLocaleString()}{' '}
+                    {currency === 'usd' ? 'USD' : t('EGP','جنيه')} {t('remaining','متبقي')}
+                  </span>
                 </div>
                 <div className="h-2.5 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.08)'}}>
                   <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
