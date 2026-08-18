@@ -470,16 +470,16 @@ if (pathname==='/u/login') return <>{children}</>
 
   // Glass background gradient — switches with dark state
   const glassPageBg = dark
-    ? 'radial-gradient(ellipse 90% 70% at 15% 5%, rgba(217,148,1,0.07) 0%, transparent 55%), radial-gradient(ellipse 70% 90% at 85% 95%, rgba(99,102,241,0.06) 0%, transparent 55%), #090d18'
-    : 'radial-gradient(ellipse 90% 70% at 15% 5%, rgba(217,148,1,0.11) 0%, transparent 55%), radial-gradient(ellipse 70% 90% at 85% 95%, rgba(99,102,241,0.07) 0%, transparent 55%), #f0f4f8'
+    ? 'radial-gradient(ellipse 100% 80% at 10% 0%, rgba(217,148,1,0.18) 0%, transparent 50%), radial-gradient(ellipse 80% 100% at 90% 100%, rgba(99,102,241,0.15) 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(217,148,1,0.05) 0%, transparent 60%), #080c16'
+    : 'radial-gradient(ellipse 100% 80% at 10% 0%, rgba(217,148,1,0.22) 0%, transparent 50%), radial-gradient(ellipse 80% 100% at 90% 100%, rgba(99,102,241,0.16) 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.08) 0%, transparent 60%), #e8eef5'
 
   const sidebarGlassBg = dark
-    ? 'linear-gradient(to bottom, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.022) 100%)'
-    : 'linear-gradient(to bottom, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.72) 100%)'
+    ? 'linear-gradient(to bottom, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
+    : 'linear-gradient(to bottom, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.32) 100%)'
 
   const headerGlassBg = dark
-    ? 'rgba(9,13,24,0.45)'
-    : 'rgba(255,255,255,0.72)'
+    ? 'rgba(8,12,22,0.38)'
+    : 'rgba(255,255,255,0.42)'
 
   return (
     <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'} style={{background: glassPageBg}}>
@@ -587,7 +587,7 @@ if (pathname==='/u/login') return <>{children}</>
               </button>
               {notifOpen&&(
                 <div className="absolute end-0 top-10 w-72 sm:w-80 rounded-xl z-50 overflow-hidden" style={{
-                  background: dark ? 'rgba(12,17,28,0.72)' : 'rgba(255,255,255,0.82)',
+                  background: dark ? 'rgba(12,17,28,0.55)' : 'rgba(255,255,255,0.58)',
                   backdropFilter: 'blur(32px)',
                   WebkitBackdropFilter: 'blur(32px)',
                   border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
@@ -678,7 +678,7 @@ if (pathname==='/u/login') return <>{children}</>
       {profileOpen&&(
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-start p-4" onClick={()=>setProfile(false)}>
           <div className="rounded-2xl w-72 overflow-hidden" style={{
-            background: dark ? 'rgba(12,17,28,0.75)' : 'rgba(255,255,255,0.85)',
+            background: dark ? 'rgba(12,17,28,0.58)' : 'rgba(255,255,255,0.60)',
             backdropFilter: 'blur(32px)',
             WebkitBackdropFilter: 'blur(32px)',
             border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.72)',
