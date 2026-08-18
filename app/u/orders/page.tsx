@@ -277,7 +277,7 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
       title: lang==='ar' ? 'مرحباً! ابدأ رحلتك مع Pro Keys' : 'Welcome! Start your Pro Keys journey',
       subtitle: lang==='ar' ? 'تصفح أشهر الأدوات وابدأ الاشتراك' : 'Browse our most popular tools',
       cta: lang==='ar' ? 'تصفح المتجر' : 'Browse Shop',
-      href: '/u/shop/shared',
+      href: '/u/store',
     }
   }
 

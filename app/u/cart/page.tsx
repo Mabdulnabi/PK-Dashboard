@@ -102,7 +102,7 @@ export default function CartPage() {
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">{cartCount} {t('items', 'عناصر')}</p>
         </div>
-        <Link href="/u/shop" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors" style={{ border: `1.5px solid ${GOLD}40`, color: GOLD, background: `${GOLD}0d` }}>
+        <Link href="/u/store" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors" style={{ border: `1.5px solid ${GOLD}40`, color: GOLD, background: `${GOLD}0d` }}>
           <ArrowRight size={15} className={dir === 'rtl' ? 'rotate-180' : ''}/>
           {t('Continue Shopping', 'متابعة التسوق')}
         </Link>
@@ -137,7 +137,7 @@ export default function CartPage() {
                   <p className="font-bold text-gray-700 dark:text-gray-300">{t('Your cart is empty', 'سلتك فارغة')}</p>
                   <p className="text-sm text-gray-400 mt-1">{t('Add tools to get started', 'أضف أدوات للبدء')}</p>
                 </div>
-                <Link href="/u/shop" className="px-5 py-2.5 rounded-xl text-white text-sm font-bold" style={{ background: GOLD }}>
+                <Link href="/u/store" className="px-5 py-2.5 rounded-xl text-white text-sm font-bold" style={{ background: GOLD }}>
                   {t('Browse Tools', 'تصفح الأدوات')}
                 </Link>
               </div>

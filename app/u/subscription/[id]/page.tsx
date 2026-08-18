@@ -175,7 +175,7 @@ export default function SubscriptionDetailPage() {
         filter: `member_id=eq.${memberId}`,
       }, (payload) => {
         const n = payload.new as any
-        if (n?.type === 'success' && n?.link === '/u/shop') fetchDelivery()
+        if (n?.type === 'success' && n?.link === '/u/store') fetchDelivery()
       })
       // Direct delivery insert or update → immediate credential refresh
       .on('postgres_changes', {
