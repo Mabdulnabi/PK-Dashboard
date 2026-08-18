@@ -228,7 +228,7 @@ export default function MemberProfilePage() {
                   <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
                   <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden w-48 max-w-full" style={{background:'rgba(255,255,255,0.08)'}}>
+                <div className="h-1.5 rounded-full overflow-hidden w-full" style={{background:'rgba(255,255,255,0.08)'}}>
                   <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
                 </div>
               </>
