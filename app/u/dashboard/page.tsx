@@ -51,7 +51,7 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
     ? (isRtl ? 'حزمة' : 'Bundle')
     : (isRtl ? 'مشترك' : 'Shared')
   return (
-    <div className="relative glass-card rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+    <div className="relative glass-card rounded-2xl overflow-hidden flex flex-col">
       <div className="h-1 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
       <div className="p-5 flex-1 flex flex-col">
         {/* Header row */}
@@ -131,7 +131,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
   }
 
   return (
-    <div className="relative glass-card rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+    <div className="relative glass-card rounded-2xl overflow-hidden flex flex-col">
       {toast && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-xl text-xs font-bold text-white pointer-events-none whitespace-nowrap"
           style={{background: accent}}>{toast}</div>
@@ -300,24 +300,24 @@ export default function DashboardPage() {
         @media (min-width:640px)  { .mq-wrap { --mq-dur:12s; } }
         @media (min-width:1024px) { .mq-wrap { --mq-dur:18s; } }
         .glass-card {
-          background: rgba(255,255,255,0.82);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255,255,255,0.65);
-          box-shadow: 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9);
+          background: rgba(255,255,255,0.88);
+          border: 1px solid rgba(255,255,255,0.7);
+          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          will-change: transform;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         .glass-card:hover {
-          background: rgba(255,255,255,0.92);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         }
         .dark .glass-card {
-          background: rgba(20,22,34,0.72);
-          border-color: rgba(255,255,255,0.07);
-          box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+          background: rgba(22,25,38,0.85);
+          border-color: rgba(255,255,255,0.06);
+          box-shadow: 0 2px 12px rgba(0,0,0,0.25);
         }
         .dark .glass-card:hover {
-          background: rgba(20,22,34,0.88);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.35);
         }
       `}</style>
 
