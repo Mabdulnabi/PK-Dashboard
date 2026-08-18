@@ -211,6 +211,53 @@ export default function MemberProfilePage() {
   return (
     <div className="p-4 md:p-5 h-full flex flex-col gap-3" dir={dir}>
 
+      {/* ── Rank card — top ── */}
+      <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
+        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5"
+          style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
+          <HexBadge rk={rank} size={84} active/>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
+            <p className="text-xl font-bold mb-1" style={{color: rank.light}}>{lang==='ar' ? rank.ar : rank.en}</p>
+            <p className="text-sm mb-3" style={{color: rank.color}}>
+              {t('Total spent','إجمالي الإنفاق')}: <span className="font-bold">{fmtAmt(spent)}</span>
+            </p>
+            {nextRank ? (
+              <>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
+                  <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden w-48 max-w-full" style={{background:'rgba(255,255,255,0.08)'}}>
+                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
+            )}
+          </div>
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
+            <div className="flex items-end gap-3">
+              {RANKS.map((r, i) => {
+                const isActive = r.key === rank.key
+                const unlocked = i <= rankIdx
+                return (
+                  <div key={r.key} className="flex flex-col items-center gap-1.5">
+                    <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
+                      <HexBadge rk={r} size={isActive ? 60 : 46} active={isActive}/>
+                    </div>
+                    <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
+                      {lang==='ar' ? r.ar : r.en}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex-shrink-0">
         <h1 className="text-base font-bold text-gray-900 dark:text-white">{t('Account Settings', 'إعدادات الحساب')}</h1>
         <p className="text-[11px] text-gray-400">{t('Manage your profile, preferences and security', 'إدارة ملفك الشخصي وتفضيلاتك وأمان حسابك')}</p>
@@ -218,27 +265,28 @@ export default function MemberProfilePage() {
 
       {/* ── Profile card ── */}
       <div className="rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col" style={glassCard}>
-        {/* Avatar hero */}
-        <div className="relative px-5 py-3 flex items-center gap-4" style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>
+        {/* Avatar hero — flex-1 grows to absorb extra space */}
+        <div className="relative px-6 flex items-center gap-5 flex-1"
+          style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)', minHeight: '80px'}}>
           <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 80% 50%, #d9940150, transparent 60%)'}}/>
           <div className="relative flex-shrink-0">
-            <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center ring-2 ring-white/20" style={{background:'#d99401'}}>
-              {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="avatar"/> : <span className="text-base font-bold text-white">{initials}</span>}
+            <div className="w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center ring-2 ring-white/20" style={{background:'#d99401'}}>
+              {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="avatar"/> : <span className="text-xl font-bold text-white">{initials}</span>}
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="absolute -bottom-1 -end-1 w-5 h-5 rounded-lg flex items-center justify-center shadow-lg disabled:opacity-60" style={{background:'#d99401'}}>
-              {uploading ? <div className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Camera size={10} className="text-white"/>}
+              className="absolute -bottom-1 -end-1 w-7 h-7 rounded-xl flex items-center justify-center shadow-lg disabled:opacity-60" style={{background:'#d99401'}}>
+              {uploading ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Camera size={13} className="text-white"/>}
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }}/>
           </div>
           <div className="relative">
-            <p className="text-white font-bold text-sm leading-tight">{profile.full_name}</p>
-            <p className="text-gray-400 text-[11px] mt-0.5">{profile.email}</p>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <p className="text-white font-bold text-lg leading-tight">{profile.full_name}</p>
+            <p className="text-gray-400 text-sm mt-0.5">{profile.email}</p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               {profile.member_code && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{profile.member_code}</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{profile.member_code}</span>
               )}
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${rank.color}30`,color:rank.light,border:`1px solid ${rank.color}60`}}>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:`${rank.color}30`,color:rank.light,border:`1px solid ${rank.color}60`}}>
                 {lang==='ar' ? rank.ar : rank.en}
               </span>
             </div>
@@ -296,9 +344,6 @@ export default function MemberProfilePage() {
           </div>
         </div>
 
-        {/* spacer pushes save button to bottom */}
-        <div className="flex-1"/>
-
         {/* Divider + Save */}
         <div className="mx-6 border-t border-gray-100 dark:border-gray-800/60"/>
         <div className="px-6 py-4 flex justify-end">
@@ -306,53 +351,6 @@ export default function MemberProfilePage() {
             className="px-8 py-2.5 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
             {saving ? t('Saving…','جاري الحفظ…') : t('Save Changes','حفظ التغييرات')}
           </button>
-        </div>
-      </div>
-
-      {/* ── Rank card — natural height ── */}
-      <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5"
-          style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
-          <HexBadge rk={rank} size={84} active/>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
-            <p className="text-xl font-bold mb-1" style={{color: rank.light}}>{lang==='ar' ? rank.ar : rank.en}</p>
-            <p className="text-sm mb-3" style={{color: rank.color}}>
-              {t('Total spent','إجمالي الإنفاق')}: <span className="font-bold">{fmtAmt(spent)}</span>
-            </p>
-            {nextRank ? (
-              <>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
-                  <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
-                </div>
-                <div className="h-1.5 rounded-full overflow-hidden w-48 max-w-full" style={{background:'rgba(255,255,255,0.08)'}}>
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
-            )}
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
-            <div className="flex items-end gap-3">
-              {RANKS.map((r, i) => {
-                const isActive = r.key === rank.key
-                const unlocked = i <= rankIdx
-                return (
-                  <div key={r.key} className="flex flex-col items-center gap-1.5">
-                    <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
-                      <HexBadge rk={r} size={isActive ? 60 : 46} active={isActive}/>
-                    </div>
-                    <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
-                      {lang==='ar' ? r.ar : r.en}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
         </div>
       </div>
 
