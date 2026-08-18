@@ -51,7 +51,7 @@ function TopPickCard({ tool, lang, formatPrice, usdRate }: {
     ? (isRtl ? 'حزمة' : 'Bundle')
     : (isRtl ? 'مشترك' : 'Shared')
   return (
-    <div className="relative glass-card rounded-2xl overflow-hidden flex flex-col">
+    <div className="relative glass-card rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
       <div className="h-1 w-full" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
       <div className="p-5 flex-1 flex flex-col">
         {/* Header row */}
@@ -131,7 +131,7 @@ function SectionCard({ tool, lang, formatPrice, usdRate }: {
   }
 
   return (
-    <div className="relative glass-card rounded-2xl overflow-hidden flex flex-col">
+    <div className="relative glass-card rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
       {toast && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-xl text-xs font-bold text-white pointer-events-none whitespace-nowrap"
           style={{background: accent}}>{toast}</div>
@@ -307,7 +307,6 @@ export default function DashboardPage() {
           transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         .glass-card:hover {
-          transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         }
         .dark .glass-card {
@@ -316,7 +315,6 @@ export default function DashboardPage() {
           box-shadow: 0 2px 12px rgba(0,0,0,0.25);
         }
         .dark .glass-card:hover {
-          transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(0,0,0,0.35);
         }
       `}</style>
