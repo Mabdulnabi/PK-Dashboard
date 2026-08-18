@@ -291,27 +291,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-3 md:p-5" dir={isRtl ? 'rtl' : 'ltr'}>
-      <style>{`
-        .cat-scroll::-webkit-scrollbar { display: none; }
-        .glass-card {
-          background: rgba(255,255,255,0.88);
-          border: 1px solid rgba(255,255,255,0.7);
-          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-          will-change: transform;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .glass-card:hover {
-          box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        }
-        .dark .glass-card {
-          background: rgba(22,25,38,0.85);
-          border-color: rgba(255,255,255,0.06);
-          box-shadow: 0 2px 12px rgba(0,0,0,0.25);
-        }
-        .dark .glass-card:hover {
-          box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-        }
-      `}</style>
+      <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
 
       {/* ── Banner ── */}
       {banners === null ? null : banners.length > 0

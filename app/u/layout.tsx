@@ -755,7 +755,7 @@ if (pathname==='/u/login') return <>{children}</>
         })()}
 
         {/* Content */}
-        <main className="flex-1 overflow-auto relative" style={{background: dark ? 'rgba(9,13,24,0.18)' : 'rgba(240,244,248,0.15)'}}>
+        <main className="flex-1 overflow-auto relative" data-scroll style={{background: dark ? 'rgba(9,13,24,0.18)' : 'rgba(240,244,248,0.15)', transform:'translateZ(0)'}}>
           {/* Keep-alive tab panels — mounted once, hidden when inactive */}
           {Array.from(mountedTabs).map(href => {
             const TabComp = TAB_MAP[href]

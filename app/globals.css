@@ -2,30 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Shared glass card — used across member pages ── */
-.glass-card-themed {
-  background: rgba(255,255,255,0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.65);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+/* ── Scroll performance ── */
+html {
+  scroll-behavior: smooth;
 }
-.dark .glass-card-themed {
-  background: rgba(16,20,34,0.78);
-  border-color: rgba(255,255,255,0.07);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+main, [data-scroll] {
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
 }
 
-/* ── Shared glass filter bar — used in store + orders ── */
+/* ── Shared glass card — scrolling elements — NO backdrop-filter (GPU cost) ── */
+.glass-card-themed {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  will-change: transform;
+}
+.dark .glass-card-themed {
+  background: rgba(16,20,34,0.88);
+  border-color: rgba(255,255,255,0.07);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+/* ── Shared glass filter bar — scrolling element — NO backdrop-filter ── */
 .glass-filter-bar {
-  background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(220,220,230,0.8);
 }
 .dark .glass-filter-bar {
-  background: rgba(20,24,38,0.72);
+  background: rgba(20,24,38,0.90);
   border-color: rgba(255,255,255,0.08);
+}
+
+/* ── Dashboard product cards — NO backdrop-filter ── */
+.glass-card {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  will-change: transform;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+.dark .glass-card {
+  background: rgba(22,25,38,0.92);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.dark .glass-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
 [contenteditable][data-placeholder]:empty:before {
