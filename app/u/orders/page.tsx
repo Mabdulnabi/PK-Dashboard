@@ -11,6 +11,7 @@ const supabase = createClient(
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { Crown, ChevronRight, Clock, CheckCircle, Package, Zap, Loader2, Wifi, X, Bell, RefreshCw, ShoppingBag, TrendingDown, Wallet, CalendarClock, LayoutGrid, Download, MessageSquare, RotateCcw, Star, Eye, EyeOff, Copy, Search } from 'lucide-react'
 import BannerSlider from '@/components/ui/BannerSlider'
+import NotifBanner from '@/components/ui/NotifBanner'
 
 // ── Review Prompt ─────────────────────────────────────────
 function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: string }) {
@@ -790,6 +791,8 @@ export default function MyOrdersPage() {
       {secBanners.length > 0 && (
         <BannerSlider slides={secBanners} maxHeight={220} className="mb-5"/>
       )}
+
+      <NotifBanner lang={lang} match={['تسليم','تحديث','delivered','updated','Order','طلب']}/>
 
       {/* ── Status cards — always at top ── */}
       {!loading && <QuickStats purchases={purchases} t={t} lang={lang} currency={currency} formatPrice={formatPrice} usdRate={usdRate}/>}

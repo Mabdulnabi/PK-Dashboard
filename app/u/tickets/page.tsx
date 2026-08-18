@@ -7,6 +7,7 @@ import {
   Plus, MessageCircle, Clock, CheckCircle, AlertCircle, X,
   ChevronDown, ChevronUp, Paperclip, Download, Image as ImageIcon, FileText,
 } from 'lucide-react'
+import NotifBanner from '@/components/ui/NotifBanner'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -207,8 +208,9 @@ export default function HelpdeskPage() {
 
   return (
     <div className="p-3 md:p-6" dir={dir}>
+      <NotifBanner lang={lang} match={['رد','تذكرة','Reply','ticket']}/>
       {/* Banner */}
-      <div className="rounded-2xl mb-6 p-5 md:p-8" style={{ background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)' }}>
+      <div className="rounded-2xl mb-6 mt-3 p-5 md:p-8" style={{ background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)' }}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 mb-4">

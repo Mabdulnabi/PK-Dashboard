@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { Camera, Check, AlertCircle, Eye, EyeOff, User, Mail, Phone, Lock, Globe, DollarSign } from 'lucide-react'
+import NotifBanner from '@/components/ui/NotifBanner'
 
 interface Profile {
   full_name: string; email: string; whatsapp: string
@@ -210,6 +211,8 @@ export default function MemberProfilePage() {
 
   return (
     <div className="p-4 md:p-5 h-full flex flex-col gap-3" dir={dir}>
+
+      <NotifBanner lang={lang} match={['تقييم','Review','Approved','Rejected','قبول','رفض']}/>
 
       {/* ── Rank card — top ── */}
       <div className="rounded-2xl overflow-hidden flex-shrink-0" style={glassCard}>
