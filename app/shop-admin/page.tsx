@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown, Star } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import BundlesTab from '@/components/admin/BundlesTab'
 
