@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import { Plus, Pencil, Trash2, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Star } from 'lucide-react'
+import ImageUploadInput from '@/components/admin/ImageUploadInput'
 
 interface Tool { id:string; name:string; image_url?:string; category_slug:string }
 interface Bundle {
@@ -225,7 +226,7 @@ export default function BundlesPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Image URL</label>
-                  <input value={form.image_url} onChange={e=>setForm({...form,image_url:e.target.value})} placeholder="https://..." className={inp}/>
+                  <ImageUploadInput folder="plans" value={form.image_url} onChange={url=>setForm({...form,image_url:url})}/>
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Badge label</label>

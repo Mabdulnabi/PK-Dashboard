@@ -6,6 +6,7 @@ import Topbar from '@/components/layout/Topbar'
 import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown, Star, Globe } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import BundlesTab from '@/components/admin/BundlesTab'
+import ImageUploadInput from '@/components/admin/ImageUploadInput'
 
 interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
 interface Tool {
@@ -667,11 +668,12 @@ export default function ShopAdminPage() {
 
                   {/* Image URL */}
                   {(block.layout==='image_left'||block.layout==='image_right'||block.layout==='image_only') && (
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Image / GIF URL</label>
-                      <input value={block.image_url||''} onChange={e=>updateBlock(block.id,{image_url:e.target.value})} placeholder="https://..." className={inp}/>
-                      {block.image_url && <img src={block.image_url} alt="" className="mt-2 h-24 rounded-lg object-cover border border-gray-100 dark:border-gray-700"/>}
-                    </div>
+                    <ImageUploadInput
+                      label="Image / GIF"
+                      value={block.image_url||''}
+                      onChange={url=>updateBlock(block.id,{image_url:url})}
+                      folder="landing-blocks"
+                    />
                   )}
 
                   {/* Video URL */}
@@ -815,10 +817,12 @@ export default function ShopAdminPage() {
                   {cats.filter(c=>c.is_active).map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Image URL</label>
-                <input value={toolForm.image_url} onChange={e=>setToolForm({...toolForm,image_url:e.target.value})} placeholder="https://..." className={inp}/>
-              </div>
+              <ImageUploadInput
+                label="Image URL"
+                value={toolForm.image_url}
+                onChange={url=>setToolForm({...toolForm,image_url:url})}
+                folder="tools"
+              />
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Video URL (YouTube)</label>
                 <input value={toolForm.video_url} onChange={e=>setToolForm({...toolForm,video_url:e.target.value})} placeholder="https://youtube.com/watch?v=..." className={inp}/>
@@ -960,24 +964,18 @@ export default function ShopAdminPage() {
               </div>
               {/* Row 3: Images side by side */}
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Image (EN)</label>
-                  <input value={catForm.image_url} onChange={e=>setCatForm({...catForm,image_url:e.target.value})} placeholder="https://..." className={inp}/>
-                  {catForm.image_url && (
-                    <div className="mt-1.5 w-full h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <img src={catForm.image_url} className="w-full h-full object-cover" alt="en"/>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">صورة (AR)</label>
-                  <input value={catForm.image_url_ar} onChange={e=>setCatForm({...catForm,image_url_ar:e.target.value})} placeholder="https://..." className={inp}/>
-                  {catForm.image_url_ar && (
-                    <div className="mt-1.5 w-full h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <img src={catForm.image_url_ar} className="w-full h-full object-cover" alt="ar"/>
-                    </div>
-                  )}
-                </div>
+                <ImageUploadInput
+                  label="Image (EN)"
+                  value={catForm.image_url}
+                  onChange={url=>setCatForm({...catForm,image_url:url})}
+                  folder="categories"
+                />
+                <ImageUploadInput
+                  label="صورة (AR)"
+                  value={catForm.image_url_ar}
+                  onChange={url=>setCatForm({...catForm,image_url_ar:url})}
+                  folder="categories"
+                />
               </div>
               {/* Row 4: Color + Sort Order side by side */}
               <div className="grid grid-cols-2 gap-2">

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Pencil, Trash2, X, Check, AlertCircle, Layers, ToggleLeft, ToggleRight, Package } from 'lucide-react'
+import ImageUploadInput from '@/components/admin/ImageUploadInput'
 
 interface Tool   { id: string; name: string; image_url: string | null; category_slug: string }
 interface Bundle {
@@ -247,7 +248,7 @@ export default function BundlesTab() {
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Image URL (optional)</label>
-                <input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." dir="ltr" className={inp} />
+                <ImageUploadInput folder="bundles" value={form.image_url} onChange={url => setForm(f => ({ ...f, image_url: url }))}/>
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
