@@ -260,7 +260,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
             ? <img src={ui.icon_cat_shared} className="w-5 h-5 object-contain" alt=""/>
             : category==='private' && ui.icon_cat_private
             ? <img src={ui.icon_cat_private} className="w-5 h-5 object-contain" alt=""/>
-            : category==='bundles' && ui.icon_cat_bundles
+            : category==='bundle' && ui.icon_cat_bundles
             ? <img src={ui.icon_cat_bundles} className="w-5 h-5 object-contain" alt=""/>
             : category==='shared'?'🔗':category==='private'?'🔒':'📦'
           }
