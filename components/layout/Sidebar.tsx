@@ -23,7 +23,7 @@ const nav = [
     { label: 'Tickets',     href: '/tickets',             icon: MessageSquare },
     { label: 'Alerts',      href: '/alerts',              icon: Bell },
     { label: 'Reviews',     href: '/reviews',             icon: Star },
-    { label: 'Blogs',       href: '/shop-admin/blogs',    icon: FileText },
+    { label: 'Blogs',       href: '/blogs',               icon: FileText },
     { label: 'Letter Box',  href: '/letter-box',          icon: Mail },
   ]},
   { section: 'Store', items: [
