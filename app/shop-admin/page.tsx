@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown, Star, Globe } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import BundlesTab from '@/components/admin/BundlesTab'
 
@@ -686,11 +686,11 @@ export default function ShopAdminPage() {
                   {!['image_only','features_grid','faq'].includes(block.layout) && (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe2 size={9}/>Title (EN)</label>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe size={9}/>Title (EN)</label>
                         <input value={block.title_en||''} onChange={e=>updateBlock(block.id,{title_en:e.target.value})} placeholder="Section title" className={inp}/>
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe2 size={9}/>عنوان (AR)</label>
+                        <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 flex items-center gap-1 block"><Globe size={9}/>عنوان (AR)</label>
                         <input value={block.title_ar||''} onChange={e=>updateBlock(block.id,{title_ar:e.target.value})} placeholder="عنوان القسم" className={inp+" text-right"} dir="rtl"/>
                       </div>
                       <div>
