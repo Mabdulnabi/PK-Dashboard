@@ -62,6 +62,8 @@ export default function LandingPageAdmin() {
   const [saving, setSaving] = useState(false)
   const [msg,   setMsg]   = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [embedded, setEmbedded] = useState(false)
+  useEffect(() => { setEmbedded(new URLSearchParams(window.location.search).get('embedded') === '1') }, [])
 
   // ── General ──
   const [siteName,    setSiteName]    = useState('Pro Keys')
@@ -299,14 +301,14 @@ export default function LandingPageAdmin() {
 
   if (loading) return (
     <div className="flex h-screen bg-gray-50 dark:bg-[#0D1117]">
-      <Sidebar/>
+      {!embedded && <Sidebar/>}
       <div className="flex-1 flex items-center justify-center"><div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"/></div>
     </div>
   )
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117]">
-      <Sidebar/>
+      {!embedded && <Sidebar/>}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
         <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-[#111827] border-b border-gray-200 dark:border-[#1F2937] flex-shrink-0">

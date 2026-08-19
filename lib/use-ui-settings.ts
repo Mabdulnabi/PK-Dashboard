@@ -29,10 +29,6 @@ export function useUISettings(): UISettings {
   const [settings, setSettings] = useState<UISettings>(cache.data || DEFAULTS)
 
   useEffect(() => {
-    if (cache.data && Date.now() - cache.time < 10 * 1000) {
-      setSettings(cache.data)
-      return
-    }
     fetch('/api/ui-settings', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {

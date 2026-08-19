@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
+import { useUISettings } from '@/lib/use-ui-settings'
 import { Star, Zap, Info, X, Search, MessageCircle, ShoppingCart, Heart, Plus, Minus, Check, TrendingUp, TrendingDown, Clock, ChevronDown } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 import ToolLandingPage from './ToolLandingPage'
@@ -36,6 +37,7 @@ function Stars({ rating, count }: { rating:number; count:number }) {
 export default function ShopPage({ category, hideBanner, defaultCatId, compact }: Props) {
   const { t, lang, dir, currency, formatPrice } = useLang()
   const settings = useSiteSettings()
+  const ui = useUISettings()
   const { addToCart, removeFromCart, inCart, getQty, toggleFav, isFav } = useCart()
   const [tools,     setTools]     = useState<Tool[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -252,9 +254,16 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
 
       {/* Section label */}
       <div className="flex items-center gap-2.5 mb-4">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base overflow-hidden"
           style={{background:category==='shared'?'#3B82F6':category==='private'?'#8B5CF6':'#F59E0B'}}>
-          {category==='shared'?'🔗':category==='private'?'🔒':'📦'}
+          {category==='shared' && ui.icon_cat_shared
+            ? <img src={ui.icon_cat_shared} className="w-5 h-5 object-contain" alt=""/>
+            : category==='private' && ui.icon_cat_private
+            ? <img src={ui.icon_cat_private} className="w-5 h-5 object-contain" alt=""/>
+            : category==='bundles' && ui.icon_cat_bundles
+            ? <img src={ui.icon_cat_bundles} className="w-5 h-5 object-contain" alt=""/>
+            : category==='shared'?'🔗':category==='private'?'🔒':'📦'
+          }
         </div>
         <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">{meta.title}</h2>
         <span className="text-sm text-gray-400">({filtered.length})</span>

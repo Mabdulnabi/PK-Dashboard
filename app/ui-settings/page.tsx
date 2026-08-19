@@ -36,18 +36,25 @@ const PAGE_LABELS: Record<string,{en:string;ar:string}> = {
 
 // ── Icon slots config ──────────────────────────────────────────────────────────
 const ICON_SLOTS = [
-  { key: 'icon_shop',              label: 'متجر Pro Keys',        hint: 'أيقونة قسم المتجر في السايدبار'         },
-  { key: 'icon_orders',            label: 'طلباتي',               hint: 'أيقونة صفحة الطلبات'                   },
-  { key: 'icon_tickets',           label: 'تذاكر الدعم',          hint: 'أيقونة صفحة الدعم'                     },
-  { key: 'icon_profile',           label: 'حسابي',                hint: 'أيقونة صفحة الملف الشخصي'              },
-  { key: 'icon_chat',              label: 'Live Chat',            hint: 'أيقونة زرار الدردشة المباشرة'           },
-  { key: 'icon_blogs',             label: 'مقالات',               hint: 'أيقونة قسم المقالات'                   },
-  { key: 'icon_wallet',            label: 'محفظتي',               hint: 'أيقونة صفحة المحفظة'                   },
-  { key: 'icon_focus',             label: 'وضع التركيز',          hint: 'أيقونة وضع التركيز'                    },
-  { key: 'icon_tutorials',         label: 'فيديوهات تعليمية',     hint: 'أيقونة الفيديوهات التعليمية'           },
-  { key: 'icon_quick_links',       label: 'روابط سريعة',          hint: 'أيقونة صفحة الروابط السريعة'           },
-  { key: 'icon_landing_hero',      label: 'Landing – Hero',       hint: 'أيقونة/جرافيك قسم الهيرو في الصفحة الرئيسية' },
-  { key: 'icon_landing_features',  label: 'Landing – Features',   hint: 'أيقونة قسم المميزات في الصفحة الرئيسية'      },
+  // ── Nav icons ──
+  { key: 'icon_shop',              group: 'nav', label: 'متجر Pro Keys',        hint: 'أيقونة قسم المتجر في السايدبار'         },
+  { key: 'icon_orders',            group: 'nav', label: 'طلباتي',               hint: 'أيقونة صفحة الطلبات'                   },
+  { key: 'icon_tickets',           group: 'nav', label: 'تذاكر الدعم',          hint: 'أيقونة صفحة الدعم'                     },
+  { key: 'icon_profile',           group: 'nav', label: 'حسابي',                hint: 'أيقونة صفحة الملف الشخصي'              },
+  { key: 'icon_chat',              group: 'nav', label: 'Live Chat FAB',        hint: 'أيقونة زرار الدردشة المباشرة العائم'    },
+  { key: 'icon_blogs',             group: 'nav', label: 'مقالات',               hint: 'أيقونة قسم المقالات'                   },
+  { key: 'icon_wallet',            group: 'nav', label: 'محفظتي',               hint: 'أيقونة صفحة المحفظة'                   },
+  { key: 'icon_focus',             group: 'nav', label: 'وضع التركيز',          hint: 'أيقونة وضع التركيز'                    },
+  { key: 'icon_tutorials',         group: 'nav', label: 'فيديوهات تعليمية',     hint: 'أيقونة الفيديوهات التعليمية'           },
+  { key: 'icon_quick_links',       group: 'nav', label: 'روابط سريعة',          hint: 'أيقونة صفحة الروابط السريعة'           },
+  // ── Shop category icons ──
+  { key: 'icon_cat_shared',        group: 'shop', label: 'Shared Store',        hint: 'أيقونة تاب الاشتراكات المشتركة (🔗 افتراضي)'  },
+  { key: 'icon_cat_private',       group: 'shop', label: 'Private Store',       hint: 'أيقونة تاب الاشتراكات الخاصة (🔒 افتراضي)'  },
+  { key: 'icon_cat_bundles',       group: 'shop', label: 'Bundles',             hint: 'أيقونة تاب الباقات (📦 افتراضي)'             },
+  // ── Landing page icons ──
+  { key: 'icon_landing_hero',      group: 'landing', label: 'Landing – Hero Section',     hint: 'أيقونة/جرافيك قسم الهيرو في الصفحة الرئيسية' },
+  { key: 'icon_landing_features',  group: 'landing', label: 'Landing – Features Section', hint: 'أيقونة قسم المميزات في الصفحة الرئيسية'      },
+  { key: 'icon_landing_badge',     group: 'landing', label: 'Landing – Hero Badge',       hint: 'الأيقونة بجانب نص الـ badge في الهيرو (🔑 افتراضي)' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -360,19 +367,28 @@ export default function UISettingsPage() {
                       <h2 className="font-bold text-sm text-gray-900 dark:text-white">أيقونات بورتال الأعضاء</h2>
                     </div>
                     <p className="text-xs text-gray-500 mb-5">ارفع أيقونة مخصصة لكل قسم — تتعرض بدل الأيقونة الافتراضية فوراً للأعضاء.</p>
-                    <div className="space-y-1">
-                      {ICON_SLOTS.map(ic => (
-                        <IconSlot
-                          key={ic.key}
-                          ic={ic}
-                          iconSettings={iconSettings}
-                          iconUploading={iconUploading}
-                          uploadIcon={uploadIcon}
-                          removeIcon={removeIcon}
-                          iconFileRefs={iconFileRefs}
-                        />
-                      ))}
-                    </div>
+                    {(['nav','shop','landing'] as const).map(grp => {
+                      const slots = ICON_SLOTS.filter(ic => ic.group === grp)
+                      const groupLabel = grp === 'nav' ? 'أيقونات السايدبار' : grp === 'shop' ? 'أيقونات المتجر (الفئات)' : 'أيقونات الصفحة الرئيسية'
+                      return (
+                        <div key={grp} className="mb-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">{groupLabel}</p>
+                          <div className="space-y-1 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+                            {slots.map(ic => (
+                              <IconSlot
+                                key={ic.key}
+                                ic={ic}
+                                iconSettings={iconSettings}
+                                iconUploading={iconUploading}
+                                uploadIcon={uploadIcon}
+                                removeIcon={removeIcon}
+                                iconFileRefs={iconFileRefs}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}
