@@ -1,13 +1,77 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
-import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight, Copy } from 'lucide-react'
+import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight, Copy, Trophy } from 'lucide-react'
 
 interface WalletData {
   balance_egp: number; balance_usd: number
   last_charge: { amount: number; currency: string; created_at: string } | null
   last_deduct: { amount: number; currency: string; created_at: string } | null
   pending_charges: any[]
+  total_spent_egp: number
+}
+
+// ── Rank system (mirrors profile page) ───────────────────────────────────────
+const RANKS = [
+  { key: 'regular',  ar: 'عادي',    en: 'Regular',  min: 0,      color: '#5a8098', light: '#b8d0e0', darkest: '#182e3c' },
+  { key: 'bronze',   ar: 'برونزي',  en: 'Bronze',   min: 1,      color: '#b06030', light: '#f0bc78', darkest: '#321404' },
+  { key: 'silver',   ar: 'فضي',     en: 'Silver',   min: 2000,   color: '#8888a0', light: '#e4e4f0', darkest: '#242432' },
+  { key: 'gold',     ar: 'ذهبي',    en: 'Gold',     min: 8000,   color: '#c89010', light: '#fff060', darkest: '#342000' },
+  { key: 'platinum', ar: 'بلاتيني', en: 'Platinum', min: 20000,  color: '#7898b8', light: '#dce8f8', darkest: '#1c2c48' },
+  { key: 'emerald',  ar: 'زمردي',   en: 'Emerald',  min: 40000,  color: '#18a050', light: '#78f0a0', darkest: '#042c14' },
+  { key: 'diamond',  ar: 'ماسي',    en: 'Diamond',  min: 60000,  color: '#3870b8', light: '#c0e0fc', darkest: '#0a1848' },
+] as const
+
+type RankKey = typeof RANKS[number]['key']
+
+function getRank(spent: number) {
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (spent >= RANKS[i].min) return RANKS[i]
+  }
+  return RANKS[0]
+}
+
+const BADGE_CFG = {
+  regular:  { g0:'#c8dce8', g1:'#6888a0', g2:'#1e3448', ft:'#d8eaf8', fur:'#a0c0d8', fb:'#182838', fll:'#243c50', ib:'#eef4f8' },
+  bronze:   { g0:'#ffe090', g1:'#c07820', g2:'#3c1400', ft:'#ffe8a0', fur:'#d89838', fb:'#301000', fll:'#5a2808', ib:'#fef4e4' },
+  silver:   { g0:'#ffffff', g1:'#9898a8', g2:'#202028', ft:'#ffffff', fur:'#dcdcec', fb:'#181820', fll:'#323240', ib:'#f0f0f6' },
+  gold:     { g0:'#f5d060', g1:'#d99401', g2:'#3a1800', ft:'#f5d878', fur:'#d99401', fb:'#2a1000', fll:'#5c2800', ib:'#fff4e0' },
+  platinum: { g0:'#f4f8ff', g1:'#7898c0', g2:'#182840', ft:'#f8fcff', fur:'#ccdcf4', fb:'#101e34', fll:'#203050', ib:'#c8d8ee' },
+  emerald:  { g0:'#a8ffcc', g1:'#14b850', g2:'#022c10', ft:'#b8ffd4', fur:'#44ec84', fb:'#011c0a', fll:'#054018', ib:'#edfff4' },
+  diamond:  { g0:'#e0f0ff', g1:'#4090d8', g2:'#081428', ft:'#eaf6ff', fur:'#b0d4f8', fb:'#060e20', fll:'#102040', ib:'#eef6ff' },
+} as const
+
+function MiniHexBadge({ rk, size = 44 }: { rk: typeof RANKS[number]; size?: number }) {
+  const c = BADGE_CFG[rk.key as keyof typeof BADGE_CFG]
+  const gid = `whg-${rk.key}`
+  const icons: Record<RankKey, React.ReactNode> = {
+    regular:  <><circle cy={-5} r={5.5} fill="#5a8098"/><path d="M-8,11 Q-8,2 0,2 Q8,2 8,11" fill="#5a8098"/></>,
+    bronze:   <><polygon points="0,-11 9.5,-5.5 9.5,5.5 0,11 -9.5,5.5 -9.5,-5.5" fill="none" stroke="#c07820" strokeWidth="2.2" strokeLinejoin="round"/><circle r={3.5} fill="#c07820"/></>,
+    silver:   <><polygon points="0,-10 8.5,-5 0,0 -8.5,-5" fill="#e8e8f4"/><polygon points="-8.5,-5 0,0 0,10 -8.5,5" fill="#808090"/><polygon points="8.5,-5 8.5,5 0,10 0,0" fill="#545462"/></>,
+    gold:     <><polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="#a06800"/><polygon points="0,0 0,-12 10.4,-6" fill="#f5d060"/><polygon points="0,0 10.4,-6 10.4,6" fill="#c88000"/><polygon points="0,0 10.4,6 0,12" fill="#b87000"/><polygon points="0,0 0,12 -10.4,6" fill="#7a4000"/><polygon points="0,0 -10.4,6 -10.4,-6" fill="#8c5000"/><polygon points="0,0 -10.4,-6 0,-12" fill="#d99401"/></>,
+    platinum: <path fill="#4a78c8" d="M0,-15 3.6,-4.7 14.3,-4.7 6.1,1.7 9.0,12.4 0,6.4 -9.0,12.4 -6.1,1.7 -14.3,-4.7 -3.6,-4.7Z"/>,
+    emerald:  <><polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="#14a848"/><polygon points="0,-12 10.4,-6 0,-4" fill="#a0ffc8"/><polygon points="0,-12 -10.4,-6 0,-4" fill="#70f0a0"/><polygon points="10.4,-6 10.4,6 0,0 0,-4" fill="#0a8030"/><polygon points="-10.4,-6 -10.4,6 0,0 0,-4" fill="#14a040"/><polygon points="10.4,6 0,12 -10.4,6 0,0" fill="#086028"/></>,
+    diamond:  <><polygon points="-9,-13 9,-13 15,-2 -15,-2" fill="#90c4f4"/><polygon points="-9,-13 0,-8 -15,-2" fill="#e0f4ff"/><polygon points="9,-13 15,-2 0,-8" fill="#cce8ff"/><polygon points="-9,-13 9,-13 0,-8" fill="#f4faff"/><polygon points="-15,-2 15,-2 0,14" fill="#4898e0"/><polygon points="-15,-2 0,-2 0,14" fill="#2870c0"/><polygon points="15,-2 0,14 0,-2" fill="#7ab8f0"/></>,
+  }
+  return (
+    <svg width={size} height={size} viewBox="-42 -48 84 96"
+      style={{filter:`drop-shadow(0 0 6px ${rk.color}88)`}}>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="-1" x2="0" y2="1">
+          <stop offset="0%"   stopColor={c.g0}/>
+          <stop offset="50%"  stopColor={c.g1}/>
+          <stop offset="100%" stopColor={c.g2}/>
+        </linearGradient>
+      </defs>
+      {/* Outer hex ring */}
+      <polygon points="0,-44 38.1,-22 38.1,22 0,44 -38.1,22 -38.1,-22" fill={`url(#${gid})`}/>
+      {/* Inner dark circle */}
+      <circle r={28} fill={c.ib}/>
+      <circle r={26} fill={c.g2}/>
+      {/* Icon */}
+      <g>{icons[rk.key as RankKey]}</g>
+    </svg>
+  )
 }
 interface Gateway {
   id: string; name_ar: string; name_en: string; currency: string
@@ -229,8 +293,9 @@ export default function PaymentsPage() {
             <Skeleton className="h-5 w-24"/>
             <Skeleton className="h-8 w-32"/>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Skeleton className="h-32 rounded-2xl"/>
+            <Skeleton className="h-32 rounded-xl"/>
             <Skeleton className="h-28 rounded-xl"/>
             <Skeleton className="h-28 rounded-xl"/>
           </div>
@@ -248,28 +313,74 @@ export default function PaymentsPage() {
               <Plus size={13}/> {t('Topup your wallet','شحن محفظتي')}
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Balance card — distinct gold featured style, currency-aware */}
-            <WalletCard icon={Wallet} label={t('Wallet Balance','رصيد المحفظة')} value={fmtAmt(balAmt, balCur)} accent="#d99401" featured>
-              <div className="text-white/70 text-xs font-medium relative z-10">
-                {t('Also available','متاح أيضاً')}: {fmtAmt(currency==='usd'?wallet.balance_egp:wallet.balance_usd, currency==='usd'?'EGP':'USD')}
+          {(() => {
+            const spent    = wallet.total_spent_egp ?? 0
+            const rank     = getRank(spent)
+            const rankIdx  = RANKS.findIndex(r => r.key === rank.key)
+            const nextRank = RANKS[rankIdx + 1] as typeof RANKS[number] | undefined
+            const progress = nextRank ? Math.min(100, ((spent - rank.min) / (nextRank.min - rank.min)) * 100) : 100
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 1 — Balance */}
+                <WalletCard icon={Wallet} label={t('Wallet Balance','رصيد المحفظة')} value={fmtAmt(balAmt, balCur)} accent="#d99401" featured>
+                  <div className="text-white/70 text-xs font-medium relative z-10">
+                    {t('Also available','متاح أيضاً')}: {fmtAmt(currency==='usd'?wallet.balance_egp:wallet.balance_usd, currency==='usd'?'EGP':'USD')}
+                  </div>
+                </WalletCard>
+
+                {/* 2 — Rank card */}
+                <div className="rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden flex-1 min-w-[140px] bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm">
+                  <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.1] pointer-events-none" style={{background:`radial-gradient(circle at top right,${rank.color},transparent 65%)`}}/>
+                  <div className="absolute top-0 left-0 right-0 h-[2px] opacity-70" style={{background:`linear-gradient(90deg,${rank.color},transparent)`}}/>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">{t('My Rank','رتبتي')}</span>
+                    <Trophy size={15} style={{color:rank.color}}/>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MiniHexBadge rk={rank} size={44}/>
+                    <div>
+                      <div className="text-lg font-black leading-none tabular-nums" style={{color:rank.light}}>{lang==='ar' ? rank.ar : rank.en}</div>
+                      <div className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">{(spent).toLocaleString()} EGP {t('spent','مُنفق')}</div>
+                    </div>
+                  </div>
+                  {nextRank ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400">{lang==='ar' ? nextRank.ar : nextRank.en}</span>
+                        <span className="text-[10px] font-bold" style={{color:rank.color}}>{Math.round(progress)}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg,${rank.color},${nextRank.color})`}}/>
+                      </div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-600">
+                        {(nextRank.min - spent).toLocaleString()} EGP {t('to next rank','للرتبة التالية')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] font-bold" style={{color:rank.color}}>🏆 {t('Max rank!','الرتبة الأعلى!')}</div>
+                  )}
+                </div>
+
+                {/* 3 — Last Charge */}
+                <WalletCard icon={TrendingUp} label={t('Last Charge','آخر شحن')}
+                  value={wallet.last_charge ? fmtAmt(wallet.last_charge.amount, wallet.last_charge.currency) : '—'}
+                  accent="#22C55E">
+                  {wallet.last_charge && (
+                    <div className="text-[11px] text-gray-400 dark:text-gray-600">{fmtDate(wallet.last_charge.created_at)}</div>
+                  )}
+                </WalletCard>
+
+                {/* 4 — Last Deduction */}
+                <WalletCard icon={TrendingDown} label={t('Last Deduction','آخر خصم')}
+                  value={wallet.last_deduct ? fmtAmt(wallet.last_deduct.amount, wallet.last_deduct.currency) : '—'}
+                  accent="#EF4444">
+                  {wallet.last_deduct && (
+                    <div className="text-[11px] text-gray-400 dark:text-gray-600">{fmtDate(wallet.last_deduct.created_at)}</div>
+                  )}
+                </WalletCard>
               </div>
-            </WalletCard>
-            <WalletCard icon={TrendingUp} label={t('Last Charge','آخر شحن')}
-              value={wallet.last_charge ? fmtAmt(wallet.last_charge.amount, wallet.last_charge.currency) : '—'}
-              accent="#22C55E">
-              {wallet.last_charge && (
-                <div className="text-[11px] text-gray-400 dark:text-gray-600">{fmtDate(wallet.last_charge.created_at)}</div>
-              )}
-            </WalletCard>
-            <WalletCard icon={TrendingDown} label={t('Last Deduction','آخر خصم')}
-              value={wallet.last_deduct ? fmtAmt(wallet.last_deduct.amount, wallet.last_deduct.currency) : '—'}
-              accent="#EF4444">
-              {wallet.last_deduct && (
-                <div className="text-[11px] text-gray-400 dark:text-gray-600">{fmtDate(wallet.last_deduct.created_at)}</div>
-              )}
-            </WalletCard>
-          </div>
+            )
+          })()}
 
           {/* Top-up form */}
           {showTopUp && (

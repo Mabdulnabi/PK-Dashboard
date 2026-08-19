@@ -22,10 +22,11 @@ export async function GET(req: NextRequest) {
   const member_id = await getMember(req)
   if (!member_id) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const [{ data: txEgp }, { data: txUsd }, { data: charges }] = await Promise.all([
+  const [{ data: txEgp }, { data: txUsd }, { data: charges }, { data: spentData }] = await Promise.all([
     service.from('wallet_transactions').select('balance_after').eq('member_id', member_id).eq('currency','EGP').order('created_at',{ascending:false}).limit(1),
     service.from('wallet_transactions').select('balance_after').eq('member_id', member_id).eq('currency','USD').order('created_at',{ascending:false}).limit(1),
     service.from('wallet_charges').select('*').eq('member_id', member_id).order('created_at',{ascending:false}).limit(5),
+    service.from('payments').select('amount,currency').eq('user_id', member_id).in('status',['confirmed','completed']),
   ])
 
   const lastCharge = await service.from('wallet_transactions')
@@ -36,12 +37,18 @@ export async function GET(req: NextRequest) {
     .select('amount,currency,created_at').eq('member_id', member_id)
     .in('type',['deduct','deduction','spend']).order('created_at',{ascending:false}).limit(1)
 
+  const total_spent_egp = (spentData ?? []).reduce((sum, p) => {
+    const amt = Number(p.amount) || 0
+    return sum + (p.currency === 'USD' ? amt * 50 : amt)
+  }, 0)
+
   return NextResponse.json({
     balance_egp: Number(txEgp?.[0]?.balance_after ?? 0),
     balance_usd: Number(txUsd?.[0]?.balance_after ?? 0),
     last_charge: lastCharge.data?.[0] || null,
     last_deduct: lastDeduct.data?.[0] || null,
     pending_charges: charges || [],
+    total_spent_egp,
   })
 }
 
