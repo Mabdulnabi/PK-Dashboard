@@ -121,10 +121,11 @@ export default function BlogsAdminPage() {
             <button onClick={load} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium px-2 py-1">
               <RefreshCw size={12} />Refresh
             </button>
-            <a href="/shop-admin/blogs/new"
+            <a href="/store/blogs/new"
               className="ms-auto flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold transition-colors">
               + New Post
             </a>
+
           </div>
 
           {loading && <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>}
@@ -185,7 +186,7 @@ export default function BlogsAdminPage() {
                           </button>
                         )}
                         {!post.member_id && (
-                          <a href={`/shop-admin/blogs/${post.id}/edit`}
+                          <a href={`/store/blogs/${post.id}/edit`}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[11px] font-bold hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
                             <Pencil size={11} />Edit
                           </a>

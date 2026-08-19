@@ -27,7 +27,7 @@ const nav = [
     { label: 'Letter Box',  href: '/letter-box',          icon: Mail },
   ]},
   { section: 'Store', items: [
-    { label: 'Store',       href: '/shop-admin',          icon: ShoppingBag },
+    { label: 'Store',       href: '/store',               icon: ShoppingBag },
     { label: 'Servers',     href: '/servers',             icon: Server },
     { label: 'Orders',      href: '/orders',              icon: PackageCheck },
     { label: 'Stock',       href: '/stock',               icon: Archive },

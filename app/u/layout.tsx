@@ -63,16 +63,16 @@ function getMemberRank(spent = 0) {
 }
 
 const NAV_BASE = [
-  { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',     icon:HouseSimple,  color:'#6366f1' },
-  { en:'Pro Keys Store',       ar:'متجر Pro Keys',      href:'/u/store',         icon:ShoppingBag,  color:'#d99401' },
-  { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',        icon:ClipboardText,color:'#0ea5e9' },
-  { en:'Focus Mode',           ar:'وضع التركيز',       href:'/u/focus-mode',    icon:GraduationCap,color:'#06b6d4' },
-  { en:'My Wallet',            ar:'محفظتي',            href:'/u/wallet',        icon:Wallet,       color:'#22c55e' },
-  { en:'Tickets',              ar:'تذاكر الدعم',       href:'/u/tickets',       icon:Headset,      color:'#f97316' },
-  { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',     icon:PlayCircle,   color:'#ec4899' },
-  { en:'Blogs',                ar:'مقالات',            href:'/u/blogs',         icon:Article,      color:'#8b5cf6' },
-  { en:'Quick Links',          ar:'روابط سريعة',       href:'/u/quick-links',   icon:LinkSimple,   color:'#14b8a6' },
-  { en:'My Account',           ar:'حسابي',             href:'/u/profile',       icon:UserCircle,   color:'#64748b' },
+  { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',     icon:HouseSimple,  color:'#6366f1', iconKey:''                  },
+  { en:'Pro Keys Store',       ar:'متجر Pro Keys',      href:'/u/store',         icon:ShoppingBag,  color:'#d99401', iconKey:'icon_shop'          },
+  { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',        icon:ClipboardText,color:'#0ea5e9', iconKey:'icon_orders'        },
+  { en:'Focus Mode',           ar:'وضع التركيز',       href:'/u/focus-mode',    icon:GraduationCap,color:'#06b6d4', iconKey:'icon_focus'         },
+  { en:'My Wallet',            ar:'محفظتي',            href:'/u/wallet',        icon:Wallet,       color:'#22c55e', iconKey:'icon_wallet'        },
+  { en:'Tickets',              ar:'تذاكر الدعم',       href:'/u/tickets',       icon:Headset,      color:'#f97316', iconKey:'icon_tickets'       },
+  { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',     icon:PlayCircle,   color:'#ec4899', iconKey:'icon_tutorials'     },
+  { en:'Blogs',                ar:'مقالات',            href:'/u/blogs',         icon:Article,      color:'#8b5cf6', iconKey:'icon_blogs'         },
+  { en:'Quick Links',          ar:'روابط سريعة',       href:'/u/quick-links',   icon:LinkSimple,   color:'#14b8a6', iconKey:'icon_quick_links'   },
+  { en:'My Account',           ar:'حسابي',             href:'/u/profile',       icon:UserCircle,   color:'#64748b', iconKey:'icon_profile'       },
 ]
 
 
@@ -442,8 +442,11 @@ if (pathname==='/u/login') return <>{children}</>
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
                 transition={{type:'spring', stiffness:400, damping:15}}
-                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background: item.color + (active?'25':'18')}}>
-                <Icon size={15} weight="duotone" style={{color: item.color}}/>
+                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" style={{background: item.color + (active?'25':'18')}}>
+                {item.iconKey && ui[item.iconKey]
+                  ? <img src={ui[item.iconKey]} alt="" className="w-4 h-4 object-contain"/>
+                  : <Icon size={15} weight="duotone" style={{color: item.color}}/>
+                }
               </motion.div>
               {!col && <span style={active ? {color: item.color, fontWeight:600} : {}}>{isRtl?item.ar:item.en}</span>}
             </div>
