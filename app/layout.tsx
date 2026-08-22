@@ -1,10 +1,29 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { createClient } from '@supabase/supabase-js'
 import './globals.css'
 
-export const metadata: Metadata = {
-  title: 'ProKeys Dashboard',
-  description: 'Subscription Manager',
+const service = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export async function generateMetadata(): Promise<Metadata> {
+  let faviconUrl: string | undefined
+  try {
+    const { data } = await service
+      .from('ui_settings')
+      .select('value')
+      .eq('key', 'favicon_url')
+      .single()
+    faviconUrl = data?.value || undefined
+  } catch {}
+
+  return {
+    title: 'ProKeys Dashboard',
+    description: 'Subscription Manager',
+    icons: faviconUrl ? { icon: faviconUrl, shortcut: faviconUrl } : undefined,
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
