@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userName, setUserName] = useState('Admin')
   const [expiring, setExpiring] = useState(0)
   const [loading,  setLoading]  = useState(true)
-  useAdminTheme() // applies dark class from localStorage on mount
+  useAdminTheme()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -22,6 +22,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ;(supabase.from('members') as any).select('id',{count:'exact'})
       .eq('computed_status','expiring')
       .then(({count}:any)=>setExpiring(count||0))
+
+    // Inject admin favicon from ui_settings
+    fetch('/api/ui-settings').then(r=>r.json()).then(d=>{
+      const url = d.settings?.admin_favicon_url
+      if (!url) return
+      let link = document.querySelector<HTMLLinkElement>('link[rel="icon"][data-admin]')
+      if (!link) {
+        link = document.createElement('link')
+        link.rel = 'icon'
+        link.setAttribute('data-admin','1')
+        document.head.appendChild(link)
+      }
+      link.href = url
+    }).catch(()=>{})
   }, [router])
 
   if (loading) return (

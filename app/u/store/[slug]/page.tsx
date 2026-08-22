@@ -9,7 +9,6 @@ import {
   Search, ChevronLeft, Zap, X, Info,
   TrendingUp, TrendingDown, Clock
 } from 'lucide-react'
-import ToolLandingPage from '@/app/u/shop/ToolLandingPage'
 import { useMember } from '@/lib/member-context'
 
 interface Tool {
@@ -56,7 +55,6 @@ export default function CategoryPage() {
   const [loading,  setLoading]  = useState(true)
   const [search,   setSearch]   = useState('')
   const [sort,     setSort]     = useState<'best'|'cheapest'|'expensive'|'recent'>('best')
-  const [landing,  setLanding]  = useState<Tool | null>(null)
   const [qty,      setQty]      = useState<Record<string, number>>({})
   const [toast,    setToast]    = useState('')
 
@@ -112,8 +110,6 @@ export default function CategoryPage() {
   const catName = isRtl && (category as any)?.name_ar ? (category as any).name_ar : category?.name || slug
 
   const price = (tool: Tool) => formatPrice(tool.price_egp, usdRate)
-
-  if (landing) return <ToolLandingPage tool={landing as any} onBack={() => setLanding(null)}/>
 
   return (
     <div className="p-3 md:p-5" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -231,7 +227,7 @@ export default function CategoryPage() {
                 {/* Details + qty row */}
                 <div className="flex items-center gap-2">
                   {hasLanding && (
-                    <button onClick={() => setLanding(tool)}
+                    <button onClick={() => router.push(`/u/tool/${tool.id}`)}
                       className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#6366f1]/50 hover:text-[#6366f1] transition-all flex items-center justify-center gap-1.5">
                       <Info size={12}/>{t('التفاصيل','Details')}
                     </button>

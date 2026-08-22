@@ -40,6 +40,7 @@ function Stars({ rating, count }: { rating: number; count: number }) {
 function StoreCard({ tool, lang, formatPrice, usdRate }: {
   tool: Tool; lang: string; formatPrice: (n:number,r:number)=>string; usdRate: number
 }) {
+  const router = useRouter()
   const isRtl  = lang === 'ar'
   const t = (ar: string, en: string) => isRtl ? ar : en
   const accent = tool.category_slug === 'private' ? '#8b5cf6' : tool.category_slug === 'bundle' ? '#f59e0b' : '#d99401'
@@ -111,7 +112,7 @@ function StoreCard({ tool, lang, formatPrice, usdRate }: {
         </div>
 
         {Array.isArray(tool.landing_blocks) && tool.landing_blocks.length > 0 && (
-          <button
+          <button onClick={() => router.push(`/u/tool/${tool.id}`)}
             className="w-full text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#6366f1]/50 hover:text-[#6366f1] transition-all flex items-center justify-center gap-1.5">
             <Info size={12}/>{t('التفاصيل','Details')}
           </button>

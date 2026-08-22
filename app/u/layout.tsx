@@ -395,11 +395,7 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   }
 
 if (pathname==='/u/login') return <>{children}</>
-  if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
-      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/>
-    </div>
-  )
+  if (loading) return null
 
   const unread = notifications.filter(n=>!n.is_read).length
   const isRtl  = lang==='ar'
@@ -819,7 +815,7 @@ if (pathname==='/u/login') return <>{children}</>
             const TabComp = TAB_MAP[href]
             const isActive = href === activeTab
             return (
-              <div key={href} style={{display: isActive ? 'block' : 'none', position:'absolute', inset:0, overflowY:'auto'}}>
+              <div key={href} data-scroll-container="1" style={{display: isActive ? 'block' : 'none', position:'absolute', inset:0, overflowY:'auto'}}>
                 <TabComp/>
               </div>
             )
@@ -832,6 +828,7 @@ if (pathname==='/u/login') return <>{children}</>
                 animate={{opacity:1, y:0}}
                 exit={{opacity:0, y:-10}}
                 transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
+                data-scroll-container="1"
                 style={{position:'absolute', inset:0, overflowY:'auto'}}>
                 {children}
               </motion.div>
@@ -1004,7 +1001,7 @@ function FloatingCart() {
   return (
     <Link href="/u/cart"
       className={`fixed z-50 ${isRtl ? 'left-5' : 'right-5'} flex items-center gap-2 px-3.5 py-2.5 rounded-2xl shadow-xl text-white font-bold text-sm transition-all hover:scale-105 active:scale-95`}
-      style={{ bottom: '5.5rem', background: '#d99401', boxShadow: '0 4px 20px #d9940150' }}>
+      style={{ bottom: '12.5rem', background: '#d99401', boxShadow: '0 4px 20px #d9940150' }}>
       <ShoppingCart size={16}/>
       <span>{cartCount}</span>
     </Link>

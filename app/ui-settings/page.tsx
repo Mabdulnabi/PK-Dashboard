@@ -11,7 +11,8 @@ import {
 
 // ── Logo slots ────────────────────────────────────────────────────────────────
 const LOGO_SLOTS = [
-  { key: 'favicon_url',            label: 'Favicon الموقع',               hint: 'الأيقونة الصغيرة في تاب المتصفح (.png / .ico / .svg)',                     section: 'member' },
+  { key: 'favicon_url',            label: 'Favicon بوابة الأعضاء',        hint: 'أيقونة تاب المتصفح لصفحات الأعضاء (.png / .ico / .svg)',                   section: 'member' },
+  { key: 'admin_favicon_url',      label: 'Favicon لوحة الأدمن',           hint: 'أيقونة تاب المتصفح للوحة الإدارة (.png / .ico / .svg)',                     section: 'admin'  },
   { key: 'logo_url',              label: 'اللوجو العام (احتياطي)',        hint: 'يُستخدم fallback في كل المواضع',                                             section: 'member' },
   { key: 'logo_light_url',        label: 'بورتال الأعضاء – وضع نهاري',    hint: 'يظهر في السايدبار في الوضع النهاري',                                        section: 'member' },
   { key: 'logo_dark_url',         label: 'بورتال الأعضاء – وضع ليلي',     hint: 'يظهر في السايدبار في الوضع الليلي',                                         section: 'member' },

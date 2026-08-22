@@ -51,11 +51,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [loading,   setLoading]   = useState(true)
   const pendingRef  = useRef<Set<string>>(new Set())
 
-  // Load localStorage immediately on mount — source of truth until DB write succeeds
+  // Load localStorage immediately on mount; clear if user not authenticated
   useEffect(() => {
-    setCart(readLocal<CartItem>(CART_KEY))
-    setFavorites(readLocal<FavoriteItem>(FAV_KEY))
+    const localCart  = readLocal<CartItem>(CART_KEY)
+    const localFavs  = readLocal<FavoriteItem>(FAV_KEY)
+    setCart(localCart)
+    setFavorites(localFavs)
     setLoading(false)
+    // Verify session; if unauthenticated, wipe local cart & favs so stale data isn't shown
+    if (localCart.length > 0 || localFavs.length > 0) {
+      fetch('/api/member/verify').then(r => {
+        if (!r.ok) {
+          setCart([])
+          setFavorites([])
+          writeLocal(CART_KEY, [])
+          writeLocal(FAV_KEY, [])
+        }
+      }).catch(() => {})
+    }
   }, [])
 
   // Sync from DB — only called AFTER a successful write, never on mount alone
