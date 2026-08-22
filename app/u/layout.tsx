@@ -41,6 +41,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart } from 'lucide-react'
 import { CartProvider, useCart } from '@/lib/cart-context'
+import AuthModal from '@/components/auth/AuthModal'
 import {
   HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
   UserCircle, Key, GraduationCap, ClipboardText, Article, LinkSimple,
@@ -64,7 +65,7 @@ function getMemberRank(spent = 0) {
 
 const NAV_BASE = [
   { en:'Dashboard',            ar:'الرئيسية',          href:'/u/dashboard',     icon:HouseSimple,  color:'#6366f1', iconKey:''                  },
-  { en:'Pro Keys Store',       ar:'متجر Pro Keys',      href:'/u/store',         icon:ShoppingBag,  color:'#d99401', iconKey:'icon_shop'          },
+  { en:'Store',                ar:'المتجر',             href:'/u/store',         icon:ShoppingBag,  color:'#d99401', iconKey:'icon_shop'          },
   { en:'My Orders',            ar:'طلباتي',            href:'/u/orders',        icon:ClipboardText,color:'#0ea5e9', iconKey:'icon_orders'        },
   { en:'Focus Mode',           ar:'وضع التركيز',       href:'/u/focus-mode',    icon:GraduationCap,color:'#06b6d4', iconKey:'icon_focus'         },
   { en:'My Wallet',            ar:'محفظتي',            href:'/u/wallet',        icon:Wallet,       color:'#22c55e', iconKey:'icon_wallet'        },
@@ -248,14 +249,15 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   const [newPassword,   setNewPassword] = useState('')
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileMsg,    setProfileMsg]  = useState('')
+  const [authModal, setAuthModal] = useState<'login'|'signup'|null>(null)
 
   useEffect(()=>{
     if (pathname==='/u/login') { setLoading(false); return }
     fetch('/api/member/verify').then(r=>{
-      if (!r.ok) { router.push('/landing'); return null }
+      if (!r.ok) { setMember(null); setLoading(false); return null }
       return r.json()
     }).then(d=>{ if(d){ setMember({ ...d, id: d.member_id }); setNewEmail(d.email||''); setLoading(false) } })
-  },[router,pathname])
+  },[pathname])
 
   useEffect(()=>{
     if (!member?.id) return
@@ -363,7 +365,13 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     router.push('/landing')
   }
 
+  const VISITOR_TABS = ['/u/dashboard', '/u/store', '/u/quick-links']
+
   const navigateTo = (href: string) => {
+    if (!member && !VISITOR_TABS.includes(href)) {
+      setAuthModal('login')
+      return
+    }
     if (TAB_HREFS.includes(href)) {
       setMountedTabs(prev => { const s = new Set(prev); s.add(href); return s })
       setActiveTab(href)
@@ -463,35 +471,51 @@ if (pathname==='/u/login') return <>{children}</>
         </button>
       )}
 
-      {/* User */}
+      {/* User / Visitor bottom */}
       <div className="p-3" style={{borderTop: dark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.5)'}}>
-        <button onClick={()=>setProfile(o=>!o)}
-          title={col ? member?.full_name : undefined}
-          className={`w-full flex items-center ${col ? 'justify-center px-0' : 'gap-2.5 px-2'} py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
-            {member?.avatar_url
-              ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
-              : member?.full_name?.slice(0,1).toUpperCase()}
-          </div>
-          {!col && (
-            <>
-              <div className="flex-1 text-start min-w-0">
-                <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
-                <div className="mt-0.5 flex items-center gap-1 flex-wrap">
-                  {member?.member_code && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
-                  )}
-                  {(() => { const r = getMemberRank(member?.total_spent_egp); return (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${r.color}22`,color:r.color,border:`1px solid ${r.color}44`}}>
-                      {isRtl ? r.ar : r.en}
-                    </span>
-                  )})()}
+        {member ? (
+          <button onClick={()=>setProfile(o=>!o)}
+            title={col ? member?.full_name : undefined}
+            className={`w-full flex items-center ${col ? 'justify-center px-0' : 'gap-2.5 px-2'} py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
+              {member?.avatar_url
+                ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
+                : member?.full_name?.slice(0,1).toUpperCase()}
+            </div>
+            {!col && (
+              <>
+                <div className="flex-1 text-start min-w-0">
+                  <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
+                  <div className="mt-0.5 flex items-center gap-1 flex-wrap">
+                    {member?.member_code && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
+                    )}
+                    {(() => { const r = getMemberRank(member?.total_spent_egp); return (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${r.color}22`,color:r.color,border:`1px solid ${r.color}44`}}>
+                        {isRtl ? r.ar : r.en}
+                      </span>
+                    )})()}
+                  </div>
                 </div>
-              </div>
-              <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
-            </>
-          )}
-        </button>
+                <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
+              </>
+            )}
+          </button>
+        ) : (
+          !col && (
+            <div className="flex flex-col gap-2">
+              <button onClick={()=>setAuthModal('signup')}
+                className="w-full py-2 rounded-lg text-xs font-bold text-white text-center transition-colors"
+                style={{background:'#d99401'}}>
+                {isRtl ? 'إنشاء حساب' : 'Sign Up'}
+              </button>
+              <button onClick={()=>setAuthModal('login')}
+                className="w-full py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-center">
+                {isRtl ? 'تسجيل الدخول' : 'Login'}
+              </button>
+            </div>
+          )
+        )}
       </div>
     </>
   )
@@ -580,13 +604,21 @@ if (pathname==='/u/login') return <>{children}</>
             </button>
             <div className="flex flex-col leading-tight min-w-0">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
-                {isRtl?'أهلاً':'Welcome'}{' '}
-                <span style={{color:'#d99401'}}>
-                  <span className="sm:hidden">{member?.full_name?.split(' ')[0]}!</span>
-                  <span className="hidden sm:inline">{member?.full_name}!</span>
-                </span>
+                {member ? (
+                  <>
+                    {isRtl?'أهلاً':'Welcome'}{' '}
+                    <span style={{color:'#d99401'}}>
+                      <span className="sm:hidden">{member.full_name?.split(' ')[0]}!</span>
+                      <span className="hidden sm:inline">{member.full_name}!</span>
+                    </span>
+                  </>
+                ) : (
+                  <span style={{color:'#d99401'}}>Pro Keys</span>
+                )}
               </span>
-              <span className="text-xs text-gray-400 hidden sm:block">{isRtl?'الوصول لجميع الأدوات النشطة':'Access all active tools'}</span>
+              <span className="text-xs text-gray-400 hidden sm:block">
+                {member ? (isRtl?'الوصول لجميع الأدوات النشطة':'Access all active tools') : (isRtl?'سجّل دخولك للوصول الكامل':'Sign in for full access')}
+              </span>
             </div>
           </div>
 
@@ -600,66 +632,84 @@ if (pathname==='/u/login') return <>{children}</>
               style={themeMode === 'auto' ? {color:'#d99401'} : {}}>
               {themeMode === 'light' ? <Sun size={14}/> : themeMode === 'dark' ? <Moon size={14}/> : <SunMoon size={14}/>}
             </button>
-            {/* Cart */}
-            <CartIcon/>
-            {/* Notifications */}
-            <div className="relative">
-              <button onClick={()=>{
-                  setNotif(o=>{
-                    if(!o && unread>0) {
-                      fetch('/api/member/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
-                        .then(()=>setNotifs(ns=>ns.map(n=>({...n,is_read:true}))))
-                    }
-                    return !o
-                  })
-                }}
-                className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
-                <Bell size={14}/>
-                {unread>0&&<span className="absolute top-1.5 end-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
-              </button>
-              {notifOpen&&(
-                <div className="absolute end-0 top-10 w-72 sm:w-80 rounded-xl z-50 overflow-hidden" style={{
-                  background: dark ? 'rgba(10,14,24,0.96)' : 'rgba(255,255,255,0.97)',
-                  backdropFilter: 'blur(32px)',
-                  WebkitBackdropFilter: 'blur(32px)',
-                  border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
-                  boxShadow: dark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 48px rgba(0,0,0,0.12)',
-                }}>
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
-                      {unread>0&&<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{background:'#d99401'}}>{unread}</span>}
+
+            {/* Visitor: Sign Up + Login */}
+            {!member && (
+              <>
+                <button onClick={()=>setAuthModal('signup')}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-colors"
+                  style={{background:'#d99401'}}>
+                  {isRtl ? 'إنشاء حساب' : 'Sign Up'}
+                </button>
+                <button onClick={()=>setAuthModal('login')}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  {isRtl ? 'تسجيل الدخول' : 'Login'}
+                </button>
+              </>
+            )}
+
+            {/* Logged-in: Cart + Notifications + Logout */}
+            {member && (
+              <>
+                <CartIcon/>
+                <div className="relative">
+                  <button onClick={()=>{
+                      setNotif(o=>{
+                        if(!o && unread>0) {
+                          fetch('/api/member/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+                            .then(()=>setNotifs(ns=>ns.map(n=>({...n,is_read:true}))))
+                        }
+                        return !o
+                      })
+                    }}
+                    className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+                    <Bell size={14}/>
+                    {unread>0&&<span className="absolute top-1.5 end-1.5 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"/>}
+                  </button>
+                  {notifOpen&&(
+                    <div className="absolute end-0 top-10 w-72 sm:w-80 rounded-xl z-50 overflow-hidden" style={{
+                      background: dark ? 'rgba(10,14,24,0.96)' : 'rgba(255,255,255,0.97)',
+                      backdropFilter: 'blur(32px)',
+                      WebkitBackdropFilter: 'blur(32px)',
+                      border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
+                      boxShadow: dark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 48px rgba(0,0,0,0.12)',
+                    }}>
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{isRtl?'الإشعارات':'Notifications'}</span>
+                          {unread>0&&<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{background:'#d99401'}}>{unread}</span>}
+                        </div>
+                        <button onClick={()=>setNotif(false)}><X size={14} className="text-gray-400"/></button>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
+                        {notifications.length===0
+                          ? <p className="text-center py-8 text-sm text-gray-400">{isRtl?'لا توجد إشعارات':'No notifications'}</p>
+                          : notifications.map((n,i)=>{
+                              const displayTitle   = (!isRtl && n.title_en)   ? n.title_en   : n.title
+                              const displayMessage = (!isRtl && n.message_en) ? n.message_en : n.message
+                              const inner = (
+                                <>
+                                  <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{displayTitle}</div>
+                                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{displayMessage}</div>
+                                  <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</div>
+                                </>
+                              )
+                              const cls = `block px-4 py-3 w-full text-start ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''} ${n.link?'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer':''}`
+                              return n.link
+                                ? <Link key={i} href={n.link} className={cls} onClick={()=>setNotif(false)}>{inner}</Link>
+                                : <div key={i} className={cls}>{inner}</div>
+                            })
+                        }
+                      </div>
                     </div>
-                    <button onClick={()=>setNotif(false)}><X size={14} className="text-gray-400"/></button>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
-                    {notifications.length===0
-                      ? <p className="text-center py-8 text-sm text-gray-400">{isRtl?'لا توجد إشعارات':'No notifications'}</p>
-                      : notifications.map((n,i)=>{
-                          const displayTitle   = (!isRtl && n.title_en)   ? n.title_en   : n.title
-                          const displayMessage = (!isRtl && n.message_en) ? n.message_en : n.message
-                          const inner = (
-                            <>
-                              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{displayTitle}</div>
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{displayMessage}</div>
-                              <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</div>
-                            </>
-                          )
-                          const cls = `block px-4 py-3 w-full text-start ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''} ${n.link?'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer':''}`
-                          return n.link
-                            ? <Link key={i} href={n.link} className={cls} onClick={()=>setNotif(false)}>{inner}</Link>
-                            : <div key={i} className={cls}>{inner}</div>
-                        })
-                    }
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-            {/* Logout */}
-            <button onClick={logout}
-              className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-[#d99401] hover:bg-[#d9940112] transition-colors">
-              <LogOut size={14}/>
-            </button>
+                <button onClick={logout}
+                  className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-[#d99401] hover:bg-[#d9940112] transition-colors">
+                  <LogOut size={14}/>
+                </button>
+              </>
+            )}
           </div>
         </header>
 
@@ -922,6 +972,17 @@ if (pathname==='/u/login') return <>{children}</>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Auth Modal ── */}
+      {authModal && (
+        <AuthModal
+          initialTab={authModal}
+          onClose={()=>setAuthModal(null)}
+          lang={lang as 'ar'|'en'}
+          logo={ui.logo_url}
+          siteName="Pro Keys"
+        />
       )}
 
     </div>
