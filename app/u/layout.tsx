@@ -464,7 +464,7 @@ if (pathname==='/u/login') return <>{children}</>
       </nav>
 
       {/* Customize sidebar button */}
-      {!col && (
+      {!col && member && (
         <button onClick={()=>setCustomizeOpen(true)}
           className="mx-3 mb-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-[calc(100%-24px)]">
           <SlidersHorizontal size={12}/><span>Customize sidebar</span>
@@ -985,6 +985,10 @@ if (pathname==='/u/login') return <>{children}</>
         />
       )}
 
+      {/* Member-only floating widgets */}
+      {member && <FloatingCart/>}
+      {member && <ChatWidget/>}
+
     </div>
   )
 }
@@ -1009,8 +1013,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     <LangProvider>
       <CartProvider>
         <UserLayoutInner>{children}</UserLayoutInner>
-        <FloatingCart/>
-        <ChatWidget/>
       </CartProvider>
     </LangProvider>
   )

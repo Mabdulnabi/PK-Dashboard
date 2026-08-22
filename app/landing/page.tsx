@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -300,7 +301,10 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-export default function Landing() {
+function LandingInner() {
+  const searchParams = useSearchParams()
+  const embedded = searchParams.get('embedded') === '1'
+
   const [lang,    setLang]    = useState<Lang>('ar')
   const [s,       setS]       = useState<S>({})
   const [ready,   setReady]   = useState(false)
@@ -433,7 +437,7 @@ export default function Landing() {
       <div style={{ position:'fixed', top:0, left:0, height:3, width:`${scrollPct*100}%`, background:'#d99401', zIndex:999999, opacity:.9, transition:'width .1s' }}/>
 
       {/* ── Sticky Header ── */}
-      <header style={{ position:'sticky', top:0, zIndex:1000, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(10px)', borderBottom:'1px solid #EDD98A' }}>
+      {!embedded && <header style={{ position:'sticky', top:0, zIndex:1000, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(10px)', borderBottom:'1px solid #EDD98A' }}>
         <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', display:'flex', alignItems:'center', justifyContent:'space-between', height:64, gap:16 }}>
 
           {/* Logo */}
@@ -496,7 +500,7 @@ export default function Landing() {
             </div>
           </div>
         )}
-      </header>
+      </header>}
 
       {/* ── HERO ── */}
       <section style={{ position:'relative', padding:'80px 0 60px', background:'radial-gradient(1200px 500px at 85% -10%, #FBF2D8, transparent 60%)' }}>
@@ -908,5 +912,13 @@ export default function Landing() {
         />
       )}
     </div>
+  )
+}
+
+export default function Landing() {
+  return (
+    <Suspense>
+      <LandingInner/>
+    </Suspense>
   )
 }
