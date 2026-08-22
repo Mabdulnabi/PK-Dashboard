@@ -33,8 +33,8 @@ const AUTH_CSS = `
   .am-div{display:flex;align-items:center;text-align:center;margin:13px 0;font-size:12px;color:#94A3B8;gap:0;}
   .am-div::before,.am-div::after{content:'';flex:1;border-bottom:1px solid #EDD98A;}
   .am-div span{padding:0 10px;}
-  .am-google{width:100%;padding:9px;border:1.5px solid #DCE4F1;border-radius:9px;background:#fff;color:#1B2556;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:background .15s;}
-  .am-google:hover{background:#F9F6EE;}
+  .am-google{width:100%;padding:9px;border:1.5px solid #4285F4;border-radius:9px;background:#4285F4;color:#fff;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:background .15s;}
+  .am-google:hover{background:#3367D6;border-color:#3367D6;}
   .am-footer{text-align:center;margin-top:12px;font-size:12px;color:#6B7494;font-weight:500;font-family:'Cairo',sans-serif;}
   .am-footer button{color:#d99401;font-weight:700;background:none;border:none;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;}
   .am-forgot-link{font-size:12px;color:#EF4444;font-weight:700;background:none;border:none;cursor:pointer;font-family:'Cairo',sans-serif;float:inline-end;margin-top:3px;}

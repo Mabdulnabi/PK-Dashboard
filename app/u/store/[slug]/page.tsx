@@ -10,6 +10,7 @@ import {
   TrendingUp, TrendingDown, Clock
 } from 'lucide-react'
 import ToolLandingPage from '@/app/u/shop/ToolLandingPage'
+import { useMember } from '@/lib/member-context'
 
 interface Tool {
   id: string; name: string; description: string; description_ar?: string
@@ -45,6 +46,7 @@ export default function CategoryPage() {
   const { lang, formatPrice } = useLang()
   const settings = useSiteSettings()
   const { addToCart, removeFromCart, inCart, toggleFav, isFav } = useCart()
+  const { member, requireAuth } = useMember()
   const isRtl    = lang === 'ar'
   const usdRate  = parseFloat(settings.usd_to_egp_rate || '50')
   const t = (ar: string, en: string) => isRtl ? ar : en
@@ -80,10 +82,18 @@ export default function CategoryPage() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2000) }
 
   const handleCart = async (tool: Tool) => {
+    if (!member) { requireAuth(); return }
     const isPrivate = tool.category_slug === 'private' || tool.category_slug === 'bundle'
     const q = isPrivate ? getQty(tool.id) : 1
     if (inCart(tool.id) && !isPrivate) { removeFromCart(tool.id); showToast(t('تمت الإزالة','Removed')) }
     else { await addToCart(tool.id, q, tool as any); showToast(t('أضيف للسلة ✓','Added ✓')) }
+  }
+  const handleFav = (tool: Tool) => {
+    if (!member) { requireAuth(); return }
+    toggleFav(tool.id, tool as any)
+  }
+  const handleBuy = (e: React.MouseEvent) => {
+    if (!member) { e.preventDefault(); requireAuth() }
   }
 
   const filtered = tools
@@ -247,12 +257,12 @@ export default function CategoryPage() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => toggleFav(tool.id, tool as any)}
+                    <button onClick={() => handleFav(tool)}
                       className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-colors"
                       style={faved?{background:'#fee2e2',borderColor:'#fca5a5',color:'#ef4444'}:{borderColor:'#e5e7eb',color:'#9ca3af'}}>
                       <Heart size={13} fill={faved?'currentColor':'none'}/>
                     </button>
-                    <a href={`/u/checkout?tool_id=${tool.id}`}
+                    <a href={`/u/checkout?tool_id=${tool.id}`} onClick={handleBuy}
                       className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
                       style={{background:accent}}>
                       <ShoppingCart size={13} color="white"/>{t('شراء الآن','Buy Now')}

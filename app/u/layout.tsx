@@ -36,6 +36,7 @@ const TAB_MAP: Record<string, React.ComponentType> = {
 }
 const TAB_HREFS = Object.keys(TAB_MAP)
 import { useUISettings } from '@/lib/use-ui-settings'
+import { MemberContext } from '@/lib/member-context'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -538,6 +539,7 @@ if (pathname==='/u/login') return <>{children}</>
     : 'rgba(255,255,255,0.42)'
 
   return (
+    <MemberContext.Provider value={{ member, requireAuth: () => setAuthModal('login') }}>
     <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'} style={{background: glassPageBg}}>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
@@ -990,6 +992,7 @@ if (pathname==='/u/login') return <>{children}</>
       {member && <ChatWidget/>}
 
     </div>
+    </MemberContext.Provider>
   )
 }
 
