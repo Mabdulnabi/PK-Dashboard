@@ -227,7 +227,7 @@ export default function CategoryPage() {
                 {/* Details + qty row */}
                 <div className="flex items-center gap-2">
                   {hasLanding && (
-                    <button onClick={() => router.push(`/u/tool/${tool.id}`)}
+                    <button onClick={() => tool.details_slug && router.push(`/u/tool/${tool.details_slug}`)}
                       className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#6366f1]/50 hover:text-[#6366f1] transition-all flex items-center justify-center gap-1.5">
                       <Info size={12}/>{t('التفاصيل','Details')}
                     </button>

@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           #pkScrollBar{position:fixed;top:0;left:0;height:3px;width:0;background:#d99401;z-index:999999;opacity:.9;pointer-events:none;}
 
           /* ── Back to top button ── */
-          #pkTopBtn{position:fixed;right:18px;bottom:148px;z-index:999999;width:46px;height:46px;border:0!important;border-radius:999px!important;background:#d99401!important;cursor:pointer;display:inline-flex!important;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .25s ease,filter .25s ease,opacity .25s ease;opacity:0;pointer-events:none;transform:translateY(10px);outline:2px solid transparent;outline-offset:2px;-webkit-tap-highlight-color:rgba(255,255,255,0.15);}
+          #pkTopBtn{position:fixed;right:18px;bottom:20px;z-index:999999;width:46px;height:46px;border:0!important;border-radius:999px!important;background:#d99401!important;cursor:pointer;display:inline-flex!important;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .25s ease,filter .25s ease,opacity .25s ease;opacity:0;pointer-events:none;transform:translateY(10px);outline:2px solid transparent;outline-offset:2px;-webkit-tap-highlight-color:rgba(255,255,255,0.15);}
           #pkTopBtn.pkShow{opacity:1;pointer-events:auto;transform:translateY(0);}
           #pkTopBtn::before,#pkTopBtn::after{content:""!important;display:none!important;border:0!important;background:transparent!important;clip-path:none!important;}
           #pkTopBtn:focus{outline:2px solid rgba(255,255,255,0.35);}
@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           #pkTopBtn .pkRingBg{stroke:rgba(255,255,255,.25)}
           #pkTopBtn .pkRingProg{stroke:#ffffff}
           #pkTopBtn .pkArrow{stroke:#ffffff}
-          @media(max-width:600px){#pkTopBtn{bottom:140px;right:14px;}}
+          @media(max-width:600px){#pkTopBtn{right:14px;}}
         `}}/>
 
         <div id="pkPreloader">
@@ -104,28 +104,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <Script id="pk-preloader" strategy="afterInteractive" dangerouslySetInnerHTML={{__html:`
 (function(){
+  // ── Skip if inside iframe ──
+  if(window.self!==window.top)return;
+
   // ── Preloader ──
   var pre=document.getElementById('pkPreloader'),reveal=document.getElementById('pkReveal'),stack=document.getElementById('pkStack'),logoWrap=document.getElementById('pkLogoWrap'),dots=document.getElementById('pkDots');
   if(pre&&reveal&&stack&&logoWrap&&dots){
-    var HOLD=900,TOTAL=1200,PRE_ZOOM=2.5,MASK_START=2.4,END_R=Math.hypot(window.innerWidth,window.innerHeight);
+    var HOLD=900,TOTAL=1400,PRE_ZOOM=2.5,MASK_START=2.3,END_R=Math.hypot(window.innerWidth,window.innerHeight);
     function clamp(v,a,b){return Math.min(Math.max(v,a),b)}
     function mix(a,b,t){return a+(b-a)*t}
-    function easeInExpo(t){return t===0?0:Math.pow(2,10*(t-1))}
-    function easeOutExpo(t){return t===1?1:1-Math.pow(2,-10*t)}
+    function easeInCubic(t){return t*t*t}
+    function easeOutCubic(t){return 1-Math.pow(1-t,3)}
+    function smoothstep(t){return t*t*(3-2*t)}
     function setHole(px){reveal.style.setProperty('--pk-hole-size',px+'px')}
     function removePre(){pre.classList.add('pkHide');setTimeout(function(){if(pre&&pre.parentNode)pre.parentNode.removeChild(pre)},120)}
     function startAnim(){
       var start=performance.now();
       function frame(now){
         var t=clamp((now-start)/TOTAL,0,1);
-        var zoomE=easeInExpo(t),scale=mix(1,PRE_ZOOM,zoomE);
+        var zoomE=smoothstep(t),scale=mix(1,PRE_ZOOM,zoomE);
         logoWrap.style.transform='scale('+scale+')';
         if(t<0.10){dots.style.opacity='1';dots.style.transform='translateY(0)';}
         else if(t<0.20){var d=1-((t-0.10)/0.10);dots.style.opacity=String(d);dots.style.transform='translateY(8px)';}
         else{dots.style.opacity='0';dots.style.transform='translateY(10px)';}
         var hp=0;
         if(scale>=MASK_START){hp=clamp((scale-MASK_START)/(PRE_ZOOM-MASK_START),0,1);}
-        var hE=easeOutExpo(hp),radius=END_R*hE;
+        var hE=easeOutCubic(hp),radius=END_R*hE;
         setHole(radius);
         if(hp<0.12){logoWrap.style.opacity='1';}
         else if(hp<0.55){logoWrap.style.opacity=String(1-((hp-0.12)/0.43));}
@@ -142,37 +146,64 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     window.addEventListener('resize',function(){END_R=Math.hypot(window.innerWidth,window.innerHeight);});
   }
 
-  // ── Scroll bar + Back to top (window scroll for non-SPA pages) ──
+  // ── Favicon client-side injection (bust browser cache on admin change) ──
+  try{
+    fetch('/api/ui-settings').then(function(r){return r.json();}).then(function(d){
+      var url=d.settings&&d.settings.favicon_url;
+      if(!url)return;
+      var link=document.querySelector('link[rel="icon"]:not([data-admin])');
+      if(!link){link=document.createElement('link');link.rel='icon';document.head.appendChild(link);}
+      link.href=url+(url.indexOf('?')>=0?'&':'?')+'_v='+Date.now();
+    }).catch(function(){});
+  }catch(e){}
+
+  // ── Scroll bar + Back to top ──
   try{
     var bar=document.getElementById('pkScrollBar'),btn=document.getElementById('pkTopBtn'),ring=document.getElementById('pkRingProg');
     if(bar&&btn&&ring){
       var r=18,C=2*Math.PI*r;
       ring.style.strokeDasharray=C;ring.style.strokeDashoffset=C;
-      function onScroll(){
-        var h=document.documentElement,sc=h.scrollTop||document.body.scrollTop,max=(h.scrollHeight-h.clientHeight)||1,p=sc/max;
-        bar.style.width=(p*100)+'%';ring.style.strokeDashoffset=C*(1-p);
-        if(sc>400){if(!btn.classList.contains('pkShow'))btn.classList.add('pkShow');}else{btn.classList.remove('pkShow');}
-      }
-      window.addEventListener('scroll',onScroll,{passive:true});onScroll();
-      btn.addEventListener('click',function(e){e.preventDefault();window.scrollTo({top:0,behavior:'smooth'});});
 
-      // Also listen for scroll inside u/ portal tab containers
+      // Position back-to-top: above live chat for /u/ portal, low for visitors
+      var inPortal=window.location.pathname.startsWith('/u/');
+      btn.style.bottom=inPortal?'88px':'20px';
+
+      function updateScroll(sc,max){
+        var p=sc/max;
+        bar.style.width=(p*100)+'%';ring.style.strokeDashoffset=C*(1-p);
+        if(sc>200){if(!btn.classList.contains('pkShow'))btn.classList.add('pkShow');}else{btn.classList.remove('pkShow');}
+      }
+      window.addEventListener('scroll',function(){
+        var h=document.documentElement,sc=h.scrollTop||document.body.scrollTop,max=(h.scrollHeight-h.clientHeight)||1;
+        updateScroll(sc,max);
+      },{passive:true});
+
+      // Capture scroll from portal tab containers
       document.addEventListener('scroll',function(e){
         var el=e.target;
         if(el instanceof Element&&el.getAttribute&&el.getAttribute('data-scroll-container')){
-          var sc2=el.scrollTop,max2=(el.scrollHeight-el.clientHeight)||1,p2=sc2/max2;
-          bar.style.width=(p2*100)+'%';ring.style.strokeDashoffset=C*(1-p2);
-          if(sc2>400){if(!btn.classList.contains('pkShow'))btn.classList.add('pkShow');}else{btn.classList.remove('pkShow');}
+          var sc2=el.scrollTop,max2=(el.scrollHeight-el.clientHeight)||1;
+          updateScroll(sc2,max2);
         }
       },true);
-      document.addEventListener('click',function(e){
-        if(e.target===btn||btn.contains(e.target)){
-          e.preventDefault();
-          var containers=document.querySelectorAll('[data-scroll-container]');
-          containers.forEach(function(c){if(c.scrollTop>0)c.scrollTop=0;});
-          window.scrollTo({top:0,behavior:'smooth'});
-        }
+
+      btn.addEventListener('click',function(e){
+        e.preventDefault();
+        var containers=document.querySelectorAll('[data-scroll-container]');
+        var scrolled=false;
+        containers.forEach(function(c){if(c.scrollTop>0){c.scrollTo({top:0,behavior:'smooth'});scrolled=true;}});
+        if(!scrolled)window.scrollTo({top:0,behavior:'smooth'});
       });
+
+      // Adjust position if route changes (SPA navigation)
+      var lastPath=window.location.pathname;
+      setInterval(function(){
+        if(window.location.pathname!==lastPath){
+          lastPath=window.location.pathname;
+          var nowPortal=window.location.pathname.startsWith('/u/');
+          btn.style.bottom=nowPortal?'88px':'20px';
+        }
+      },500);
     }
   }catch(e){}
 })();
