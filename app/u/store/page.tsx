@@ -14,7 +14,7 @@ interface Tool {
   duration_label: string; category_slug: string; category_id?: string
   is_out_of_stock: boolean; landing_blocks?: any[]
   rating: number; review_count: number; sales_count?: number
-  delivery_label?: string
+  delivery_label?: string; details_slug?: string
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
