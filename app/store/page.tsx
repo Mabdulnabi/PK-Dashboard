@@ -71,7 +71,7 @@ export default function ShopAdminPage() {
   const [dealSaving,    setDealSaving]    = useState(false)
 
   // Tool form
-  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0' }
+  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',warranty_label:'',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0' }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   // Category form
@@ -101,7 +101,7 @@ export default function ShopAdminPage() {
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
   const openEditTool = async (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0)})
+    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,warranty_label:(t as any).warranty_label||'',rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0)})
     // Load bundle items if editing a bundle
     if (t.category_slug === 'bundle') {
       const res = await fetch('/api/admin/bundles')
@@ -139,6 +139,7 @@ export default function ShopAdminPage() {
       retail_price_egp:toolForm.retail_price_egp?parseFloat(toolForm.retail_price_egp):0,
       duration_label:toolForm.duration_label, duration_days:parseInt(toolForm.duration_days)||28,
       delivery_label:toolForm.delivery_label||'INSTANT',
+      warranty_label:toolForm.warranty_label||null,
       rating:parseFloat(toolForm.rating)||5.0, review_count:parseInt(toolForm.review_count)||0,
       video_url:toolForm.video_url||null,
       features:toolForm.features.split('\n').map(f=>f.trim()).filter(Boolean),
@@ -850,6 +851,10 @@ export default function ShopAdminPage() {
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Delivery Label</label>
                 <input value={toolForm.delivery_label} onChange={e=>setToolForm({...toolForm,delivery_label:e.target.value})} placeholder="INSTANT" className={inp}/>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Warranty Label</label>
+                <input value={(toolForm as any).warranty_label} onChange={e=>setToolForm({...toolForm,...{warranty_label:e.target.value}} as any)} placeholder="e.g. 1 Year Warranty" className={inp}/>
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Sort Order</label>

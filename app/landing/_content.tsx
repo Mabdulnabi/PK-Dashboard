@@ -365,7 +365,7 @@ export function LandingInner({ embedded = false }: { embedded?: boolean }) {
   const R = 18; const C = 2 * Math.PI * R
   const ringOffset = C * (1 - scrollPct)
 
-  if (!ready) return (
+  if (!ready) return embedded ? null : (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#0B5FC9,#1B2556)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
       <div style={{ textAlign:'center' }}>
         {logo && <img src={logo} alt={siteName} style={{ height:120, marginBottom:16 }}/>}
