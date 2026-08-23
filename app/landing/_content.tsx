@@ -367,13 +367,16 @@ export function LandingInner({ embedded = false }: { embedded?: boolean }) {
 
   if (!ready) return embedded ? null : (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#0B5FC9,#1B2556)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
-      <div style={{ textAlign:'center' }}>
-        {logo && <img src={logo} alt={siteName} style={{ height:120, marginBottom:16 }}/>}
+      <div style={{ textAlign:'center', animation:'pkZoomIn .55s cubic-bezier(0.22,1,0.36,1) both' }}>
+        {logo && <img src={logo} alt={siteName} style={{ height:120, marginBottom:20, display:'block', margin:'0 auto 20px' }}/>}
         <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
-          {[0,1,2].map(i => <span key={i} style={{ width:10, height:10, borderRadius:'50%', background:'#fff', display:'block', animation:`pkdot 1.4s ${i*0.2}s infinite ease-in-out` }}/>)}
+          {[0,1,2].map(i => <span key={i} style={{ width:9, height:9, borderRadius:'50%', background:'rgba(255,255,255,0.9)', display:'block', animation:`pkdot 1.1s ${i*0.18}s infinite cubic-bezier(0.45,0,0.55,1)` }}/>)}
         </div>
       </div>
-      <style>{`@keyframes pkdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-6px)}}`}</style>
+      <style>{`
+        @keyframes pkZoomIn{0%{opacity:0;transform:scale(.82) translateY(12px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+        @keyframes pkdot{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-7px)}}
+      `}</style>
     </div>
   )
 
@@ -608,7 +611,7 @@ export function LandingInner({ embedded = false }: { embedded?: boolean }) {
       </footer>
 
       <button onClick={() => window.scrollTo({ top:0, behavior:'smooth' })} aria-label="Back to top"
-        style={{ position:'fixed', bottom: lang==='ar' ? 'auto' : 30, right: lang==='ar' ? 'auto' : 18, left: lang==='ar' ? 18 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
+        style={{ position:'fixed', bottom: lang==='ar' ? 'auto' : 20, right: lang==='ar' ? 'auto' : 20, left: lang==='ar' ? 20 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
         <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
           <circle cx="23" cy="23" r={R} fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="3"/>
           <circle cx="23" cy="23" r={R} fill="none" stroke="#d99401" strokeWidth="3" strokeLinecap="round" transform="rotate(-90 23 23)" strokeDasharray={C} strokeDashoffset={ringOffset}/>

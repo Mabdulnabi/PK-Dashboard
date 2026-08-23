@@ -879,6 +879,41 @@ if (pathname==='/u/login') return <>{children}</>
                 <div className="text-[11px] text-gray-400 truncate">{member?.email}</div>
               </div>
             </div>
+            {/* Ranking */}
+            {(() => {
+              const spent = member?.total_spent_egp || 0
+              const rank = getMemberRank(spent)
+              const rankIdx = RANK_TIERS.findIndex(r => r.key === rank.key)
+              const next = RANK_TIERS[rankIdx + 1] as typeof RANK_TIERS[number] | undefined
+              const pct = next ? Math.min(100, ((spent - rank.min) / (next.min - rank.min)) * 100) : 100
+              const remaining = next ? Math.max(0, next.min - spent) : 0
+              return (
+                <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2.5">{isRtl?'رتبتي':'My Rank'}</p>
+                  <div className="flex items-center gap-2.5 mb-2.5">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[11px] font-black" style={{background:`${rank.color}22`,border:`2px solid ${rank.color}`,color:rank.color}}>
+                      {(isRtl ? rank.ar : rank.en).slice(0,1).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[12px] font-bold" style={{color:rank.color}}>{isRtl ? rank.ar : rank.en}</span>
+                        {next && <span className="text-[10px] text-gray-400 font-medium">{isRtl ? `يتبقى ${remaining.toLocaleString()} ج.م` : `${remaining.toLocaleString()} EGP to go`}</span>}
+                        {!next && <span className="text-[10px] font-bold" style={{color:rank.color}}>👑 {isRtl?'أعلى رتبة':'Max Rank'}</span>}
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.07)'}}>
+                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:`linear-gradient(90deg,${rank.color}99,${next ? next.color : rank.color})`}}/>
+                      </div>
+                      {next && (
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[9px] text-gray-400">{spent.toLocaleString()} EGP</span>
+                          <span className="text-[9px] font-semibold" style={{color:next.color}}>{isRtl ? `التالي: ${next.ar}` : `Next: ${next.en}`} · {next.min.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
             {/* Language & Currency */}
             <div className="px-4 pt-3 pb-1">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">{isRtl?'اللغة والعملة':'Language & Currency'}</p>
