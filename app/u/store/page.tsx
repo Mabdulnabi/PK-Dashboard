@@ -38,7 +38,7 @@ function Stars({ rating, count }: { rating: number; count: number }) {
 }
 
 function StoreCard({ tool, lang, formatPrice, usdRate }: {
-  tool: Tool; lang: string; formatPrice: (n:number,r:number)=>string; usdRate: number
+  tool: Tool; lang: string; formatPrice: (v:number,c?:string)=>string; usdRate: number
 }) {
   const router = useRouter()
   const isRtl  = lang === 'ar'
