@@ -239,7 +239,9 @@ function FirstVisitPopup() {
 
 function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const router   = useRouter()
-  const pathname = usePathname()
+  const rawPathname = usePathname()
+  // rewrite: visitor at '/' gets /u/dashboard content — treat '/' as dashboard tab
+  const pathname = rawPathname === '/' ? '/u/dashboard' : rawPathname
   const [member,        setMember]   = useState<Member|null>(null)
   const [loading,       setLoading]  = useState(true)
   const [themeMode, setThemeMode] = useState<'auto'|'dark'|'light'>('auto')
