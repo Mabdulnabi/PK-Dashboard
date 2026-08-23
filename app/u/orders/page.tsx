@@ -321,6 +321,7 @@ interface Purchase {
   status?:string; expires_at?:string; starts_at?:string; payment_method:string
   amount_egp:number; duration_days?:number; retail_price_egp?:number
   has_delivery?:boolean; delivery_viewed?:boolean; created_at?:string
+  auto_renew?:boolean
 }
 
 function subProgress(p: Purchase): number | null {
@@ -636,6 +637,9 @@ export default function MyOrdersPage() {
   const [confirmBusy,   setConfirmBusy]   = useState<string|null>(null)
   const [subFilter,     setSubFilter]     = useState<'all'|'shared'|'private'|'expiring'|'connected'>('all')
   const [orderQ,        setOrderQ]        = useState('')
+  const [autoRenewModal,setAutoRenewModal]= useState(false)
+  const [arSelected,    setArSelected]    = useState<Record<string,boolean>>({})
+  const [arSaving,      setArSaving]      = useState(false)
   const [secBanners,    setSecBanners]    = useState<{url:string;link?:string}[]>([])
   const activeRef = useRef<string|null>(null)
 
@@ -819,9 +823,19 @@ export default function MyOrdersPage() {
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide">
             {t('My Active Subscriptions','اشتراكاتي النشطة')}
           </h2>
-          {purchases.length>0 && (
-            <span className="text-xs text-gray-400">{purchases.length} {t('order','طلب')}</span>
-          )}
+          <div className="flex items-center gap-2">
+            {purchases.length>0 && (
+              <span className="text-xs text-gray-400">{purchases.length} {t('order','طلب')}</span>
+            )}
+            {purchases.length>0 && (
+              <button
+                onClick={()=>{ setArSelected(Object.fromEntries(purchases.map(p=>[p.id,p.auto_renew??false]))); setAutoRenewModal(true) }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 active:scale-95"
+                style={{borderColor:'#d99401',color:'#d99401',background:'rgba(217,148,1,0.08)'}}>
+                <RefreshCw size={12}/>{t('Auto Renew','تجديد تلقائي')}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter bar */}
@@ -1128,6 +1142,81 @@ export default function MyOrdersPage() {
                 className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-opacity hover:opacity-90"
                 style={{background:'#f59e0b'}}>
                 {ratingBusy?'...':(t('Submit Review','إرسال التقييم'))}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto Renew Modal */}
+      {autoRenewModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={()=>setAutoRenewModal(false)}>
+          <div className="rounded-2xl w-full max-w-md overflow-hidden"
+            style={{
+              background:'rgba(255,255,255,0.95)',
+              backdropFilter:'blur(32px)',
+              WebkitBackdropFilter:'blur(32px)',
+              border:'1px solid rgba(255,255,255,0.7)',
+              boxShadow:'0 24px 64px rgba(0,0,0,0.18)',
+            }}
+            onClick={e=>e.stopPropagation()} dir={dir}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(217,148,1,0.12)'}}>
+                  <RefreshCw size={15} style={{color:'#d99401'}}/>
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-gray-100">{t('Auto Renew','التجديد التلقائي')}</p>
+                  <p className="text-[11px] text-gray-400">{t('Renews from wallet balance automatically','يجدد من رصيد المحفظة تلقائياً')}</p>
+                </div>
+              </div>
+              <button onClick={()=>setAutoRenewModal(false)} className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <X size={13} className="text-gray-500"/>
+              </button>
+            </div>
+            <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
+              {purchases.map(p=>(
+                <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {p.tool_image
+                      ? <img src={p.tool_image} className="w-8 h-8 object-contain rounded-lg flex-shrink-0" alt=""/>
+                      : <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{p.tool_name}</p>
+                      <p className="text-[10px] text-gray-400">{p.duration_label} · {p.retail_price_egp} {t('EGP','ج')}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={()=>setArSelected(prev=>({...prev,[p.id]:!prev[p.id]}))}
+                    className="relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0"
+                    style={{background:arSelected[p.id]?'#d99401':'rgba(0,0,0,0.12)'}}>
+                    <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"
+                      style={{[lang==='ar'?'right':'left']:arSelected[p.id]?'calc(100% - 18px)':'2px'}}/>
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="px-4 pb-4">
+              <p className="text-[11px] text-gray-400 mb-3 text-center">{t('Enabled subscriptions renew 24h before expiry if wallet balance is sufficient.','الاشتراكات المفعّلة تتجدد قبل انتهائها بـ 24 ساعة إذا كان رصيد المحفظة كافياً.')}</p>
+              <button
+                onClick={async()=>{
+                  setArSaving(true)
+                  const allIds = purchases.map(p=>p.id)
+                  const onIds  = allIds.filter(id=>arSelected[id])
+                  const offIds = allIds.filter(id=>!arSelected[id])
+                  await Promise.all([
+                    onIds.length  && fetch('/api/member/purchases/auto-renew',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:onIds,auto_renew:true})}),
+                    offIds.length && fetch('/api/member/purchases/auto-renew',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:offIds,auto_renew:false})}),
+                  ])
+                  setArSaving(false)
+                  setAutoRenewModal(false)
+                  fetchPurchases()
+                }}
+                disabled={arSaving}
+                className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-opacity hover:opacity-90"
+                style={{background:'#d99401'}}>
+                {arSaving?'...':(t('Save','حفظ'))}
               </button>
             </div>
           </div>
