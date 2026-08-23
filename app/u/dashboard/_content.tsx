@@ -378,7 +378,14 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
   const R = 18; const C = 2 * Math.PI * R
   const ringOffset = C * (1 - scrollPct)
 
-  if (!ready) return embedded ? null : (
+  if (!ready) return embedded ? (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:300}}>
+      <div style={{display:'flex',gap:8}}>
+        {[0,1,2].map(i=><span key={i} style={{width:9,height:9,borderRadius:'50%',background:'#d99401',display:'block',animation:`pkdot 1.1s ${i*0.18}s infinite cubic-bezier(0.45,0,0.55,1)`}}/>)}
+      </div>
+      <style>{`@keyframes pkdot{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-7px)}}`}</style>
+    </div>
+  ) : (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#0B5FC9,#1B2556)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
       <div style={{ textAlign:'center', animation:'pkZoomIn .55s cubic-bezier(0.22,1,0.36,1) both' }}>
         {logo && <img src={logo} alt={siteName} style={{ height:120, marginBottom:20, display:'block', margin:'0 auto 20px' }}/>}
