@@ -944,36 +944,23 @@ export default function MyOrdersPage() {
                           : <Package size={20} className="text-gray-300"/>
                         }
                       </div>
-                      <div className="flex flex-col items-end gap-1.5">
-                        <StatusBadge days={days} t={t}/>
-                        {(() => {
-                          const retail = p.retail_price_egp || 0
-                          const mine   = p.amount_egp || 0
-                          if (retail <= 0) return null
-                          if (mine <= 0) return (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
-                              style={{background:'linear-gradient(135deg,#10b981,#059669)',color:'#fff'}}>
-                              <TrendingDown size={9}/>{t('FREE','مجاني')}
-                            </span>
-                          )
-                          if (mine >= retail) return null
-                          const pct = Math.round((1 - mine / retail) * 100)
-                          return (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
-                              style={{background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',letterSpacing:'0.01em'}}>
-                              <TrendingDown size={9}/>{pct}% {t('OFF','خصم')}
-                            </span>
-                          )
-                        })()}
-                        {isConnected && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">
-                            <Wifi size={9}/> {t('Connected','متصل')}
+                      {/* Top-right: delivery badge only */}
+                      <div className="flex flex-col items-end gap-1">
+                        {isPrivate && p.has_delivery && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                            style={{background:'linear-gradient(135deg,#d99401,#f5b800)',color:'#fff'}}>
+                            <Package size={9}/>{t('Delivered','تم التسليم')}
+                          </span>
+                        )}
+                        {isPrivate && !p.has_delivery && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border border-dashed border-amber-400 text-amber-500">
+                            <Clock size={9}/>{t('Pending','في الانتظار')}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 leading-tight">{p.tool_name}</h3>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1.5 leading-tight">{p.tool_name}</h3>
 
                     {/* Price line */}
                     {(() => {
@@ -981,7 +968,7 @@ export default function MyOrdersPage() {
                       const mine   = p.amount_egp || 0
                       if (retail <= 0 && mine <= 0) return null
                       return (
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 mb-2">
                           <span className="text-sm font-black" style={{color:'#d99401'}}>
                             {mine <= 0 ? t('Free','مجاني') : `${mine} ${t('EGP','ج')}`}
                           </span>
@@ -991,6 +978,35 @@ export default function MyOrdersPage() {
                         </div>
                       )
                     })()}
+
+                    {/* Badges row: status + discount + connected */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                      <StatusBadge days={days} t={t}/>
+                      {(() => {
+                        const retail = p.retail_price_egp || 0
+                        const mine   = p.amount_egp || 0
+                        if (retail <= 0) return null
+                        if (mine <= 0) return (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+                            style={{background:'linear-gradient(135deg,#10b981,#059669)',color:'#fff'}}>
+                            <TrendingDown size={9}/>{t('FREE','مجاني')}
+                          </span>
+                        )
+                        if (mine >= retail) return null
+                        const pct = Math.round((1 - mine / retail) * 100)
+                        return (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+                            style={{background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff'}}>
+                            <TrendingDown size={9}/>{pct}% {t('OFF','خصم')}
+                          </span>
+                        )
+                      })()}
+                      {isConnected && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">
+                          <Wifi size={9}/>{t('Connected','متصل')}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Expires line — red */}
                     <div className="flex items-center gap-1.5 text-xs font-medium mb-2 text-red-400">
