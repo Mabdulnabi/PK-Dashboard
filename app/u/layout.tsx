@@ -996,7 +996,7 @@ if (pathname==='/u/login') return <>{children}</>
             <div className="px-4 pt-2 pb-1 border-t border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between py-2">
                 <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                  {isRtl ? 'تشغيل تلقائي للتقييمات' : 'Reviews auto-play'}
+                  {isRtl ? 'الحركة / الأنيميشن' : 'Animation on/off'}
                 </span>
                 <button
                   onClick={() => toggleCarousel(!carouselAuto)}

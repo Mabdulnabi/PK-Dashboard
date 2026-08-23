@@ -200,6 +200,7 @@ function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: strin
 
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current)
+    if (localStorage.getItem('pk_carousel_auto') !== '1') return
     timerRef.current = setInterval(() => advance(1), 3500)
   }
 
@@ -208,7 +209,19 @@ function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: strin
     startTimer()
     const ro = new ResizeObserver(measure)
     if (wrapRef.current) ro.observe(wrapRef.current)
-    return () => { if (timerRef.current) clearInterval(timerRef.current); ro.disconnect() }
+    const onToggle = (e: Event) => {
+      if ((e as CustomEvent).detail) {
+        startTimer()
+      } else {
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+      }
+    }
+    window.addEventListener('pk-carousel-auto', onToggle)
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      ro.disconnect()
+      window.removeEventListener('pk-carousel-auto', onToggle)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [N])
 
