@@ -51,13 +51,13 @@ import {
 interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string; total_spent_egp?:number }
 
 const RANK_TIERS = [
-  { key:'regular',  ar:'عادي',    en:'Regular',  min:0,      color:'#5a8098' },
-  { key:'bronze',   ar:'برونزي',  en:'Bronze',   min:1,      color:'#b06030' },
-  { key:'silver',   ar:'فضي',     en:'Silver',   min:2000,   color:'#8888a0' },
-  { key:'gold',     ar:'ذهبي',    en:'Gold',     min:8000,   color:'#d99401' },
-  { key:'platinum', ar:'بلاتيني', en:'Platinum', min:20000,  color:'#7898b8' },
-  { key:'emerald',  ar:'زمردي',   en:'Emerald',  min:40000,  color:'#18a050' },
-  { key:'diamond',  ar:'ماسي',    en:'Diamond',  min:60000,  color:'#3870b8' },
+  { key:'regular',  ar:'عادي',    en:'Regular',  min:0,      color:'#5a8098', icon:'🪪' },
+  { key:'bronze',   ar:'برونزي',  en:'Bronze',   min:1,      color:'#b06030', icon:'🥉' },
+  { key:'silver',   ar:'فضي',     en:'Silver',   min:2000,   color:'#8888a0', icon:'🥈' },
+  { key:'gold',     ar:'ذهبي',    en:'Gold',     min:8000,   color:'#d99401', icon:'🥇' },
+  { key:'platinum', ar:'بلاتيني', en:'Platinum', min:20000,  color:'#7898b8', icon:'💿' },
+  { key:'emerald',  ar:'زمردي',   en:'Emerald',  min:40000,  color:'#18a050', icon:'💚' },
+  { key:'diamond',  ar:'ماسي',    en:'Diamond',  min:60000,  color:'#3870b8', icon:'💎' },
 ] as const
 function getMemberRank(spent = 0) {
   for (let i = RANK_TIERS.length - 1; i >= 0; i--) if (spent >= RANK_TIERS[i].min) return RANK_TIERS[i]
@@ -890,26 +890,34 @@ if (pathname==='/u/login') return <>{children}</>
               return (
                 <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2.5">{isRtl?'رتبتي':'My Rank'}</p>
-                  <div className="flex items-center gap-2.5 mb-2.5">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[11px] font-black" style={{background:`${rank.color}22`,border:`2px solid ${rank.color}`,color:rank.color}}>
-                      {(isRtl ? rank.ar : rank.en).slice(0,1).toUpperCase()}
+                  <div className="flex items-center gap-2 mb-2">
+                    {/* Current rank icon */}
+                    <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                      <span className="text-2xl leading-none" title={isRtl ? rank.ar : rank.en}>{rank.icon}</span>
+                      <span className="text-[9px] font-bold" style={{color:rank.color}}>{isRtl ? rank.ar : rank.en}</span>
                     </div>
+                    {/* Progress bar */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[12px] font-bold" style={{color:rank.color}}>{isRtl ? rank.ar : rank.en}</span>
-                        {next && <span className="text-[10px] text-gray-400 font-medium">{isRtl ? `يتبقى ${remaining.toLocaleString()} ج.م` : `${remaining.toLocaleString()} EGP to go`}</span>}
-                        {!next && <span className="text-[10px] font-bold" style={{color:rank.color}}>👑 {isRtl?'أعلى رتبة':'Max Rank'}</span>}
+                      <div className="h-2 rounded-full overflow-hidden mb-1" style={{background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.07)'}}>
+                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:`linear-gradient(90deg,${rank.color},${next ? next.color : rank.color})`}}/>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.07)'}}>
-                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:`linear-gradient(90deg,${rank.color}99,${next ? next.color : rank.color})`}}/>
-                      </div>
-                      {next && (
-                        <div className="flex justify-between mt-1">
-                          <span className="text-[9px] text-gray-400">{spent.toLocaleString()} EGP</span>
-                          <span className="text-[9px] font-semibold" style={{color:next.color}}>{isRtl ? `التالي: ${next.ar}` : `Next: ${next.en}`} · {next.min.toLocaleString()}</span>
-                        </div>
-                      )}
+                      {next
+                        ? <div className="flex justify-between">
+                            <span className="text-[9px] text-gray-400">{spent.toLocaleString()} EGP</span>
+                            <span className="text-[9px] text-gray-400">{isRtl ? `يتبقى ${remaining.toLocaleString()} ج.م` : `${remaining.toLocaleString()} EGP left`}</span>
+                          </div>
+                        : <p className="text-[9px] font-bold text-center" style={{color:rank.color}}>👑 {isRtl?'أعلى رتبة':'Max Rank'}</p>
+                      }
                     </div>
+                    {/* Next rank icon */}
+                    {next ? (
+                      <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                        <span className="text-2xl leading-none opacity-50" title={isRtl ? next.ar : next.en}>{next.icon}</span>
+                        <span className="text-[9px] font-bold opacity-50" style={{color:next.color}}>{isRtl ? next.ar : next.en}</span>
+                      </div>
+                    ) : (
+                      <div className="w-8"/>
+                    )}
                   </div>
                 </div>
               )
