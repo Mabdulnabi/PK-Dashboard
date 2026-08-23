@@ -1,2 +1,6 @@
 'use client'
-export { LandingInner as default } from './_content'
+import { LandingInner } from './_content'
+
+export default function DashboardPage() {
+  return <LandingInner embedded memberActive />
+}
