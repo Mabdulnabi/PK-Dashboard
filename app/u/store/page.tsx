@@ -5,7 +5,7 @@ import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
 import { useMember } from '@/lib/member-context'
-import { ShoppingCart, Heart, Plus, Check, Star, Zap, ChevronLeft, ChevronRight, Info, Shield } from 'lucide-react'
+import { ShoppingCart, Heart, Plus, Check, Star, Zap, ChevronLeft, ChevronRight, Info, Shield, TrendingDown } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 
 interface Tool {
