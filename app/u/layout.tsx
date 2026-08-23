@@ -51,17 +51,54 @@ import {
 interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string; total_spent_egp?:number }
 
 const RANK_TIERS = [
-  { key:'regular',  ar:'عادي',    en:'Regular',  min:0,      color:'#5a8098', icon:'🪪' },
-  { key:'bronze',   ar:'برونزي',  en:'Bronze',   min:1,      color:'#b06030', icon:'🥉' },
-  { key:'silver',   ar:'فضي',     en:'Silver',   min:2000,   color:'#8888a0', icon:'🥈' },
-  { key:'gold',     ar:'ذهبي',    en:'Gold',     min:8000,   color:'#d99401', icon:'🥇' },
-  { key:'platinum', ar:'بلاتيني', en:'Platinum', min:20000,  color:'#7898b8', icon:'💿' },
-  { key:'emerald',  ar:'زمردي',   en:'Emerald',  min:40000,  color:'#18a050', icon:'💚' },
-  { key:'diamond',  ar:'ماسي',    en:'Diamond',  min:60000,  color:'#3870b8', icon:'💎' },
+  { key:'regular',  ar:'عادي',    en:'Regular',  min:0,      color:'#5a8098' },
+  { key:'bronze',   ar:'برونزي',  en:'Bronze',   min:1,      color:'#b06030' },
+  { key:'silver',   ar:'فضي',     en:'Silver',   min:2000,   color:'#8888a0' },
+  { key:'gold',     ar:'ذهبي',    en:'Gold',     min:8000,   color:'#d99401' },
+  { key:'platinum', ar:'بلاتيني', en:'Platinum', min:20000,  color:'#7898b8' },
+  { key:'emerald',  ar:'زمردي',   en:'Emerald',  min:40000,  color:'#18a050' },
+  { key:'diamond',  ar:'ماسي',    en:'Diamond',  min:60000,  color:'#3870b8' },
 ] as const
+type RankKey = typeof RANK_TIERS[number]['key']
 function getMemberRank(spent = 0) {
   for (let i = RANK_TIERS.length - 1; i >= 0; i--) if (spent >= RANK_TIERS[i].min) return RANK_TIERS[i]
   return RANK_TIERS[0]
+}
+
+const BADGE_CFG: Record<RankKey,{g0:string;g1:string;g2:string;ft:string;fur:string;fb:string;fll:string;ib:string}> = {
+  regular:  {g0:'#c8dce8',g1:'#6888a0',g2:'#1e3448',ft:'#d8eaf8',fur:'#a0c0d8',fb:'#182838',fll:'#243c50',ib:'#eef4f8'},
+  bronze:   {g0:'#ffe090',g1:'#c07820',g2:'#3c1400',ft:'#ffe8a0',fur:'#d89838',fb:'#301000',fll:'#5a2808',ib:'#fef4e4'},
+  silver:   {g0:'#ffffff',g1:'#9898a8',g2:'#202028',ft:'#ffffff',fur:'#dcdcec',fb:'#181820',fll:'#323240',ib:'#f0f0f6'},
+  gold:     {g0:'#f5d060',g1:'#d99401',g2:'#3a1800',ft:'#f5d878',fur:'#d99401',fb:'#2a1000',fll:'#5c2800',ib:'#fff4e0'},
+  platinum: {g0:'#f4f8ff',g1:'#7898c0',g2:'#182840',ft:'#f8fcff',fur:'#ccdcf4',fb:'#101e34',fll:'#203050',ib:'#c8d8ee'},
+  emerald:  {g0:'#a8ffcc',g1:'#14b850',g2:'#022c10',ft:'#b8ffd4',fur:'#44ec84',fb:'#011c0a',fll:'#054018',ib:'#edfff4'},
+  diamond:  {g0:'#e0f0ff',g1:'#4090d8',g2:'#081428',ft:'#eaf6ff',fur:'#b0d4f8',fb:'#060e20',fll:'#102040',ib:'#eef6ff'},
+}
+function HexBadge({rk,size=36}:{rk:typeof RANK_TIERS[number];size?:number}) {
+  const c = BADGE_CFG[rk.key]; const gid=`hg-${rk.key}-pop`
+  const icons: Record<RankKey,React.ReactNode> = {
+    regular: <><circle cy={-5} r={5.5} fill="#5a8098"/><path d="M-8,11 Q-8,2 0,2 Q8,2 8,11" fill="#5a8098"/></>,
+    bronze:  <><polygon points="0,-11 9.5,-5.5 9.5,5.5 0,11 -9.5,5.5 -9.5,-5.5" fill="none" stroke="#c07820" strokeWidth="2.2" strokeLinejoin="round"/><circle r={3.5} fill="#c07820"/></>,
+    silver:  <><polygon points="0,-10 8.5,-5 0,0 -8.5,-5" fill="#e8e8f4"/><polygon points="-8.5,-5 0,0 0,10 -8.5,5" fill="#808090"/><polygon points="8.5,-5 8.5,5 0,10 0,0" fill="#545462"/></>,
+    gold:    <><polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="#a06800"/><polygon points="0,0 0,-12 10.4,-6" fill="#f5d060"/><polygon points="0,0 10.4,-6 10.4,6" fill="#c88000"/><polygon points="0,0 10.4,6 0,12" fill="#b87000"/><polygon points="0,0 0,12 -10.4,6" fill="#7a4000"/><polygon points="0,0 -10.4,6 -10.4,-6" fill="#8c5000"/><polygon points="0,0 -10.4,-6 0,-12" fill="#d99401"/></>,
+    platinum:<path fill="#4a78c8" d="M0,-15 3.6,-4.7 14.3,-4.7 6.1,1.7 9.0,12.4 0,6.4 -9.0,12.4 -6.1,1.7 -14.3,-4.7 -3.6,-4.7Z"/>,
+    emerald: <><polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="#14a848"/><polygon points="0,-12 10.4,-6 0,-4" fill="#a0ffc8"/><polygon points="0,-12 -10.4,-6 0,-4" fill="#70f0a0"/><polygon points="10.4,-6 10.4,6 0,0 0,-4" fill="#0a8030"/><polygon points="-10.4,-6 -10.4,6 0,0 0,-4" fill="#14a040"/><polygon points="10.4,6 0,12 -10.4,6 0,0" fill="#086028"/></>,
+    diamond: <><polygon points="-9,-13 9,-13 15,-2 -15,-2" fill="#90c4f4"/><polygon points="-9,-13 0,-8 -15,-2" fill="#e0f4ff"/><polygon points="9,-13 15,-2 0,-8" fill="#cce8ff"/><polygon points="-9,-13 9,-13 0,-8" fill="#f4faff"/><polygon points="-15,-2 15,-2 0,14" fill="#4898e0"/><polygon points="-15,-2 0,-2 0,14" fill="#2870c0"/><polygon points="15,-2 0,14 0,-2" fill="#7ab8f0"/></>,
+  }
+  return (
+    <svg width={size} height={size} viewBox="-42 -48 84 96">
+      <defs><linearGradient id={gid} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={c.g0}/><stop offset="50%" stopColor={c.g1}/><stop offset="100%" stopColor={c.g2}/></linearGradient></defs>
+      <polygon points="20,-29 38,3 20,35 -20,35 -38,3 -20,-29" fill="#000" opacity="0.22" transform="translate(2,5)"/>
+      <polygon points="18,-32 36,0 18,32 -18,32 -36,0 -18,-32" fill={`url(#${gid})`}/>
+      <polygon points="-18,-32 18,-32 11,-20 -11,-20" fill={c.ft} opacity="0.92"/>
+      <polygon points="18,-32 36,0 23,0 11,-20" fill={c.fur} opacity="0.85"/>
+      <polygon points="18,32 -18,32 -11,20 11,20" fill={c.fb} opacity="0.88"/>
+      <polygon points="-18,32 -36,0 -23,0 -11,20" fill={c.fll} opacity="0.75"/>
+      <circle r="23" fill="#fff"/>
+      <circle r="17" fill={c.ib}/>
+      {icons[rk.key]}
+    </svg>
+  )
 }
 
 const NAV_BASE = [
@@ -370,7 +407,7 @@ const [sidebarOpen,   setSidebar]    = useState(false)
 
   const logout = async()=>{
     await fetch('/api/member/verify',{method:'DELETE'})
-    router.push('/u/dashboard')
+    window.location.href = '/u/dashboard'
   }
 
   const VISITOR_TABS = ['/u/dashboard', '/u/store', '/u/quick-links']
@@ -891,9 +928,9 @@ if (pathname==='/u/login') return <>{children}</>
                 <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2.5">{isRtl?'رتبتي':'My Rank'}</p>
                   <div className="flex items-center gap-2 mb-2">
-                    {/* Current rank icon */}
+                    {/* Current rank badge */}
                     <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-                      <span className="text-2xl leading-none" title={isRtl ? rank.ar : rank.en}>{rank.icon}</span>
+                      <HexBadge rk={rank} size={36}/>
                       <span className="text-[9px] font-bold" style={{color:rank.color}}>{isRtl ? rank.ar : rank.en}</span>
                     </div>
                     {/* Progress bar */}
@@ -909,15 +946,13 @@ if (pathname==='/u/login') return <>{children}</>
                         : <p className="text-[9px] font-bold text-center" style={{color:rank.color}}>👑 {isRtl?'أعلى رتبة':'Max Rank'}</p>
                       }
                     </div>
-                    {/* Next rank icon */}
+                    {/* Next rank badge */}
                     {next ? (
-                      <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-                        <span className="text-2xl leading-none opacity-50" title={isRtl ? next.ar : next.en}>{next.icon}</span>
-                        <span className="text-[9px] font-bold opacity-50" style={{color:next.color}}>{isRtl ? next.ar : next.en}</span>
+                      <div className="flex flex-col items-center gap-0.5 flex-shrink-0 opacity-45">
+                        <HexBadge rk={next} size={36}/>
+                        <span className="text-[9px] font-bold" style={{color:next.color}}>{isRtl ? next.ar : next.en}</span>
                       </div>
-                    ) : (
-                      <div className="w-8"/>
-                    )}
+                    ) : <div className="w-9"/>}
                   </div>
                 </div>
               )
