@@ -301,9 +301,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-function LandingInner() {
-  const searchParams = useSearchParams()
-  const embedded = searchParams.get('embedded') === '1'
+export function LandingInner({ embedded = false }: { embedded?: boolean }) {
 
   const [lang,    setLang]    = useState<Lang>('ar')
   const [s,       setS]       = useState<S>({})
@@ -915,10 +913,15 @@ function LandingInner() {
   )
 }
 
+function LandingRoute() {
+  const searchParams = useSearchParams()
+  return <LandingInner embedded={searchParams.get('embedded') === '1'}/>
+}
+
 export default function Landing() {
   return (
     <Suspense>
-      <LandingInner/>
+      <LandingRoute/>
     </Suspense>
   )
 }

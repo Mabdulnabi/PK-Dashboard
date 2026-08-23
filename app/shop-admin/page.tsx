@@ -45,6 +45,7 @@ const LAYOUTS: { value: LandingBlock['layout']; label: string }[] = [
 ]
 
 export default function ShopAdminPage() {
+  useEffect(() => { document.title = 'Products | Pro Keys Admin' }, [])
   const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
@@ -845,10 +846,6 @@ export default function ShopAdminPage() {
                 <input type="number" value={toolForm.duration_days} onChange={e=>setToolForm({...toolForm,duration_days:e.target.value})} className={inp}/>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Delivery Label</label>
-                <input value={toolForm.delivery_label} onChange={e=>setToolForm({...toolForm,delivery_label:e.target.value})} placeholder="INSTANT" className={inp}/>
-              </div>
-              <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Warranty Badge</label>
                 <select value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)} className={inp}>
                   <option value="">No Warranty</option>
@@ -859,6 +856,10 @@ export default function ShopAdminPage() {
                   <option value="10 Days Warranty">10 Days Warranty</option>
                 </select>
                 <input value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)} placeholder="or type custom e.g. '3 Months Warranty'" className={`${inp} mt-1`}/>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Delivery Label</label>
+                <input value={toolForm.delivery_label} onChange={e=>setToolForm({...toolForm,delivery_label:e.target.value})} placeholder="INSTANT" className={inp}/>
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Sort Order</label>

@@ -118,13 +118,14 @@ function StoreCard({ tool, lang, formatPrice }: {
           <span className="text-sm text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
         </div>
 
-        {tool.details_slug && (
-          <button onClick={() => router.push(`/u/tool/${tool.details_slug}`)}
-            className="w-full text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
-            style={{background:`${accent}18`,color:accent,border:`1.5px solid ${accent}60`}}>
-            <Info size={12}/>{t('التفاصيل','Details')}
-          </button>
-        )}
+        <button
+          onClick={() => tool.details_slug && router.push(`/u/tool/${tool.details_slug}`)}
+          className="w-full text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+          style={tool.details_slug
+            ? {background:`${accent}18`,color:accent,border:`1.5px solid ${accent}60`}
+            : {background:'transparent',color:'transparent',border:'1.5px solid transparent',pointerEvents:'none'}}>
+          <Info size={12}/>{t('التفاصيل','Details')}
+        </button>
 
         {tool.is_out_of_stock ? (
           <button disabled className="w-full py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 text-sm font-bold cursor-default">
@@ -215,16 +216,18 @@ function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: strin
   const btnSty = { background:'#d99401', borderColor:'#b37a00', color:'#fff' }
 
   return (
-    <div ref={wrapRef} className="relative overflow-hidden" style={{paddingInline:0}}>
-      <button onClick={() => { advance(-1); startTimer() }} className={`${btnCls} -left-3`} style={btnSty}><ChevronLeft size={16}/></button>
-      <div ref={trackRef} style={{ display:'flex', gap:GAP, willChange:'transform' }}>
-        {items.map((t, i) => (
-          <div key={`${t.id}-${i}`} style={{ flexShrink:0 }}>
-            <StoreCard tool={t} lang={lang} formatPrice={formatPrice}/>
-          </div>
-        ))}
+    <div className="relative" style={{paddingInline: '20px'}}>
+      <button onClick={() => { advance(-1); startTimer() }} className={`${btnCls} left-0`} style={btnSty}><ChevronLeft size={16}/></button>
+      <div ref={wrapRef} className="overflow-hidden">
+        <div ref={trackRef} style={{ display:'flex', gap:GAP, willChange:'transform' }}>
+          {items.map((t, i) => (
+            <div key={`${t.id}-${i}`} style={{ flexShrink:0 }}>
+              <StoreCard tool={t} lang={lang} formatPrice={formatPrice}/>
+            </div>
+          ))}
+        </div>
       </div>
-      <button onClick={() => { advance(1); startTimer() }} className={`${btnCls} -right-3`} style={btnSty}><ChevronRight size={16}/></button>
+      <button onClick={() => { advance(1); startTimer() }} className={`${btnCls} right-0`} style={btnSty}><ChevronRight size={16}/></button>
     </div>
   )
 }
