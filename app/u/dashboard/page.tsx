@@ -1,8 +1,9 @@
 'use client'
-import { LandingInner } from './_content'
-import { useMember } from '@/lib/member-context'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardTab() {
-  const { member } = useMember()
-  return <LandingInner embedded={true} memberActive={!!member}/>
+  const router = useRouter()
+  useEffect(() => { router.replace('/u/store') }, [])
+  return null
 }

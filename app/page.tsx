@@ -1,5 +1,2 @@
 import { redirect } from 'next/navigation'
-
-export default function Root() {
-  redirect('/u/dashboard')
-}
+export default function Root() { redirect('/u/dashboard') }
