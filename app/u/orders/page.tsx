@@ -1222,7 +1222,7 @@ export default function MyOrdersPage() {
                       : <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>}
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{p.tool_name}</p>
-                      <p className="text-[10px] text-gray-400">{p.duration_label} · {p.retail_price_egp} {t('EGP','ج')}</p>
+                      <p className="text-[10px] text-gray-400">{p.duration_label} · {p.amount_egp} {t('EGP','ج')}</p>
                     </div>
                   </div>
                   <button
