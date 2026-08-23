@@ -205,6 +205,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           btn.style.bottom=nowPortal?'88px':'20px';
         }
       },500);
+
+      // Reset progress bar when portal tab changes
+      window.addEventListener('pk-tab-change',function(){
+        var containers=document.querySelectorAll('[data-scroll-container]');
+        var found=false;
+        containers.forEach(function(c){
+          if(c.scrollTop>0){updateScroll(c.scrollTop,(c.scrollHeight-c.clientHeight)||1);found=true;}
+        });
+        if(!found)updateScroll(0,1);
+      });
     }
   }catch(e){}
 })();

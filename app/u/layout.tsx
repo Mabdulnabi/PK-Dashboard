@@ -333,6 +333,7 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     if (tab) {
       setMountedTabs(prev => { const s = new Set(prev); s.add(tab); return s })
       setActiveTab(tab)
+      window.dispatchEvent(new CustomEvent('pk-tab-change'))
     } else {
       setActiveTab(null)
     }
@@ -382,6 +383,7 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     if (TAB_HREFS.includes(href)) {
       setMountedTabs(prev => { const s = new Set(prev); s.add(href); return s })
       setActiveTab(href)
+      window.dispatchEvent(new CustomEvent('pk-tab-change'))
       router.push(href, { scroll: false })
     } else {
       router.push(href)
@@ -895,7 +897,7 @@ if (pathname==='/u/login') return <>{children}</>
                     <button key={c} onClick={()=>setCurrency(c)}
                       className="flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all"
                       style={currency===c?{background:'#d99401',color:'#fff'}:{color: dark?'#9ca3af':'#6b7280'}}>
-                      {c==='egp'?'ج.م':'USD'}
+                      {c==='egp'?(lang==='ar'?'ج.م':'EGP'):'USD'}
                     </button>
                   ))}
                 </div>

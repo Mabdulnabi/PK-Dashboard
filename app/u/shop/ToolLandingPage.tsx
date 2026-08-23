@@ -144,7 +144,8 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           <div className="relative px-5 md:px-10 pt-6 pb-8">
             {/* Back */}
             <button onClick={onBack}
-              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-200 transition-colors mb-7 text-sm group w-fit">
+              className="flex items-center gap-2 mb-7 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 group w-fit"
+              style={{background:'rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.85)',border:'1px solid rgba(255,255,255,0.18)',backdropFilter:'blur(6px)'}}>
               <ArrowLeft size={14} className={`transition-transform group-hover:${isRtl?'translate-x-0.5':'-translate-x-0.5'} ${isRtl?'rotate-180':''}`}/>
               {t('Back to Store','رجوع للمتجر')}
             </button>

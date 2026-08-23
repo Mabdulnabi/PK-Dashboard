@@ -158,49 +158,73 @@ function StoreCard({ tool, lang, formatPrice }: {
 }
 
 function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: string; formatPrice: (egp:number,usdRate?:number)=>string }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const timerRef  = useRef<ReturnType<typeof setInterval>|null>(null)
-  const CARD = 300 // approx card width + gap
+  const wrapRef  = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const posRef   = useRef(tools.length) // index in tripled array; start at middle copy
+  const stepRef  = useRef(0) // px per card (cardWidth + gap)
+  const timerRef = useRef<ReturnType<typeof setInterval>|null>(null)
+  const N   = tools.length
+  const GAP = 16
+  // triple items: [copy0, copy1(real), copy2] — start at copy1
+  const items = [...tools, ...tools, ...tools]
 
-  const scroll = (dir: 'left'|'right') => {
-    if (!scrollRef.current) return
-    scrollRef.current.scrollBy({ left: dir==='left' ? -CARD : CARD, behavior: 'smooth' })
-    resetTimer()
+  const measure = () => {
+    if (!wrapRef.current || !trackRef.current) return
+    const cw = (wrapRef.current.clientWidth - GAP * 2) / 3
+    stepRef.current = cw + GAP
+    // re-position without animation
+    trackRef.current.style.transition = 'none'
+    trackRef.current.style.transform  = `translateX(-${posRef.current * stepRef.current}px)`
+    // set card widths
+    Array.from(trackRef.current.children).forEach(c => { (c as HTMLElement).style.width = cw + 'px' })
   }
-  const resetTimer = () => {
+
+  const animTo = (idx: number, instant = false) => {
+    if (!trackRef.current || stepRef.current === 0) return
+    trackRef.current.style.transition = instant ? 'none' : 'transform 0.65s cubic-bezier(0.4,0,0.2,1)'
+    trackRef.current.style.transform  = `translateX(-${idx * stepRef.current}px)`
+  }
+
+  const advance = (dir: number) => {
+    const next = posRef.current + dir
+    animTo(next)
+    posRef.current = next
+    // after animation, snap back to middle copy for seamless loop
+    if (next >= N * 2) {
+      setTimeout(() => { posRef.current = N; animTo(N, true) }, 700)
+    } else if (next < N) {
+      setTimeout(() => { posRef.current = N * 2 - 1; animTo(N * 2 - 1, true) }, 700)
+    }
+  }
+
+  const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      if (!scrollRef.current) return
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
-      if (scrollLeft + clientWidth >= scrollWidth - 4) {
-        scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' })
-      } else {
-        scrollRef.current.scrollBy({ left: CARD, behavior: 'smooth' })
-      }
-    }, 3500)
+    timerRef.current = setInterval(() => advance(1), 3500)
   }
-  useEffect(() => { resetTimer(); return () => { if (timerRef.current) clearInterval(timerRef.current) } }, [])
+
+  useEffect(() => {
+    measure()
+    startTimer()
+    const ro = new ResizeObserver(measure)
+    if (wrapRef.current) ro.observe(wrapRef.current)
+    return () => { if (timerRef.current) clearInterval(timerRef.current); ro.disconnect() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [N])
+
+  const btnCls = "absolute top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all hover:scale-105 active:scale-95"
+  const btnSty = { background:'#d99401', borderColor:'#b37a00', color:'#fff' }
 
   return (
-    <div className="relative">
-      <button onClick={() => scroll('left')}
-        className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all hover:scale-105 active:scale-95"
-        style={{background:'#d99401',borderColor:'#b37a00',color:'#fff'}}>
-        <ChevronLeft size={16}/>
-      </button>
-      <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scroll-smooth" style={{scrollbarWidth:'none',msOverflowStyle:'none'}}>
-        <style>{`.tool-carousel::-webkit-scrollbar{display:none}`}</style>
-        {tools.map(t => (
-          <div key={t.id} style={{minWidth:280,maxWidth:280,flexShrink:0}}>
+    <div ref={wrapRef} className="relative overflow-hidden" style={{paddingInline:0}}>
+      <button onClick={() => { advance(-1); startTimer() }} className={`${btnCls} -left-3`} style={btnSty}><ChevronLeft size={16}/></button>
+      <div ref={trackRef} style={{ display:'flex', gap:GAP, willChange:'transform' }}>
+        {items.map((t, i) => (
+          <div key={`${t.id}-${i}`} style={{ flexShrink:0 }}>
             <StoreCard tool={t} lang={lang} formatPrice={formatPrice}/>
           </div>
         ))}
       </div>
-      <button onClick={() => scroll('right')}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all hover:scale-105 active:scale-95"
-        style={{background:'#d99401',borderColor:'#b37a00',color:'#fff'}}>
-        <ChevronRight size={16}/>
-      </button>
+      <button onClick={() => { advance(1); startTimer() }} className={`${btnCls} -right-3`} style={btnSty}><ChevronRight size={16}/></button>
     </div>
   )
 }
