@@ -1,1 +1,2 @@
-export { default } from './_content'
+'use client'
+export { LandingInner as default } from './_content'
