@@ -70,7 +70,7 @@ export default function ShopAdminPage() {
   const [dealSaving,    setDealSaving]    = useState(false)
 
   // Tool form
-  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0' }
+  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',warranty_label:'' }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   // Category form
@@ -100,7 +100,7 @@ export default function ShopAdminPage() {
   // ── Tool CRUD ──
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModal('add-tool') }
   const openEditTool = async (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0)})
+    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0),warranty_label:(t as any).warranty_label||''})
     // Load bundle items if editing a bundle
     if (t.category_slug === 'bundle') {
       const res = await fetch('/api/admin/bundles')
@@ -145,6 +145,7 @@ export default function ShopAdminPage() {
       details_url:toolForm.details_url||null,
       details_slug:toolForm.details_slug||null,
       sales_count:parseInt((toolForm as any).sales_count)||0,
+      warranty_label:(toolForm as any).warranty_label||null,
     }
     const res = editItem
       ? await supabase.from('shop_tools').update(payload).eq('id',editItem.id)
@@ -846,6 +847,18 @@ export default function ShopAdminPage() {
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Delivery Label</label>
                 <input value={toolForm.delivery_label} onChange={e=>setToolForm({...toolForm,delivery_label:e.target.value})} placeholder="INSTANT" className={inp}/>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Warranty Badge</label>
+                <select value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)} className={inp}>
+                  <option value="">No Warranty</option>
+                  <option value="Full Warranty">Full Warranty</option>
+                  <option value="1 Year Warranty">1 Year Warranty</option>
+                  <option value="6 Months Warranty">6 Months Warranty</option>
+                  <option value="1 Month Warranty">1 Month Warranty</option>
+                  <option value="10 Days Warranty">10 Days Warranty</option>
+                </select>
+                <input value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)} placeholder="or type custom e.g. '3 Months Warranty'" className={`${inp} mt-1`}/>
               </div>
               <div>
                 <label className="text-[10px] font-semibold uppercase text-gray-400 mb-1 block">Sort Order</label>

@@ -6,7 +6,7 @@ import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
 import {
   ShoppingCart, Heart, Plus, Minus, Check, Star as StarIcon,
-  Search, ChevronLeft, Zap, X, Info,
+  Search, ChevronLeft, Zap, X, Info, Shield,
   TrendingUp, TrendingDown, Clock
 } from 'lucide-react'
 import { useMember } from '@/lib/member-context'
@@ -17,7 +17,7 @@ interface Tool {
   duration_label: string; category_slug: string; category_id?: string
   is_out_of_stock: boolean; landing_blocks?: any[]
   rating: number; review_count: number; sales_count?: number
-  delivery_label?: string; details_slug?: string
+  delivery_label?: string; details_slug?: string; warranty_label?: string
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -196,6 +196,13 @@ export default function CategoryPage() {
                   <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
                     <Zap size={10} fill="white"/>{t('فوري',tool.delivery_label||'INSTANT')}
                   </span>
+                  {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                      style={{background:'#6366f1'}}>
+                      <Shield size={10} strokeWidth={2.5} color="white"/>
+                      {tool.warranty_label}
+                    </span>
+                  )}
                 </div>
                 {/* Logo */}
                 <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden shadow-sm">
@@ -226,9 +233,10 @@ export default function CategoryPage() {
 
                 {/* Details + qty row */}
                 <div className="flex items-center gap-2">
-                  {hasLanding && (
-                    <button onClick={() => tool.details_slug && router.push(`/u/tool/${tool.details_slug}`)}
-                      className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#6366f1]/50 hover:text-[#6366f1] transition-all flex items-center justify-center gap-1.5">
+                  {tool.details_slug && (
+                    <button onClick={() => router.push(`/u/tool/${tool.details_slug}`)}
+                      className="flex-1 text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+                      style={{background:`${accent}18`,color:accent,border:`1.5px solid ${accent}60`}}>
                       <Info size={12}/>{t('التفاصيل','Details')}
                     </button>
                   )}
@@ -265,10 +273,11 @@ export default function CategoryPage() {
                     </a>
                     <button onClick={() => handleCart(tool)}
                       className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all"
+                      title={inCart(tool.id) ? t('إزالة من السلة','Remove from cart') : t('إضافة للسلة','Add to cart')}
                       style={inCart(tool.id)
                         ? {background:'#10b98120',borderColor:'#10b981',color:'#10b981'}
                         : {borderColor:'#e5e7eb',color:'#6b7280'}}>
-                      {inCart(tool.id) ? <Check size={13}/> : <Plus size={13}/>}
+                      {inCart(tool.id) ? <Check size={13}/> : <ShoppingCart size={13}/>}
                     </button>
                   </div>
                 )}

@@ -321,6 +321,12 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   // close sidebar on route change
   useEffect(()=>{ setSidebar(false) },[pathname])
 
+  // Update browser tab title per active section
+  useEffect(()=>{
+    const tab = nav.find(n => pathname === n.href || pathname.startsWith(n.href+'/'))
+    document.title = tab ? `${isRtl ? tab.ar : tab.en} | Pro Keys Store` : 'Pro Keys Store'
+  },[pathname, isRtl, nav])
+
   // sync active tab on pathname change (back/forward or direct URL)
   useEffect(()=>{
     const tab = TAB_HREFS.find(h => pathname === h)
@@ -851,14 +857,14 @@ if (pathname==='/u/login') return <>{children}</>
             boxShadow: dark ? '0 24px 64px rgba(0,0,0,0.65)' : '0 24px 56px rgba(0,0,0,0.14)',
           }} onClick={e=>e.stopPropagation()}>
             <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
                 {member?.avatar_url
                   ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
                   : member?.full_name?.slice(0,1).toUpperCase()}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{member?.full_name}</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate mb-1">{member?.full_name}</div>
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
                   {member?.member_code && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
                   )}
@@ -871,27 +877,40 @@ if (pathname==='/u/login') return <>{children}</>
                 <div className="text-[11px] text-gray-400 truncate">{member?.email}</div>
               </div>
             </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5 block">{isRtl?'البريد الإلكتروني':'Email'}</label>
-                <input value={newEmail} onChange={e=>setNewEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-[#d99401] transition-all"/>
+            {/* Language & Currency */}
+            <div className="px-4 pt-3 pb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">{isRtl?'اللغة والعملة':'Language & Currency'}</p>
+              <div className="flex gap-2">
+                <div className="flex-1 flex gap-1 p-1 rounded-lg" style={{background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}>
+                  {(['ar','en'] as const).map(l=>(
+                    <button key={l} onClick={()=>setLang(l)}
+                      className="flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all"
+                      style={lang===l?{background:'#d99401',color:'#fff'}:{color: dark?'#9ca3af':'#6b7280'}}>
+                      {l==='ar'?'عربي':'EN'}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex-1 flex gap-1 p-1 rounded-lg" style={{background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}>
+                  {(['egp','usd'] as const).map(c=>(
+                    <button key={c} onClick={()=>setCurrency(c)}
+                      className="flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all"
+                      style={currency===c?{background:'#d99401',color:'#fff'}:{color: dark?'#9ca3af':'#6b7280'}}>
+                      {c==='egp'?'ج.م':'USD'}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div>
-                <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5 block">{isRtl?'كلمة مرور جديدة':'New Password'}</label>
-                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}
-                  placeholder={isRtl?'اتركه فارغاً للإبقاء على الحالية':'Leave blank to keep current'}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none focus:border-[#d99401] transition-all"/>
-              </div>
-              {profileMsg && (
-                <p className={`text-xs font-medium ${profileMsg.includes('✓')||profileMsg.includes('تم')?'text-emerald-500':'text-red-500'}`}>{profileMsg}</p>
-              )}
-              <button onClick={saveProfile} disabled={profileSaving}
-                className="w-full py-2 rounded-lg disabled:opacity-60 text-white text-sm font-bold transition-colors" style={{background:'#d99401'}}>
-                {profileSaving?(isRtl?'جاري الحفظ...':'Saving...'):(isRtl?'حفظ التغييرات':'Save Changes')}
+            </div>
+            {/* Buttons */}
+            <div className="p-4 space-y-2 pt-3">
+              <button onClick={()=>{setProfile(false);navigateTo('/u/profile')}}
+                className="w-full py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                style={{background:'#d99401',color:'#fff'}}>
+                <Globe size={14}/>{isRtl?'حسابي':'My Account'}
               </button>
               <button onClick={logout}
-                className="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-[#d99401] hover:border-[#d9940150] flex items-center justify-center gap-1.5 transition-colors">
+                className="w-full py-2 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition-colors hover:text-red-500 hover:border-red-300"
+                style={{borderColor: dark?'rgba(255,255,255,0.1)':'#e5e7eb',color: dark?'#9ca3af':'#6b7280'}}>
                 <LogOut size={14}/>{isRtl?'تسجيل الخروج':'Sign Out'}
               </button>
             </div>
@@ -998,12 +1017,24 @@ function FloatingCart() {
   const { lang } = useLang()
   const isRtl = lang === 'ar'
   if (cartCount === 0) return null
+  const side = isRtl ? 'left' : 'right'
   return (
     <Link href="/u/cart"
-      className={`fixed z-50 ${isRtl ? 'left-5' : 'right-5'} flex items-center gap-2 px-3.5 py-2.5 rounded-2xl shadow-xl text-white font-bold text-sm transition-all hover:scale-105 active:scale-95`}
-      style={{ bottom: '160px', background: '#d99401', boxShadow: '0 4px 20px #d9940150' }}>
-      <ShoppingCart size={16}/>
-      <span>{cartCount}</span>
+      className="fixed z-50 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+      style={{
+        bottom: '20px',
+        [side]: '82px',
+        width: 48, height: 48,
+        borderRadius: '50%',
+        background: '#d99401',
+        boxShadow: '0 4px 20px #d9940160',
+        color: '#fff',
+      }}>
+      <ShoppingCart size={18}/>
+      {cartCount > 0 && (
+        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-white flex items-center justify-center text-[10px] font-bold"
+          style={{background:'#ef4444',fontSize:9}}>{cartCount}</span>
+      )}
     </Link>
   )
 }

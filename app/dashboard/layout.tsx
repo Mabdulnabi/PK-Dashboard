@@ -1,16 +1,35 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import { useAdminTheme } from '@/lib/admin-theme'
 
+const ADMIN_TITLES: Record<string, string> = {
+  '/dashboard': 'Overview',
+  '/dashboard/members': 'Members',
+  '/dashboard/products': 'Products',
+  '/dashboard/orders': 'Orders',
+  '/dashboard/tools': 'Tools',
+  '/dashboard/categories': 'Categories',
+  '/dashboard/finance': 'Finance',
+  '/dashboard/tickets': 'Tickets',
+  '/dashboard/notifications': 'Notifications',
+  '/dashboard/settings': 'Settings',
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
+  const router   = useRouter()
+  const pathname = usePathname()
   const [userName, setUserName] = useState('Admin')
   const [expiring, setExpiring] = useState(0)
   const [loading,  setLoading]  = useState(true)
   useAdminTheme()
+
+  useEffect(() => {
+    const seg = Object.keys(ADMIN_TITLES).find(k => pathname === k || pathname.startsWith(k + '/'))
+    document.title = seg ? `${ADMIN_TITLES[seg]} | Pro Keys Admin` : 'Pro Keys Admin'
+  }, [pathname])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

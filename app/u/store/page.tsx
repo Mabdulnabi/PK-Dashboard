@@ -5,7 +5,7 @@ import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { useCart } from '@/lib/cart-context'
 import { useMember } from '@/lib/member-context'
-import { ShoppingCart, Heart, Plus, Check, Star, Zap, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { ShoppingCart, Heart, Plus, Check, Star, Zap, ChevronLeft, ChevronRight, Info, Shield } from 'lucide-react'
 import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 
 interface Tool {
@@ -14,7 +14,7 @@ interface Tool {
   duration_label: string; category_slug: string; category_id?: string
   is_out_of_stock: boolean; landing_blocks?: any[]
   rating: number; review_count: number; sales_count?: number
-  delivery_label?: string; details_slug?: string
+  delivery_label?: string; details_slug?: string; warranty_label?: string
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -86,6 +86,13 @@ function StoreCard({ tool, lang, formatPrice, usdRate }: {
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
             <Zap size={10} fill="white"/>{t('فوري', tool.delivery_label||'INSTANT')}
           </span>
+          {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+              style={{background:'#6366f1'}}>
+              <Shield size={10} strokeWidth={2.5} color="white"/>
+              {tool.warranty_label}
+            </span>
+          )}
         </div>
         {/* Logo */}
         <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden shadow-sm">
@@ -111,9 +118,10 @@ function StoreCard({ tool, lang, formatPrice, usdRate }: {
           <span className="text-sm text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
         </div>
 
-        {Array.isArray(tool.landing_blocks) && tool.landing_blocks.length > 0 && (
-          <button onClick={() => tool.details_slug && router.push(`/u/tool/${tool.details_slug}`)}
-            className="w-full text-xs font-bold py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-[#6366f1]/50 hover:text-[#6366f1] transition-all flex items-center justify-center gap-1.5">
+        {tool.details_slug && (
+          <button onClick={() => router.push(`/u/tool/${tool.details_slug}`)}
+            className="w-full text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+            style={{background:`${accent}18`,color:accent,border:`1.5px solid ${accent}60`}}>
             <Info size={12}/>{t('التفاصيل','Details')}
           </button>
         )}
@@ -135,15 +143,64 @@ function StoreCard({ tool, lang, formatPrice, usdRate }: {
               <ShoppingCart size={13} color="white"/>{t('شراء الآن','Buy Now')}
             </a>
             <button onClick={handleCart}
-              className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all"
+              className="w-9 h-9 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all relative"
+              title={cartted ? t('إزالة من السلة','Remove from cart') : t('إضافة للسلة','Add to cart')}
               style={cartted
                 ? {background:'#10b98120',borderColor:'#10b981',color:'#10b981'}
                 : {borderColor:'#e5e7eb',color:'#6b7280'}}>
-              {cartted ? <Check size={13}/> : <Plus size={13}/>}
+              {cartted ? <Check size={13}/> : <ShoppingCart size={13}/>}
             </button>
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function ToolCarousel({ tools, lang, formatPrice, usdRate }: { tools: Tool[]; lang: string; formatPrice: (v:number,c?:string)=>string; usdRate: number }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const timerRef  = useRef<ReturnType<typeof setInterval>|null>(null)
+  const CARD = 300 // approx card width + gap
+
+  const scroll = (dir: 'left'|'right') => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollBy({ left: dir==='left' ? -CARD : CARD, behavior: 'smooth' })
+    resetTimer()
+  }
+  const resetTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      if (!scrollRef.current) return
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
+      if (scrollLeft + clientWidth >= scrollWidth - 4) {
+        scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' })
+      } else {
+        scrollRef.current.scrollBy({ left: CARD, behavior: 'smooth' })
+      }
+    }, 3500)
+  }
+  useEffect(() => { resetTimer(); return () => { if (timerRef.current) clearInterval(timerRef.current) } }, [])
+
+  return (
+    <div className="relative">
+      <button onClick={() => scroll('left')}
+        className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all hover:scale-105 active:scale-95"
+        style={{background:'#d99401',borderColor:'#b37a00',color:'#fff'}}>
+        <ChevronLeft size={16}/>
+      </button>
+      <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scroll-smooth" style={{scrollbarWidth:'none',msOverflowStyle:'none'}}>
+        <style>{`.tool-carousel::-webkit-scrollbar{display:none}`}</style>
+        {tools.map(t => (
+          <div key={t.id} style={{minWidth:280,maxWidth:280,flexShrink:0}}>
+            <StoreCard tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+          </div>
+        ))}
+      </div>
+      <button onClick={() => scroll('right')}
+        className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all hover:scale-105 active:scale-95"
+        style={{background:'#d99401',borderColor:'#b37a00',color:'#fff'}}>
+        <ChevronRight size={16}/>
+      </button>
     </div>
   )
 }
@@ -292,11 +349,14 @@ export default function StorePage() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {featuredTools.map(t => (
-              <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
-            ))}
-          </div>
+          {featuredTools.length > 3
+            ? <ToolCarousel tools={featuredTools} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+            : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {featuredTools.map(t => (
+                  <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+                ))}
+              </div>
+          }
         </div>
       )}
 
@@ -324,11 +384,14 @@ export default function StorePage() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sectionTools.map(t => (
-                <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
-              ))}
-            </div>
+            {sectionTools.length > 3
+              ? <ToolCarousel tools={sectionTools} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+              : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sectionTools.map(t => (
+                    <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+                  ))}
+                </div>
+            }
           </div>
         )
       })}

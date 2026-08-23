@@ -37,8 +37,6 @@ export default function BannerSlider({ slides, maxHeight = 280, isRtl = false, c
         <div key={s.url+i} className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: i === slide ? 1 : 0, zIndex: i === slide ? 1 : 0 }}>
           <img src={s.url} alt={`Slide ${i+1}`} className="w-full h-full object-cover" style={{ maxHeight }}/>
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.3))' }}/>
         </div>
       ))}
       {/* invisible spacer to give the container height */}

@@ -105,7 +105,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="pk-preloader" strategy="afterInteractive" dangerouslySetInnerHTML={{__html:`
 (function(){
   // ── Skip if inside iframe ──
-  if(window.self!==window.top)return;
+  var _pre=document.getElementById('pkPreloader');
+  if(window.self!==window.top){if(_pre)_pre.style.display='none';return;}
 
   // ── Preloader ──
   var pre=document.getElementById('pkPreloader'),reveal=document.getElementById('pkReveal'),stack=document.getElementById('pkStack'),logoWrap=document.getElementById('pkLogoWrap'),dots=document.getElementById('pkDots');

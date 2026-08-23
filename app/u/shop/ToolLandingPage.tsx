@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
 
 interface Block {
   id: string
@@ -26,8 +26,8 @@ interface Tool {
   id: string; name: string; description: string; image_url?: string
   price_egp: number; price_usd?: number; duration_label: string
   delivery_label: string; rating: number; review_count: number
-  video_url?: string; features: string[]; is_out_of_stock: boolean
-  landing_blocks: Block[]
+  sales_count?: number; video_url?: string; features: string[]
+  is_out_of_stock: boolean; landing_blocks: Block[]
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange:(v:number)=>void }) {
@@ -146,7 +146,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={onBack}
               className="flex items-center gap-1.5 text-gray-500 hover:text-gray-200 transition-colors mb-7 text-sm group w-fit">
               <ArrowLeft size={14} className={`transition-transform group-hover:${isRtl?'translate-x-0.5':'-translate-x-0.5'} ${isRtl?'rotate-180':''}`}/>
-              {t('Back to Shop','رجوع للمتجر')}
+              {t('Back to Store','رجوع للمتجر')}
             </button>
 
             <div className="flex flex-col md:flex-row items-start gap-7">
@@ -172,6 +172,12 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                     style={{border:'1px solid rgba(255,255,255,0.12)'}}>
                     ⏱ {durLabel}
                   </span>
+                  {(tool.sales_count||0) > 0 && (
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                      style={{background:'rgba(217,148,1,0.85)'}}>
+                      <ShoppingCart size={9} strokeWidth={2.5}/>{(tool.sales_count||0).toLocaleString()} {t('sold','مبيعة')}
+                    </span>
+                  )}
                 </div>
 
                 <h1 className="text-2xl md:text-4xl font-bold text-white mb-3 leading-tight tracking-tight">{tool.name}</h1>

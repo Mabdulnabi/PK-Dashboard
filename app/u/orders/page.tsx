@@ -77,7 +77,7 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">
                   {t(`How's your experience with `, `كيف تجربتك مع `)}<span style={{color:'#d99401'}}>{current.tool_name}</span>?
                 </p>
@@ -85,10 +85,11 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
                   <X size={14}/>
                 </button>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">{t("You've been using it for a week — share your feedback",'استخدمتها أسبوع — شارك تجربتك')}</p>
 
-              {/* Stars */}
-              <div className="flex gap-1 mb-3">
+              {/* Text + Stars inline */}
+              <div className={`flex items-center gap-3 mb-3 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
+                <p className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">{t("Rate now:","قيّم الآن:")}</p>
+                <div className="flex gap-1">
                 {[1,2,3,4,5].map(i=>(
                   <button key={i} type="button"
                     onMouseEnter={()=>setHover(i)} onMouseLeave={()=>setHover(0)}
@@ -99,6 +100,7 @@ function ReviewPrompt({ purchases, t, lang }: { purchases: any[]; t: any; lang: 
                       className="transition-colors"/>
                   </button>
                 ))}
+                </div>
               </div>
 
               {stars > 0 && (
