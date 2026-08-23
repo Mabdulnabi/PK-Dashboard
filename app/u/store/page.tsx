@@ -37,14 +37,14 @@ function Stars({ rating, count }: { rating: number; count: number }) {
   )
 }
 
-function StoreCard({ tool, lang, formatPrice, usdRate }: {
-  tool: Tool; lang: string; formatPrice: (v:number,c?:string)=>string; usdRate: number
+function StoreCard({ tool, lang, formatPrice }: {
+  tool: Tool; lang: string; formatPrice: (v:number,c?:string)=>string
 }) {
   const router = useRouter()
   const isRtl  = lang === 'ar'
   const t = (ar: string, en: string) => isRtl ? ar : en
   const accent = tool.category_slug === 'private' ? '#8b5cf6' : tool.category_slug === 'bundle' ? '#f59e0b' : '#d99401'
-  const price  = formatPrice(tool.price_egp, usdRate)
+  const price  = formatPrice(tool.price_egp)
   const { addToCart, removeFromCart, inCart, toggleFav, isFav } = useCart()
   const { member, requireAuth } = useMember()
   const [toast, setToast] = useState('')
@@ -157,7 +157,7 @@ function StoreCard({ tool, lang, formatPrice, usdRate }: {
   )
 }
 
-function ToolCarousel({ tools, lang, formatPrice, usdRate }: { tools: Tool[]; lang: string; formatPrice: (v:number,c?:string)=>string; usdRate: number }) {
+function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: string; formatPrice: (v:number,c?:string)=>string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const timerRef  = useRef<ReturnType<typeof setInterval>|null>(null)
   const CARD = 300 // approx card width + gap
@@ -192,7 +192,7 @@ function ToolCarousel({ tools, lang, formatPrice, usdRate }: { tools: Tool[]; la
         <style>{`.tool-carousel::-webkit-scrollbar{display:none}`}</style>
         {tools.map(t => (
           <div key={t.id} style={{minWidth:280,maxWidth:280,flexShrink:0}}>
-            <StoreCard tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+            <StoreCard tool={t} lang={lang} formatPrice={formatPrice}/>
           </div>
         ))}
       </div>
@@ -350,10 +350,10 @@ export default function StorePage() {
             </div>
           </div>
           {featuredTools.length > 3
-            ? <ToolCarousel tools={featuredTools} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+            ? <ToolCarousel tools={featuredTools} lang={lang} formatPrice={formatPrice}/>
             : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {featuredTools.map(t => (
-                  <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+                  <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice}/>
                 ))}
               </div>
           }
@@ -385,10 +385,10 @@ export default function StorePage() {
               </div>
             </div>
             {sectionTools.length > 3
-              ? <ToolCarousel tools={sectionTools} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+              ? <ToolCarousel tools={sectionTools} lang={lang} formatPrice={formatPrice}/>
               : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sectionTools.map(t => (
-                    <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice} usdRate={usdRate}/>
+                    <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice}/>
                   ))}
                 </div>
             }
