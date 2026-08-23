@@ -24,7 +24,7 @@ interface Review {
 
 interface Tool {
   id: string; name: string; description: string; image_url?: string
-  price_egp: number; price_usd?: number; duration_label: string
+  price_egp: number; price_usd?: number; duration_label: string; retail_price_egp?: number
   delivery_label: string; rating: number; review_count: number
   sales_count?: number; video_url?: string; features: string[]
   is_out_of_stock: boolean; landing_blocks: Block[]
@@ -194,10 +194,23 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   <span className="text-sm text-gray-500">{displayCount} {t('reviews','تقييم')}</span>
                 </div>
 
-                <div className="flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-2 gap-y-1">
                   <span className="text-3xl md:text-5xl font-extrabold tracking-tight" style={{color:'#d99401'}}>{price}</span>
+                  {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
+                    <span className="text-lg md:text-2xl text-gray-400 line-through font-medium">
+                      {formatPrice(tool.retail_price_egp!, parseFloat(settings.usd_to_egp_rate)||50)}
+                    </span>
+                  )}
                   <span className="text-base md:text-lg text-gray-500 font-medium">/ {durLabel}</span>
                 </div>
+                {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
+                  <div className="mt-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black text-white"
+                      style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
+                      {(() => { const pct = Math.round((1 - tool.price_egp / tool.retail_price_egp!) * 100); return `${pct}% ${t('خصم عن السعر الأصلي','OFF retail price')}` })()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* CTA */}

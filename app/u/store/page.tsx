@@ -10,7 +10,7 @@ import BannerSlider, { BannerSlide } from '@/components/ui/BannerSlider'
 
 interface Tool {
   id: string; name: string; description: string; description_ar?: string
-  image_url?: string; price_egp: number; price_usd?: number
+  image_url?: string; price_egp: number; price_usd?: number; retail_price_egp?: number
   duration_label: string; category_slug: string; category_id?: string
   is_out_of_stock: boolean; landing_blocks?: any[]
   rating: number; review_count: number; sales_count?: number
@@ -76,6 +76,20 @@ function StoreCard({ tool, lang, formatPrice }: {
       <div className="p-5 pb-3">
         {/* Badges */}
         <div className={`flex items-center gap-1.5 mb-3 flex-wrap ${isRtl ? 'justify-start' : 'justify-end'}`}>
+          {(() => {
+            const retail = tool.retail_price_egp || 0
+            const mine   = tool.price_egp || 0
+            if (retail > 0 && mine > 0 && mine < retail) {
+              const pct = Math.round((1 - mine / retail) * 100)
+              return (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black text-white"
+                  style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
+                  <TrendingDown size={10} strokeWidth={2.5}/>{pct}% {t('خصم','OFF')}
+                </span>
+              )
+            }
+            return null
+          })()}
           {(tool.sales_count || 0) > 0 && (
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
               style={{background: accent}}>
@@ -113,8 +127,11 @@ function StoreCard({ tool, lang, formatPrice }: {
       <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
 
       <div className="px-5 py-3 mt-auto space-y-2" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="flex items-baseline gap-1">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-xl font-bold" style={{color:accent}}>{price}</span>
+          {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
+            <span className="text-sm text-gray-400 line-through">{formatPrice(tool.retail_price_egp!)}</span>
+          )}
           <span className="text-sm text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
         </div>
 
