@@ -830,9 +830,20 @@ export default function MyOrdersPage() {
             {purchases.length>0 && (
               <button
                 onClick={()=>{ setArSelected(Object.fromEntries(purchases.map(p=>[p.id,p.auto_renew??false]))); setAutoRenewModal(true) }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 active:scale-95"
-                style={{borderColor:'#d99401',color:'#d99401',background:'rgba(217,148,1,0.08)'}}>
-                <RefreshCw size={12}/>{t('Auto Renew','تجديد تلقائي')}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-sm"
+                style={{
+                  background:'linear-gradient(135deg,#d99401,#f5b800)',
+                  color:'#fff',
+                  boxShadow:'0 2px 10px rgba(217,148,1,0.35)',
+                }}>
+                <RefreshCw size={12} className="animate-spin" style={{animationDuration:'3s'}}/>
+                {t('Auto Renew','تجديد تلقائي')}
+                {purchases.some(p=>p.auto_renew) && (
+                  <span className="w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center"
+                    style={{background:'rgba(255,255,255,0.3)'}}>
+                    {purchases.filter(p=>p.auto_renew).length}
+                  </span>
+                )}
               </button>
             )}
           </div>
