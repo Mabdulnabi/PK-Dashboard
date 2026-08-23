@@ -277,7 +277,6 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
   const [openFaq,  setOpenFaq]  = useState<number | null>(null)
 
   const [revIdx,  setRevIdx]  = useState(0)
-  const revTimer = useRef<ReturnType<typeof setTimeout>>()
 
   const [nlName,  setNlName]  = useState('')
   const [nlEmail, setNlEmail] = useState('')
@@ -347,11 +346,6 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
   }, [embedded])
 
   const reviews: Review[] = parse(s.lp_reviews, [])
-  useEffect(() => {
-    if (reviews.length < 2) return
-    revTimer.current = setTimeout(() => setRevIdx(i => (i + 1) % reviews.length), 4500)
-    return () => clearTimeout(revTimer.current)
-  }, [revIdx, reviews.length])
 
   const toolLogos: ToolLogo[] = parse(s.lp_tool_logos, [])
   const logoSize = Number(s.lp_logo_size) || 44
@@ -591,9 +585,9 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
               })()}
               {reviews.length > 1 && (
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, marginTop:24 }}>
-                  <button onClick={() => { clearTimeout(revTimer.current); setRevIdx(i => (i - 1 + reviews.length) % reviews.length) }} style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #DCE4F1', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#1B2556' }}>{lang === 'ar' ? '›' : '‹'}</button>
-                  <div style={{ display:'flex', gap:6 }}>{reviews.map((_, i) => (<button key={i} onClick={() => { clearTimeout(revTimer.current); setRevIdx(i) }} style={{ borderRadius:999, border:'none', cursor:'pointer', transition:'all .3s', background: i === revIdx ? '#d99401' : '#DCE4F1', width: i === revIdx ? 22 : 8, height:8 }}/>))}</div>
-                  <button onClick={() => { clearTimeout(revTimer.current); setRevIdx(i => (i + 1) % reviews.length) }} style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #DCE4F1', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#1B2556' }}>{lang === 'ar' ? '‹' : '›'}</button>
+                  <button onClick={() => setRevIdx(i => (i - 1 + reviews.length) % reviews.length)} style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #DCE4F1', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#1B2556' }}>{lang === 'ar' ? '›' : '‹'}</button>
+                  <div style={{ display:'flex', gap:6 }}>{reviews.map((_, i) => (<button key={i} onClick={() => setRevIdx(i)} style={{ borderRadius:999, border:'none', cursor:'pointer', transition:'all .3s', background: i === revIdx ? '#d99401' : '#DCE4F1', width: i === revIdx ? 22 : 8, height:8 }}/>))}</div>
+                  <button onClick={() => setRevIdx(i => (i + 1) % reviews.length)} style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #DCE4F1', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#1B2556' }}>{lang === 'ar' ? '‹' : '›'}</button>
                 </div>
               )}
             </div>
