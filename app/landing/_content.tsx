@@ -45,7 +45,8 @@ function Counter({ target, suffix }: { target: number; suffix: string }) {
 
 // ─── Auth Modal Component ─────────────────────────────────────────────────────
 interface AuthModalProps {
-  authModal: 'login'|'signup'|'forgot'
+  authModal: 'login'|'signup'|'forgot'|null
+  visible: boolean
   lang: Lang
   logo: string
   siteName: string
@@ -66,7 +67,8 @@ interface AuthModalProps {
   closeAuth: ()=>void
 }
 
-function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPass, setAmPass, amConf, setAmConf, amName, setAmName, amWA, setAmWA, amAgree, setAmAgree, amLoading, setAmLoading, amError, setAmError, amOk, setAmOk, amForgotEmail, setAmForgotEmail, pwState, evalPw, isPwStrong, setAuthModal, closeAuth }: AuthModalProps) {
+function AuthModal({ authModal, visible, lang, logo, siteName, amEmail, setAmEmail, amPass, setAmPass, amConf, setAmConf, amName, setAmName, amWA, setAmWA, amAgree, setAmAgree, amLoading, setAmLoading, amError, setAmError, amOk, setAmOk, amForgotEmail, setAmForgotEmail, pwState, evalPw, isPwStrong, setAuthModal, closeAuth }: AuthModalProps) {
+  const mode = authModal || 'login'
   const t = (ar: string, en: string) => lang === 'ar' ? ar : en
   const L = {
     ar: {
@@ -195,7 +197,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
   const subMap   = { login: L.loginSub,   signup: L.signupSub,   forgot: L.forgotSub }
 
   return (
-    <div id="amOverlay" className="am-vis" style={{ fontFamily:"'Cairo',sans-serif" }}
+    <div id="amOverlay" className={visible ? 'am-vis' : ''} style={{ fontFamily:"'Cairo',sans-serif" }}
       onClick={e => { if (e.target === e.currentTarget) closeAuth() }}>
       <div id="amCard">
         <div className="am-hdr">
@@ -206,18 +208,18 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
         </div>
         <div className="am-body">
           <div className="am-title">
-            <h2>{titleMap[authModal]}</h2>
-            <p>{subMap[authModal]}</p>
+            <h2>{titleMap[mode]}</h2>
+            <p>{subMap[mode]}</p>
           </div>
-          {(authModal === 'login' || authModal === 'signup') && (
+          {(mode === 'login' || mode === 'signup') && (
             <div className="am-tabs">
-              <button className={`am-tab${authModal==='login'?' on':''}`} onClick={() => switchTo('login')}>{L.login}</button>
-              <button className={`am-tab${authModal==='signup'?' on':''}`} onClick={() => switchTo('signup')}>{L.signup}</button>
+              <button className={`am-tab${mode==='login'?' on':''}`} onClick={() => switchTo('login')}>{L.login}</button>
+              <button className={`am-tab${mode==='signup'?' on':''}`} onClick={() => switchTo('signup')}>{L.signup}</button>
             </div>
           )}
           {amError && <div className="am-err">{amError}</div>}
           {amOk    && <div className="am-ok">{amOk}</div>}
-          {authModal === 'login' && (
+          {mode === 'login' && (
             <>
               <div className="am-grp"><label>{L.email}</label><input type="email" value={amEmail} onChange={e=>setAmEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
               <div className="am-grp">
@@ -231,7 +233,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
               <div className="am-footer"><span>{L.noAccount} </span><button onClick={() => switchTo('signup')}>{L.makeAccount}</button></div>
             </>
           )}
-          {authModal === 'signup' && (
+          {mode === 'signup' && (
             <>
               <div className="am-grp"><label>{L.name}</label><input type="text" value={amName} onChange={e=>setAmName(e.target.value)} placeholder={lang==='ar'?'محمد علي':'John Smith'}/></div>
               <div className="am-grp"><label>{L.email}</label><input type="email" value={amEmail} onChange={e=>setAmEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
@@ -248,7 +250,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
               <div className="am-footer"><span>{L.haveAccount} </span><button onClick={() => switchTo('login')}>{L.doLogin}</button></div>
             </>
           )}
-          {authModal === 'forgot' && (
+          {mode === 'forgot' && (
             <>
               <div className="am-forgot-icon">🔑</div>
               <div className="am-grp"><label>{L.email}</label><input type="email" value={amForgotEmail} onChange={e=>setAmForgotEmail(e.target.value)} placeholder="your@email.com" dir="ltr"/></div>
@@ -611,7 +613,7 @@ export function LandingInner({ embedded = false }: { embedded?: boolean }) {
       </footer>
 
       <button onClick={() => window.scrollTo({ top:0, behavior:'smooth' })} aria-label="Back to top"
-        style={{ position:'fixed', bottom: lang==='ar' ? 'auto' : 20, right: lang==='ar' ? 'auto' : 20, left: lang==='ar' ? 20 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
+        style={{ position:'fixed', bottom: 20, right: lang==='ar' ? 'auto' : 20, left: lang==='ar' ? 20 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
         <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
           <circle cx="23" cy="23" r={R} fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="3"/>
           <circle cx="23" cy="23" r={R} fill="none" stroke="#d99401" strokeWidth="3" strokeLinecap="round" transform="rotate(-90 23 23)" strokeDasharray={C} strokeDashoffset={ringOffset}/>
@@ -634,8 +636,8 @@ export function LandingInner({ embedded = false }: { embedded?: boolean }) {
         [dir="rtl"] .lp-marquee-track{animation-direction:reverse;}
         @media(max-width:860px){.lp-hero-grid{grid-template-columns:1fr !important;}.lp-feat-grid{grid-template-columns:1fr !important;}.lp-stats-grid{grid-template-columns:1fr !important;}.lp-desk-nav{display:none !important;}.lp-ham{display:inline-flex !important;}}
         @media(max-width:600px){section{padding:56px 0 !important;}}
-        #amOverlay{position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;transition:opacity .2s ease;}
-        #amOverlay.am-vis{opacity:1;}
+        #amOverlay{position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+        #amOverlay.am-vis{opacity:1;pointer-events:auto;}
         #amCard{width:100%;max-width:460px;max-height:min(640px,92vh);background:#fff;border-radius:18px;box-shadow:0 25px 70px rgba(0,0,0,.2);overflow:hidden;display:flex;flex-direction:column;transform:translateY(16px) scale(.97);transition:transform .25s ease;}
         #amOverlay.am-vis #amCard{transform:translateY(0) scale(1);}
         .am-hdr{flex-shrink:0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(217,148,1,.08),rgba(217,148,1,.03));border-bottom:1px solid #EDD98A;}
@@ -674,18 +676,16 @@ export function LandingInner({ embedded = false }: { embedded?: boolean }) {
         @media(max-width:500px){.am-row{grid-template-columns:1fr;}.am-body{padding:16px 16px;}}
       `}</style>
 
-      {authModal && (
-        <AuthModal
-          authModal={authModal} lang={lang} logo={logo} siteName={siteName}
-          amEmail={amEmail} setAmEmail={setAmEmail} amPass={amPass} setAmPass={setAmPass}
-          amConf={amConf} setAmConf={setAmConf} amName={amName} setAmName={setAmName}
-          amWA={amWA} setAmWA={setAmWA} amAgree={amAgree} setAmAgree={setAmAgree}
-          amLoading={amLoading} setAmLoading={setAmLoading} amError={amError} setAmError={setAmError}
-          amOk={amOk} setAmOk={setAmOk} amForgotEmail={amForgotEmail} setAmForgotEmail={setAmForgotEmail}
-          pwState={pwState} evalPw={evalPw} isPwStrong={isPwStrong}
-          setAuthModal={setAuthModal} closeAuth={closeAuth}
-        />
-      )}
+      <AuthModal
+        authModal={authModal} visible={!!authModal} lang={lang} logo={logo} siteName={siteName}
+        amEmail={amEmail} setAmEmail={setAmEmail} amPass={amPass} setAmPass={setAmPass}
+        amConf={amConf} setAmConf={setAmConf} amName={amName} setAmName={setAmName}
+        amWA={amWA} setAmWA={setAmWA} amAgree={amAgree} setAmAgree={setAmAgree}
+        amLoading={amLoading} setAmLoading={setAmLoading} amError={amError} setAmError={setAmError}
+        amOk={amOk} setAmOk={setAmOk} amForgotEmail={amForgotEmail} setAmForgotEmail={setAmForgotEmail}
+        pwState={pwState} evalPw={evalPw} isPwStrong={isPwStrong}
+        setAuthModal={setAuthModal} closeAuth={closeAuth}
+      />
     </div>
   )
 }
