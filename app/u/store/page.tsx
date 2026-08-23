@@ -38,7 +38,7 @@ function Stars({ rating, count }: { rating: number; count: number }) {
 }
 
 function StoreCard({ tool, lang, formatPrice }: {
-  tool: Tool; lang: string; formatPrice: (v:number,c?:string)=>string
+  tool: Tool; lang: string; formatPrice: (egp:number,usdRate?:number)=>string
 }) {
   const router = useRouter()
   const isRtl  = lang === 'ar'
@@ -157,7 +157,7 @@ function StoreCard({ tool, lang, formatPrice }: {
   )
 }
 
-function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: string; formatPrice: (v:number,c?:string)=>string }) {
+function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: string; formatPrice: (egp:number,usdRate?:number)=>string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const timerRef  = useRef<ReturnType<typeof setInterval>|null>(null)
   const CARD = 300 // approx card width + gap
