@@ -283,6 +283,17 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     TAB_HREFS.find(h => pathname === h) ?? null
   )
 
+  const [carouselAuto, setCarouselAuto] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('pk_carousel_auto') === '1'
+  })
+
+  const toggleCarousel = (on: boolean) => {
+    setCarouselAuto(on)
+    localStorage.setItem('pk_carousel_auto', on ? '1' : '0')
+    window.dispatchEvent(new CustomEvent('pk-carousel-auto', { detail: on }))
+  }
+
   const [newEmail,      setNewEmail]   = useState('')
   const [newPassword,   setNewPassword] = useState('')
   const [profileSaving, setProfileSaving] = useState(false)
@@ -979,6 +990,21 @@ if (pathname==='/u/login') return <>{children}</>
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+            {/* Carousel auto-play toggle */}
+            <div className="px-4 pt-2 pb-1 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                  {isRtl ? 'تشغيل تلقائي للتقييمات' : 'Reviews auto-play'}
+                </span>
+                <button
+                  onClick={() => toggleCarousel(!carouselAuto)}
+                  className="relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0"
+                  style={{ background: carouselAuto ? '#d99401' : (dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)') }}>
+                  <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"
+                    style={{ left: carouselAuto ? (isRtl ? '2px' : 'calc(100% - 18px)') : (isRtl ? 'calc(100% - 18px)' : '2px') }}/>
+                </button>
               </div>
             </div>
             {/* Buttons */}

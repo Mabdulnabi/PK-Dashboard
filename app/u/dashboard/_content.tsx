@@ -276,7 +276,16 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
   const [menuOpen, setMenuOpen] = useState(false)
   const [openFaq,  setOpenFaq]  = useState<number | null>(null)
 
-  const [revIdx,  setRevIdx]  = useState(0)
+  const [revIdx,      setRevIdx]      = useState(0)
+  const [carouselAuto, setCarouselAuto] = useState(false)
+  const revTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => {
+    setCarouselAuto(localStorage.getItem('pk_carousel_auto') === '1')
+    const handler = (e: Event) => setCarouselAuto((e as CustomEvent<boolean>).detail)
+    window.addEventListener('pk-carousel-auto', handler)
+    return () => window.removeEventListener('pk-carousel-auto', handler)
+  }, [])
 
   const [nlName,  setNlName]  = useState('')
   const [nlEmail, setNlEmail] = useState('')
@@ -346,6 +355,11 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
   }, [embedded])
 
   const reviews: Review[] = parse(s.lp_reviews, [])
+  useEffect(() => {
+    if (!carouselAuto || reviews.length < 2) return
+    revTimer.current = setTimeout(() => setRevIdx(i => (i + 1) % reviews.length), 4500)
+    return () => clearTimeout(revTimer.current)
+  }, [revIdx, reviews.length, carouselAuto])
 
   const toolLogos: ToolLogo[] = parse(s.lp_tool_logos, [])
   const logoSize = Number(s.lp_logo_size) || 44
