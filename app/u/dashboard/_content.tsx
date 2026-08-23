@@ -264,7 +264,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
   )
 }
 
-// ─── Main component (exported for use in dashboard tab) ───────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 export function LandingInner({ embedded = false, memberActive = false }: { embedded?: boolean; memberActive?: boolean }) {
 
   const [lang,    setLang]    = useState<Lang>('ar')

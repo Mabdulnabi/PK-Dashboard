@@ -1,5 +1,5 @@
 'use client'
-import { LandingInner } from '@/app/landing/_content'
+import { LandingInner } from './_content'
 import { useMember } from '@/lib/member-context'
 
 export default function DashboardTab() {
