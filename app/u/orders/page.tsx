@@ -946,6 +946,18 @@ export default function MyOrdersPage() {
                       </div>
                       <div className="flex flex-col items-end gap-1.5">
                         <StatusBadge days={days} t={t}/>
+                        {(() => {
+                          const retail = p.retail_price_egp || 0
+                          const mine   = p.amount_egp || 0
+                          if (retail <= 0 || mine <= 0 || mine >= retail) return null
+                          const pct = Math.round((1 - mine / retail) * 100)
+                          return (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black"
+                              style={{background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',letterSpacing:'0.01em'}}>
+                              <TrendingDown size={9}/>{pct}% {t('OFF','خصم')}
+                            </span>
+                          )
+                        })()}
                         {isConnected && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">
                             <Wifi size={9}/> {t('Connected','متصل')}
@@ -955,6 +967,21 @@ export default function MyOrdersPage() {
                     </div>
 
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 leading-tight">{p.tool_name}</h3>
+
+                    {/* Price line */}
+                    {(() => {
+                      const retail = p.retail_price_egp || 0
+                      const mine   = p.amount_egp || 0
+                      if (mine <= 0) return null
+                      return (
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-sm font-black" style={{color:'#d99401'}}>{mine} {t('EGP','ج')}</span>
+                          {retail > 0 && mine < retail && (
+                            <span className="text-[11px] text-gray-400 line-through">{retail} {t('EGP','ج')}</span>
+                          )}
+                        </div>
+                      )
+                    })()}
 
                     {/* Expires line — red */}
                     <div className="flex items-center gap-1.5 text-xs font-medium mb-2 text-red-400">
