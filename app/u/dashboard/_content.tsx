@@ -625,7 +625,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
 
       {!embedded && (
         <button onClick={() => window.scrollTo({top:0,behavior:'smooth'})} aria-label="Back to top"
-          style={{ position:'fixed', bottom:20, right: lang==='ar' ? 'auto' : 20, left: lang==='ar' ? 20 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
+          style={{ position:'fixed', bottom:6, right: lang==='ar' ? 'auto' : 16, left: lang==='ar' ? 16 : 'auto', top:'auto', zIndex:999999, width:46, height:46, borderRadius:'50%', border:'none', background:'#1B2556', cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 22px rgba(27,37,86,.28)', opacity: showTop ? 1 : 0, pointerEvents: showTop ? 'auto' : 'none', transform: showTop ? 'translateY(0)' : 'translateY(10px)', transition:'all .25s' }}>
           <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
             <circle cx="23" cy="23" r={R} fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="3"/>
             <circle cx="23" cy="23" r={R} fill="none" stroke="#d99401" strokeWidth="3" strokeLinecap="round" transform="rotate(-90 23 23)" strokeDasharray={C} strokeDashoffset={ringOffset}/>
