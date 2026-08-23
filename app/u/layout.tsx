@@ -324,8 +324,8 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   // Update browser tab title per active section
   useEffect(()=>{
     const tab = nav.find(n => pathname === n.href || pathname.startsWith(n.href+'/'))
-    document.title = tab ? `${isRtl ? tab.ar : tab.en} | Pro Keys Store` : 'Pro Keys Store'
-  },[pathname, isRtl, nav])
+    document.title = tab ? `${lang === 'ar' ? tab.ar : tab.en} | Pro Keys Store` : 'Pro Keys Store'
+  },[pathname, lang, nav])
 
   // sync active tab on pathname change (back/forward or direct URL)
   useEffect(()=>{
