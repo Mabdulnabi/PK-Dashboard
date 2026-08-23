@@ -944,8 +944,9 @@ export default function MyOrdersPage() {
                           : <Package size={20} className="text-gray-300"/>
                         }
                       </div>
-                      {/* Top-right: delivery badge only */}
+                      {/* Top-right: status badge + delivery badge */}
                       <div className="flex flex-col items-end gap-1">
+                        <StatusBadge days={days} t={t}/>
                         {isPrivate && p.has_delivery && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
                             style={{background:'linear-gradient(135deg,#d99401,#f5b800)',color:'#fff'}}>
@@ -962,15 +963,14 @@ export default function MyOrdersPage() {
 
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1.5 leading-tight">{p.tool_name}</h3>
 
-                    {/* Badges row: status + connected */}
-                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                      <StatusBadge days={days} t={t}/>
-                      {isConnected && (
+                    {/* Badges row: connected */}
+                    {isConnected && (
+                      <div className="flex items-center gap-1.5 mb-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">
                           <Wifi size={9}/>{t('Connected','متصل')}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Expires line — red */}
                     <div className="flex items-center gap-1.5 text-xs font-medium mb-2 text-red-400">
