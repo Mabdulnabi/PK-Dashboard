@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { data: purchases, error } = await service
     .from('tool_purchases')
-    .select(`id, member_id, created_at, expires_at, amount_egp, payment_method, coupon_code, shop_tools(id,name,image_url,category_slug,duration_days), members(id,full_name,email,member_code)`)
+    .select(`id, member_id, created_at, expires_at, amount_egp, payment_method, reference, shop_tools(id,name,image_url,category_slug,duration_days), members(id,full_name,email,member_code)`)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false })
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       category_slug:  catSlug || 'shared',
       amount_egp:     p.amount_egp,
       payment_method: p.payment_method || null,
-      coupon_code:    p.coupon_code    || null,
+      coupon_code:    p.reference      || null,
       created_at:     p.created_at,
       expires_at:     p.expires_at,
       duration_days:  p.shop_tools?.duration_days || null,
