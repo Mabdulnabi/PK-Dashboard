@@ -43,12 +43,18 @@ export async function POST(req: NextRequest) {
   const bytes  = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
+  // Append timestamp to path so each upload gets a unique URL (busts browser cache)
+  const dotIdx = path.lastIndexOf('.')
+  const uniquePath = dotIdx >= 0
+    ? `${path.slice(0, dotIdx)}_${Date.now()}${path.slice(dotIdx)}`
+    : `${path}_${Date.now()}`
+
   const { error: upErr } = await supabase.storage
     .from('site-assets')
-    .upload(path, buffer, { upsert: true, contentType: file.type });
+    .upload(uniquePath, buffer, { upsert: false, contentType: file.type });
 
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
 
-  const { data: urlData } = supabase.storage.from('site-assets').getPublicUrl(path);
+  const { data: urlData } = supabase.storage.from('site-assets').getPublicUrl(uniquePath);
   return NextResponse.json({ url: urlData.publicUrl });
 }
