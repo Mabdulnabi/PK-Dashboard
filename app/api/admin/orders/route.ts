@@ -17,30 +17,38 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const privatePurchases = (purchases || []).filter((p: any) => p.shop_tools?.category_slug === 'private')
-  const ids = privatePurchases.map((p: any) => p.id)
+  const allPurchases = purchases || []
+  const privateIds = allPurchases
+    .filter((p: any) => p.shop_tools?.category_slug === 'private')
+    .map((p: any) => p.id)
 
-  const { data: deliveries } = ids.length
-    ? await service.from('account_deliveries').select('purchase_id,delivered_at,viewed_at').in('purchase_id', ids)
+  const { data: deliveries } = privateIds.length
+    ? await service.from('account_deliveries').select('purchase_id,delivered_at,viewed_at').in('purchase_id', privateIds)
     : { data: [] }
 
   const delivMap: Record<string, any> = {}
   ;(deliveries || []).forEach((d: any) => { delivMap[d.purchase_id] = d })
 
-  const orders = privatePurchases.map((p: any) => ({
-    id:           p.id,
-    member_name:  p.members?.full_name,
-    member_email: p.members?.email,
-    tool_id:      p.shop_tools?.id,
-    tool_name:    p.shop_tools?.name,
-    tool_image:   p.shop_tools?.image_url,
-    amount_egp:   p.amount_egp,
-    created_at:   p.created_at,
-    expires_at:   p.expires_at,
-    delivered:    !!delivMap[p.id],
-    delivered_at: delivMap[p.id]?.delivered_at || null,
-    viewed_at:    delivMap[p.id]?.viewed_at    || null,
-  }))
+  const orders = allPurchases.map((p: any) => {
+    const catSlug = p.shop_tools?.category_slug
+    const isPrivate = catSlug === 'private'
+    return {
+      id:            p.id,
+      member_id:     p.members?.id,
+      member_name:   p.members?.full_name,
+      member_email:  p.members?.email,
+      tool_id:       p.shop_tools?.id,
+      tool_name:     p.shop_tools?.name,
+      tool_image:    p.shop_tools?.image_url,
+      category_slug: catSlug || 'shared',
+      amount_egp:    p.amount_egp,
+      created_at:    p.created_at,
+      expires_at:    p.expires_at,
+      delivered:     isPrivate ? !!delivMap[p.id] : null,
+      delivered_at:  isPrivate ? (delivMap[p.id]?.delivered_at || null) : null,
+      viewed_at:     isPrivate ? (delivMap[p.id]?.viewed_at    || null) : null,
+    }
+  })
 
   const result = status === 'pending'   ? orders.filter(o => !o.delivered)
                : status === 'delivered' ? orders.filter(o => o.delivered)

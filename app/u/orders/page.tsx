@@ -808,6 +808,27 @@ export default function MyOrdersPage() {
 
       <NotifBanner lang={lang} match={['تسليم','تحديث','delivered','updated','Order','طلب']}/>
 
+      {/* ── Unviewed delivery banner ── */}
+      {purchases.filter(p=>p.has_delivery&&!p.delivery_viewed).map(p=>(
+        <div key={p.id}
+          className="mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors"
+          onClick={()=>setCredPurchase(p)}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'#d9940120'}}>
+            {p.tool_image
+              ? <img src={p.tool_image} className="w-6 h-6 object-contain" alt=""/>
+              : <Package size={16} className="text-amber-500"/>}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+              {lang==='ar'
+                ? `تم تحديث بيانات ${p.tool_name} — اضغط لعرضها`
+                : `${p.tool_name} credentials updated — tap to view`}
+            </p>
+          </div>
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0"/>
+        </div>
+      ))}
+
       {/* ── Status cards — always at top ── */}
       {!loading && <QuickStats purchases={purchases} t={t} lang={lang} currency={currency} formatPrice={formatPrice} usdRate={usdRate}/>}
 
@@ -1131,7 +1152,10 @@ export default function MyOrdersPage() {
       {credPurchase && (
         <CredentialsModal
           purchase={credPurchase}
-          onClose={()=>setCredPurchase(null)}
+          onClose={()=>{
+            setCredPurchase(null)
+            setPurchases(prev => prev.map(p => p.id === credPurchase.id ? { ...p, delivery_viewed: true } : p))
+          }}
           t={t} lang={lang} settings={settings}
         />
       )}
