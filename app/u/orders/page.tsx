@@ -319,9 +319,19 @@ interface Purchase {
   id:string; tool_id?:string; tool_name:string; tool_image?:string
   tool_video?:string; duration_label:string; category_slug?:string
   status?:string; expires_at?:string; starts_at?:string; payment_method:string
-  amount_egp:number; duration_days?:number; retail_price_egp?:number
+  amount_egp:number; duration_days?:number; retail_price_egp?:number; price_egp?:number; price_usd?:number
   has_delivery?:boolean; delivery_viewed?:boolean; created_at?:string
   auto_renew?:boolean
+}
+
+function translateDuration(label: string, isAr: boolean): string {
+  if (!isAr) return label
+  return label
+    .replace(/(\d+)\s*Days?/i,   (_,n) => `${n} يوم`)
+    .replace(/(\d+)\s*Months?/i, (_,n) => `${n} شهر`)
+    .replace(/(\d+)\s*Years?/i,  (_,n) => `${n} سنة`)
+    .replace(/(\d+)\s*Weeks?/i,  (_,n) => `${n} أسبوع`)
+    .replace(/Lifetime/i, 'مدى الحياة')
 }
 
 function subProgress(p: Purchase): number | null {
@@ -400,7 +410,7 @@ function CredentialsModal({ purchase, onClose, t, lang, settings }: {
                     {isRtl?`ينتهي بعد ${days} يوم`:`${days}d left`}
                   </span>
                 )}
-                <span className="text-[11px] text-white/40">{purchase.duration_label}</span>
+                <span className="text-[11px] text-white/40">{translateDuration(purchase.duration_label, isRtl)}</span>
               </div>
             </div>
           </div>
@@ -1212,7 +1222,9 @@ export default function MyOrdersPage() {
                       : <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>}
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{p.tool_name}</p>
-                      <p className="text-[10px] text-gray-400">{p.duration_label} · {p.retail_price_egp || p.amount_egp} {t('EGP','ج.م')}</p>
+                      <p className="text-[10px] text-gray-400">
+                        {translateDuration(p.duration_label, isRtl)} · {formatPrice(p.price_egp || p.amount_egp, usdRate)}
+                      </p>
                     </div>
                   </div>
                   <button

@@ -75,7 +75,7 @@ function StoreCard({ tool, lang, formatPrice }: {
 
       <div className="p-5 pb-3">
         {/* Top badges: delivery + discount only */}
-        <div className={`flex items-center gap-1.5 mb-3 flex-wrap ${isRtl ? 'justify-start' : 'justify-end'}`}>
+        <div className="flex items-center gap-1.5 mb-3 flex-wrap justify-end">
           {(() => {
             const retail = tool.retail_price_egp || 0
             const mine   = tool.price_egp || 0
@@ -102,7 +102,8 @@ function StoreCard({ tool, lang, formatPrice }: {
             : <span className="text-xl font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>}
         </div>
         <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 leading-tight">{tool.name}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]">
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 min-h-[2.75rem]"
+          dir={isRtl ? 'rtl' : 'ltr'} style={isRtl ? {unicodeBidi:'plaintext'} : {}}>
           {(isRtl && tool.description_ar) ? tool.description_ar : tool.description}
         </p>
       </div>

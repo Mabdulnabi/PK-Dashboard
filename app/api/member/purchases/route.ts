@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     .select(`
       id, status, expires_at, starts_at, payment_method, amount_egp, created_at, auto_renew,
       shop_tools (
-        id, name, image_url, duration_label, duration_days, category_slug, video_url, retail_price_egp
+        id, name, image_url, duration_label, duration_days, category_slug, video_url, retail_price_egp, price_egp, price_usd
       )
     `)
     .eq('member_id', session.member_id)
@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
     amount_egp:        p.amount_egp,
     duration_days:     p.shop_tools?.duration_days ?? 30,
     retail_price_egp:  p.shop_tools?.retail_price_egp ?? 0,
+    price_egp:         p.shop_tools?.price_egp ?? 0,
+    price_usd:         p.shop_tools?.price_usd ?? 0,
     has_delivery:    deliveryMap[p.id]?.has_delivery  ?? false,
     delivery_viewed: deliveryMap[p.id]?.delivery_viewed ?? false,
     created_at:      p.created_at,

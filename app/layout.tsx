@@ -110,6 +110,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   var _pre=document.getElementById('pkPreloader');
   if(window.self!==window.top){if(_pre)_pre.style.display='none';return;}
 
+  // ── Skip preloader on SPA-style redirects (e.g. post-purchase), show only on fresh open or F5 ──
+  var navType=(performance.getEntriesByType('navigation')[0]||{}).type;
+  var isReload=navType==='reload';
+  var isFirst=!sessionStorage.getItem('pk_visited');
+  sessionStorage.setItem('pk_visited','1');
+  if(!isReload&&!isFirst){if(_pre)_pre.style.display='none';}
+
   // ── Preloader ──
   var pre=document.getElementById('pkPreloader'),reveal=document.getElementById('pkReveal'),stack=document.getElementById('pkStack'),logoWrap=document.getElementById('pkLogoWrap'),dots=document.getElementById('pkDots');
   if(pre&&reveal&&stack&&logoWrap&&dots){

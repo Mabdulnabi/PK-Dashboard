@@ -672,8 +672,8 @@ if (pathname==='/u/login') return <>{children}</>
                   <span style={{color:'#d99401'}}>Pro Keys</span>
                 )}
               </span>
-              <span className="text-xs text-gray-400 hidden sm:block">
-                {member ? (isRtl?'الوصول لجميع الأدوات النشطة':'Access all active tools') : (isRtl?'سجّل دخولك للوصول الكامل':'Sign in for full access')}
+              <span className="text-xs text-gray-400 hidden sm:block" style={isRtl?{unicodeBidi:'plaintext',direction:'rtl'}:{}}>
+                {member ? (isRtl?'في متجر Pro Keys':'to Pro Keys Store') : (isRtl?'سجّل دخولك للوصول الكامل':'Sign in for full access')}
               </span>
             </div>
           </div>
