@@ -113,11 +113,15 @@ function CheckoutInner() {
 
     const channel = supabase
       .channel('checkout-gateways')
-      .on('postgres_changes', { event:'*', schema:'public', table:'payment_gateways' }, ()=>{ fetchGateways() })
+      .on('postgres_changes', { event:'*', schema:'public', table:'payment_gateways' }, fetchGateways)
       .subscribe()
+
+    // Polling fallback every 60s in case real-time misses an event
+    const gwInterval = setInterval(fetchGateways, 60_000)
 
     return ()=>{
       supabase.removeChannel(channel)
+      clearInterval(gwInterval)
       if (pollRef.current) clearInterval(pollRef.current)
     }
   },[toolId, bundleId, cartMode])

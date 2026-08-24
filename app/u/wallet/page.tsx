@@ -1,6 +1,12 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight, Copy, Trophy } from 'lucide-react'
 
 interface WalletData {
@@ -151,6 +157,9 @@ export default function PaymentsPage() {
   const refreshWallet = () =>
     fetch('/api/member/wallet').then(r=>r.json()).then(wd=>{ if (wd && !wd.error) setWallet(wd) })
 
+  const fetchGateways = () =>
+    fetch('/api/member/gateways').then(r=>r.json()).then(gd=>setGateways(gd.gateways||[]))
+
   useEffect(()=>{
     Promise.all([
       fetch('/api/member/payment').then(r=>r.json()),
@@ -162,9 +171,19 @@ export default function PaymentsPage() {
       setGateways(gd.gateways||[])
       setLoading(false)
     })
-    // Poll wallet balance every 30s for real-time balance updates
-    const interval = setInterval(refreshWallet, 30_000)
-    return () => clearInterval(interval)
+    // Poll wallet balance every 30s
+    const walletInterval = setInterval(refreshWallet, 30_000)
+    // Poll gateways every 60s + real-time subscription for instant updates
+    const gatewayInterval = setInterval(fetchGateways, 60_000)
+    const channel = supabase
+      .channel('wallet-gateways')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_gateways' }, fetchGateways)
+      .subscribe()
+    return () => {
+      clearInterval(walletInterval)
+      clearInterval(gatewayInterval)
+      supabase.removeChannel(channel)
+    }
   },[])
 
   const fmtAmt = (n:number, cur:string) => `${Number(n).toLocaleString()} ${cur}`
