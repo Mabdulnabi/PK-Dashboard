@@ -7,7 +7,7 @@ export async function GET() {
 
   const { data: stock } = await service
     .from('private_accounts_stock')
-    .select('id, tool_id, email, notes, status, assigned_to, assigned_at, created_at, members(full_name,email)')
+    .select('id, tool_id, delivery_type, email, key_enc, notes, status, assigned_to, assigned_at, created_at, members(full_name,email)')
     .order('created_at', { ascending: false })
 
   // Count per tool

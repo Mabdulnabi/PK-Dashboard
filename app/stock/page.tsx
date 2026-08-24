@@ -11,9 +11,9 @@ import {
 
 interface Tool { id: string; name: string; image_url: string|null; available: number; assigned: number }
 interface StockItem {
-  id: string; tool_id: string; email: string|null; notes: string|null; status: 'available'|'assigned'
+  id: string; tool_id: string; email: string|null; key_enc: string|null; notes: string|null; status: 'available'|'assigned'
   assigned_to: string|null; assigned_at: string|null; created_at: string
-  delivery_type?: 'account'|'key'
+  delivery_type: 'account'|'key'
   members?: { full_name: string; email: string }
 }
 
@@ -98,12 +98,25 @@ export default function StockPage() {
 
   const openEdit = (s: StockItem) => {
     setEditItem(s)
-    setEditForm({ delivery_type: s.delivery_type||'account', email: s.email||'', password:'', key:'', notes: s.notes||'' })
+    const type = s.delivery_type || 'account'
+    setEditForm({
+      delivery_type: type,
+      email:    type === 'account' ? (s.email || '') : '',
+      password: '',
+      key:      type === 'key'     ? (s.key_enc || '') : '',
+      notes:    s.notes || '',
+    })
     setEditPass(false)
   }
 
   const saveEdit = async () => {
     if (!editItem) return
+    if (editForm.delivery_type === 'account' && !editForm.email.trim()) {
+      setToast({msg:'Email is required',type:'err'}); return
+    }
+    if (editForm.delivery_type === 'key' && !editForm.key.trim()) {
+      setToast({msg:'Key is required',type:'err'}); return
+    }
     setEditSaving(true)
     const res = await fetch(`/api/admin/stock/${editItem.id}`, {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
@@ -319,7 +332,13 @@ export default function StockPage() {
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Item Type</label>
                 <div className="flex gap-2">
                   {(['account','key'] as const).map(type=>(
-                    <button key={type} onClick={()=>setForm(f=>({...f,delivery_type:type}))}
+                    <button key={type} onClick={()=>setForm(f=>({
+                      ...f,
+                      delivery_type: type,
+                      email:    type === 'account' ? f.email    : '',
+                      password: type === 'account' ? f.password : '',
+                      key:      type === 'key'     ? f.key      : '',
+                    }))}
                       className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
                       style={form.delivery_type===type?{background:GOLD,color:'#fff'}:{background:'#f3f4f6',color:'#6b7280'}}>
                       {type==='account'?'📧 Account':'🔑 Key'}
@@ -396,7 +415,13 @@ export default function StockPage() {
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Item Type</label>
                 <div className="flex gap-2">
                   {(['account','key'] as const).map(type=>(
-                    <button key={type} onClick={()=>setEditForm(f=>({...f,delivery_type:type}))}
+                    <button key={type} onClick={()=>setEditForm(f=>({
+                      ...f,
+                      delivery_type: type,
+                      email:    type === 'account' ? f.email    : '',
+                      password: type === 'account' ? f.password : '',
+                      key:      type === 'key'     ? f.key      : '',
+                    }))}
                       className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
                       style={editForm.delivery_type===type?{background:GOLD,color:'#fff'}:{background:'#f3f4f6',color:'#6b7280'}}>
                       {type==='account'?'📧 Account':'🔑 Key'}
