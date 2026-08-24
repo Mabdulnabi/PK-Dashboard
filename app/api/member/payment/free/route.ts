@@ -53,6 +53,29 @@ export async function POST(req: NextRequest) {
 
     if (purchErr) throw purchErr
 
+    // Track coupon usage
+    if (coupon_code) {
+      const { data: coupon } = await service
+        .from('coupons')
+        .select('id, used_count')
+        .eq('code', coupon_code.toUpperCase().trim())
+        .single()
+
+      if (coupon) {
+        await Promise.all([
+          service.from('coupon_usages').insert({
+            coupon_id: coupon.id,
+            member_id,
+            tool_id,
+            used_at: now.toISOString(),
+          }),
+          service.from('coupons')
+            .update({ used_count: (coupon.used_count || 0) + 1 })
+            .eq('id', coupon.id),
+        ])
+      }
+    }
+
     // Notify member: subscription activated
     const { data: tool } = await service.from('shop_tools').select('name').eq('id', tool_id).single()
     const toolName   = tool?.name || 'الأداة'

@@ -7,7 +7,7 @@ import Topbar  from '@/components/layout/Topbar'
 import {
   Check, AlertCircle, X, Eye, EyeOff, Plus, Trash2,
   Archive, AlertTriangle, Database, User, Calendar, Wrench, Pencil, Key,
-  Upload, Download, FileText, LayoutGrid, List,
+  Upload, Download, FileText, LayoutGrid, List, CheckSquare, Square,
 } from 'lucide-react'
 
 interface Tool { id: string; name: string; image_url: string|null; available: number; assigned: number }
@@ -53,6 +53,11 @@ export default function StockPage() {
   const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [page,      setPage]      = useState(1)
   const [viewMode,  setViewMode]  = useState<'cards'|'list'>('cards')
+  const [selected,  setSelected]  = useState<Set<string>>(new Set())
+  const [bulkModal, setBulkModal] = useState(false)
+  const [bulkForm,  setBulkForm]  = useState({ delivery_type:'account' as 'account'|'key', email:'', password:'', key:'', notes:'' })
+  const [bulkSaving,setBulkSaving]= useState(false)
+  const [bulkDeleting,setBulkDeleting]= useState(false)
   const perPage = viewMode === 'list' ? 25 : 12
 
   // CSV import state
@@ -73,6 +78,7 @@ export default function StockPage() {
     setTools(data.tools||[])
     setStock(data.stock||[])
     setLoading(false)
+    setSelected(new Set())
   }
 
   useEffect(()=>{ load() },[])
@@ -209,6 +215,42 @@ export default function StockPage() {
     load()
   }
 
+  const toggleSelect = (id: string) => {
+    setSelected(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s })
+  }
+  const toggleAll = () => {
+    if (selected.size === paged.length) setSelected(new Set())
+    else setSelected(new Set(paged.filter(s=>s.status==='available').map(s=>s.id)))
+  }
+
+  const bulkDelete = async () => {
+    if (!window.confirm(`Delete ${selected.size} items? This cannot be undone.`)) return
+    setBulkDeleting(true)
+    await Promise.all([...selected].map(id =>
+      fetch(`/api/admin/stock/${id}`, { method: 'DELETE' })
+    ))
+    setBulkDeleting(false)
+    setSelected(new Set())
+    setToast({msg:`✓ Deleted ${selected.size} items`,type:'ok'})
+    load()
+  }
+
+  const runBulkEdit = async () => {
+    if (selected.size === 0) return
+    setBulkSaving(true)
+    await Promise.all([...selected].map(id =>
+      fetch(`/api/admin/stock/${id}`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(bulkForm)
+      })
+    ))
+    setBulkSaving(false)
+    setBulkModal(false)
+    setSelected(new Set())
+    setToast({msg:`✓ Updated ${selected.size} items`,type:'ok'})
+    load()
+  }
+
   const stats = [
     { label:'Total Items',  val:stock.length,    color:'#6b7280', bg:'bg-gray-100 dark:bg-gray-800' },
     { label:'Available',    val:totalAvail,       color:'#10b981', bg:'bg-emerald-50 dark:bg-emerald-900/20' },
@@ -292,6 +334,25 @@ export default function StockPage() {
             ))}
           </div>
 
+          {/* Bulk action bar */}
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 mb-4 px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10">
+              <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{selected.size} selected</span>
+              <button onClick={()=>{ setBulkForm({delivery_type:'account',email:'',password:'',key:'',notes:''}); setBulkModal(true) }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+                style={{background:'#6366f1'}}>
+                <Pencil size={12}/> Edit All
+              </button>
+              <button onClick={bulkDelete} disabled={bulkDeleting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors">
+                {bulkDeleting
+                  ? <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/> Deleting…</>
+                  : <><Trash2 size={12}/> Delete All</>}
+              </button>
+              <button onClick={()=>setSelected(new Set())} className="ms-auto text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Clear</button>
+            </div>
+          )}
+
           {/* Stock items */}
           {loading ? (
             <div className="flex justify-center py-16"><div className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:`${GOLD} transparent transparent transparent`}}/></div>
@@ -302,6 +363,17 @@ export default function StockPage() {
             </div>
           ) : (
             <>
+              <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                <button onClick={toggleAll} className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                  {selected.size === paged.filter(s=>s.status==='available').length && paged.some(s=>s.status==='available')
+                    ? <CheckSquare size={14} className="text-amber-500"/>
+                    : <Square size={14}/>}
+                  {selected.size > 0 ? `${selected.size} selected` : 'Select available items'}
+                </button>
+                <span className="text-gray-300 dark:text-gray-600">·</span>
+                <span>{filtered.length} items</span>
+              </div>
+
               {viewMode === 'cards' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {paged.map(s=>{
@@ -311,6 +383,13 @@ export default function StockPage() {
                         <div className="h-1 w-full" style={{ background: s.status==='available' ? '#10b981' : '#6366f1' }}/>
                         <div className="p-4">
                           <div className="flex items-center gap-3 mb-3">
+                            {s.status==='available' && (
+                              <button onClick={()=>toggleSelect(s.id)} className="flex-shrink-0">
+                                {selected.has(s.id)
+                                  ? <CheckSquare size={15} className="text-amber-500"/>
+                                  : <Square size={15} className="text-gray-300 hover:text-gray-500"/>}
+                              </button>
+                            )}
                             <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
                               {tool?.image_url
                                 ? <img src={tool.image_url} alt={tool.name} className="w-7 h-7 object-contain rounded"/>
@@ -358,6 +437,7 @@ export default function StockPage() {
                     <table className="w-full" style={{borderCollapse:'collapse'}}>
                       <thead>
                         <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                          <th className="px-4 py-3 w-8"/>
                           {['Tool','Type','Email / Key','Status','Notes','Added','Assigned To','Actions'].map(h=>(
                             <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">{h}</th>
                           ))}
@@ -368,6 +448,16 @@ export default function StockPage() {
                           const tool = tools.find(t=>t.id===s.tool_id)
                           return (
                             <tr key={s.id} className={`border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors ${i%2===0?'':'bg-gray-50/30 dark:bg-gray-800/10'}`}>
+                              {/* Checkbox */}
+                              <td className="px-4 py-3 w-8">
+                                {s.status==='available' && (
+                                  <button onClick={()=>toggleSelect(s.id)}>
+                                    {selected.has(s.id)
+                                      ? <CheckSquare size={14} className="text-amber-500"/>
+                                      : <Square size={14} className="text-gray-300 hover:text-gray-500"/>}
+                                  </button>
+                                )}
+                              </td>
                               {/* Tool */}
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
@@ -736,6 +826,72 @@ export default function StockPage() {
                 {importing
                   ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Importing…</>
                   : <><Upload size={15}/>Import CSV</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Edit Modal */}
+      {bulkModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={()=>setBulkModal(false)}>
+          <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">Bulk Edit Stock</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{selected.size} items selected — blank fields keep existing value</p>
+              </div>
+              <button onClick={()=>setBulkModal(false)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white">
+                <X size={14}/>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Item Type</label>
+                <div className="flex gap-2">
+                  {(['account','key'] as const).map(type=>(
+                    <button key={type} onClick={()=>setBulkForm(f=>({...f,delivery_type:type,email:'',password:'',key:''}))}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                      style={bulkForm.delivery_type===type?{background:GOLD,color:'#fff'}:{background:'#f3f4f6',color:'#6b7280'}}>
+                      {type==='account'?'📧 Account':'🔑 Key'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {bulkForm.delivery_type==='account' ? (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Email (blank = keep)</label>
+                    <input value={bulkForm.email} onChange={e=>setBulkForm(f=>({...f,email:e.target.value}))}
+                      placeholder="user@example.com" dir="ltr" className={inp}/>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Password (blank = keep)</label>
+                    <input value={bulkForm.password} onChange={e=>setBulkForm(f=>({...f,password:e.target.value}))}
+                      type="text" placeholder="••••••••" dir="ltr" className={inp}/>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Key / License (blank = keep)</label>
+                  <input value={bulkForm.key} onChange={e=>setBulkForm(f=>({...f,key:e.target.value}))}
+                    type="text" placeholder="XXXX-XXXX-XXXX-XXXX" dir="ltr" className={inp + ' font-mono'}/>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Notes (blank = keep)</label>
+                <textarea value={bulkForm.notes} onChange={e=>setBulkForm(f=>({...f,notes:e.target.value}))}
+                  rows={2} className={inp + ' resize-none'}/>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={()=>setBulkModal(false)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button onClick={runBulkEdit} disabled={bulkSaving}
+                className="flex-[2] py-3 rounded-xl disabled:opacity-60 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                style={{background:'#6366f1'}}>
+                {bulkSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</> : <><Check size={15}/> Apply to {selected.size} items</>}
               </button>
             </div>
           </div>

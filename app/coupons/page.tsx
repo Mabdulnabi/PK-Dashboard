@@ -218,7 +218,8 @@ export default function CouponsPage() {
               {paged.map(c => {
                 const isExpanded = expanded === c.id
                 const toolNames  = (c.tool_ids || []).map(id => toolMap[id]?.name).filter(Boolean)
-                const usagePct   = c.max_uses > 0 ? Math.min(100, (c.used_count / c.max_uses) * 100) : 0
+                const usedCount  = c.coupon_usages?.length ?? c.used_count
+                const usagePct   = c.max_uses > 0 ? Math.min(100, (usedCount / c.max_uses) * 100) : 0
                 const expired    = c.expires_at && new Date(c.expires_at) < new Date()
                 return (
                   <div key={c.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
@@ -238,7 +239,7 @@ export default function CouponsPage() {
                             <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                               <div className="h-full bg-red-500 rounded-full" style={{ width: `${usagePct}%` }}/>
                             </div>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{c.used_count}/{c.max_uses} used</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{usedCount}/{c.max_uses} used</span>
                           </div>
                           {c.expires_at && <span className="text-xs text-gray-400">Exp: {new Date(c.expires_at).toLocaleDateString()}</span>}
                           {toolNames.length > 0

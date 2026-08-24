@@ -13,7 +13,7 @@ import {
 interface Order {
   id: string; member_id: string; member_name: string; member_email: string; member_code: string|null
   tool_id: string; tool_name: string; tool_image: string|null; category_slug: string
-  amount_egp: number; payment_method: string|null; coupon_code: string|null
+  amount_egp: number; payment_method: string|null
   created_at: string; expires_at: string|null; duration_days: number|null
   delivered: boolean|null; delivered_at: string|null; viewed_at: string|null
 }
@@ -41,13 +41,15 @@ const CAT_STYLES: Record<string, { label: string; light: string; dark: string; s
   bundle:  { label:'Bundle',  light:'bg-amber-100 text-amber-700',   dark:'dark:bg-amber-900/20 dark:text-amber-400',  stripe:GOLD },
 }
 
-function PayBadge({ method, coupon }: { method: string|null; coupon: string|null }) {
-  if (coupon) return (
+function PayBadge({ method }: { method: string|null }) {
+  if (!method) return null
+  const isCoupon = method.startsWith('coupon')
+  const couponCode = isCoupon ? method.replace(/^coupon:?/i,'').trim() : ''
+  if (isCoupon) return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-      <Tag size={9}/> Coupon
+      <Tag size={9}/> {couponCode ? `Coupon: ${couponCode}` : 'Coupon'}
     </span>
   )
-  if (!method) return null
   const label = method.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -228,7 +230,7 @@ export default function OrdersPage() {
     const cols = ['ID','Member Code','Name','Email','Tool','Type','Payment','Amount EGP','Created','Expires','Status']
     const lines = rows.map(o => [
       o.id, o.member_code||'', o.member_name, o.member_email, o.tool_name, o.category_slug,
-      o.coupon_code ? `Coupon:${o.coupon_code}` : (o.payment_method||''),
+      o.payment_method||'',
       o.amount_egp, o.created_at, o.expires_at||'',
       o.delivered===null?'active':o.delivered?'delivered':'pending',
     ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','))
@@ -398,7 +400,7 @@ export default function OrdersPage() {
                             <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${cat.light} ${cat.dark}`}>
                               {cat.label}
                             </span>
-                            <PayBadge method={o.payment_method} coupon={o.coupon_code}/>
+                            <PayBadge method={o.payment_method}/>
                           </div>
                         </div>
                         {isPrivate && (
