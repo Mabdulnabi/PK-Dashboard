@@ -147,13 +147,15 @@ function StoreCard({ tool, lang, formatPrice }: {
       <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
 
       <div className="px-5 py-3 mt-auto space-y-2" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="flex items-baseline gap-1.5">
           <span className="text-xl font-bold" style={{color:accent}}>{price}</span>
-          {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
-            <span className="text-sm text-gray-400 line-through">{formatPrice(tool.retail_price_egp!)}</span>
-          )}
           <span className="text-sm text-gray-400 whitespace-nowrap">/ {translateDur(tool.duration_label, isRtl)}</span>
         </div>
+        {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
+          <div className="text-xs text-gray-400 line-through leading-none mt-0.5">
+            {formatPrice(tool.retail_price_egp!)}
+          </div>
+        )}
 
         <button
           onClick={() => tool.details_slug && router.push(`/u/tool/${tool.details_slug}`)}

@@ -110,12 +110,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   var _pre=document.getElementById('pkPreloader');
   if(window.self!==window.top){if(_pre)_pre.style.display='none';return;}
 
-  // ── Show preloader only on fresh tab open or F5 — skip on post-purchase redirects ──
+  // ── Show preloader only on fresh open or F5 — skip when navigating from within the site ──
   var navType=(performance.getEntriesByType('navigation')[0]||{}).type;
   var isReload=navType==='reload';
-  var isFirst=!sessionStorage.getItem('pk_visited');
-  sessionStorage.setItem('pk_visited','1');
-  var skipPreloader=(!isReload&&!isFirst);
+  var fromSameSite=document.referrer&&document.referrer.startsWith(window.location.origin);
+  var skipPreloader=(fromSameSite&&!isReload);
   if(skipPreloader&&_pre)_pre.style.display='none';
 
   // ── Preloader ──
