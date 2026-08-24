@@ -70,6 +70,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           #pkTopBtn .pkRingProg{stroke:#ffffff}
           #pkTopBtn .pkArrow{stroke:#ffffff}
           @media(max-width:600px){#pkTopBtn{right:14px;}}
+          html[dir=rtl] #pkTopBtn{right:auto;left:18px;}
+          @media(max-width:600px){html[dir=rtl] #pkTopBtn{left:14px;right:auto;}}
         `}}/>
 
         <div id="pkPreloader">
@@ -169,6 +171,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       var inPortal=window.location.pathname.startsWith('/u/');
       btn.style.bottom=inPortal?'88px':'20px';
 
+      function applyRtlPos(){
+        var isRtl=(localStorage.getItem('pk_lang')||'en')==='ar';
+        document.documentElement.dir=isRtl?'rtl':'ltr';
+        if(isRtl){btn.style.right='auto';btn.style.left='18px';}else{btn.style.left='auto';btn.style.right='18px';}
+      }
+      applyRtlPos();
+      window.addEventListener('pk_lang_change',applyRtlPos);
+      window.addEventListener('storage',function(e){if(e.key==='pk_lang')applyRtlPos();});
+
       function updateScroll(sc,max){
         var p=sc/max;
         bar.style.width=(p*100)+'%';ring.style.strokeDashoffset=C*(1-p);
@@ -203,6 +214,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           lastPath=window.location.pathname;
           var nowPortal=window.location.pathname.startsWith('/u/');
           btn.style.bottom=nowPortal?'88px':'20px';
+          applyRtlPos();
         }
       },500);
 
