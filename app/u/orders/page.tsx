@@ -410,7 +410,7 @@ function CredentialsModal({ purchase, onClose, t, lang, settings }: {
                     {isRtl?`ينتهي بعد ${days} يوم`:`${days}d left`}
                   </span>
                 )}
-                <span className="text-[11px] text-white/40">{translateDuration(purchase.duration_label, isRtl)}</span>
+                <span className="text-[11px] text-white/40">{translateDuration(purchase.duration_label, lang==='ar')}</span>
               </div>
             </div>
           </div>
@@ -1223,7 +1223,7 @@ export default function MyOrdersPage() {
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{p.tool_name}</p>
                       <p className="text-[10px] text-gray-400">
-                        {translateDuration(p.duration_label, isRtl)} · {formatPrice(p.price_egp || p.amount_egp, usdRate)}
+                        {translateDuration(p.duration_label, lang==='ar')} · {formatPrice(p.price_egp || p.amount_egp, usdRate)}
                       </p>
                     </div>
                   </div>
