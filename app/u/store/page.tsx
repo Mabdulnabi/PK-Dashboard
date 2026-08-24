@@ -90,7 +90,8 @@ function StoreCard({ tool, lang, formatPrice }: {
             }
             return null
           })()}
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
+          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+            style={{background:'linear-gradient(135deg,#10b981,#059669)'}}>
             <Zap size={10} fill="white"/>{t('فوري', tool.delivery_label||'INSTANT')}
           </span>
         </div>
@@ -111,14 +112,14 @@ function StoreCard({ tool, lang, formatPrice }: {
         <Stars rating={tool.rating} count={tool.review_count}/>
         {(tool.sales_count || 0) > 0 && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-            style={{background: accent}}>
+            style={{background:`linear-gradient(135deg,${accent},${accent}bb)`}}>
             <ShoppingCart size={9} strokeWidth={2.5} color="white"/>
             {(tool.sales_count||0).toLocaleString()} {t('مبيعة','sold')}
           </span>
         )}
         {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-            style={{background:'#6366f1'}}>
+            style={{background:'linear-gradient(135deg,#6366f1,#4f46e5)'}}>
             <Shield size={9} strokeWidth={2.5} color="white"/>
             {tool.warranty_label}
           </span>
