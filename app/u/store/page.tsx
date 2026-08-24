@@ -74,7 +74,7 @@ function StoreCard({ tool, lang, formatPrice }: {
       <div className="h-0.5 w-full flex-shrink-0" style={{background:`linear-gradient(90deg,${accent},${accent}88)`}}/>
 
       <div className="p-5 pb-3">
-        {/* Badges */}
+        {/* Top badges: delivery + discount only */}
         <div className={`flex items-center gap-1.5 mb-3 flex-wrap ${isRtl ? 'justify-start' : 'justify-end'}`}>
           {(() => {
             const retail = tool.retail_price_egp || 0
@@ -90,23 +90,9 @@ function StoreCard({ tool, lang, formatPrice }: {
             }
             return null
           })()}
-          {(tool.sales_count || 0) > 0 && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-              style={{background: accent}}>
-              <ShoppingCart size={10} strokeWidth={2.5} color="white"/>
-              {(tool.sales_count||0).toLocaleString()} {t('مبيعة','sold')}
-            </span>
-          )}
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
             <Zap size={10} fill="white"/>{t('فوري', tool.delivery_label||'INSTANT')}
           </span>
-          {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-              style={{background:'#6366f1'}}>
-              <Shield size={10} strokeWidth={2.5} color="white"/>
-              {tool.warranty_label}
-            </span>
-          )}
         </div>
         {/* Logo */}
         <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden shadow-sm">
@@ -120,8 +106,23 @@ function StoreCard({ tool, lang, formatPrice }: {
         </p>
       </div>
 
-      <div className="px-5 pb-3">
+      {/* Stars + secondary badges row */}
+      <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
         <Stars rating={tool.rating} count={tool.review_count}/>
+        {(tool.sales_count || 0) > 0 && (
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+            style={{background: accent}}>
+            <ShoppingCart size={9} strokeWidth={2.5} color="white"/>
+            {(tool.sales_count||0).toLocaleString()} {t('مبيعة','sold')}
+          </span>
+        )}
+        {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+            style={{background:'#6366f1'}}>
+            <Shield size={9} strokeWidth={2.5} color="white"/>
+            {tool.warranty_label}
+          </span>
+        )}
       </div>
 
       <div className="mx-5 border-t border-gray-100 dark:border-gray-800"/>
