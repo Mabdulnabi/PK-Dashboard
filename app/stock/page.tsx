@@ -7,7 +7,7 @@ import Topbar  from '@/components/layout/Topbar'
 import {
   Check, AlertCircle, X, Eye, EyeOff, Plus, Trash2,
   Archive, AlertTriangle, Database, User, Calendar, Wrench, Pencil, Key,
-  Upload, Download, FileText,
+  Upload, Download, FileText, LayoutGrid, List,
 } from 'lucide-react'
 
 interface Tool { id: string; name: string; image_url: string|null; available: number; assigned: number }
@@ -52,7 +52,8 @@ export default function StockPage() {
   const [editSaving,setEditSaving]= useState(false)
   const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [page,      setPage]      = useState(1)
-  const perPage = 12
+  const [viewMode,  setViewMode]  = useState<'cards'|'list'>('cards')
+  const perPage = viewMode === 'list' ? 25 : 12
 
   // CSV import state
   const [importModal, setImportModal] = useState(false)
@@ -256,6 +257,18 @@ export default function StockPage() {
                 className="px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                 <Upload size={15}/> Import CSV
               </button>
+              <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <button onClick={()=>setViewMode('cards')}
+                  className={`flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors ${viewMode==='cards'?'text-white':'text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50'}`}
+                  style={viewMode==='cards'?{background:GOLD}:{}}>
+                  <LayoutGrid size={13}/> Cards
+                </button>
+                <button onClick={()=>{ setViewMode('list'); setPage(1) }}
+                  className={`flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors border-l border-gray-200 dark:border-gray-700 ${viewMode==='list'?'text-white':'text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50'}`}
+                  style={viewMode==='list'?{background:GOLD}:{}}>
+                  <List size={13}/> List
+                </button>
+              </div>
             </div>
           </div>
 
@@ -279,7 +292,7 @@ export default function StockPage() {
             ))}
           </div>
 
-          {/* Stock cards */}
+          {/* Stock items */}
           {loading ? (
             <div className="flex justify-center py-16"><div className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:`${GOLD} transparent transparent transparent`}}/></div>
           ) : filtered.length===0 ? (
@@ -289,74 +302,135 @@ export default function StockPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {paged.map(s=>{
-                  const tool = tools.find(t=>t.id===s.tool_id)
-                  return (
-                    <div key={s.id} className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233] shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                      {/* Status stripe */}
-                      <div className="h-1 w-full" style={{ background: s.status==='available' ? '#10b981' : '#6366f1' }}/>
-
-                      <div className="p-4">
-                        {/* Header */}
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
-                            {tool?.image_url
-                              ? <img src={tool.image_url} alt={tool.name} className="w-7 h-7 object-contain rounded"/>
-                              : <Wrench size={18} className="text-gray-400"/>}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{tool?.name||s.tool_id}</div>
-                            <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${s.status==='available'?'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400':'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400'}`}>
-                              {s.status==='available' ? 'Available' : 'Assigned'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {s.status==='available' && (
-                              <button onClick={()=>openEdit(s)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-500">
-                                <Pencil size={12}/>
+              {viewMode === 'cards' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paged.map(s=>{
+                    const tool = tools.find(t=>t.id===s.tool_id)
+                    return (
+                      <div key={s.id} className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233] shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="h-1 w-full" style={{ background: s.status==='available' ? '#10b981' : '#6366f1' }}/>
+                        <div className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                              {tool?.image_url
+                                ? <img src={tool.image_url} alt={tool.name} className="w-7 h-7 object-contain rounded"/>
+                                : <Wrench size={18} className="text-gray-400"/>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{tool?.name||s.tool_id}</div>
+                              <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${s.status==='available'?'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400':'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400'}`}>
+                                {s.status==='available' ? 'Available' : 'Assigned'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {s.status==='available' && (
+                                <button onClick={()=>openEdit(s)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-500">
+                                  <Pencil size={12}/>
+                                </button>
+                              )}
+                              <button onClick={()=>deleteItem(s.id)} disabled={s.status==='assigned'||deleting===s.id}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500">
+                                {deleting===s.id ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/> : <Trash2 size={13}/>}
                               </button>
-                            )}
-                            <button onClick={()=>deleteItem(s.id)} disabled={s.status==='assigned'||deleting===s.id}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500">
-                              {deleting===s.id
-                                ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/>
-                                : <Trash2 size={13}/>}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Details */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {s.delivery_type==='key'
-                              ? <Key size={11} className="flex-shrink-0 text-amber-500"/>
-                              : <User size={11} className="flex-shrink-0"/>}
-                            <span className="font-mono truncate" dir="ltr">
-                              {s.delivery_type==='key' ? '🔑 Key/License' : (s.email||'—')}
-                            </span>
-                          </div>
-                          {s.notes && (
-                            <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 truncate">
-                              {s.notes}
                             </div>
-                          )}
-                          <div className="flex items-center gap-2 text-xs text-gray-400">
-                            <Calendar size={11} className="flex-shrink-0"/>
-                            <span>Added: {fmtDate(s.created_at)}</span>
                           </div>
-                          {s.members && (
-                            <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium truncate">
-                              → {(s.members as any).full_name}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              {s.delivery_type==='key' ? <Key size={11} className="flex-shrink-0 text-amber-500"/> : <User size={11} className="flex-shrink-0"/>}
+                              <span className="font-mono truncate" dir="ltr">{s.delivery_type==='key' ? '🔑 Key/License' : (s.email||'—')}</span>
                             </div>
-                          )}
+                            {s.notes && <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 truncate">{s.notes}</div>}
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                              <Calendar size={11} className="flex-shrink-0"/>
+                              <span>Added: {fmtDate(s.created_at)}</span>
+                            </div>
+                            {s.members && <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium truncate">→ {(s.members as any).full_name}</div>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                /* List / table view */
+                <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233] overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full" style={{borderCollapse:'collapse'}}>
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                          {['Tool','Type','Email / Key','Status','Notes','Added','Assigned To','Actions'].map(h=>(
+                            <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paged.map((s,i)=>{
+                          const tool = tools.find(t=>t.id===s.tool_id)
+                          return (
+                            <tr key={s.id} className={`border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors ${i%2===0?'':'bg-gray-50/30 dark:bg-gray-800/10'}`}>
+                              {/* Tool */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  {tool?.image_url
+                                    ? <img src={tool.image_url} alt={tool.name} className="w-6 h-6 object-contain rounded flex-shrink-0"/>
+                                    : <Wrench size={14} className="text-gray-400 flex-shrink-0"/>}
+                                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">{tool?.name||'—'}</span>
+                                </div>
+                              </td>
+                              {/* Type */}
+                              <td className="px-4 py-3">
+                                <span className="text-xs font-bold">
+                                  {s.delivery_type==='key' ? '🔑 Key' : '📧 Account'}
+                                </span>
+                              </td>
+                              {/* Email/Key */}
+                              <td className="px-4 py-3 max-w-[200px]">
+                                <span className="text-xs font-mono text-gray-600 dark:text-gray-400 truncate block" dir="ltr">
+                                  {s.delivery_type==='key' ? (s.key_enc||'—') : (s.email||'—')}
+                                </span>
+                              </td>
+                              {/* Status */}
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${s.status==='available'?'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400':'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400'}`}>
+                                  {s.status==='available' ? 'Available' : 'Assigned'}
+                                </span>
+                              </td>
+                              {/* Notes */}
+                              <td className="px-4 py-3 max-w-[150px]">
+                                <span className="text-xs text-gray-500 truncate block">{s.notes||'—'}</span>
+                              </td>
+                              {/* Added */}
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className="text-xs text-gray-400">{fmtDate(s.created_at)}</span>
+                              </td>
+                              {/* Assigned to */}
+                              <td className="px-4 py-3 max-w-[140px]">
+                                {s.members
+                                  ? <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium truncate block">{(s.members as any).full_name}</span>
+                                  : <span className="text-xs text-gray-300 dark:text-gray-600">—</span>}
+                              </td>
+                              {/* Actions */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1">
+                                  {s.status==='available' && (
+                                    <button onClick={()=>openEdit(s)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-500">
+                                      <Pencil size={12}/>
+                                    </button>
+                                  )}
+                                  <button onClick={()=>deleteItem(s.id)} disabled={s.status==='assigned'||deleting===s.id}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500">
+                                    {deleting===s.id ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/> : <Trash2 size={12}/>}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Pagination */}
               {filtered.length > perPage && (

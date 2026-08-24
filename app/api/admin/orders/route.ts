@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { data: purchases, error } = await service
     .from('tool_purchases')
-    .select(`id, member_id, created_at, expires_at, amount_egp, shop_tools(id,name,image_url,category_slug), members(id,full_name,email)`)
+    .select(`id, member_id, created_at, expires_at, amount_egp, payment_method, coupon_code, shop_tools(id,name,image_url,category_slug,duration_days), members(id,full_name,email,member_code)`)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false })
 
@@ -33,20 +33,24 @@ export async function GET(req: NextRequest) {
     const catSlug = p.shop_tools?.category_slug
     const isPrivate = catSlug === 'private'
     return {
-      id:            p.id,
-      member_id:     p.members?.id,
-      member_name:   p.members?.full_name,
-      member_email:  p.members?.email,
-      tool_id:       p.shop_tools?.id,
-      tool_name:     p.shop_tools?.name,
-      tool_image:    p.shop_tools?.image_url,
-      category_slug: catSlug || 'shared',
-      amount_egp:    p.amount_egp,
-      created_at:    p.created_at,
-      expires_at:    p.expires_at,
-      delivered:     isPrivate ? !!delivMap[p.id] : null,
-      delivered_at:  isPrivate ? (delivMap[p.id]?.delivered_at || null) : null,
-      viewed_at:     isPrivate ? (delivMap[p.id]?.viewed_at    || null) : null,
+      id:             p.id,
+      member_id:      p.members?.id,
+      member_name:    p.members?.full_name,
+      member_email:   p.members?.email,
+      member_code:    p.members?.member_code || null,
+      tool_id:        p.shop_tools?.id,
+      tool_name:      p.shop_tools?.name,
+      tool_image:     p.shop_tools?.image_url,
+      category_slug:  catSlug || 'shared',
+      amount_egp:     p.amount_egp,
+      payment_method: p.payment_method || null,
+      coupon_code:    p.coupon_code    || null,
+      created_at:     p.created_at,
+      expires_at:     p.expires_at,
+      duration_days:  p.shop_tools?.duration_days || null,
+      delivered:      isPrivate ? !!delivMap[p.id] : null,
+      delivered_at:   isPrivate ? (delivMap[p.id]?.delivered_at || null) : null,
+      viewed_at:      isPrivate ? (delivMap[p.id]?.viewed_at    || null) : null,
     }
   })
 
