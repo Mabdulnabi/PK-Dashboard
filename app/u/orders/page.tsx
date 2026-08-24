@@ -512,10 +512,11 @@ function CredentialsModal({ purchase, onClose, t, lang, settings }: {
 }
 
 function StatusBadge({ days, t }:{ days:number|null; t:any }) {
-  if (days===null) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">{t('Lifetime','مدى الحياة')}</span>
-  if (days<=3) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 dark:bg-red-500/10 text-red-600 animate-pulse">⚠ {days} {t('d','ي')}</span>
-  if (days<=7) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600">{days} {t('days','أيام')}</span>
-  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600"><CheckCircle size={9}/> {days} {t('days','أيام')}</span>
+  const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+  if (days===null) return <span className={base} style={{background:'linear-gradient(135deg,#3b82f6,#2563eb)'}}>{t('Lifetime','مدى الحياة')}</span>
+  if (days<=3) return <span className={`${base} animate-pulse`} style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>⚠ {days} {t('d','ي')}</span>
+  if (days<=7) return <span className={base} style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>{days} {t('days','أيام')}</span>
+  return <span className={base} style={{background:'linear-gradient(135deg,#10b981,#059669)'}}><CheckCircle size={9}/> {days} {t('days','أيام')}</span>
 }
 
 function QuickStats({ purchases, t, lang, currency, formatPrice, usdRate }: {
