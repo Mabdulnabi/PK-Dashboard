@@ -37,6 +37,16 @@ function Stars({ rating, count }: { rating: number; count: number }) {
   )
 }
 
+function translateDur(label: string, isAr: boolean): string {
+  if (!isAr) return label
+  return label
+    .replace(/(\d+)\s*Days?/i,   (_,n) => `${n} يوم`)
+    .replace(/(\d+)\s*Months?/i, (_,n) => `${n} شهر`)
+    .replace(/(\d+)\s*Years?/i,  (_,n) => `${n} سنة`)
+    .replace(/(\d+)\s*Weeks?/i,  (_,n) => `${n} أسبوع`)
+    .replace(/Lifetime/i, 'مدى الحياة')
+}
+
 function StoreCard({ tool, lang, formatPrice }: {
   tool: Tool; lang: string; formatPrice: (egp:number,usdRate?:number)=>string
 }) {
@@ -122,7 +132,14 @@ function StoreCard({ tool, lang, formatPrice }: {
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
             style={{background:'linear-gradient(135deg,#6366f1,#4f46e5)'}}>
             <Shield size={9} strokeWidth={2.5} color="white"/>
-            {tool.warranty_label}
+            {isRtl
+              ? tool.warranty_label
+                  .replace(/(\d+)\s*Year[s]?\s*Warranty/i, (_,n)=>`ضمان ${n} سنة`)
+                  .replace(/(\d+)\s*Month[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} شهر`)
+                  .replace(/(\d+)\s*Day[s]?\s*Warranty/i,  (_,n)=>`ضمان ${n} يوم`)
+                  .replace(/Full\s*Warranty/i,'ضمان كامل')
+                  .replace(/Warranty/i,'ضمان')
+              : tool.warranty_label}
           </span>
         )}
       </div>
@@ -135,7 +152,7 @@ function StoreCard({ tool, lang, formatPrice }: {
           {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
             <span className="text-sm text-gray-400 line-through">{formatPrice(tool.retail_price_egp!)}</span>
           )}
-          <span className="text-sm text-gray-400 whitespace-nowrap">/ {tool.duration_label}</span>
+          <span className="text-sm text-gray-400 whitespace-nowrap">/ {translateDur(tool.duration_label, isRtl)}</span>
         </div>
 
         <button
