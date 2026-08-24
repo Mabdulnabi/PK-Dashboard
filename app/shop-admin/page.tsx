@@ -741,7 +741,7 @@ export default function ShopAdminPage() {
                     borderBottom:`2px solid ${modalTab===i ? S.accent : 'transparent'}`,
                     marginBottom:-1,
                     color: modalTab===i ? S.accent : S.text3,
-                    background:'none', border:'none', borderBottom:`2px solid ${modalTab===i?S.accent:'transparent'}`,
+                    background:'none', border:'none',
                     cursor:'pointer', paddingBottom:10, paddingTop:10, paddingLeft:4, paddingRight:12,
                     fontFamily:'inherit',
                   }}>
