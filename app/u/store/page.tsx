@@ -248,7 +248,7 @@ function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: strin
   const btnSty = { background:'#d99401', borderColor:'#b37a00', color:'#fff' }
 
   return (
-    <div className="relative" style={{paddingInline: '20px'}}>
+    <div className="relative" dir="ltr" style={{paddingInline: '20px'}}>
       <button onClick={() => { advance(-1); startTimer() }} className={`${btnCls} left-0`} style={btnSty}><ChevronLeft size={16}/></button>
       <div ref={wrapRef} className="overflow-hidden">
         <div ref={trackRef} style={{ display:'flex', gap:GAP, willChange:'transform' }}>
