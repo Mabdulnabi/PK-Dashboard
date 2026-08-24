@@ -7,6 +7,7 @@ import Topbar  from '@/components/layout/Topbar'
 import {
   Check, AlertCircle, X, Eye, EyeOff, Plus, Trash2,
   Archive, AlertTriangle, Database, User, Calendar, Wrench, Pencil, Key,
+  Upload, Download, FileText,
 } from 'lucide-react'
 
 interface Tool { id: string; name: string; image_url: string|null; available: number; assigned: number }
@@ -52,6 +53,13 @@ export default function StockPage() {
   const [toast,     setToast]     = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [page,      setPage]      = useState(1)
   const perPage = 12
+
+  // CSV import state
+  const [importModal, setImportModal] = useState(false)
+  const [importForm,  setImportForm]  = useState({ tool_id:'', import_type:'account' as 'account'|'key' })
+  const [csvFile,     setCsvFile]     = useState<File|null>(null)
+  const [importing,   setImporting]   = useState(false)
+  const [importResult, setImportResult] = useState<{total:number;imported:number;skipped:number;failed:number;errors:{row:number;reason:string}[]}|null>(null)
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data})=>{ if (!data.session) router.push('/auth/login') })
@@ -146,6 +154,60 @@ export default function StockPage() {
   const totalAssigned = stock.filter(s=>s.status==='assigned').length
   const lowTools = tools.filter(t=>t.available<3)
 
+  const openImport = () => {
+    setImportForm({ tool_id: tools[0]?.id || '', import_type: 'account' })
+    setCsvFile(null)
+    setImportResult(null)
+    setImportModal(true)
+  }
+
+  const downloadTemplate = (type: 'account' | 'key') => {
+    const content = type === 'account'
+      ? 'email,password\nexample1@gmail.com,password123\nexample2@gmail.com,password456'
+      : 'key\nAAAAA-BBBBB-CCCCC\nDDDDD-EEEEE-FFFFF'
+    const blob = new Blob([content], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = type === 'account' ? 'stock-accounts-template.csv' : 'stock-keys-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const parseCSV = (text: string): Record<string, string>[] => {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    if (lines.length < 2) return []
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''))
+    return lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+      const obj: Record<string, string> = {}
+      headers.forEach((h, i) => { obj[h] = vals[i] || '' })
+      return obj
+    })
+  }
+
+  const runImport = async () => {
+    if (!csvFile || !importForm.tool_id) return
+    setImporting(true)
+    setImportResult(null)
+    const text = await csvFile.text()
+    const rows = parseCSV(text)
+    if (rows.length === 0) {
+      setToast({ msg: 'CSV is empty or invalid', type: 'err' })
+      setImporting(false)
+      return
+    }
+    const res  = await fetch('/api/admin/stock/import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool_id: importForm.tool_id, import_type: importForm.import_type, rows }),
+    })
+    const data = await res.json()
+    setImporting(false)
+    if (!res.ok) { setToast({ msg: data.error || 'Import failed', type: 'err' }); return }
+    setImportResult(data)
+    load()
+  }
+
   const stats = [
     { label:'Total Items',  val:stock.length,    color:'#6b7280', bg:'bg-gray-100 dark:bg-gray-800' },
     { label:'Available',    val:totalAvail,       color:'#10b981', bg:'bg-emerald-50 dark:bg-emerald-900/20' },
@@ -184,11 +246,17 @@ export default function StockPage() {
                 </div>
               ))}
             </div>
-            <button onClick={openAdd}
-              className="px-5 rounded-2xl text-white font-bold text-sm flex items-center gap-2 transition-colors shadow-sm hover:opacity-90"
-              style={{background:GOLD}}>
-              <Plus size={16}/> Add Item
-            </button>
+            <div className="flex flex-col gap-2">
+              <button onClick={openAdd}
+                className="px-5 py-3 rounded-xl text-white font-bold text-sm flex items-center gap-2 transition-colors shadow-sm hover:opacity-90"
+                style={{background:GOLD}}>
+                <Plus size={16}/> Add Item
+              </button>
+              <button onClick={openImport}
+                className="px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <Upload size={15}/> Import CSV
+              </button>
+            </div>
           </div>
 
           {/* Tool filter tabs */}
@@ -473,6 +541,127 @@ export default function StockPage() {
                 className="flex-[2] py-3 rounded-xl disabled:opacity-60 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
                 style={{background:GOLD}}>
                 {editSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</> : <><Check size={15}/> Save Changes</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import CSV Modal */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={()=>{ if(!importing) setImportModal(false) }}>
+          <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-2xl w-full max-w-lg shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">Import Stock via CSV</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Bulk-add stock items from a spreadsheet</p>
+              </div>
+              <button onClick={()=>{ if(!importing) setImportModal(false) }} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white">
+                <X size={14}/>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Tool */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Tool</label>
+                <select value={importForm.tool_id} onChange={e=>setImportForm(f=>({...f,tool_id:e.target.value}))} className={inp} disabled={importing}>
+                  {tools.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+
+              {/* Type selector */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Import Type</label>
+                <div className="flex gap-2">
+                  {(['account','key'] as const).map(type=>(
+                    <button key={type} disabled={importing}
+                      onClick={()=>{ setImportForm(f=>({...f,import_type:type})); setCsvFile(null); setImportResult(null) }}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                      style={importForm.import_type===type?{background:GOLD,color:'#fff'}:{background:'#f3f4f6',color:'#6b7280'}}>
+                      {type==='account'?'📧 Email & Password':'🔑 Key'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* CSV format hint + template download */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                      Expected columns:
+                    </p>
+                    <code className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">
+                      {importForm.import_type === 'account' ? 'email, password' : 'key'}
+                    </code>
+                    <p className="text-[10px] text-gray-400 mt-1">One row per item. Header row required.</p>
+                  </div>
+                  <button onClick={()=>downloadTemplate(importForm.import_type)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0">
+                    <Download size={12}/>Template
+                  </button>
+                </div>
+              </div>
+
+              {/* File picker */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">CSV File</label>
+                <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${csvFile?'border-amber-400 bg-amber-50/40 dark:bg-amber-900/10':'border-gray-200 dark:border-gray-700 hover:border-amber-300'} ${importing?'pointer-events-none opacity-50':''}`}>
+                  <FileText size={18} className={csvFile?'text-amber-500':'text-gray-400'}/>
+                  <div className="flex-1 min-w-0">
+                    {csvFile
+                      ? <><p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{csvFile.name}</p>
+                          <p className="text-[10px] text-gray-400">{(csvFile.size/1024).toFixed(1)} KB</p></>
+                      : <p className="text-sm text-gray-400">Click to select .csv file</p>}
+                  </div>
+                  {csvFile && <button type="button" onClick={e=>{e.preventDefault();setCsvFile(null);setImportResult(null)}} className="text-gray-400 hover:text-red-400"><X size={14}/></button>}
+                  <input type="file" accept=".csv,text/csv" className="hidden"
+                    onChange={e=>{ setCsvFile(e.target.files?.[0]||null); setImportResult(null); e.target.value='' }}/>
+                </label>
+              </div>
+
+              {/* Import results */}
+              {importResult && (
+                <div className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="grid grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700">
+                    {[
+                      { label:'Total',    val:importResult.total,    color:'#6b7280' },
+                      { label:'Imported', val:importResult.imported,  color:'#10b981' },
+                      { label:'Skipped',  val:importResult.skipped,   color:'#f59e0b' },
+                      { label:'Failed',   val:importResult.failed,    color:'#ef4444' },
+                    ].map(s=>(
+                      <div key={s.label} className="px-3 py-2.5 text-center bg-gray-50 dark:bg-gray-800/30">
+                        <div className="text-lg font-black" style={{color:s.color}}>{s.val}</div>
+                        <div className="text-[10px] text-gray-400 font-medium">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {importResult.errors.length > 0 && (
+                    <div className="border-t border-gray-100 dark:border-gray-700 p-3 max-h-32 overflow-y-auto">
+                      {importResult.errors.slice(0,20).map((e,i)=>(
+                        <p key={i} className="text-[11px] text-red-500 mb-0.5">Row {e.row}: {e.reason}</p>
+                      ))}
+                      {importResult.errors.length > 20 && (
+                        <p className="text-[11px] text-gray-400">…and {importResult.errors.length-20} more errors</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 px-6 pb-6">
+              <button onClick={()=>{ if(!importing) setImportModal(false) }} disabled={importing}
+                className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50">
+                {importResult ? 'Close' : 'Cancel'}
+              </button>
+              <button onClick={runImport} disabled={!csvFile||importing||!importForm.tool_id}
+                className="flex-[2] py-3 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                style={{background:GOLD}}>
+                {importing
+                  ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Importing…</>
+                  : <><Upload size={15}/>Import CSV</>}
               </button>
             </div>
           </div>
