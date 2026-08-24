@@ -340,7 +340,7 @@ export default function PaymentsPage() {
                     <MiniHexBadge rk={rank} size={44}/>
                     <div>
                       <div className="text-lg font-black leading-none tabular-nums" style={{color:rank.light}}>{lang==='ar' ? rank.ar : rank.en}</div>
-                      <div className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">{(spent).toLocaleString()} EGP {t('spent','مُنفق')}</div>
+                      <div className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">{(spent).toLocaleString()} <span dir="ltr">EGP</span> {t('spent','مُنفق')}</div>
                     </div>
                   </div>
                   {nextRank ? (
@@ -353,7 +353,7 @@ export default function PaymentsPage() {
                         <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg,${rank.color},${nextRank.color})`}}/>
                       </div>
                       <div className="text-[10px] text-gray-400 dark:text-gray-600">
-                        {(nextRank.min - spent).toLocaleString()} EGP {t('to next rank','للرتبة التالية')}
+                        {(nextRank.min - spent).toLocaleString()} <span dir="ltr">EGP</span> {t('to next rank','للرتبة التالية')}
                       </div>
                     </div>
                   ) : (
@@ -504,7 +504,7 @@ export default function PaymentsPage() {
                             /* Static: TxID + submit in the same right column, below instructions */
                             <div className="space-y-2 pt-2 border-t border-green-500/20">
                               <label className="text-[10px] font-bold uppercase text-gray-400 block">{t('Transaction ID / Reference','رقم العملية / المرجع')} *</label>
-                              <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder="TxID or reference..."
+                              <input value={topUpTx} onChange={e=>setTopUpTx(e.target.value)} placeholder={lang==='ar'?'رقم العملية أو المرجع...':'TxID or reference...'}
                                 className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-[#22c55e] text-gray-900 dark:text-gray-100"/>
                               <button onClick={submitTopUp} disabled={submitting||!topUpAmt||!topUpGw}
                                 className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"

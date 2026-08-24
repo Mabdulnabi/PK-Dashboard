@@ -133,7 +133,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
         invalid_credentials: lang==='ar' ? 'بيانات غير صحيحة' : 'Invalid credentials',
         subscription_expired: lang==='ar' ? 'الاشتراك منتهي' : 'Subscription expired',
       }
-      setAmError(msg[d.error] || d.error || 'Login failed')
+      setAmError(msg[d.error] || d.error || (lang==='ar' ? 'فشل تسجيل الدخول' : 'Login failed'))
       setAmLoading(false); return
     }
     setAmOk(L.redirecting)
@@ -157,7 +157,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
       const msg: Record<string,string> = {
         email_taken: lang==='ar' ? 'البريد مستخدم بالفعل' : 'Email already registered',
       }
-      setAmError(msg[d.error] || d.error || 'Signup failed'); return
+      setAmError(msg[d.error] || d.error || (lang==='ar' ? 'فشل إنشاء الحساب' : 'Signup failed')); return
     }
     setAmOk(L.created); setTimeout(() => { window.location.href = '/u/dashboard' }, 900)
   }
@@ -169,7 +169,7 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
       redirectTo: window.location.origin + '/u/dashboard',
     })
     setAmLoading(false)
-    if (error) { setAmError(error.message); return }
+    if (error) { setAmError(lang==='ar' ? 'حدث خطأ، حاول مجدداً' : error.message); return }
     setAmOk(L.sent)
   }
 

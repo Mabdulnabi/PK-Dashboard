@@ -255,7 +255,7 @@ function CheckoutInner() {
   }
 
   const waNum = (siteSettings.whatsapp_number || settings.whatsapp_number || '+201068488474').replace(/\D/g,'')
-  const wa = `https://wa.me/${waNum}?text=${encodeURIComponent(`طلب جديد: ${tool?.name} — وسيلة: ${method} — مرجع: ${txRef||'N/A'}`)}`
+  const wa = `https://wa.me/${waNum}?text=${encodeURIComponent(lang==='ar'?`طلب جديد: ${tool?.name} — وسيلة: ${method} — مرجع: ${txRef||'N/A'}`:`New order: ${tool?.name} — Method: ${method} — Ref: ${txRef||'N/A'}`)}`
 
   if (loading) return <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
   if (!cartMode && !isBundle && !tool) return <div className="text-center py-32 text-gray-400 text-lg">{t('Tool not found','الأداة غير موجودة')}</div>
@@ -534,7 +534,7 @@ function CheckoutInner() {
                   <Loader2 size={18} className="text-blue-500 animate-spin flex-shrink-0"/>
                   <div>
                     <div className="text-sm font-bold text-blue-700 dark:text-blue-300">{t('Waiting for payment confirmation...','جاري انتظار تأكيد الدفع...')}</div>
-                    <div className="text-xs text-blue-500 mt-0.5">{t('We\'ll confirm automatically after payment on EasyKash','بعد الدفع على صفحة EasyKash هنأكد تلقائياً')}</div>
+                    <div className="text-xs text-blue-500 mt-0.5">{lang==='ar'?<>بعد الدفع على صفحة <span dir="ltr">EasyKash</span> هنأكد تلقائياً</>:"We'll confirm automatically after payment on EasyKash"}</div>
                   </div>
                   {easykashUrl && <a href={easykashUrl} target="_blank" className="ms-auto text-xs text-blue-500 underline flex-shrink-0">{t('Open link again','فتح الرابط مرة أخرى')}</a>}
                 </div>
@@ -547,7 +547,7 @@ function CheckoutInner() {
                     placeholder={lang==='ar'?(cfg.input_placeholder_ar||'الصق رقم العملية هنا...'):(cfg.input_placeholder_en||'Paste transaction ID here...')}
                     dir="ltr"
                     className="w-full px-4 py-4 text-base rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] transition-colors"/>
-                  <p className="text-xs text-gray-400 mt-1.5">{t('After transfer, paste the reference or Transaction ID here','بعد التحويل، الصق الرقم المرجعي أو Transaction ID هنا')}</p>
+                  <p className="text-xs text-gray-400 mt-1.5">{lang==='ar'?<>بعد التحويل، الصق الرقم المرجعي أو <span dir="ltr">Transaction ID</span> هنا</>:'After transfer, paste the reference or Transaction ID here'}</p>
                 </div>
               )}
 

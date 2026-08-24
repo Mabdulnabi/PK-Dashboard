@@ -272,7 +272,7 @@ export default function PrivateStoreContent({ hideBanner }: { hideBanner?: boole
                       : <span className="text-xl font-bold text-gray-300">{tool.name.slice(0,2).toUpperCase()}</span>}
                   </div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1.5 pe-16 leading-tight">{tool.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2">{tool.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2">{(isRtl && (tool as any).description_ar) ? (tool as any).description_ar : tool.description}</p>
                   <div className="mb-1" dir={isRtl?'rtl':'ltr'}>
                     <span className="text-2xl font-bold" style={{color:'#8b5cf6'}}>{price(tool)}</span>
                     <span className="text-sm text-gray-400 mx-1">/</span>
@@ -375,7 +375,7 @@ export default function PrivateStoreContent({ hideBanner }: { hideBanner?: boole
                 <span className="text-xs font-bold uppercase tracking-widest" style={{color:'#8b5cf6'}}>{isRtl?'حساب خاص':'Private Account'}</span>
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-bold">
-                    <Zap size={9} fill="white"/>{popup.delivery_label||'INSTANT'}
+                    <Zap size={9} fill="white"/>{popup.delivery_label||(isRtl?'فوري':'INSTANT')}
                   </span>
                   <button onClick={()=>setPopup(null)}
                     className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">

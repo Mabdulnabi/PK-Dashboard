@@ -8,6 +8,7 @@ import {
   Check, CheckCheck, File, Trash2, Edit3, Loader2,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { arEG, enUS } from 'date-fns/locale'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -85,7 +86,7 @@ export default function ChatWidget() {
   const [adminTyping, setAdminTyping] = useState(false)
   const [editMsg, setEditMsg]       = useState<Message | null>(null)
   const [initDone, setInitDone]     = useState(false)
-  const [adminInfo, setAdminInfo]   = useState<{ name: string; avatar: string | null }>({ name: 'Support', avatar: null })
+  const [adminInfo, setAdminInfo]   = useState<{ name: string; avatar: string | null }>({ name: lang==='ar'?'الدعم':'Support', avatar: null })
   const [toast, setToast]           = useState<string | null>(null)
   const endRef      = useRef<HTMLDivElement>(null)
   const fileRef     = useRef<HTMLInputElement>(null)
@@ -323,7 +324,7 @@ export default function ChatWidget() {
                     {showDate && (
                       <div className="flex justify-center my-2">
                         <span className="text-[10px] bg-white dark:bg-gray-700 text-gray-500 px-2.5 py-0.5 rounded-full shadow-sm">
-                          {format(new Date(msg.created_at), 'MMM d')}
+                          {format(new Date(msg.created_at), 'MMM d', { locale: lang==='ar' ? arEG : enUS })}
                         </span>
                       </div>
                     )}

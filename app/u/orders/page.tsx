@@ -419,7 +419,7 @@ function CredentialsModal({ purchase, onClose, t, lang, settings }: {
               </div>
               <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-1">{t('Account Being Prepared','جاري تجهيز حسابك')}</p>
               <p className="text-xs text-gray-400 mb-4">{t('Credentials will be delivered shortly','سيتم تسليم البيانات قريباً')}</p>
-              <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}?text=${encodeURIComponent(`متى سيتم تسليم حساب ${purchase.tool_name}؟`)}`}
+              <a href={`https://wa.me/${(settings.whatsapp_number||'').replace(/\D/g,'')}?text=${encodeURIComponent(lang==='ar'?`متى سيتم تسليم حساب ${purchase.tool_name}؟`:`When will my ${purchase.tool_name} account be delivered?`)}`}
                 target="_blank"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold bg-green-500 hover:bg-green-600 transition-colors">
                 💬 {t('Ask on WhatsApp','استفسر على WhatsApp')}
@@ -1212,7 +1212,7 @@ export default function MyOrdersPage() {
                       : <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0"/>}
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{p.tool_name}</p>
-                      <p className="text-[10px] text-gray-400">{p.duration_label} · {p.retail_price_egp || p.amount_egp} {t('EGP','ج')}</p>
+                      <p className="text-[10px] text-gray-400">{p.duration_label} · {p.retail_price_egp || p.amount_egp} {t('EGP','ج.م')}</p>
                     </div>
                   </div>
                   <button

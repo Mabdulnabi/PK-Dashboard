@@ -352,7 +352,7 @@ export default function HelpdeskPage() {
                               <FileChip att={entry.att} inline/>
                             )}
                             <span className="text-[10px] text-gray-300 dark:text-gray-600">
-                              {new Date(entry.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                              {new Date(entry.time).toLocaleString(lang==='ar'?'ar-EG':'en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                             </span>
                           </div>
                         </div>

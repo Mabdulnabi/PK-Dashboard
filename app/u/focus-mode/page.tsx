@@ -270,7 +270,7 @@ function PomodoroStrip() {
                           transform:i<sessions%cfg.sessionsBeforeLong?'scale(1.15)':'scale(1)'}}/>
               ))}
             </div>
-            <span className="text-xs text-gray-400 font-medium">{t(`${sessions} session${sessions!==1?'s':''} today`,`${sessions} جلسة اليوم`)}</span>
+            <span className="text-xs text-gray-400 font-medium">{t(`${sessions} session${sessions!==1?'s':''} today`,sessions===1?'جلسة واحدة اليوم':sessions===2?`جلستان اليوم`:`${sessions} جلسات اليوم`)}</span>
           </div>
         </div>
       </div>

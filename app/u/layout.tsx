@@ -522,7 +522,7 @@ if (pathname==='/u/login') return <>{children}</>
       {!col && member && (
         <button onClick={()=>setCustomizeOpen(true)}
           className="mx-3 mb-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-[calc(100%-24px)]">
-          <SlidersHorizontal size={12}/><span>Customize sidebar</span>
+          <SlidersHorizontal size={12}/><span>{isRtl ? 'تخصيص الشريط الجانبي' : 'Customize sidebar'}</span>
         </button>
       )}
 
@@ -681,7 +681,7 @@ if (pathname==='/u/login') return <>{children}</>
           {/* Right: actions */}
           <div className="flex items-center gap-1 flex-shrink-0">
             {/* Theme cycle: auto → light → dark */}
-            <button onClick={cycleTheme} title={themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
+            <button onClick={cycleTheme} title={isRtl ? (themeMode==='auto'?'تلقائي':themeMode==='light'?'فاتح':'داكن') : (themeMode==='auto'?'Auto':themeMode==='light'?'Light':'Dark')}
               className={`w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                 themeMode !== 'auto' ? 'text-gray-600 dark:text-white' : ''
               }`}
@@ -747,7 +747,7 @@ if (pathname==='/u/login') return <>{children}</>
                                 <>
                                   <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{displayTitle}</div>
                                   <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{displayMessage}</div>
-                                  <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</div>
+                                  <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{new Date(n.created_at).toLocaleString(lang==='ar'?'ar-EG':'en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}</div>
                                 </>
                               )
                               const cls = `block px-4 py-3 w-full text-start ${!n.is_read?'bg-blue-50/60 dark:bg-blue-900/10':''} ${n.link?'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer':''}`
