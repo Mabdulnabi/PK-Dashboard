@@ -79,12 +79,20 @@ interface Review {
   members?: { avatar_url: string | null } | null
 }
 
+interface ToolVariant {
+  name: string; price: string; discount_price: string; cost: string; stock: string; sku: string
+}
+
 interface Tool {
   id: string; name: string; description: string; image_url?: string
   price_egp: number; price_usd?: number; duration_label: string; retail_price_egp?: number
   delivery_label: string; rating: number; review_count: number
   sales_count?: number; video_url?: string; features: string[]
   is_out_of_stock: boolean; landing_blocks: Block[]
+  sku?: string
+  fake_visits_min?: number; fake_visits_max?: number
+  fake_stock_min?: number; fake_stock_max?: number
+  variants?: ToolVariant[]
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange:(v:number)=>void }) {
@@ -1241,7 +1249,37 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const [submitted,  setSubmitted]= useState(false)
   const [submitErr,  setSubmitErr]= useState('')
 
-  const price = formatPrice(tool.price_egp, parseFloat(settings.usd_to_egp_rate)||50)
+  const variants = tool.variants || []
+  const [selectedVariant, setSelectedVariant] = useState<number>(variants.length > 0 ? 0 : -1)
+
+  const [fakeVisits, setFakeVisits] = useState<number|null>(null)
+  const [fakeStock,  setFakeStock]  = useState<number|null>(null)
+  useEffect(()=>{
+    const vMin = tool.fake_visits_min||0; const vMax = tool.fake_visits_max||0
+    const sMin = tool.fake_stock_min||0;  const sMax = tool.fake_stock_max||0
+    if (vMin > 0 || vMax > 0) {
+      const key = `pk_fv_${tool.id}`
+      try { const cached = sessionStorage.getItem(key); if (cached) { setFakeVisits(parseInt(cached)); } else {
+        const v = vMin + Math.floor(Math.random()*(vMax-vMin+1)); sessionStorage.setItem(key, String(v)); setFakeVisits(v)
+      }} catch { setFakeVisits(vMin + Math.floor(Math.random()*(vMax-vMin+1))) }
+    }
+    if (sMin > 0 || sMax > 0) {
+      const key = `pk_fs_${tool.id}`
+      try { const cached = sessionStorage.getItem(key); if (cached) { setFakeStock(parseInt(cached)); } else {
+        const v = sMin + Math.floor(Math.random()*(sMax-sMin+1)); sessionStorage.setItem(key, String(v)); setFakeStock(v)
+      }} catch { setFakeStock(sMin + Math.floor(Math.random()*(sMax-sMin+1))) }
+    }
+  },[tool.id])
+
+  const activeVariant = selectedVariant >= 0 && variants[selectedVariant] ? variants[selectedVariant] : null
+  const displayPriceEgp = activeVariant
+    ? (parseFloat(activeVariant.price)||tool.price_egp)
+    : tool.price_egp
+  const displayRetailEgp = activeVariant
+    ? (parseFloat(activeVariant.discount_price)||tool.retail_price_egp||0)
+    : (tool.retail_price_egp||0)
+
+  const price = formatPrice(displayPriceEgp, parseFloat(settings.usd_to_egp_rate)||50)
 
   useEffect(()=>{
     fetch(`/api/tools/${tool.id}/reviews`)
@@ -1270,7 +1308,9 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const displayRating = avgRating || tool.rating
   const displayCount  = totalReviews || tool.review_count
 
-  const buyUrl = `/u/checkout?tool_id=${tool.id}`
+  const buyUrl = activeVariant
+    ? `/u/checkout?tool_id=${tool.id}&variant=${encodeURIComponent(activeVariant.name)}&price=${displayPriceEgp}`
+    : `/u/checkout?tool_id=${tool.id}`
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'} style={isRtl?{fontFamily:"'Cairo', sans-serif"}:{}}>
@@ -1339,20 +1379,34 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   <span className="text-sm text-gray-500">{displayCount} {t('reviews','تقييم')}</span>
                 </div>
 
+                {variants.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {variants.map((v,i)=>(
+                      <button key={i} onClick={()=>setSelectedVariant(i)}
+                        className="px-3 py-1.5 rounded-xl text-sm font-bold transition-all border-2"
+                        style={selectedVariant===i
+                          ? {background:'#d99401',borderColor:'#d99401',color:'#fff',boxShadow:'0 4px 14px rgba(217,148,1,0.4)'}
+                          : {background:'rgba(255,255,255,0.06)',borderColor:'rgba(255,255,255,0.18)',color:'rgba(255,255,255,0.75)'}}>
+                        {v.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap items-baseline gap-2 gap-y-1">
                   <span className="text-3xl md:text-5xl font-extrabold tracking-tight" style={{color:'#d99401'}}>{price}</span>
-                  {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
+                  {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
                     <span className="text-lg md:text-2xl text-gray-400 line-through font-medium">
-                      {formatPrice(tool.retail_price_egp!, parseFloat(settings.usd_to_egp_rate)||50)}
+                      {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
                     </span>
                   )}
                   <span className="text-base md:text-lg text-gray-500 font-medium">/ {durLabel}</span>
                 </div>
-                {(tool.retail_price_egp||0) > tool.price_egp && tool.price_egp > 0 && (
+                {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
                   <div className="mt-1">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black text-white"
                       style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
-                      {(() => { const pct = Math.round((1 - tool.price_egp / tool.retail_price_egp!) * 100); return `${pct}% ${t('خصم عن السعر الأصلي','OFF retail price')}` })()}
+                      {(() => { const pct = Math.round((1 - displayPriceEgp / displayRetailEgp) * 100); return `${pct}% ${t('خصم عن السعر الأصلي','OFF retail price')}` })()}
                     </span>
                   </div>
                 )}
@@ -1380,6 +1434,16 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                       <span>{b.icon}</span>{isRtl?b.ar:b.en}
                     </div>
                   ))}
+                  {fakeVisits !== null && (
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                      <span>👁</span>{fakeVisits.toLocaleString()} {t('مشاهدة اليوم','views today')}
+                    </div>
+                  )}
+                  {fakeStock !== null && (
+                    <div className="flex items-center gap-2 text-[11px] text-amber-400 mt-0.5 font-semibold">
+                      <span>📦</span>{t('متبقي','Only')} {fakeStock} {t('','left in stock')}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
