@@ -20,8 +20,9 @@ import ImageUploadInput from '@/components/admin/ImageUploadInput'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type FeaturesLayout = 'grid' | 'list' | 'cards'
+type FeaturesPreset = 'grid_center'|'grid_hover'|'row_left'|'row_flat'|'big_icon'|'minimal'
 
-interface FeatureItem { icon: string; icon_url?: string; en: string; ar: string }
+interface FeatureItem { icon: string; icon_url?: string; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }
 interface CardItem    { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }
 interface FaqItem     { q_en: string; q_ar: string; a_en: string; a_ar: string }
 
@@ -33,6 +34,7 @@ interface LandingBlock {
   body_en?: string;  body_ar?: string
   features?: FeatureItem[]
   features_layout?: FeaturesLayout
+  features_preset?: FeaturesPreset
   faqs?: FaqItem[]
   cards?: CardItem[]
 }
@@ -183,16 +185,33 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
             </div>
           </div>
 
-          {/* Layout picker */}
+          {/* Preset style picker */}
           <div className="mb-3">
-            <FL><LayoutGrid size={9}/>Display Layout</FL>
-            <div className="flex gap-1.5">
-              {(['grid','list','cards'] as const).map(l=>(
-                <button key={l} onClick={()=>onChange({features_layout:l})}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold capitalize border-2 transition-all ${(block.features_layout||'grid')===l?'border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-500/10':'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-gray-300'}`}>
-                  {l}
-                </button>
-              ))}
+            <FL><LayoutGrid size={9}/>Card Style</FL>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { key:'grid_center', label:'Grid Center',
+                  svg:<svg viewBox="0 0 60 40"><rect x="1" y="8" width="17" height="24" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><rect x="21" y="8" width="17" height="24" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><rect x="41" y="8" width="18" height="24" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><circle cx="9.5" cy="16" r="4" fill="#d99401"/><circle cx="29.5" cy="16" r="4" fill="#d99401"/><circle cx="50" cy="16" r="4" fill="#d99401"/><rect x="4" y="23" width="11" height="2" rx="1" fill="#374151"/><rect x="24" y="23" width="11" height="2" rx="1" fill="#374151"/><rect x="44" y="23" width="11" height="2" rx="1" fill="#374151"/><rect x="6" y="27" width="7" height="1.5" rx="0.75" fill="#9ca3af"/><rect x="26" y="27" width="7" height="1.5" rx="0.75" fill="#9ca3af"/><rect x="46" y="27" width="7" height="1.5" rx="0.75" fill="#9ca3af"/></svg> },
+                { key:'grid_hover', label:'Hover Color',
+                  svg:<svg viewBox="0 0 60 40"><rect x="1" y="8" width="17" height="24" rx="3" fill="#d99401"/><rect x="21" y="8" width="17" height="24" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><rect x="41" y="8" width="18" height="24" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><circle cx="9.5" cy="16" r="4" fill="white" opacity="0.5"/><rect x="4" y="23" width="11" height="2" rx="1" fill="white"/><rect x="6" y="27" width="7" height="1.5" rx="0.75" fill="white" opacity="0.7"/><circle cx="29.5" cy="16" r="4" fill="#d99401"/><rect x="24" y="23" width="11" height="2" rx="1" fill="#374151"/><rect x="46" y="23" width="11" height="2" rx="1" fill="#374151"/></svg> },
+                { key:'row_left', label:'Row + Icon',
+                  svg:<svg viewBox="0 0 60 40"><rect x="1" y="3" width="58" height="10" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><rect x="1" y="15" width="58" height="10" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><rect x="1" y="27" width="58" height="10" rx="3" fill="#f3f4f6" stroke="#e5e7eb" strokeWidth="1"/><circle cx="9" cy="8" r="4" fill="#d99401"/><rect x="16" y="6" width="24" height="2" rx="1" fill="#374151"/><rect x="16" y="10" width="16" height="1.5" rx="0.75" fill="#9ca3af"/><circle cx="9" cy="20" r="4" fill="#d99401"/><rect x="16" y="18" width="22" height="2" rx="1" fill="#374151"/><rect x="16" y="22" width="14" height="1.5" rx="0.75" fill="#9ca3af"/><circle cx="9" cy="32" r="4" fill="#d99401"/><rect x="16" y="30" width="20" height="2" rx="1" fill="#374151"/><rect x="16" y="34" width="18" height="1.5" rx="0.75" fill="#9ca3af"/></svg> },
+                { key:'row_flat', label:'Row Flat',
+                  svg:<svg viewBox="0 0 60 40"><rect x="1" y="3" width="58" height="10" rx="3" fill="white" stroke="#e5e7eb" strokeWidth="1"/><rect x="1" y="15" width="58" height="10" rx="3" fill="white" stroke="#e5e7eb" strokeWidth="1"/><rect x="1" y="27" width="58" height="10" rx="3" fill="white" stroke="#e5e7eb" strokeWidth="1"/><rect x="3" y="5" width="8" height="6" rx="1.5" fill="#f3f4f6"/><rect x="3" y="17" width="8" height="6" rx="1.5" fill="#f3f4f6"/><rect x="3" y="29" width="8" height="6" rx="1.5" fill="#f3f4f6"/><rect x="14" y="6.5" width="22" height="2" rx="1" fill="#374151"/><rect x="14" y="18.5" width="20" height="2" rx="1" fill="#374151"/><rect x="14" y="30.5" width="24" height="2" rx="1" fill="#374151"/></svg> },
+                { key:'big_icon', label:'Big Icon',
+                  svg:<svg viewBox="0 0 60 40"><rect x="1" y="5" width="17" height="30" rx="5" fill="white" stroke="#e5e7eb" strokeWidth="1"/><rect x="21" y="5" width="17" height="30" rx="5" fill="white" stroke="#e5e7eb" strokeWidth="1"/><rect x="41" y="5" width="18" height="30" rx="5" fill="white" stroke="#e5e7eb" strokeWidth="1"/><circle cx="9.5" cy="16" r="6" fill="#fef3c7" stroke="#d99401" strokeWidth="1"/><circle cx="29.5" cy="16" r="6" fill="#fef3c7" stroke="#d99401" strokeWidth="1"/><circle cx="50" cy="16" r="6" fill="#fef3c7" stroke="#d99401" strokeWidth="1"/><rect x="4" y="25" width="11" height="2" rx="1" fill="#374151"/><rect x="24" y="25" width="11" height="2" rx="1" fill="#374151"/><rect x="44" y="25" width="11" height="2" rx="1" fill="#374151"/></svg> },
+                { key:'minimal', label:'Minimal',
+                  svg:<svg viewBox="0 0 60 40"><circle cx="9.5" cy="12" r="4" fill="#fef3c7" stroke="#d99401" strokeWidth="1"/><rect x="5" y="19" width="9" height="2" rx="1" fill="#374151"/><rect x="6" y="23" width="7" height="1.5" rx="0.75" fill="#9ca3af"/><circle cx="30" cy="12" r="4" fill="#fef3c7" stroke="#d99401" strokeWidth="1"/><rect x="26" y="19" width="9" height="2" rx="1" fill="#374151"/><rect x="27" y="23" width="7" height="1.5" rx="0.75" fill="#9ca3af"/><circle cx="50" cy="12" r="4" fill="#fef3c7" stroke="#d99401" strokeWidth="1"/><rect x="46" y="19" width="9" height="2" rx="1" fill="#374151"/><rect x="47" y="23" width="7" height="1.5" rx="0.75" fill="#9ca3af"/></svg> },
+              ] as const).map(p=>{
+                const active = (block.features_preset||'grid_center')===p.key
+                return (
+                  <button key={p.key} onClick={()=>onChange({features_preset:p.key})}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${active?'border-amber-400 bg-amber-50 dark:bg-amber-500/10':'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}>
+                    <div className="w-full">{p.svg}</div>
+                    <span className={`text-[9px] font-bold ${active?'text-amber-600':'text-gray-400'}`}>{p.label}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -225,13 +244,17 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input value={f.en} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,en:e.target.value}; onChange({features:fs}) }}
-                    placeholder="Feature EN" className={inp}/>
+                    placeholder="Title EN" className={inp}/>
                   <input value={f.ar} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,ar:e.target.value}; onChange({features:fs}) }}
-                    placeholder="ميزة AR" className={inp} dir="rtl"/>
+                    placeholder="عنوان AR" className={inp} dir="rtl"/>
+                  <input value={f.subtitle_en||''} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,subtitle_en:e.target.value}; onChange({features:fs}) }}
+                    placeholder="Subtitle EN (optional)" className={inp}/>
+                  <input value={f.subtitle_ar||''} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,subtitle_ar:e.target.value}; onChange({features:fs}) }}
+                    placeholder="وصف AR (اختياري)" className={inp} dir="rtl"/>
                 </div>
               </div>
             ))}
-            <button onClick={()=>onChange({features:[...(block.features||[]),{icon:'⭐',en:'',ar:''}]})}
+            <button onClick={()=>onChange({features:[...(block.features||[]),{icon:'⭐',en:'',ar:'',subtitle_en:'',subtitle_ar:''}]})}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-amber-600 hover:border-amber-400 dark:hover:border-amber-500 transition-colors w-full justify-center">
               <Plus size={12}/>Add Feature
             </button>

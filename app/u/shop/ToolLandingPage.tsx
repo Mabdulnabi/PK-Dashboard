@@ -5,6 +5,7 @@ import { useSiteSettings } from '@/lib/use-site-settings'
 import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
 
 type FeaturesLayout = 'grid' | 'list' | 'cards'
+type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | 'big_icon' | 'minimal'
 
 interface Block {
   id: string
@@ -13,8 +14,9 @@ interface Block {
   video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
-  features?: { icon: string; icon_url?: string; en: string; ar: string }[]
+  features?: { icon: string; icon_url?: string; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }[]
   features_layout?: FeaturesLayout
+  features_preset?: FeaturesPreset
   faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
   cards?: { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }[]
 }
@@ -100,53 +102,108 @@ function FeatureIcon({ icon, icon_url, size = 28 }: { icon: string; icon_url?: s
 function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const title = isRtl ? (block.title_ar||block.title_en) : (block.title_en||block.title_ar)
   const body  = isRtl ? (block.body_ar||block.body_en)  : (block.body_en||block.body_ar)
-  const layout = block.features_layout || 'grid'
+  const preset = block.features_preset || 'grid_center'
   const features = block.features || []
+
+  const itemTitle = (f: NonNullable<Block['features']>[number]) => isRtl ? (f.ar||f.en) : (f.en||f.ar)
+  const itemSub   = (f: NonNullable<Block['features']>[number]) => isRtl ? (f.subtitle_ar||f.subtitle_en) : (f.subtitle_en||f.subtitle_ar)
 
   return (
     <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
       {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
       {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-7 leading-relaxed">{body}</p>}
 
-      {/* Grid layout */}
-      {layout === 'grid' && (
+      {/* grid_center — white cards, icon top-center, title below */}
+      {preset === 'grid_center' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {features.map((f,i)=>(
             <div key={i} className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:border-amber-200 dark:hover:border-amber-700/50 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
                 <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={28}/>
               </div>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-snug">{isRtl?f.ar:f.en}</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-snug">{itemTitle(f)}</span>
+              {itemSub(f) && <span className="text-xs text-gray-400 leading-snug">{itemSub(f)}</span>}
             </div>
           ))}
         </div>
       )}
 
-      {/* List layout */}
-      {layout === 'list' && (
+      {/* grid_hover — cards flip to amber accent color on hover */}
+      {preset === 'grid_hover' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {features.map((f,i)=>(
+            <div key={i} className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 hover:border-amber-400 hover:bg-amber-500 dark:hover:bg-amber-500 transition-all cursor-default">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-500/20 group-hover:bg-white/20 transition-colors">
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={26}/>
+              </div>
+              <span className="text-sm font-bold text-gray-800 dark:text-gray-200 group-hover:text-white transition-colors leading-snug">{itemTitle(f)}</span>
+              {itemSub(f) && <span className="text-xs text-gray-400 group-hover:text-white/80 transition-colors leading-snug">{itemSub(f)}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* row_left — horizontal rows: rounded icon left, title+subtitle right */}
+      {preset === 'row_left' && (
         <div className="space-y-3">
           {features.map((f,i)=>(
-            <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:border-amber-200 dark:hover:border-amber-700/40 transition-colors">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
-              </div>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{isRtl?f.ar:f.en}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Cards layout */}
-      {layout === 'cards' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {features.map((f,i)=>(
-            <div key={i} className="flex items-start gap-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-500/5 dark:to-gray-900 hover:border-amber-200 dark:hover:border-amber-600/40 transition-all">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
+            <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 hover:border-amber-200 dark:hover:border-amber-700/40 transition-colors">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
                 <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{isRtl?f.ar:f.en}</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-snug">{itemTitle(f)}</p>
+                {itemSub(f) && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{itemSub(f)}</p>}
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* row_flat — horizontal flat bg rows with square icon box */}
+      {preset === 'row_flat' && (
+        <div className="space-y-2">
+          {features.map((f,i)=>(
+            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 hover:bg-amber-50 dark:hover:bg-amber-500/5 transition-colors">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={22}/>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{itemTitle(f)}</p>
+                {itemSub(f) && <p className="text-xs text-gray-400 truncate">{itemSub(f)}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* big_icon — large circle icon with heavy card border */}
+      {preset === 'big_icon' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {features.map((f,i)=>(
+            <div key={i} className="flex flex-col items-center text-center gap-4 p-7 rounded-3xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-lg transition-all">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-amber-200 dark:border-amber-600/40" style={{background:'linear-gradient(135deg,#fef9ee,#fef3c7)'}}>
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={36}/>
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-white leading-snug">{itemTitle(f)}</p>
+                {itemSub(f) && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">{itemSub(f)}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* minimal — no card background, just icon + text, clean & airy */}
+      {preset === 'minimal' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+          {features.map((f,i)=>(
+            <div key={i} className="flex flex-col items-center text-center gap-2.5">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-500/10">
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
+              </div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-snug">{itemTitle(f)}</p>
+              {itemSub(f) && <p className="text-xs text-gray-400 leading-snug">{itemSub(f)}</p>}
             </div>
           ))}
         </div>
