@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats' | 'content'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats' | 'content' | 'how_to_work'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -62,6 +62,16 @@ interface Block {
   content_btn_bg?: string
   content_btn_link?: string
   content_stats?: { value: string; suffix?: string; label_en?: string; label_ar?: string }[]
+  hiw_variant?: 1 | 2 | 3 | 4 | 5
+  hiw_steps?: { title_en?: string; title_ar?: string; desc_en?: string; desc_ar?: string; image_url?: string }[]
+  hiw_helper_en?: string; hiw_helper_ar?: string; hiw_helper_color?: string
+  hiw_title_align?: 'left' | 'center' | 'right'
+  hiw_desc_color?: string
+  hiw_step_title_color?: string
+  hiw_step_desc_color?: string
+  hiw_accent_color?: string
+  hiw_bg?: string
+  hiw_bg_image?: string
 }
 
 interface Review {
@@ -346,6 +356,184 @@ function StarRow({ n = 5 }: { n?: number }) {
         </svg>
       ))}
     </div>
+  )
+}
+
+// ── How To Work Block ────────────────────────────────────────────────────────
+function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
+  const v           = block.hiw_variant || 1
+  const steps       = block.hiw_steps || []
+  const accent      = block.hiw_accent_color || '#d99401'
+  const stepTitleC  = block.hiw_step_title_color || '#111827'
+  const stepDescC   = block.hiw_step_desc_color  || '#586174'
+  const helper      = isRtl ? (block.hiw_helper_ar || block.hiw_helper_en) : (block.hiw_helper_en || block.hiw_helper_ar)
+  const helperColor = block.hiw_helper_color || '#d99401'
+  const title       = isRtl ? (block.title_ar || block.title_en) : (block.title_en || block.title_ar)
+  const desc        = isRtl ? (block.body_ar  || block.body_en)  : (block.body_en  || block.body_ar)
+  const titleAlign  = block.hiw_title_align || 'center'
+  const descColor   = block.hiw_desc_color || '#757095'
+  const sectionBg   = block.hiw_bg || 'transparent'
+  const bgImage     = block.hiw_bg_image
+
+  const getStep = (s: typeof steps[0]) => ({
+    title : isRtl ? (s.title_ar || s.title_en) : (s.title_en || s.title_ar),
+    desc  : isRtl ? (s.desc_ar  || s.desc_en)  : (s.desc_en  || s.desc_ar),
+  })
+
+  const SectionHeader = () => (
+    <div style={{ textAlign: titleAlign as any, marginBottom: 32 }}>
+      {helper && (
+        <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:helperColor,
+          background:helperColor+'18', border:`1px solid ${helperColor}40`, borderRadius:999, padding:'4px 14px', marginBottom:12 }}>
+          <span style={{ width:6, height:6, borderRadius:'50%', background:helperColor, display:'inline-block' }}/>
+          {helper}
+        </span>
+      )}
+      {title && <h2 style={{ fontSize:'clamp(20px,4vw,30px)', fontWeight:800, color:'#111827', margin:'0 0 10px', lineHeight:1.3 }}>{title}</h2>}
+      {desc  && <p  style={{ fontSize:15, color:descColor, margin:0, lineHeight:1.7 }}>{desc}</p>}
+    </div>
+  )
+
+  const wrapStyle: React.CSSProperties = {
+    borderRadius:20, padding:'36px 24px', position:'relative', overflow:'hidden',
+    background: bgImage ? 'transparent' : sectionBg,
+  }
+
+  // ── V1: Numbered cards grid ──────────────────────────────────────────────
+  if (v === 1) return (
+    <section style={wrapStyle}>
+      {bgImage && <img src={bgImage} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', zIndex:0 }}/>}
+      {bgImage && <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.45)', zIndex:1 }}/>}
+      <div style={{ position:'relative', zIndex:2 }}>
+        <SectionHeader/>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:20 }}>
+          {steps.map((s, i) => {
+            const { title: st, desc: sd } = getStep(s)
+            return (
+              <div key={i} className="pk-gold-hover" style={{ background: bgImage?'rgba(255,255,255,.10)':('#fff'), backdropFilter:bgImage?'blur(8px)':undefined, borderRadius:18, padding:'28px 20px', border:`1px solid ${bgImage?'rgba(255,255,255,.18)':'#f0f0f5'}`, position:'relative' }}>
+                <div style={{ width:44, height:44, borderRadius:14, background:accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff', marginBottom:16, boxShadow:`0 4px 14px ${accent}50` }}>
+                  {i + 1}
+                </div>
+                {s.image_url && <img src={s.image_url} alt="" style={{ width:'100%', aspectRatio:'16/9', objectFit:'cover', borderRadius:10, marginBottom:14 }}/>}
+                {st && <p style={{ fontWeight:700, fontSize:16, color: bgImage?'#fff':stepTitleC, margin:'0 0 8px' }}>{st}</p>}
+                {sd && <p style={{ fontSize:13, color: bgImage?'rgba(255,255,255,.75)':stepDescC, lineHeight:1.65, margin:0 }}>{sd}</p>}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+
+  // ── V2: Vertical timeline with line ──────────────────────────────────────
+  if (v === 2) return (
+    <section style={{ ...wrapStyle, background: sectionBg }}>
+      <SectionHeader/>
+      <div style={{ position:'relative', paddingLeft: isRtl?0:32, paddingRight: isRtl?32:0 }}>
+        <div style={{ position:'absolute', top:0, bottom:0, [isRtl?'right':'left']:14, width:2, background:`linear-gradient(to bottom, ${accent}, ${accent}40)`, borderRadius:2 }}/>
+        {steps.map((s, i) => {
+          const { title: st, desc: sd } = getStep(s)
+          return (
+            <div key={i} style={{ display:'flex', gap:20, alignItems:'flex-start', marginBottom: i<steps.length-1?32:0, position:'relative' }}>
+              <div style={{ position:'absolute', [isRtl?'right':'left']:-32, top:4, width:28, height:28, borderRadius:'50%', background:accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:900, color:'#fff', flexShrink:0, boxShadow:`0 0 0 4px ${accent}25` }}>
+                {i + 1}
+              </div>
+              <div className="pk-gold-hover" style={{ flex:1, background:'#fff', borderRadius:16, padding:'20px 20px', border:'1px solid #f0f0f5', boxShadow:'0 2px 12px rgba(0,0,0,.05)' }}>
+                {s.image_url && <img src={s.image_url} alt="" style={{ width:56, height:56, borderRadius:12, objectFit:'cover', marginBottom:12 }}/>}
+                {st && <p style={{ fontWeight:700, fontSize:16, color:stepTitleC, margin:'0 0 6px' }}>{st}</p>}
+                {sd && <p style={{ fontSize:13, color:stepDescC, lineHeight:1.65, margin:0 }}>{sd}</p>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+
+  // ── V3: Horizontal connected steps ───────────────────────────────────────
+  if (v === 3) return (
+    <section style={{ ...wrapStyle, background: sectionBg }}>
+      <SectionHeader/>
+      <div style={{ display:'flex', gap:0, alignItems:'flex-start', flexWrap:'wrap' }}>
+        {steps.map((s, i) => {
+          const { title: st, desc: sd } = getStep(s)
+          return (
+            <div key={i} style={{ flex:'1 1 160px', display:'flex', alignItems:'flex-start', minWidth:0 }}>
+              <div style={{ flex:1, textAlign:'center', padding:'0 12px' }}>
+                <div style={{ width:64, height:64, borderRadius:'50%', background:`${accent}18`, border:`2px solid ${accent}`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', position:'relative' }}>
+                  {s.image_url
+                    ? <img src={s.image_url} alt="" style={{ width:36, height:36, objectFit:'contain' }}/>
+                    : <span style={{ fontSize:22, fontWeight:900, color:accent }}>{i+1}</span>
+                  }
+                  <span style={{ position:'absolute', top:-8, right:-8, width:22, height:22, borderRadius:'50%', background:accent, color:'#fff', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center' }}>{i+1}</span>
+                </div>
+                {st && <p style={{ fontWeight:700, fontSize:14, color:stepTitleC, margin:'0 0 6px' }}>{st}</p>}
+                {sd && <p style={{ fontSize:12, color:stepDescC, lineHeight:1.6, margin:0 }}>{sd}</p>}
+              </div>
+              {i < steps.length - 1 && (
+                <div style={{ paddingTop:30, color:`${accent}80`, fontSize:20, flexShrink:0 }}>
+                  {isRtl ? '←' : '→'}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+
+  // ── V4: Alternating image + text rows ────────────────────────────────────
+  if (v === 4) return (
+    <section style={{ ...wrapStyle, background: sectionBg }}>
+      <SectionHeader/>
+      <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+        {steps.map((s, i) => {
+          const { title: st, desc: sd } = getStep(s)
+          const imgLeft = i % 2 === 0
+          return (
+            <div key={i} style={{ display:'flex', flexWrap:'wrap', gap:20, alignItems:'center', flexDirection: imgLeft?'row':'row-reverse' }}>
+              {s.image_url && (
+                <div style={{ flex:'0 0 auto', width:'clamp(120px,35%,220px)', borderRadius:16, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,.08)' }}>
+                  <img src={s.image_url} alt="" style={{ width:'100%', display:'block', objectFit:'cover', aspectRatio:'4/3' }}/>
+                </div>
+              )}
+              <div style={{ flex:1, minWidth:160 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:900, color:'#fff', flexShrink:0 }}>{i+1}</div>
+                  {st && <p style={{ fontWeight:700, fontSize:17, color:stepTitleC, margin:0 }}>{st}</p>}
+                </div>
+                {sd && <p style={{ fontSize:14, color:stepDescC, lineHeight:1.7, margin:0 }}>{sd}</p>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+
+  // ── V5: Icon cards centered with gold accent ─────────────────────────────
+  return (
+    <section style={{ ...wrapStyle, background: sectionBg }}>
+      <SectionHeader/>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:20 }}>
+        {steps.map((s, i) => {
+          const { title: st, desc: sd } = getStep(s)
+          return (
+            <div key={i} className="pk-gold-hover" style={{ background:'#fff', borderRadius:20, padding:'28px 20px', textAlign:'center', border:'1px solid #f0f0f5', boxShadow:'0 2px 16px rgba(0,0,0,.06)', display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+              <div style={{ width:64, height:64, borderRadius:18, background:`linear-gradient(135deg,${accent}20,${accent}08)`, border:`1.5px solid ${accent}30`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:4 }}>
+                {s.image_url
+                  ? <img src={s.image_url} alt="" style={{ width:40, height:40, objectFit:'contain' }}/>
+                  : <span style={{ fontSize:24, fontWeight:900, color:accent }}>{i+1}</span>
+                }
+              </div>
+              <div style={{ width:28, height:28, borderRadius:'50%', background:accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:900, color:'#fff', boxShadow:`0 3px 10px ${accent}50` }}>{i+1}</div>
+              {st && <p style={{ fontWeight:700, fontSize:15, color:stepTitleC, margin:0, lineHeight:1.3 }}>{st}</p>}
+              {sd && <p style={{ fontSize:13, color:stepDescC, lineHeight:1.65, margin:0 }}>{sd}</p>}
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
@@ -1293,6 +1481,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </section>
             )
           }
+
+          /* How To Work block */
+          if (block.layout === 'how_to_work') return (
+            <HowToWorkBlock key={block.id} block={block} isRtl={isRtl}/>
+          )
 
           /* Content block */
           if (block.layout === 'content') return (

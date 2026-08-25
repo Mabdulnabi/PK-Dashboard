@@ -40,7 +40,7 @@ interface TestimonialColors {
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'|'content'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'|'content'|'how_to_work'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -92,6 +92,12 @@ interface LandingBlock {
   content_btn_bg?: string
   content_btn_link?: string
   content_stats?: { value: string; suffix?: string; label_en?: string; label_ar?: string }[]
+  hiw_variant?: 1|2|3|4|5
+  hiw_steps?: { title_en?: string; title_ar?: string; desc_en?: string; desc_ar?: string; image_url?: string }[]
+  hiw_helper_en?: string; hiw_helper_ar?: string; hiw_helper_color?: string
+  hiw_title_align?: 'left'|'center'|'right'
+  hiw_desc_color?: string; hiw_step_title_color?: string; hiw_step_desc_color?: string
+  hiw_accent_color?: string; hiw_bg?: string; hiw_bg_image?: string
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -122,6 +128,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="17" height="26" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="31" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="15" width="18" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
   { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
+  { value:'how_to_work',   label:'How It Works',   color:'#6366F1', desc:'5 step-by-step layout styles',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><circle cx="7" cy="14" r="5" fill="#6366F120" stroke="#6366F1" strokeWidth="1.2"/><circle cx="20" cy="14" r="5" fill="#6366F120" stroke="#6366F1" strokeWidth="1.2"/><circle cx="33" cy="14" r="5" fill="#6366F120" stroke="#6366F1" strokeWidth="1.2"/><path d="M12 14h3M25 14h3" stroke="#6366F160" strokeWidth="1.5" strokeDasharray="2 1"/><text x="5" y="18" fontSize="7" fontWeight="bold" fill="#6366F1">1</text><text x="18" y="18" fontSize="7" fontWeight="bold" fill="#6366F1">2</text><text x="31" y="18" fontSize="7" fontWeight="bold" fill="#6366F1">3</text></svg> },
   { value:'content',       label:'Content Card',   color:'#10B981', desc:'Split image + text + stats + CTA',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="16" height="26" rx="2" fill="#10B98120" stroke="#10B981" strokeWidth="1.2"/><rect x="20" y="4" width="19" height="3" rx="1.5" fill="#374151"/><rect x="20" y="9" width="15" height="2" rx="1" fill="#9CA3AF"/><rect x="20" y="13" width="17" height="2" rx="1" fill="#9CA3AF"/><rect x="20" y="18" width="8" height="7" rx="2" fill="#10B98130" stroke="#10B981" strokeWidth="1"/><rect x="30" y="18" width="9" height="7" rx="2" fill="#10B98130" stroke="#10B981" strokeWidth="1"/></svg> },
   { value:'stats',         label:'Stats Numbers',  color:'#D99401', desc:'Animated count-up stats grid',
@@ -209,7 +217,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats','content'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats','content','how_to_work'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -223,7 +231,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats','content'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats','content','how_to_work'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -686,6 +694,118 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
         </div>
       )}
 
+      {/* How It Works */}
+      {block.layout==='how_to_work' && (
+        <div className="space-y-3">
+          {/* Variant picker */}
+          <div>
+            <FL>Layout Variant</FL>
+            <div className="grid grid-cols-5 gap-1">
+              {([1,2,3,4,5] as const).map(v=>(
+                <button key={v} onClick={()=>onChange({hiw_variant:v})}
+                  className={`py-2 text-[10px] font-bold rounded-lg border-2 transition-all ${(block.hiw_variant||1)===v?'border-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                  {['Cards','Timeline','Horizontal','Alternating','Icons'][v-1]}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Section title */}
+          <div>
+            <FL>Section Title</FL>
+            <div className="grid grid-cols-2 gap-2 mb-1">
+              <input value={block.title_en||''} onChange={e=>onChange({title_en:e.target.value})} placeholder="Title EN" className={inp}/>
+              <input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})} placeholder="العنوان AR" className={inp} dir="rtl"/>
+            </div>
+            <div className="flex gap-1">
+              {(['left','center','right'] as const).map(a=>(
+                <button key={a} onClick={()=>onChange({hiw_title_align:a})}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded-lg border transition-all ${(block.hiw_title_align||'center')===a?'border-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Description */}
+          <div>
+            <FL>Description</FL>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={block.body_en||''} onChange={e=>onChange({body_en:e.target.value})} placeholder="Desc EN" className={inp}/>
+              <input value={block.body_ar||''} onChange={e=>onChange({body_ar:e.target.value})} placeholder="الوصف AR" className={inp} dir="rtl"/>
+            </div>
+            <div className="flex gap-2 items-center mt-1">
+              <input type="color" value={block.hiw_desc_color||'#757095'} onChange={e=>onChange({hiw_desc_color:e.target.value})} className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.hiw_desc_color||'#757095'} onChange={e=>onChange({hiw_desc_color:e.target.value})} className={`${inp} flex-1 font-mono text-xs`}/>
+              <span className="text-[10px] text-gray-400 flex-shrink-0">Desc color</span>
+            </div>
+          </div>
+          {/* Badge */}
+          <div>
+            <FL>Badge</FL>
+            <div className="grid grid-cols-2 gap-2 mb-1">
+              <input value={block.hiw_helper_en||''} onChange={e=>onChange({hiw_helper_en:e.target.value})} placeholder="Badge EN" className={inp}/>
+              <input value={block.hiw_helper_ar||''} onChange={e=>onChange({hiw_helper_ar:e.target.value})} placeholder="الشارة AR" className={inp} dir="rtl"/>
+            </div>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={block.hiw_helper_color||'#d99401'} onChange={e=>onChange({hiw_helper_color:e.target.value})} className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.hiw_helper_color||'#d99401'} onChange={e=>onChange({hiw_helper_color:e.target.value})} className={`${inp} flex-1 font-mono text-xs`}/>
+              <span className="text-[10px] text-gray-400 flex-shrink-0">Badge color</span>
+            </div>
+          </div>
+          {/* Colors */}
+          <div>
+            <FL>Colors</FL>
+            <div className="space-y-2">
+              {([
+                ['Accent / Number','hiw_accent_color','#d99401'],
+                ['Step Title','hiw_step_title_color','#111827'],
+                ['Step Description','hiw_step_desc_color','#586174'],
+                ['Section BG','hiw_bg','#f8fafc'],
+              ] as [string,keyof LandingBlock,string][]).map(([label,key,def])=>(
+                <div key={key} className="flex items-center gap-2">
+                  <input type="color" value={(block[key] as string)||def} onChange={e=>onChange({[key]:e.target.value})} className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700 flex-shrink-0"/>
+                  <input value={(block[key] as string)||def} onChange={e=>onChange({[key]:e.target.value})} className={`${inp} flex-1 font-mono text-xs`}/>
+                  <span className="text-[10px] text-gray-400 w-28 flex-shrink-0">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* BG Image */}
+          <div>
+            <FL>Background Image (V1 with overlay)</FL>
+            <ImageUploadInput value={block.hiw_bg_image||''} onChange={url=>onChange({hiw_bg_image:url})} folder="landing-hiw"/>
+          </div>
+          {/* Steps */}
+          <FL>Steps</FL>
+          <div className="space-y-2">
+            {(block.hiw_steps||[]).map((s,si)=>(
+              <div key={si} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-indigo-400">Step {si+1}</span>
+                  <button onClick={()=>onChange({hiw_steps:(block.hiw_steps||[]).filter((_,j)=>j!==si)})}
+                    className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"><X size={10}/></button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={s.title_en||''} onChange={e=>{ const ss=[...(block.hiw_steps||[])]; ss[si]={...s,title_en:e.target.value}; onChange({hiw_steps:ss}) }} placeholder="Title EN" className={inp}/>
+                  <input value={s.title_ar||''} onChange={e=>{ const ss=[...(block.hiw_steps||[])]; ss[si]={...s,title_ar:e.target.value}; onChange({hiw_steps:ss}) }} placeholder="العنوان AR" className={inp} dir="rtl"/>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <textarea value={s.desc_en||''} onChange={e=>{ const ss=[...(block.hiw_steps||[])]; ss[si]={...s,desc_en:e.target.value}; onChange({hiw_steps:ss}) }} placeholder="Description EN" rows={2} className={inp}/>
+                  <textarea value={s.desc_ar||''} onChange={e=>{ const ss=[...(block.hiw_steps||[])]; ss[si]={...s,desc_ar:e.target.value}; onChange({hiw_steps:ss}) }} placeholder="الوصف AR" rows={2} className={inp} dir="rtl"/>
+                </div>
+                <div>
+                  <div className="text-[9px] text-gray-400 mb-1">Step Icon / Image</div>
+                  <ImageUploadInput value={s.image_url||''} onChange={url=>{ const ss=[...(block.hiw_steps||[])]; ss[si]={...s,image_url:url}; onChange({hiw_steps:ss}) }} folder="landing-hiw-steps"/>
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>onChange({hiw_steps:[...(block.hiw_steps||[]),{title_en:'',title_ar:'',desc_en:'',desc_ar:'',image_url:''}]})}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-indigo-500 hover:border-indigo-400 transition-colors w-full justify-center">
+              <Plus size={12}/>Add Step
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Content Card */}
       {block.layout==='content' && (
         <div className="space-y-3">
@@ -1064,6 +1184,7 @@ export default function LandingEditorPage() {
     if (layout==='countdown')    { b.countdown_preset=1; b.countdown_hours=4; b.countdown_number_color='#e0e0e0'; b.countdown_label_color='#b0b0b0'; b.countdown_box_bg='#2a2a2a' }
     if (layout==='stats')        { b.stats_items=[{value:1000,suffix:'+',label_en:'Orders',label_ar:'طلب'},{value:500,suffix:'+',label_en:'Customers',label_ar:'عميل'}]; b.stats_bg='#f7f8fa'; b.stats_number_color='#d99401'; b.stats_label_color='#101010'; b.stats_card_bg='#ffffff' }
     if (layout==='content')      { b.content_helper_en='About Us'; b.content_helper_ar='من نحن'; b.content_helper_color='#007E60'; b.content_img_side='right'; b.content_btn_bg='#000000'; b.content_stats=[]; b.title_en=''; b.title_ar=''; b.body_en=''; b.body_ar='' }
+    if (layout==='how_to_work')  { b.hiw_variant=1; b.hiw_steps=[{title_en:'Step 1',title_ar:'الخطوة الأولى',desc_en:'',desc_ar:''},{title_en:'Step 2',title_ar:'الخطوة الثانية',desc_en:'',desc_ar:''}]; b.hiw_accent_color='#d99401'; b.hiw_step_title_color='#111827'; b.hiw_step_desc_color='#586174'; b.hiw_title_align='center' }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }
