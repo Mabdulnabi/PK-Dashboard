@@ -520,100 +520,109 @@ export default function ShopAdminPage() {
 
           {/* ── Deals tab ── */}
           {tab==='deals' && (
-            <div className="space-y-6 max-w-4xl">
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4 max-w-4xl">
+              {/* Featured Products */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 border-l-2 border-l-amber-400 px-4 py-2.5 flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">⭐ Featured Products</h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Shown as "Top Picks" on Deals tab ({featuredIds.length} selected)</p>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">⭐ Featured Products</span>
+                    <span className="ml-2 text-[10px] text-gray-400">({featuredIds.length} selected)</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
-                  {tools.filter(t=>t.is_active).map(t=>{
-                    const sel = featuredIds.includes(t.id)
-                    return (
-                      <button key={t.id} onClick={()=>toggleFeatured(t.id)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 text-start transition-all ${sel?'border-amber-400 bg-amber-50 dark:bg-amber-900/10':'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'}`}>
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {t.image_url?<img src={t.image_url} alt={t.name} className="w-6 h-6 object-contain"/>:<span className="text-[9px] font-bold text-gray-400">{t.name.slice(0,2).toUpperCase()}</span>}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{t.name}</div>
-                          <div className="text-[10px] text-gray-400 capitalize">{t.category_slug}</div>
-                        </div>
-                        <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${sel?'bg-amber-400':'bg-gray-100 dark:bg-gray-800'}`}>
-                          {sel && <Check size={10} className="text-white"/>}
-                        </div>
-                      </button>
-                    )
-                  })}
+                <div className="p-4">
+                  <div className="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
+                    {tools.filter(t=>t.is_active).map(t=>{
+                      const sel = featuredIds.includes(t.id)
+                      return (
+                        <button key={t.id} onClick={()=>toggleFeatured(t.id)}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 text-start transition-all ${sel?'border-amber-400 bg-amber-50 dark:bg-amber-900/10':'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'}`}>
+                          <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {t.image_url?<img src={t.image_url} alt={t.name} className="w-6 h-6 object-contain"/>:<span className="text-[9px] font-bold text-gray-400">{t.name.slice(0,2).toUpperCase()}</span>}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{t.name}</div>
+                            <div className="text-[10px] text-gray-400 capitalize">{t.category_slug}</div>
+                          </div>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${sel?'bg-amber-400':'bg-gray-100 dark:bg-gray-800'}`}>
+                            {sel && <Check size={10} className="text-white"/>}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">📂 Product Sections</h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Curated sections on Deals tab</p>
-                  </div>
-                  <button onClick={addSection} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold transition-colors">
-                    <Plus size={12}/>Add Section
+              {/* Product Sections */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 border-l-2 border-l-amber-400 px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">📂 Product Sections</span>
+                  <button onClick={addSection} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold transition-colors">
+                    <Plus size={11}/>Add Section
                   </button>
                 </div>
-                {dealSections.length===0 && (
-                  <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400">
-                    No sections yet. Click "Add Section" to create one.
-                  </div>
-                )}
-                <div className="space-y-4">
-                  {dealSections.map((sec, si) => (
-                    <div key={sec.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50/50 dark:bg-gray-800/20">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">Section #{si+1}</span>
-                        <button onClick={()=>removeSection(sec.id)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs transition-colors">
-                          <Trash2 size={11}/>Remove
-                        </button>
-                      </div>
-                      <div className="mb-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Emoji</label>
-                        <input type="text" value={sec.emoji} onChange={e=>updateSection(sec.id,'emoji',e.target.value)} placeholder="🔖" className={`${inp} w-16 text-center text-lg`}/>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Title (EN)</label>
-                          <input value={sec.title_en} onChange={e=>updateSection(sec.id,'title_en',e.target.value)} placeholder="Section title" className={inp}/>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 text-right">العنوان (AR)</label>
-                          <input value={sec.title_ar} onChange={e=>updateSection(sec.id,'title_ar',e.target.value)} placeholder="عنوان القسم" dir="rtl" className={inp}/>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Subtitle (EN)</label>
-                          <input value={sec.subtitle_en} onChange={e=>updateSection(sec.id,'subtitle_en',e.target.value)} placeholder="Short description…" className={inp}/>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 text-right">العنوان الفرعي (AR)</label>
-                          <input value={sec.subtitle_ar} onChange={e=>updateSection(sec.id,'subtitle_ar',e.target.value)} placeholder="وصف مختصر…" dir="rtl" className={inp}/>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-gray-400 mb-2">Products ({sec.tool_ids.length} selected):</p>
-                      <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                        {tools.filter(t=>t.is_active).map(t=>{
-                          const sel = sec.tool_ids.includes(t.id)
-                          return (
-                            <button key={t.id} onClick={()=>toggleSectionTool(sec.id, t.id)}
-                              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-start transition-all text-xs ${sel?'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/10':'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'}`}>
-                              <div className="w-6 h-6 rounded-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                {t.image_url?<img src={t.image_url} alt="" className="w-5 h-5 object-contain"/>:<span className="text-[8px] text-gray-400">{t.name.slice(0,2)}</span>}
-                              </div>
-                              <span className="flex-1 truncate text-gray-700 dark:text-gray-300">{t.name}</span>
-                              {sel && <Check size={10} className="text-indigo-500 flex-shrink-0"/>}
-                            </button>
-                          )
-                        })}
-                      </div>
+                <div className="p-4">
+                  {dealSections.length===0 && (
+                    <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400">
+                      No sections yet — click "Add Section" to create one.
                     </div>
-                  ))}
+                  )}
+                  <div className="space-y-3">
+                    {dealSections.map((sec, si) => (
+                      <div key={sec.id} className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+                        <div className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800 px-3.5 py-2 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Section #{si+1}</span>
+                          <button onClick={()=>removeSection(sec.id)} className="flex items-center gap-1 px-2 py-0.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-[10px] transition-colors">
+                            <Trash2 size={10}/>Remove
+                          </button>
+                        </div>
+                        <div className="p-3.5 space-y-3">
+                          <div className="flex items-end gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Emoji</label>
+                              <input type="text" value={sec.emoji} onChange={e=>updateSection(sec.id,'emoji',e.target.value)} placeholder="🔖" className={`${inp} w-14 text-center text-lg`}/>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Title (EN)</label>
+                              <input value={sec.title_en} onChange={e=>updateSection(sec.id,'title_en',e.target.value)} placeholder="Section title" className={inp}/>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 text-right">العنوان (AR)</label>
+                              <input value={sec.title_ar} onChange={e=>updateSection(sec.id,'title_ar',e.target.value)} placeholder="عنوان القسم" dir="rtl" className={inp}/>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Subtitle (EN)</label>
+                              <input value={sec.subtitle_en} onChange={e=>updateSection(sec.id,'subtitle_en',e.target.value)} placeholder="Short description…" className={inp}/>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 text-right">العنوان الفرعي (AR)</label>
+                              <input value={sec.subtitle_ar} onChange={e=>updateSection(sec.id,'subtitle_ar',e.target.value)} placeholder="وصف مختصر…" dir="rtl" className={inp}/>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Products ({sec.tool_ids.length} selected)</p>
+                            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                              {tools.filter(t=>t.is_active).map(t=>{
+                                const sel = sec.tool_ids.includes(t.id)
+                                return (
+                                  <button key={t.id} onClick={()=>toggleSectionTool(sec.id, t.id)}
+                                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-start transition-all text-xs ${sel?'border-amber-400 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400':'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 text-gray-700 dark:text-gray-300'}`}>
+                                    <div className="w-6 h-6 rounded-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                      {t.image_url?<img src={t.image_url} alt="" className="w-5 h-5 object-contain"/>:<span className="text-[8px] text-gray-400">{t.name.slice(0,2)}</span>}
+                                    </div>
+                                    <span className="flex-1 truncate">{t.name}</span>
+                                    {sel && <Check size={10} className="text-amber-500 flex-shrink-0"/>}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
