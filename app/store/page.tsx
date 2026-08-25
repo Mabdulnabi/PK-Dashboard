@@ -65,7 +65,7 @@ function FL({ children }: { children: React.ReactNode }) {
 // ── Section card for modal ──
 function FieldSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden mb-3">
+    <div className="border border-gray-100 dark:border-gray-800 rounded-xl mb-3">
       <div className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 border-l-2 border-l-amber-400 px-3.5 py-2">
         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</span>
       </div>
@@ -899,7 +899,7 @@ export default function ShopAdminPage() {
       ══════════════════════════════════════════ */}
       {(modal==='add-cat'||modal==='edit-cat') && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4" style={{backdropFilter:'blur(4px)'}}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col" style={{maxHeight:'90vh'}}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col" style={{maxHeight:'90vh',minHeight:0}}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
               <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">{modal==='add-cat'?'Add Category':'Edit Category'}</h3>
               <button onClick={()=>setModal(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><X size={14}/></button>
@@ -941,20 +941,22 @@ export default function ShopAdminPage() {
               </FieldSection>
 
               <FieldSection title="Images">
-                <Row>
+                <div className="flex gap-4">
                   <ImageUploadInput
                     label="Image (EN)"
                     value={catForm.image_url}
                     onChange={url=>setCatForm({...catForm,image_url:url})}
                     folder="categories"
+                    className="flex-1 min-w-0"
                   />
                   <ImageUploadInput
                     label="صورة (AR)"
                     value={catForm.image_url_ar}
                     onChange={url=>setCatForm({...catForm,image_url_ar:url})}
                     folder="categories"
+                    className="flex-1 min-w-0"
                   />
-                </Row>
+                </div>
               </FieldSection>
 
               <FieldSection title="Visual">
