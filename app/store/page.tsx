@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
+import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, Copy, X, Check, AlertCircle, ToggleLeft, ToggleRight, Package, Tag, Layout, ChevronUp, ChevronDown, Star, Globe, ChevronLeft, ChevronRight } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import BundlesTab from '@/components/admin/BundlesTab'
@@ -84,6 +85,7 @@ function Row({ cols=2, children }: { cols?:2|3; children: React.ReactNode }) {
 const TOOL_TABS = ['Basics', 'Pricing', 'Content', 'Meta']
 
 export default function ShopAdminPage() {
+  const router = useRouter()
   const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
@@ -201,9 +203,7 @@ export default function ShopAdminPage() {
   }
 
   const openLanding = (t:Tool)=>{
-    setLandingTool(t)
-    setLandingBlocks(Array.isArray(t.landing_blocks) ? t.landing_blocks : [])
-    setModal('landing')
+    router.push(`/store/landing/${t.id}`)
   }
 
   const addBlock = ()=>{

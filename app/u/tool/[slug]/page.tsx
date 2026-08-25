@@ -6,8 +6,9 @@ import ToolLandingPage from '@/app/u/shop/ToolLandingPage'
 export default function ToolDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const router   = useRouter()
-  const [tool,    setTool]    = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [tool,         setTool]         = useState<any>(null)
+  const [loading,      setLoading]      = useState(true)
+  const [previewBlocks, setPreviewBlocks] = useState<any[] | null>(null)
 
   useEffect(() => {
     fetch(`/api/member/tool/${slug}`)
@@ -15,6 +16,17 @@ export default function ToolDetailPage() {
       .then(d => { setTool(d.tool || null); setLoading(false) })
       .catch(() => setLoading(false))
   }, [slug])
+
+  // Listen for live preview blocks from admin editor
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'PK_LANDING_PREVIEW') {
+        setPreviewBlocks(e.data.blocks)
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -29,5 +41,9 @@ export default function ToolDetailPage() {
     </div>
   )
 
-  return <ToolLandingPage tool={tool} onBack={() => router.back()}/>
+  const displayTool = previewBlocks !== null
+    ? { ...tool, landing_blocks: previewBlocks }
+    : tool
+
+  return <ToolLandingPage tool={displayTool} onBack={() => router.back()}/>
 }
