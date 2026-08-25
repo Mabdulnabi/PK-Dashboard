@@ -397,11 +397,12 @@ function StatsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         {items.map((it, i) => {
           const label = isRtl ? (it.label_ar || it.label_en) : (it.label_en || it.label_ar)
           return (
-            <div key={i} style={{
+            <div key={i} className="pk-gold-hover" style={{
               background: cardBg, borderRadius: 24, padding: `${cardPad}px 20px`,
               textAlign: 'center', display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: '0 4px 20px rgba(0,0,0,.06)',
+              border: '1px solid transparent',
             }}>
               <p style={{ fontSize: numSize, fontWeight: 700, color: numColor, lineHeight: 1, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                 {counts[i].toLocaleString()}{it.suffix || ''}
@@ -675,7 +676,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:20 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:24, boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:24, boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
               {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:48, height:48, borderRadius:'50%', background:'#e8e8f0', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>👤</div>}
               <div>
@@ -699,7 +700,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:20 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:'28px 24px', boxShadow:'0 4px 20px rgba(0,0,0,.07)', textAlign:'center', border:'1px solid #f0f0f5', position:'relative' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:'28px 24px', boxShadow:'0 4px 20px rgba(0,0,0,.07)', textAlign:'center', border:'1px solid #f0f0f5', position:'relative' }}>
             <div style={{ fontSize:48, lineHeight:1, color:'#d99401', fontFamily:'Georgia,serif', position:'absolute', top:12, left:20, opacity:.3 }}>"</div>
             <p className="tst-review" style={{ color:revColor, fontSize:15, lineHeight:'1.75', margin:'20px 0 20px', position:'relative', zIndex:1 }}>{r.review}</p>
             <div style={{ width:40, height:2, background:'#d99401', borderRadius:2, margin:'0 auto 14px' }}/>
@@ -720,7 +721,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:28, textAlign:'center', boxShadow:'0 2px 16px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:28, textAlign:'center', boxShadow:'0 2px 16px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
             {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', margin:'0 auto 14px', display:'block', border:'3px solid #fde68a' }}/> : <div style={{ width:64, height:64, borderRadius:'50%', background:'#fde68a', margin:'0 auto 14px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26 }}>👤</div>}
             <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><StarRow/></div>
             <p className="tst-review" style={{ color:revColor, fontSize:14, lineHeight:'1.7', margin:'0 0 16px' }}>{r.review}</p>
@@ -739,7 +740,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:16 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:20, display:'flex', gap:16, alignItems:'flex-start', boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:20, display:'flex', gap:16, alignItems:'flex-start', boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
             {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:56, height:56, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:56, height:56, borderRadius:'50%', background:'#fde68a', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>👤</div>}
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
@@ -762,7 +763,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:20 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:'#fff', borderRadius:16, padding:24, boxShadow:'0 4px 24px rgba(0,0,0,.08)' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:'#fff', borderRadius:16, padding:24, boxShadow:'0 4px 24px rgba(0,0,0,.08)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                 {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:44, height:44, borderRadius:'50%', background:'#e8e8f0', display:'flex', alignItems:'center', justifyContent:'center' }}>👤</div>}
@@ -787,7 +788,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ columns:'280px', columnGap:20 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:tc.bg_color||'#fff', borderRadius:16, padding:24, marginBottom:20, breakInside:'avoid', boxShadow:'0 4px 20px rgba(0,0,0,.07)', border:'1px solid #f0f0f5' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:tc.bg_color||'#fff', borderRadius:16, padding:24, marginBottom:20, breakInside:'avoid', boxShadow:'0 4px 20px rgba(0,0,0,.07)', border:'1px solid #f0f0f5' }}>
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
               {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:42, height:42, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center' }}>👤</div>}
               <div>
@@ -809,7 +810,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:24, display:'flex', gap:20, alignItems:'flex-start', boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:24, display:'flex', gap:20, alignItems:'flex-start', boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
             {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:64, height:64, borderRadius:'50%', background:'#fde68a', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26 }}>👤</div>}
             <div style={{ flex:1 }}>
               {r.review_heading && <div className="tst-heading" style={{ fontWeight:800, fontSize:16, color:headColor, marginBottom:8 }}>{r.review_heading}</div>}
@@ -833,7 +834,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:16 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:24, boxShadow:'0 4px 20px rgba(0,0,0,.07)', border:'1px solid #f0f0f5' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:24, boxShadow:'0 4px 20px rgba(0,0,0,.07)', border:'1px solid #f0f0f5' }}>
             <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:14 }}>
               {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:12, objectFit:'cover' }}/> : <div style={{ width:48, height:48, borderRadius:12, background:avatarColors[i%avatarColors.length], display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>👤</div>}
               <div>
@@ -856,7 +857,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'flex', flexWrap:'wrap', gap:14 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:cardBg||'#f8f9fc', borderRadius:50, padding:'14px 24px', display:'flex', alignItems:'center', gap:12, boxShadow:'0 2px 8px rgba(0,0,0,.06)', border:'1px solid #e8e8f0' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg||'#f8f9fc', borderRadius:50, padding:'14px 24px', display:'flex', alignItems:'center', gap:12, boxShadow:'0 2px 8px rgba(0,0,0,.06)', border:'1px solid #e8e8f0' }}>
             {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:36, height:36, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:36, height:36, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>👤</div>}
             <div>
               <div className="tst-name" style={{ fontWeight:700, fontSize:13, color:nameColor }}>{r.author_name}</div>
@@ -876,7 +877,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(270px,1fr))', gap:20 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ background:tc.bg_color||'#1a1a2e', borderRadius:20, padding:28, boxShadow:'0 4px 24px rgba(0,0,0,.2)', border:'1px solid rgba(217,148,1,.2)' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:tc.bg_color||'#1a1a2e', borderRadius:20, padding:28, boxShadow:'0 4px 24px rgba(0,0,0,.2)', border:'1px solid rgba(217,148,1,.2)' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
               {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', border:'2px solid #d99401' }}/> : <div style={{ width:48, height:48, borderRadius:'50%', background:'rgba(217,148,1,.2)', border:'2px solid #d99401', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>👤</div>}
               <div>
@@ -900,7 +901,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <SectionHeader/>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:24 }}>
         {reviews.map((r,i)=>(
-          <div key={i} className={`${blockId}-card`} style={{ padding:'28px 0', borderTop:'3px solid #d99401' }}>
+          <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ padding:'28px 0', borderTop:'3px solid #d99401' }}>
             <p className="tst-review" style={{ color:revColor, fontSize:16, lineHeight:'1.8', margin:'0 0 20px', fontStyle:'italic' }}>"{r.review}"</p>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
               {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:44, height:44, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>👤</div>}
@@ -1118,7 +1119,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   const cardTitle    = isRtl ? (c.title_ar||c.title_en) : (c.title_en||c.title_ar)
                   const cardSubtitle = isRtl ? (c.subtitle_ar||c.subtitle_en) : (c.subtitle_en||c.subtitle_ar)
                   return (
-                    <div key={i} className="group rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-amber-200 dark:hover:border-amber-700/50 hover:shadow-lg transition-all">
+                    <div key={i} className="pk-gold-hover group rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all">
                       {c.image_url && (
                         <div className="aspect-square overflow-hidden bg-gray-50 dark:bg-gray-800">
                           <img src={c.image_url} alt={cardTitle||''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
