@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -19,6 +19,10 @@ interface Block {
   features_preset?: FeaturesPreset
   faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
   cards?: { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }[]
+  marquee_items?: { icon_url?: string; text_en?: string; text_ar?: string }[]
+  marquee_bg?: string
+  marquee_text_color?: string
+  marquee_speed?: number
 }
 
 interface Review {
@@ -496,6 +500,43 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </div>
             </section>
           )
+
+          /* Marquee block */
+          if (block.layout === 'marquee') {
+            const items = block.marquee_items || []
+            if (!items.length) return null
+            const doubled = [...items, ...items] // seamless loop
+            const speed = block.marquee_speed || 15
+            const bg = block.marquee_bg || '#d92d36'
+            const textColor = block.marquee_text_color || '#ffffff'
+            return (
+              <section key={block.id} style={{ background: bg, overflow: 'hidden', padding: '15px 0' }}>
+                <style>{`
+                  @keyframes pk-marquee-${block.id} {
+                    0%   { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                  }
+                  .pk-marquee-${block.id} {
+                    display: flex; flex-direction: row; flex-wrap: nowrap;
+                    gap: 32px; align-items: center;
+                    animation: pk-marquee-${block.id} ${speed}s linear infinite;
+                    width: max-content;
+                  }
+                `}</style>
+                <div className={`pk-marquee-${block.id}`}>
+                  {doubled.map((m, i) => {
+                    const txt = isRtl ? (m.text_ar||m.text_en) : (m.text_en||m.text_ar)
+                    return (
+                      <div key={i} style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, minWidth:'max-content' }}>
+                        {m.icon_url && <img src={m.icon_url} alt="" style={{ height:32, width:'auto', display:'block' }}/>}
+                        {txt && <p style={{ fontSize:22, color: textColor, fontWeight:600, lineHeight:'130%', margin:0, padding:'5px 0' }}>{txt}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          }
 
           /* Video block */
           if (block.layout === 'video') {

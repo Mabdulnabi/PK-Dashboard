@@ -22,13 +22,14 @@ import ImageUploadInput from '@/components/admin/ImageUploadInput'
 type FeaturesLayout = 'grid' | 'list' | 'cards'
 type FeaturesPreset = 'grid_center'|'grid_hover'|'row_left'|'row_flat'|'big_icon'|'minimal'
 
-interface FeatureItem { icon: string; icon_url?: string; icon_size?: number; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }
-interface CardItem    { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }
-interface FaqItem     { q_en: string; q_ar: string; a_en: string; a_ar: string }
+interface FeatureItem   { icon: string; icon_url?: string; icon_size?: number; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }
+interface CardItem      { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }
+interface FaqItem       { q_en: string; q_ar: string; a_en: string; a_ar: string }
+interface MarqueeItem   { icon_url?: string; text_en?: string; text_ar?: string }
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -37,6 +38,10 @@ interface LandingBlock {
   features_preset?: FeaturesPreset
   faqs?: FaqItem[]
   cards?: CardItem[]
+  marquee_items?: MarqueeItem[]
+  marquee_bg?: string
+  marquee_text_color?: string
+  marquee_speed?: number
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -61,6 +66,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#EC489920" stroke="#EC4899" strokeWidth="1.5"/><circle cx="20" cy="14" r="7" fill="#EC489930"/><polygon points="17,10 27,14 17,18" fill="#EC4899"/></svg> },
   { value:'faq',           label:'FAQ',           color:'#06B6D4', desc:'Accordion FAQ section',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="2" width="38" height="6" rx="2" fill="#06B6D420" stroke="#06B6D4" strokeWidth="1"/><rect x="1" y="11" width="38" height="6" rx="2" fill="#06B6D410" stroke="#06B6D430" strokeWidth="1"/><rect x="1" y="20" width="38" height="6" rx="2" fill="#06B6D410" stroke="#06B6D430" strokeWidth="1"/></svg> },
+  { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -142,7 +149,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -156,7 +163,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -361,6 +368,76 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
           </div>
         </div>
       )}
+
+      {/* Marquee Strip */}
+      {block.layout==='marquee' && (
+        <div className="space-y-3">
+          {/* Background color */}
+          <div>
+            <FL>Background Color</FL>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={block.marquee_bg||'#d92d36'}
+                onChange={e=>onChange({marquee_bg:e.target.value})}
+                className="w-10 h-8 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.marquee_bg||'#d92d36'}
+                onChange={e=>onChange({marquee_bg:e.target.value})}
+                placeholder="#d92d36" className={`${inp} flex-1 font-mono`}/>
+            </div>
+          </div>
+          {/* Text color */}
+          <div>
+            <FL>Text Color</FL>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={block.marquee_text_color||'#ffffff'}
+                onChange={e=>onChange({marquee_text_color:e.target.value})}
+                className="w-10 h-8 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.marquee_text_color||'#ffffff'}
+                onChange={e=>onChange({marquee_text_color:e.target.value})}
+                placeholder="#ffffff" className={`${inp} flex-1 font-mono`}/>
+            </div>
+          </div>
+          {/* Speed */}
+          <div>
+            <FL>Speed: {block.marquee_speed||15}s per cycle (lower = faster)</FL>
+            <input type="range" min={5} max={40} step={1} value={block.marquee_speed||15}
+              onChange={e=>onChange({marquee_speed:+e.target.value})}
+              className="w-full accent-amber-500 h-1"/>
+          </div>
+          {/* Items */}
+          <FL><Layers size={9}/>Marquee Items</FL>
+          <div className="space-y-2">
+            {(block.marquee_items||[]).map((m,mi)=>(
+              <div key={mi} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400">Item {mi+1}</span>
+                  <button onClick={()=>{ const ms=(block.marquee_items||[]).filter((_,j)=>j!==mi); onChange({marquee_items:ms}) }}
+                    className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                    <X size={10}/>
+                  </button>
+                </div>
+                <div>
+                  <div className="text-[9px] text-gray-400 mb-1">Icon / Image / GIF</div>
+                  <ImageUploadInput
+                    value={m.icon_url||''}
+                    onChange={url=>{ const ms=[...(block.marquee_items||[])]; ms[mi]={...m,icon_url:url}; onChange({marquee_items:ms}) }}
+                    folder="landing-marquee"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={m.text_en||''} onChange={e=>{ const ms=[...(block.marquee_items||[])]; ms[mi]={...m,text_en:e.target.value}; onChange({marquee_items:ms}) }}
+                    placeholder="Label EN" className={inp}/>
+                  <input value={m.text_ar||''} onChange={e=>{ const ms=[...(block.marquee_items||[])]; ms[mi]={...m,text_ar:e.target.value}; onChange({marquee_items:ms}) }}
+                    placeholder="نص AR" className={inp} dir="rtl"/>
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>onChange({marquee_items:[...(block.marquee_items||[]),{icon_url:'',text_en:'',text_ar:''}]})}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500 hover:border-red-400 transition-colors w-full justify-center">
+              <Plus size={12}/>Add Item
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -443,9 +520,10 @@ export default function LandingEditorPage() {
 
   const addBlock = (layout: LandingBlock['layout']) => {
     const b: LandingBlock = { id:uuid(), layout, image_url:'', title_en:'', title_ar:'', body_en:'', body_ar:'' }
-    if (layout==='features_grid') { b.features = [{icon:'⭐',en:'',ar:''}]; b.features_layout='grid' }
-    if (layout==='faq')           b.faqs     = [{q_en:'',q_ar:'',a_en:'',a_ar:''}]
-    if (layout==='cards_grid')    b.cards    = [{image_url:'',title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:''}]
+    if (layout==='features_grid') { b.features = [{icon:'',en:'',ar:''}]; b.features_layout='grid' }
+    if (layout==='faq')           b.faqs          = [{q_en:'',q_ar:'',a_en:'',a_ar:''}]
+    if (layout==='cards_grid')    b.cards         = [{image_url:'',title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:''}]
+    if (layout==='marquee')     { b.marquee_items = [{icon_url:'',text_en:'',text_ar:''}]; b.marquee_bg='#d92d36'; b.marquee_text_color='#ffffff'; b.marquee_speed=15 }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }
