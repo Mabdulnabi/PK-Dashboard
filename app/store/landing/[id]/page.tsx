@@ -40,7 +40,7 @@ interface TestimonialColors {
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -59,6 +59,10 @@ interface LandingBlock {
   testimonial_desc?: string
   testimonial_desc_color?: string
   testimonial_desc_align?: 'left'|'center'|'right'
+  banner_variant?: number
+  banner_images?: { image_url: string; link_url?: string }[]
+  banner_gap?: number
+  banner_radius?: number
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -85,6 +89,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="2" width="38" height="6" rx="2" fill="#06B6D420" stroke="#06B6D4" strokeWidth="1"/><rect x="1" y="11" width="38" height="6" rx="2" fill="#06B6D410" stroke="#06B6D430" strokeWidth="1"/><rect x="1" y="20" width="38" height="6" rx="2" fill="#06B6D410" stroke="#06B6D430" strokeWidth="1"/></svg> },
   { value:'testimonials',  label:'Testimonials',  color:'#7C3AED', desc:'Customer reviews with 11 styles',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="2" width="17" height="24" rx="3" fill="#7C3AED20" stroke="#7C3AED" strokeWidth="1"/><rect x="22" y="2" width="17" height="24" rx="3" fill="#7C3AED20" stroke="#7C3AED" strokeWidth="1"/><circle cx="9" cy="9" r="4" fill="#7C3AED40"/><circle cx="30" cy="9" r="4" fill="#7C3AED40"/><rect x="4" y="16" width="9" height="1.5" rx=".75" fill="#7C3AED"/><rect x="4" y="19" width="11" height="1.5" rx=".75" fill="#9CA3AF"/><rect x="4" y="22" width="8" height="1.5" rx=".75" fill="#9CA3AF"/><rect x="25" y="16" width="9" height="1.5" rx=".75" fill="#7C3AED"/><rect x="25" y="19" width="11" height="1.5" rx=".75" fill="#9CA3AF"/><rect x="25" y="22" width="8" height="1.5" rx=".75" fill="#9CA3AF"/></svg> },
+  { value:'banners',       label:'Banner Grid',   color:'#0EA5E9', desc:'9 image layout compositions',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="17" height="26" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="31" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="15" width="18" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
   { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
 ]
@@ -168,7 +174,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee','testimonials'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials','banners'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -182,7 +188,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -577,6 +583,73 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
           </div>
         )
       })()}
+
+      {/* Banners */}
+      {block.layout==='banners' && (
+        <div className="space-y-3">
+          {/* Variant picker */}
+          <div>
+            <FL>Layout Variant</FL>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { v:1, label:'2 cols equal',     svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="27" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="32" y="1" width="27" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/></svg> },
+                { v:2, label:'Large + 2 stacked', svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="30" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="34" y="1" width="25" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="34" y="22" width="25" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/></svg> },
+                { v:3, label:'2×2 grid',         svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="32" y="1" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="1" y="22" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="32" y="22" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/></svg> },
+                { v:4, label:'Big top + 4 bottom',svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="58" height="20" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="1" y="24" width="12" height="15" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="16" y="24" width="12" height="15" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="31" y="24" width="12" height="15" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="46" y="24" width="13" height="15" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
+                { v:5, label:'1/3 + 3 stacked',  svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="35" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="39" y="1" width="20" height="10" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="39" y="15" width="20" height="10" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="39" y="29" width="20" height="10" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
+                { v:6, label:'3 cols equal',      svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="17" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="21" y="1" width="18" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="42" y="1" width="17" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/></svg> },
+                { v:7, label:'2 top + 3 bottom',  svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="32" y="1" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="1" y="22" width="17" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="22" width="18" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="42" y="22" width="17" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
+                { v:8, label:'Wide top + 3 bottom',svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="58" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="1" y="22" width="17" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="22" width="18" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="42" y="22" width="17" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
+                { v:9, label:'Mosaic tall',        svg:<svg viewBox="0 0 60 40"><rect x="1" y="1" width="27" height="38" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="32" y="1" width="27" height="17" rx="3" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.5"/><rect x="32" y="22" width="12" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="47" y="22" width="12" height="17" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
+              ] as const).map(({ v, label, svg })=>{
+                const active = (block.banner_variant||1)===v
+                return (
+                  <button key={v} onClick={()=>onChange({banner_variant:v})}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${active?'border-sky-400 bg-sky-50 dark:bg-sky-500/10':'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}>
+                    <div className="w-full">{svg}</div>
+                    <span className={`text-[9px] font-bold ${active?'text-sky-600':'text-gray-400'}`}>{label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Gap + radius */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FL>Gap: {block.banner_gap??8}px</FL>
+              <input type="range" min={0} max={24} step={2} value={block.banner_gap??8}
+                onChange={e=>onChange({banner_gap:+e.target.value})} className="w-full accent-sky-500 h-1"/>
+            </div>
+            <div>
+              <FL>Radius: {block.banner_radius??12}px</FL>
+              <input type="range" min={0} max={32} step={2} value={block.banner_radius??12}
+                onChange={e=>onChange({banner_radius:+e.target.value})} className="w-full accent-sky-500 h-1"/>
+            </div>
+          </div>
+
+          {/* Images */}
+          <FL>Images</FL>
+          <div className="space-y-2">
+            {(block.banner_images||[]).map((img,ii)=>(
+              <div key={ii} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-sky-500">Image {ii+1}</span>
+                  <button onClick={()=>{ const imgs=(block.banner_images||[]).filter((_,j)=>j!==ii); onChange({banner_images:imgs}) }}
+                    className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors"><X size={10}/></button>
+                </div>
+                <ImageUploadInput value={img.image_url} onChange={url=>{ const imgs=[...(block.banner_images||[])]; imgs[ii]={...img,image_url:url}; onChange({banner_images:imgs}) }} folder="landing-banners"/>
+                <input value={img.link_url||''} onChange={e=>{ const imgs=[...(block.banner_images||[])]; imgs[ii]={...img,link_url:e.target.value}; onChange({banner_images:imgs}) }}
+                  placeholder="Link URL (optional)" className={inp}/>
+              </div>
+            ))}
+            <button onClick={()=>onChange({banner_images:[...(block.banner_images||[]),{image_url:''}]})}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-sky-600 hover:border-sky-400 transition-colors w-full justify-center">
+              <Plus size={12}/>Add Image
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -664,6 +737,7 @@ export default function LandingEditorPage() {
     if (layout==='cards_grid')    b.cards         = [{image_url:'',title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:''}]
     if (layout==='marquee')      { b.marquee_items = [{icon_url:'',text_en:'',text_ar:''}]; b.marquee_bg='#d92d36'; b.marquee_text_color='#ffffff'; b.marquee_speed=15 }
     if (layout==='testimonials') { b.testimonials=[{author_name:'',review:'',type:'facebook'}]; b.testimonial_colors={variant:1}; b.testimonial_title_align='center'; b.testimonial_desc_align='center'; b.testimonial_desc_color='#586174' }
+    if (layout==='banners')      { b.banner_variant=1; b.banner_images=[{image_url:''},{image_url:''}]; b.banner_gap=8; b.banner_radius=12 }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }

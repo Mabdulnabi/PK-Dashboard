@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -29,6 +29,10 @@ interface Block {
   testimonial_desc?: string
   testimonial_desc_color?: string
   testimonial_desc_align?: string
+  banner_variant?: number
+  banner_images?: { image_url: string; link_url?: string }[]
+  banner_gap?: number
+  banner_radius?: number
 }
 
 interface Review {
@@ -314,6 +318,113 @@ function StarRow({ n = 5 }: { n?: number }) {
       ))}
     </div>
   )
+}
+
+// ── Banners Block ───────────────────────────────────────────────────────────
+function BannersBlock({ block }: { block: Block }) {
+  const imgs = block.banner_images || []
+  const v    = block.banner_variant || 1
+  const gap  = block.banner_gap  ?? 8
+  const r    = block.banner_radius ?? 12
+
+  const Img = ({ i, style }: { i: number; style?: React.CSSProperties }) => {
+    const src = imgs[i]?.image_url
+    const href = imgs[i]?.link_url
+    const el = src ? (
+      <img src={src} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', borderRadius: r }}/>
+    ) : (
+      <div style={{ width:'100%', height:'100%', background:'#e8e8f0', borderRadius: r, display:'flex', alignItems:'center', justifyContent:'center', color:'#9ca3af', fontSize:13 }}>Image {i+1}</div>
+    )
+    const wrapped = href ? <a href={href} target="_blank" rel="noopener noreferrer" style={{ display:'block', width:'100%', height:'100%' }}>{el}</a> : el
+    return <div style={{ overflow:'hidden', borderRadius: r, ...style }}>{wrapped}</div>
+  }
+
+  // ── V1: 2 equal columns ───────────────────────────────────────────────────
+  if (v === 1) return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
+      {[0,1].map(i=><Img key={i} i={i} style={{ aspectRatio:'4/3' }}/>)}
+    </div>
+  )
+
+  // ── V2: Large left + 2 stacked right ──────────────────────────────────────
+  if (v === 2) return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
+      <Img i={0} style={{ aspectRatio:'3/4', gridRow:'span 2' }}/>
+      <Img i={1} style={{ aspectRatio:'4/3' }}/>
+      <Img i={2} style={{ aspectRatio:'4/3' }}/>
+    </div>
+  )
+
+  // ── V3: 2×2 grid ─────────────────────────────────────────────────────────
+  if (v === 3) return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
+      {[0,1,2,3].map(i=><Img key={i} i={i} style={{ aspectRatio:'1' }}/>)}
+    </div>
+  )
+
+  // ── V4: Wide top + 4 equal bottom ─────────────────────────────────────────
+  if (v === 4) return (
+    <div style={{ display:'flex', flexDirection:'column', gap }}>
+      <Img i={0} style={{ aspectRatio:'21/9', width:'100%' }}/>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap }}>
+        {[1,2,3,4].map(i=><Img key={i} i={i} style={{ aspectRatio:'1' }}/>)}
+      </div>
+    </div>
+  )
+
+  // ── V5: Large left (2/3) + 3 stacked right ────────────────────────────────
+  if (v === 5) return (
+    <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap }}>
+      <Img i={0} style={{ aspectRatio:'4/5', gridRow:'span 3' }}/>
+      <Img i={1} style={{ aspectRatio:'4/3' }}/>
+      <Img i={2} style={{ aspectRatio:'4/3' }}/>
+      <Img i={3} style={{ aspectRatio:'4/3' }}/>
+    </div>
+  )
+
+  // ── V6: 3 equal columns ───────────────────────────────────────────────────
+  if (v === 6) return (
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap }}>
+      {[0,1,2].map(i=><Img key={i} i={i} style={{ aspectRatio:'3/4' }}/>)}
+    </div>
+  )
+
+  // ── V7: 2 top + 3 bottom ──────────────────────────────────────────────────
+  if (v === 7) return (
+    <div style={{ display:'flex', flexDirection:'column', gap }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
+        <Img i={0} style={{ aspectRatio:'16/9' }}/>
+        <Img i={1} style={{ aspectRatio:'16/9' }}/>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap }}>
+        {[2,3,4].map(i=><Img key={i} i={i} style={{ aspectRatio:'1' }}/>)}
+      </div>
+    </div>
+  )
+
+  // ── V8: Wide top + 3 bottom ───────────────────────────────────────────────
+  if (v === 8) return (
+    <div style={{ display:'flex', flexDirection:'column', gap }}>
+      <Img i={0} style={{ aspectRatio:'21/9', width:'100%' }}/>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap }}>
+        {[1,2,3].map(i=><Img key={i} i={i} style={{ aspectRatio:'1' }}/>)}
+      </div>
+    </div>
+  )
+
+  // ── V9: Mosaic (tall left + top-right + 2 small bottom-right) ────────────
+  if (v === 9) return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'auto auto', gap }}>
+      <Img i={0} style={{ aspectRatio:'3/4', gridRow:'span 2' }}/>
+      <Img i={1} style={{ aspectRatio:'16/9' }}/>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
+        <Img i={2} style={{ aspectRatio:'1' }}/>
+        <Img i={3} style={{ aspectRatio:'1' }}/>
+      </div>
+    </div>
+  )
+
+  return null
 }
 
 // ── Testimonials Block ──────────────────────────────────────────────────────
@@ -860,6 +971,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </section>
             )
           }
+
+          /* Banners block */
+          if (block.layout === 'banners') return (
+            <BannersBlock key={block.id} block={block}/>
+          )
 
           /* Testimonials block */
           if (block.layout === 'testimonials') return (
