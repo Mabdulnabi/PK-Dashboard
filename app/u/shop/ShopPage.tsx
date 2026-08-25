@@ -15,6 +15,46 @@ interface Tool {
   video_url?:string; features:string[]; is_out_of_stock:boolean
   category_slug:string; sort_order:number; sales_count?:number
   landing_blocks?: any[]
+  fake_stock_min?: number; fake_stock_max?: number
+}
+
+const STOCK_TICK_MS = 5 * 60 * 1000 // 1 unit per 5 minutes
+
+function getFakeStock(toolId: string, min: number, max: number): number {
+  if (!max || max <= 0) return 0
+  const key = `pk_fstock_${toolId}`
+  try {
+    const raw = localStorage.getItem(key)
+    const now = Date.now()
+    let val = max
+    let ts  = now
+    if (raw) { const p = JSON.parse(raw); val = p.val; ts = p.ts }
+    const ticks = Math.floor((now - ts) / STOCK_TICK_MS)
+    if (ticks > 0) {
+      val = val - ticks
+      if (val <= (min || 1)) val = max
+      localStorage.setItem(key, JSON.stringify({ val, ts: ts + ticks * STOCK_TICK_MS }))
+    } else if (!raw) {
+      localStorage.setItem(key, JSON.stringify({ val, ts: now }))
+    }
+    return Math.max(val, min || 1)
+  } catch { return max }
+}
+
+function FakeStockBadge({ toolId, min, max, lang }: { toolId:string; min:number; max:number; lang:string }) {
+  const [stock, setStock] = useState<number>(0)
+  useEffect(()=>{
+    setStock(getFakeStock(toolId, min, max))
+    const id = setInterval(()=>setStock(getFakeStock(toolId, min, max)), STOCK_TICK_MS)
+    return ()=>clearInterval(id)
+  },[toolId, min, max])
+  if (!max || max <= 0) return null
+  return (
+    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+      style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
+      📦 {lang==='ar'?`متبقي ${stock}`:`${stock} left`}
+    </span>
+  )
 }
 interface DbCategory { id:string; name:string; slug:string; color:string; icon:string }
 interface Props { category: 'shared'|'private'|'bundle'; hideBanner?: boolean; defaultCatId?: string; compact?: boolean }
@@ -293,6 +333,9 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
                 <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
                   <Zap size={10} fill="white"/>{lang==='ar'?'فوري':(tool.delivery_label||'INSTANT')}
                 </span>
+                {(tool.fake_stock_max||0) > 0 && (
+                  <FakeStockBadge toolId={tool.id} min={tool.fake_stock_min||1} max={tool.fake_stock_max!} lang={lang}/>
+                )}
               </div>
               {/* Logo */}
               <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden shadow-sm">

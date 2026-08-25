@@ -1265,11 +1265,27 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         const v = vMin + Math.floor(Math.random()*(vMax-vMin+1)); sessionStorage.setItem(key, String(v)); setFakeVisits(v)
       }} catch { setFakeVisits(vMin + Math.floor(Math.random()*(vMax-vMin+1))) }
     }
-    if (sMin > 0 || sMax > 0) {
-      const key = `pk_fs_${tool.id}`
-      try { const cached = sessionStorage.getItem(key); if (cached) { setFakeStock(parseInt(cached)); } else {
-        const v = sMin + Math.floor(Math.random()*(sMax-sMin+1)); sessionStorage.setItem(key, String(v)); setFakeStock(v)
-      }} catch { setFakeStock(sMin + Math.floor(Math.random()*(sMax-sMin+1))) }
+    if (sMax > 0) {
+      const TICK = 5 * 60 * 1000
+      const key = `pk_fstock_${tool.id}`
+      const getStock = () => {
+        try {
+          const raw = localStorage.getItem(key)
+          const now = Date.now()
+          let val = sMax; let ts = now
+          if (raw) { const p = JSON.parse(raw); val = p.val; ts = p.ts }
+          const ticks = Math.floor((now - ts) / TICK)
+          if (ticks > 0) {
+            val = val - ticks
+            if (val <= (sMin || 1)) val = sMax
+            localStorage.setItem(key, JSON.stringify({ val, ts: ts + ticks * TICK }))
+          } else if (!raw) { localStorage.setItem(key, JSON.stringify({ val, ts: now })) }
+          return Math.max(val, sMin || 1)
+        } catch { return sMax }
+      }
+      setFakeStock(getStock())
+      const id = setInterval(()=>setFakeStock(getStock()), TICK)
+      return ()=>clearInterval(id)
     }
   },[tool.id])
 

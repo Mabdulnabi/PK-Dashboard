@@ -837,14 +837,17 @@ export default function ShopAdminPage() {
                     </Row>
                     <Row>
                       <div>
-                        <FL>Stock Counter Min</FL>
-                        <input type="number" min="0" value={(toolForm as any).fake_stock_min} onChange={e=>setToolForm({...toolForm,...{fake_stock_min:e.target.value}} as any)} className={inp} placeholder="0"/>
+                        <FL>Stock Start Value</FL>
+                        <input type="number" min="0" value={(toolForm as any).fake_stock_max} onChange={e=>setToolForm({...toolForm,...{fake_stock_max:e.target.value}} as any)} className={inp} placeholder="0"/>
+                        <p className="text-[10px] text-gray-400 mt-1">Starting count — set 0 to hide</p>
                       </div>
                       <div>
-                        <FL>Stock Counter Max</FL>
-                        <input type="number" min="0" value={(toolForm as any).fake_stock_max} onChange={e=>setToolForm({...toolForm,...{fake_stock_max:e.target.value}} as any)} className={inp} placeholder="0"/>
+                        <FL>Stock Floor (reset at)</FL>
+                        <input type="number" min="0" value={(toolForm as any).fake_stock_min} onChange={e=>setToolForm({...toolForm,...{fake_stock_min:e.target.value}} as any)} className={inp} placeholder="1"/>
+                        <p className="text-[10px] text-gray-400 mt-1">Resets to start when it reaches this</p>
                       </div>
                     </Row>
+                    <p className="text-[10px] text-gray-400">Countdown decreases by 1 every 5 minutes automatically.</p>
                     <p className="text-[10px] text-gray-400">Set min=max=0 to hide the counter. A random value in the range is shown to visitors per session.</p>
                   </FieldSection>
 
