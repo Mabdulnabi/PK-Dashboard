@@ -40,7 +40,7 @@ interface TestimonialColors {
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'|'content'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -79,6 +79,19 @@ interface LandingBlock {
   stats_label_size?: number
   stats_card_min_width?: number
   stats_card_padding?: number
+  content_helper_en?: string
+  content_helper_ar?: string
+  content_helper_color?: string
+  content_title_align?: 'left'|'center'|'right'
+  content_desc_align?: 'left'|'center'|'right'
+  content_desc_color?: string
+  content_img_link?: string
+  content_img_side?: 'left'|'right'
+  content_btn_text_en?: string
+  content_btn_text_ar?: string
+  content_btn_bg?: string
+  content_btn_link?: string
+  content_stats?: { value: string; suffix?: string; label_en?: string; label_ar?: string }[]
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -109,6 +122,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="17" height="26" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="31" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="15" width="18" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
   { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
+  { value:'content',       label:'Content Card',   color:'#10B981', desc:'Split image + text + stats + CTA',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="16" height="26" rx="2" fill="#10B98120" stroke="#10B981" strokeWidth="1.2"/><rect x="20" y="4" width="19" height="3" rx="1.5" fill="#374151"/><rect x="20" y="9" width="15" height="2" rx="1" fill="#9CA3AF"/><rect x="20" y="13" width="17" height="2" rx="1" fill="#9CA3AF"/><rect x="20" y="18" width="8" height="7" rx="2" fill="#10B98130" stroke="#10B981" strokeWidth="1"/><rect x="30" y="18" width="9" height="7" rx="2" fill="#10B98130" stroke="#10B981" strokeWidth="1"/></svg> },
   { value:'stats',         label:'Stats Numbers',  color:'#D99401', desc:'Animated count-up stats grid',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="6" width="11" height="21" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="15" y="2" width="11" height="25" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="29" y="10" width="10" height="17" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="3" y="3" width="7" height="2" rx="1" fill="#D99401"/><rect x="17" y="3" width="7" height="2" rx="1" fill="#D99401"/><rect x="31" y="3" width="6" height="2" rx="1" fill="#D99401"/></svg> },
   { value:'countdown',     label:'Countdown Timer',color:'#F59E0B', desc:'Fake deal countdown — 3 styles',
@@ -194,7 +209,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats','content'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -208,7 +223,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats','content'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -671,6 +686,121 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
         </div>
       )}
 
+      {/* Content Card */}
+      {block.layout==='content' && (
+        <div className="space-y-3">
+          {/* Title */}
+          <div>
+            <FL>Title</FL>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={block.title_en||''} onChange={e=>onChange({title_en:e.target.value})} placeholder="Title EN" className={inp}/>
+              <input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})} placeholder="العنوان AR" className={inp} dir="rtl"/>
+            </div>
+            <div className="flex gap-1 mt-1">
+              {(['left','center','right'] as const).map(a=>(
+                <button key={a} onClick={()=>onChange({content_title_align:a})}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded-lg border transition-all ${(block.content_title_align||'left')===a?'border-amber-400 bg-amber-50 dark:bg-amber-500/10 text-amber-600':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Description */}
+          <div>
+            <FL>Description</FL>
+            <div className="space-y-1.5">
+              <textarea value={block.body_en||''} onChange={e=>onChange({body_en:e.target.value})} placeholder="Description EN" rows={2} className={inp}/>
+              <textarea value={block.body_ar||''} onChange={e=>onChange({body_ar:e.target.value})} placeholder="الوصف AR" rows={2} className={inp} dir="rtl"/>
+            </div>
+            <div className="flex gap-1 mt-1">
+              {(['left','center','right'] as const).map(a=>(
+                <button key={a} onClick={()=>onChange({content_desc_align:a})}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded-lg border transition-all ${(block.content_desc_align||'left')===a?'border-amber-400 bg-amber-50 dark:bg-amber-500/10 text-amber-600':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                  {a}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 items-center mt-1">
+              <input type="color" value={block.content_desc_color||'#6B7280'} onChange={e=>onChange({content_desc_color:e.target.value})} className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.content_desc_color||'#6B7280'} onChange={e=>onChange({content_desc_color:e.target.value})} className={`${inp} flex-1 font-mono text-xs`}/>
+              <span className="text-[10px] text-gray-400 flex-shrink-0">Text color</span>
+            </div>
+          </div>
+          {/* Badge / Helper */}
+          <div>
+            <FL>Badge (helper text)</FL>
+            <div className="grid grid-cols-2 gap-2 mb-1.5">
+              <input value={block.content_helper_en||''} onChange={e=>onChange({content_helper_en:e.target.value})} placeholder="Badge EN" className={inp}/>
+              <input value={block.content_helper_ar||''} onChange={e=>onChange({content_helper_ar:e.target.value})} placeholder="الشارة AR" className={inp} dir="rtl"/>
+            </div>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={block.content_helper_color||'#007E60'} onChange={e=>onChange({content_helper_color:e.target.value})} className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.content_helper_color||'#007E60'} onChange={e=>onChange({content_helper_color:e.target.value})} className={`${inp} flex-1 font-mono text-xs`}/>
+              <span className="text-[10px] text-gray-400 flex-shrink-0">Badge color</span>
+            </div>
+          </div>
+          {/* Image */}
+          <div>
+            <FL>Image</FL>
+            <ImageUploadInput value={block.image_url||''} onChange={url=>onChange({image_url:url})} folder="landing-content"/>
+            <input value={block.content_img_link||''} onChange={e=>onChange({content_img_link:e.target.value})} placeholder="Image link URL (optional)" className={`${inp} mt-1.5`}/>
+            <div className="flex gap-1 mt-1">
+              {(['left','right'] as const).map(s=>(
+                <button key={s} onClick={()=>onChange({content_img_side:s})}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded-lg border transition-all ${(block.content_img_side||'right')===s?'border-amber-400 bg-amber-50 dark:bg-amber-500/10 text-amber-600':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                  Image {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* CTA Button */}
+          <div>
+            <FL>Button</FL>
+            <div className="grid grid-cols-2 gap-2 mb-1.5">
+              <input value={block.content_btn_text_en||''} onChange={e=>onChange({content_btn_text_en:e.target.value})} placeholder="Button text EN" className={inp}/>
+              <input value={block.content_btn_text_ar||''} onChange={e=>onChange({content_btn_text_ar:e.target.value})} placeholder="نص الزر AR" className={inp} dir="rtl"/>
+            </div>
+            <input value={block.content_btn_link||''} onChange={e=>onChange({content_btn_link:e.target.value})} placeholder="Button link URL" className={`${inp} mb-1.5`}/>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={block.content_btn_bg||'#000000'} onChange={e=>onChange({content_btn_bg:e.target.value})} className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <input value={block.content_btn_bg||'#000000'} onChange={e=>onChange({content_btn_bg:e.target.value})} className={`${inp} flex-1 font-mono text-xs`}/>
+              <span className="text-[10px] text-gray-400 flex-shrink-0">Button color</span>
+            </div>
+          </div>
+          {/* Stats */}
+          <div>
+            <FL>Stats Grid (optional)</FL>
+            <div className="space-y-2">
+              {(block.content_stats||[]).map((s,si)=>(
+                <div key={si} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-400">Stat {si+1}</span>
+                    <button onClick={()=>onChange({content_stats:(block.content_stats||[]).filter((_,j)=>j!==si)})}
+                      className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"><X size={10}/></button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={s.value||''} onChange={e=>{ const cs=[...(block.content_stats||[])]; cs[si]={...s,value:e.target.value}; onChange({content_stats:cs}) }}
+                      placeholder="Value e.g. 97" className={inp}/>
+                    <input value={s.suffix||''} onChange={e=>{ const cs=[...(block.content_stats||[])]; cs[si]={...s,suffix:e.target.value}; onChange({content_stats:cs}) }}
+                      placeholder="Suffix e.g. %" className={inp}/>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={s.label_en||''} onChange={e=>{ const cs=[...(block.content_stats||[])]; cs[si]={...s,label_en:e.target.value}; onChange({content_stats:cs}) }}
+                      placeholder="Label EN" className={inp}/>
+                    <input value={s.label_ar||''} onChange={e=>{ const cs=[...(block.content_stats||[])]; cs[si]={...s,label_ar:e.target.value}; onChange({content_stats:cs}) }}
+                      placeholder="التسمية AR" className={inp} dir="rtl"/>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>onChange({content_stats:[...(block.content_stats||[]),{value:'',suffix:'',label_en:'',label_ar:''}]})}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-emerald-500 hover:border-emerald-400 transition-colors w-full justify-center">
+                <Plus size={12}/>Add Stat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Numbers */}
       {block.layout==='stats' && (
         <div className="space-y-3">
@@ -933,6 +1063,7 @@ export default function LandingEditorPage() {
     if (layout==='banners')      { b.banner_variant=1; b.banner_images=[{image_url:''},{image_url:''}]; b.banner_gap=8; b.banner_radius=12 }
     if (layout==='countdown')    { b.countdown_preset=1; b.countdown_hours=4; b.countdown_number_color='#e0e0e0'; b.countdown_label_color='#b0b0b0'; b.countdown_box_bg='#2a2a2a' }
     if (layout==='stats')        { b.stats_items=[{value:1000,suffix:'+',label_en:'Orders',label_ar:'طلب'},{value:500,suffix:'+',label_en:'Customers',label_ar:'عميل'}]; b.stats_bg='#f7f8fa'; b.stats_number_color='#d99401'; b.stats_label_color='#101010'; b.stats_card_bg='#ffffff' }
+    if (layout==='content')      { b.content_helper_en='About Us'; b.content_helper_ar='من نحن'; b.content_helper_color='#007E60'; b.content_img_side='right'; b.content_btn_bg='#000000'; b.content_stats=[]; b.title_en=''; b.title_ar=''; b.body_en=''; b.body_ar='' }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }

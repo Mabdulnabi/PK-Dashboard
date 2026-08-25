@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats' | 'content'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -49,6 +49,19 @@ interface Block {
   stats_label_size?: number
   stats_card_min_width?: number
   stats_card_padding?: number
+  content_helper_en?: string
+  content_helper_ar?: string
+  content_helper_color?: string
+  content_title_align?: 'left' | 'center' | 'right'
+  content_desc_align?: 'left' | 'center' | 'right'
+  content_desc_color?: string
+  content_img_link?: string
+  content_img_side?: 'left' | 'right'
+  content_btn_text_en?: string
+  content_btn_text_ar?: string
+  content_btn_bg?: string
+  content_btn_link?: string
+  content_stats?: { value: string; suffix?: string; label_en?: string; label_ar?: string }[]
 }
 
 interface Review {
@@ -333,6 +346,109 @@ function StarRow({ n = 5 }: { n?: number }) {
         </svg>
       ))}
     </div>
+  )
+}
+
+// ── Content Block ───────────────────────────────────────────────────────────
+function ContentBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
+  const title      = isRtl ? (block.title_ar || block.title_en) : (block.title_en || block.title_ar)
+  const desc       = isRtl ? (block.body_ar  || block.body_en)  : (block.body_en  || block.body_ar)
+  const helper     = isRtl ? (block.content_helper_ar || block.content_helper_en) : (block.content_helper_en || block.content_helper_ar)
+  const btnText    = isRtl ? (block.content_btn_text_ar || block.content_btn_text_en) : (block.content_btn_text_en || block.content_btn_text_ar)
+  const helperColor = block.content_helper_color || '#007E60'
+  const titleAlign  = block.content_title_align || (isRtl ? 'right' : 'left')
+  const descAlign   = block.content_desc_align  || (isRtl ? 'right' : 'left')
+  const descColor   = block.content_desc_color  || '#6B7280'
+  const btnBg       = block.content_btn_bg || '#000000'
+  const btnLink     = block.content_btn_link || '#'
+  const imgSide     = block.content_img_side || 'right'
+  const stats       = block.content_stats || []
+  const imgUrl      = block.image_url
+  const imgLink     = block.content_img_link
+
+  const textSide = (
+    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, padding: '8px 0' }}>
+      {helper && (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontSize: 13, fontWeight: 700, color: helperColor,
+          background: helperColor + '18', borderRadius: 999,
+          padding: '5px 14px', width: 'fit-content',
+          border: `1px solid ${helperColor}40`,
+          alignSelf: titleAlign === 'center' ? 'center' : titleAlign === 'right' ? 'flex-end' : 'flex-start',
+        }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: helperColor, display: 'inline-block' }}/>
+          {helper}
+        </span>
+      )}
+      {title && (
+        <h2 style={{ fontSize: 'clamp(22px,4vw,34px)', fontWeight: 800, color: '#111827', margin: 0, lineHeight: 1.25, textAlign: titleAlign as any }}>
+          {title}
+        </h2>
+      )}
+      {desc && (
+        <p style={{ fontSize: 15, color: descColor, lineHeight: 1.75, margin: 0, textAlign: descAlign as any }}>
+          {desc}
+        </p>
+      )}
+      {stats.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginTop: 4 }}>
+          {stats.map((s, i) => {
+            const label = isRtl ? (s.label_ar || s.label_en) : (s.label_en || s.label_ar)
+            return (
+              <div key={i} className="pk-gold-hover" style={{
+                background: '#f9fafb', borderRadius: 14, padding: '14px 16px',
+                border: '1px solid #f0f0f5',
+              }}>
+                <p style={{ fontSize: 28, fontWeight: 800, color: '#d99401', margin: 0, lineHeight: 1 }}>
+                  {s.value}{s.suffix || ''}
+                </p>
+                {label && <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, marginTop: 4, display: 'block' }}>{label}</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {btnText && (
+        <div style={{ marginTop: 8 }}>
+          <a href={btnLink} target="_blank" rel="noopener noreferrer" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: btnBg, color: '#fff', fontSize: 14, fontWeight: 700,
+            padding: '12px 28px', borderRadius: 12, textDecoration: 'none',
+            transition: 'filter .2s, transform .2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.15)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}
+          >
+            {btnText}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      )}
+    </div>
+  )
+
+  const imgSideEl = imgUrl ? (
+    <div style={{ flex: '0 0 auto', width: 'clamp(160px,40%,320px)', borderRadius: 20, overflow: 'hidden', alignSelf: 'stretch' }}>
+      {imgLink
+        ? <a href={imgLink} target="_blank" rel="noopener noreferrer" style={{ display: 'block', height: '100%' }}>
+            <img src={imgUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 200 }}/>
+          </a>
+        : <img src={imgUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 200 }}/>
+      }
+    </div>
+  ) : null
+
+  return (
+    <section style={{ borderRadius: 20, overflow: 'hidden', background: '#ffffff', border: '1px solid #f0f0f5', boxShadow: '0 4px 24px rgba(0,0,0,.06)' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 0, minHeight: 260 }}>
+        {imgSide === 'left'  && imgSideEl}
+        <div style={{ flex: 1, minWidth: 200, padding: '32px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          {textSide}
+        </div>
+        {imgSide === 'right' && imgSideEl}
+      </div>
+    </section>
   )
 }
 
@@ -1177,6 +1293,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </section>
             )
           }
+
+          /* Content block */
+          if (block.layout === 'content') return (
+            <ContentBlock key={block.id} block={block} isRtl={isRtl}/>
+          )
 
           /* Stats block */
           if (block.layout === 'stats') return (
