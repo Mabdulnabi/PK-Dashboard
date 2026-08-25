@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
-import { Render } from '@puckeditor/core'
-import { puckConfig } from '@/lib/puck/config'
 
 interface Block {
   id: string
@@ -30,7 +28,6 @@ interface Tool {
   delivery_label: string; rating: number; review_count: number
   sales_count?: number; video_url?: string; features: string[]
   is_out_of_stock: boolean; landing_blocks: Block[]
-  landing_data?: any
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange:(v:number)=>void }) {
@@ -263,13 +260,8 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           </section>
         )}
 
-        {/* ── Puck landing_data (new editor) ── */}
-        {tool.landing_data?.content?.length > 0 && (
-          <Render config={puckConfig} data={tool.landing_data}/>
-        )}
-
-        {/* ── Legacy Content Blocks (old editor) ── */}
-        {!tool.landing_data?.content?.length && blocks.map((block)=>{
+        {/* ── Content Blocks ── */}
+        {blocks.map((block)=>{
           const title = isRtl ? (block.title_ar||block.title_en) : (block.title_en||block.title_ar)
           const body  = isRtl ? (block.body_ar||block.body_en)  : (block.body_en||block.body_ar)
 
