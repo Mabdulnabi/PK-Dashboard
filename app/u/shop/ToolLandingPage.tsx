@@ -72,25 +72,36 @@ function RatingBar({ label, count, total }: { label: string; count: number; tota
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className={`rounded-xl border-2 transition-all duration-200 overflow-hidden ${open ? 'border-amber-400/60 bg-amber-50/40 dark:bg-amber-500/5' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'}`}>
-      <button onClick={()=>setOpen(o=>!o)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-start">
-        {/* Q badge */}
-        <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 transition-colors"
-          style={{ background: open ? '#d99401' : '#d9940120', color: open ? '#fff' : '#d99401' }}>
-          Q
-        </span>
-        <span className={`flex-1 text-sm font-semibold leading-snug transition-colors ${open ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{q}</span>
-        <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${open ? 'rotate-180 bg-amber-400/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
-          <ChevronDown size={13} className={open ? 'text-amber-600' : 'text-gray-400'}/>
+    <div style={{
+      marginBottom:'1rem', background:'#ffffff', borderStyle:'solid', borderWidth:1,
+      boxShadow:'-6px 6px 0px 0px #d99401', borderColor:'#0f4c75',
+      borderRadius: open ? '16px 16px 16px 0' : '16px 16px 16px 0',
+      overflow:'hidden', width:'100%', boxSizing:'border-box' as const,
+      transition:'box-shadow .2s',
+    }}>
+      <button onClick={()=>setOpen(o=>!o)} style={{
+        width:'100%', display:'flex', alignItems:'center', gap:12,
+        padding:'18px 24px', fontSize:16, fontWeight:600, lineHeight:'20px',
+        color:'rgba(72,59,54,1)', background:'none', border:'none', cursor:'pointer',
+        textAlign:'start',
+      }}>
+        <span style={{ flex:1 }}>{q}</span>
+        <span style={{
+          display:'inline-flex', alignItems:'center', justifyContent:'center',
+          borderRadius:6, padding:1, background:'rgba(217,148,1,0.52)',
+          color:'#52443a', transition:'transform .2s',
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          flexShrink:0,
+        }}>
+          <ChevronDown size={20}/>
         </span>
       </button>
       {open && (
-        <div className="flex gap-3 px-5 pb-5 pt-1">
-          <div className="w-6 flex-shrink-0 flex justify-center">
-            <div className="w-px bg-amber-200 dark:bg-amber-700/40 rounded-full"/>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{a}</p>
+        <div style={{
+          padding:20, borderTop:'1px solid rgba(217,148,1,0.6)',
+          fontSize:16, color:'#57637a', fontWeight:400, lineHeight:'1.6',
+        }}>
+          {a}
         </div>
       )}
     </div>
@@ -565,10 +576,45 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* FAQ block */
           if (block.layout === 'faq') return (
-            <section key={block.id}>
-              {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
-              {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">{body}</p>}
-              <div className="space-y-3">
+            <section key={block.id} style={{
+              backgroundImage:`url(https://files.easy-orders.net/1730815545147228170serv-bg.svg)`,
+              backgroundSize:'cover', backgroundPosition:'center',
+              backgroundColor:'#fdf7e8',
+              borderRadius:16, padding:'32px 0', overflow:'hidden',
+            }}>
+              {/* Animated gold gradient title */}
+              {title && (
+                <>
+                  <style>{`
+                    @keyframes pk-faq-pulse { 0%{transform:scale(1)} 50%{transform:scale(1.01)} 100%{transform:scale(1)} }
+                    @keyframes pk-faq-grad  { 0%{background-position:0%} 50%{background-position:200%} 100%{background-position:0%} }
+                    @keyframes pk-faq-border{ 0%{background-position:0%} 100%{background-position:200%} }
+                    .pk-faq-desc { text-align:center;font-size:clamp(22px,4vw,40px);font-weight:bold;margin:0 0 15px;word-break:break-word;
+                      background:linear-gradient(90deg,#d99401,#f5c76b,#d99401);background-size:200%;
+                      -webkit-background-clip:text;background-clip:text;color:transparent !important;
+                      animation:pk-faq-grad 5s ease-in-out infinite, pk-faq-pulse 1.5s ease-in-out infinite; }
+                  `}</style>
+                  <p className="pk-faq-desc">{title}</p>
+                </>
+              )}
+              {/* Gold badge sub-heading */}
+              {body && (
+                <>
+                  <style>{`
+                    .pk-faq-badge { font-weight:800;text-align:center;line-height:130%;text-transform:uppercase;
+                      padding:14px 24px;border-radius:30px;font-size:14px;color:#52443a;
+                      background-color:rgba(217,148,1,0.15);width:fit-content;margin:0 auto 20px;
+                      letter-spacing:2px;position:relative;z-index:1;border:4px solid #d99401;
+                      display:block; background-clip:padding-box; }
+                    .pk-faq-badge::before { content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;
+                      border-radius:34px;background:linear-gradient(90deg,#d99401,#f5c76b,#d99401);background-size:200%;
+                      z-index:-1;animation:pk-faq-border 6s linear infinite paused; }
+                    .pk-faq-badge:hover::before { animation-play-state:running; }
+                  `}</style>
+                  <span className="pk-faq-badge">{body}</span>
+                </>
+              )}
+              <div style={{ padding:'0 12px', width:'100%', boxSizing:'border-box', maxWidth:800, margin:'0 auto' }}>
                 {(block.faqs||[]).map((faq,i)=>(
                   <FaqItem key={i}
                     q={isRtl?(faq.q_ar||faq.q_en):(faq.q_en||faq.q_ar)}
