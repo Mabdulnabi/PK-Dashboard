@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid'
 import BundlesTab from '@/components/admin/BundlesTab'
 import ImageUploadInput from '@/components/admin/ImageUploadInput'
 
-interface Category { id:string; name:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean }
+interface Category { id:string; name:string; name_ar?:string; slug:string; color:string; icon:string; sort_order:number; is_active:boolean; image_url?:string; image_url_ar?:string }
 interface Tool {
   id:string; name:string; description:string; image_url?:string
   category_slug:string; category_id?:string; price_egp:number; price_usd?:number; retail_price_egp?:number
@@ -114,12 +114,12 @@ export default function ShopAdminPage() {
   const [catForm, setCatForm] = useState(emptyCat)
 
   const load = useCallback(async()=>{
-    const [tRes,cRes] = await Promise.all([
+    const [tRes, cJson] = await Promise.all([
       supabase.from('shop_tools').select('*').order('category_slug').order('sort_order'),
-      supabase.from('tool_categories').select('*').order('sort_order'),
+      fetch('/api/admin/categories').then(r=>r.json()),
     ])
     if(tRes.data) setTools(tRes.data)
-    if(cRes.data) setCats(cRes.data)
+    if(cJson.categories) setCats(cJson.categories)
     setLoading(false)
   },[])
 
@@ -237,7 +237,16 @@ export default function ShopAdminPage() {
 
   const openAddCat  = ()=>{ setCatForm(emptyCat); setEdit(null); setModal('add-cat') }
   const openEditCat = (c:Category)=>{
-    setCatForm({name:c.name,name_ar:(c as any).name_ar||'',slug:c.slug,color:c.color,icon:c.icon,image_url:(c as any).image_url||'',image_url_ar:(c as any).image_url_ar||'',sort_order:String(c.sort_order)})
+    setCatForm({
+      name:       c.name        || '',
+      name_ar:    c.name_ar     || '',
+      slug:       c.slug        || '',
+      color:      c.color       || '#3B82F6',
+      icon:       c.icon        || '🔧',
+      image_url:  c.image_url   || '',
+      image_url_ar: c.image_url_ar || '',
+      sort_order: String(c.sort_order ?? 0),
+    })
     setEdit(c); setModal('edit-cat')
   }
   const saveCat = async()=>{
@@ -245,23 +254,32 @@ export default function ShopAdminPage() {
     setSaving(true)
     const slug = catForm.slug||catForm.name.toLowerCase().replace(/[^a-z0-9]/g,'_')
     const payload = {name:catForm.name,name_ar:catForm.name_ar||null,slug,color:catForm.color,icon:catForm.icon,image_url:catForm.image_url||null,image_url_ar:catForm.image_url_ar||null,sort_order:parseInt(catForm.sort_order)||0}
-    const res = editItem
-      ? await supabase.from('tool_categories').update(payload).eq('id',editItem.id)
-      : await supabase.from('tool_categories').insert(payload)
+    const res = await fetch('/api/admin/categories', {
+      method: editItem ? 'PATCH' : 'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(editItem ? {id:editItem.id,...payload} : payload),
+    })
+    const data = await res.json()
     setSaving(false)
-    if(res.error){setToast({msg:res.error.message,type:'err'});return}
+    if(!res.ok){setToast({msg:data.error||'Error',type:'err'});return}
     setToast({msg:editItem?'Category updated':'Category added',type:'ok'})
     setModal(null); load()
   }
   const toggleCat = async(c:Category)=>{
-    await supabase.from('tool_categories').update({is_active:!c.is_active}).eq('id',c.id)
+    await fetch('/api/admin/categories',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,is_active:!c.is_active})})
     setToast({msg:'Updated',type:'ok'}); load()
   }
   const del = async()=>{
     if(!delItem) return
-    const table = delType==='tool'?'shop_tools':'tool_categories'
-    const res = await supabase.from(table).delete().eq('id',delItem.id)
-    if(res.error){setToast({msg:'Cannot delete — in use',type:'err'});setDel(null);return}
+    let ok = false
+    if(delType==='cat'){
+      const r = await fetch('/api/admin/categories',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:delItem.id})})
+      ok = r.ok
+    } else {
+      const r = await supabase.from('shop_tools').delete().eq('id',delItem.id)
+      ok = !r.error
+    }
+    if(!ok){setToast({msg:'Cannot delete — in use',type:'err'});setDel(null);return}
     setToast({msg:'Deleted',type:'ok'}); setDel(null); load()
   }
 
@@ -470,7 +488,7 @@ export default function ShopAdminPage() {
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl overflow-hidden" style={{background:c.color+'18'}}>
-                          {(c as any).image_url ? <img src={(c as any).image_url} className="w-full h-full object-cover" alt=""/> : c.icon}
+                          {c.image_url ? <img src={c.image_url} className="w-full h-full object-cover" alt=""/> : c.icon}
                         </div>
                         <div className="flex items-center gap-1">
                           <button onClick={()=>openEditCat(c)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"><Pencil size={12}/></button>
@@ -478,7 +496,7 @@ export default function ShopAdminPage() {
                         </div>
                       </div>
                       <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{c.name}</div>
-                      {(c as any).name_ar && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5" dir="rtl">{(c as any).name_ar}</div>}
+                      {c.name_ar && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5" dir="rtl">{c.name_ar}</div>}
                       <div className="text-[10px] font-mono text-gray-400 mt-0.5 mb-3">{c.slug}</div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-400"><span className="font-bold text-gray-700 dark:text-gray-300">{toolCount}</span> tools</span>

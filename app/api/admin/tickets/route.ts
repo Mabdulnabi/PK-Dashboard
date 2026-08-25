@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   let query = db
     .from('support_tickets')
-    .select('*, ticket_attachments(*), ticket_messages(id, sender_type, message, sender_name, sender_avatar, created_at)')
+    .select('*')
     .order('created_at', { ascending: false })
 
   if (status && status !== 'all') {
@@ -17,6 +17,30 @@ export async function GET(req: NextRequest) {
 
   const { data: tickets, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Load messages and attachments separately to avoid FK dependency issues
+  const ticketIds = (tickets || []).map((t: any) => t.id)
+  let msgMap: Record<string, any[]> = {}
+  let attMap: Record<string, any[]> = {}
+  if (ticketIds.length > 0) {
+    const [{ data: msgs }, { data: atts }] = await Promise.all([
+      db.from('ticket_messages')
+        .select('id, ticket_id, sender_type, message, sender_name, sender_avatar, created_at')
+        .in('ticket_id', ticketIds)
+        .order('created_at', { ascending: true }),
+      db.from('ticket_attachments')
+        .select('*')
+        .in('ticket_id', ticketIds),
+    ])
+    for (const m of msgs || []) {
+      if (!msgMap[m.ticket_id]) msgMap[m.ticket_id] = []
+      msgMap[m.ticket_id].push(m)
+    }
+    for (const a of atts || []) {
+      if (!attMap[a.ticket_id]) attMap[a.ticket_id] = []
+      attMap[a.ticket_id].push(a)
+    }
+  }
 
   // Enrich with member info in one query
   const memberIds = [...new Set((tickets || []).map((t: any) => t.member_id).filter(Boolean))]
@@ -31,7 +55,9 @@ export async function GET(req: NextRequest) {
 
   const enriched = (tickets || []).map((t: any) => ({
     ...t,
-    member: memberMap[t.member_id] ?? null,
+    member:          memberMap[t.member_id] ?? null,
+    ticket_messages:    msgMap[t.id] ?? [],
+    ticket_attachments: attMap[t.id] ?? [],
   }))
 
   return NextResponse.json({ tickets: enriched })
