@@ -6,7 +6,7 @@ import Topbar from '@/components/layout/Topbar'
 import {
   Plus, Server, Users, Activity, Shield, Wifi, WifiOff,
   Wrench, Ban, Check, X, AlertCircle, Eye, EyeOff,
-  Trash2, Pencil, Zap, Clock
+  Trash2, Pencil, Zap, Clock, Database
 } from 'lucide-react'
 
 interface Product { id: string; name: string; category_slug: string | null }
@@ -26,6 +26,7 @@ interface LiveSession {
   inactive_minutes: number; device_fingerprint: string; status: string
 }
 
+const GOLD    = '#d99401'
 const TIERS    = ['basic','vip','private']
 const STATUSES = ['active','maintenance','banned']
 
@@ -38,17 +39,20 @@ function Toast({ msg, type, onClose }: { msg:string; type:'ok'|'err'; onClose:()
   )
 }
 
-const inp = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 transition-all"
+const inp = "w-full px-4 py-3 text-sm rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 outline-none focus:ring-2 transition-colors"
+const inpSm = "w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/10 transition-all"
 
-const statusIcon = (s: string) =>
-  s==='active'      ? <Wifi size={13} className="text-emerald-500"/> :
-  s==='maintenance' ? <Wrench size={13} className="text-amber-500"/> :
-                      <Ban size={13} className="text-red-500"/>
+const statusConfig = (s: string) => {
+  if (s === 'active')      return { icon: <Wifi size={13}/>,   label: 'Active',       dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' }
+  if (s === 'maintenance') return { icon: <Wrench size={13}/>, label: 'Maintenance',  dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-400',     bg: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20' }
+  return                          { icon: <Ban size={13}/>,    label: 'Banned',       dot: 'bg-red-500',     text: 'text-red-600 dark:text-red-400',         bg: 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20' }
+}
 
-const tierColor = (t: string) =>
-  t==='vip'     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-  t==='private' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                  'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+const tierConfig = (t: string) => {
+  if (t === 'vip')     return { label:'VIP',     cls:'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
+  if (t === 'private') return { label:'Private', cls:'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400' }
+  return                      { label:'Basic',   cls:'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }
+}
 
 export default function ServersPage() {
   const [tab, setTab]             = useState<'servers'|'sessions'|'log'>('servers')
@@ -100,7 +104,6 @@ export default function ServersPage() {
 
   const openAdd  = () => { setForm(emptyForm); setEditId(null); setSavedCookieCount(null); setModal('add') }
   const openEdit = (s: ToolServer) => {
-    // Count cookies already saved so admin can verify without re-pasting
     let count: number | null = null
     if (s.session_data_encrypted) {
       try {
@@ -179,7 +182,6 @@ export default function ServersPage() {
     setToast({ msg:'Server deleted', type:'ok' }); setDel(null); load()
   }
 
-  // Parse cookies preview from session JSON
   const cookiesPreview = (() => {
     if (!form.session_data_encrypted) return null
     try {
@@ -191,275 +193,316 @@ export default function ServersPage() {
   })()
 
   const loadColor = (pct: number) =>
-    pct >= 80 ? 'bg-red-500' : pct >= 50 ? 'bg-amber-500' : 'bg-emerald-500'
+    pct >= 80 ? '#ef4444' : pct >= 50 ? '#f59e0b' : '#10b981'
 
-  const actionColor = (a: string) =>
-    a==='connect'    ? 'text-emerald-500' :
-    a==='disconnect' ? 'text-gray-400' :
-    a==='kick'       ? 'text-red-500' :
-    a==='failed'     ? 'text-red-400' : 'text-blue-400'
+  const totalActive   = servers.filter(s=>s.status==='active').length
+  const totalSessions = sessions.filter(s=>s.status==='active').length
+  const totalUsers    = servers.reduce((a,s)=>a+s.current_active_users,0)
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0D1117]">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Topbar title="Servers" subtitle="Manage shared servers & live sessions" />
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <Topbar title="Servers" />
 
-        {/* Tabs + Add */}
-        <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            {([
-              { id:'servers',  label:'Servers',       icon:Server },
-              { id:'sessions', label:`Live (${sessions.length})`, icon:Activity },
-              { id:'log',      label:'Activity Log',  icon:Shield },
-            ] as const).map(t => {
-              const Icon = t.icon
-              return (
-                <button key={t.id} onClick={()=>setTab(t.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    tab===t.id ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                  <Icon size={12}/>{t.label}
-                </button>
-              )
-            })}
-          </div>
-          {tab==='servers' && (
-            <button onClick={openAdd}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors">
-              <Plus size={13}/>Add Server
-            </button>
-          )}
-        </div>
+        <main className="flex-1 overflow-auto p-6">
 
-        <div className="flex-1 overflow-auto p-5">
-
-          {/* ══ SERVERS TAB ══ */}
-          {tab==='servers' && (
-            <div className="grid grid-cols-2 gap-4">
-              {loading && <div className="col-span-2 flex justify-center py-20"><div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>}
-              {!loading && servers.length===0 && (
-                <div className="col-span-2 text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl">
-                  <Server size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
-                  <p className="text-sm text-gray-400 mb-3">No servers yet</p>
-                  <button onClick={openAdd} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600">
-                    <Plus size={13}/>Add First Server
-                  </button>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {[
+              { label:'Active Servers', val:totalActive,   color:'#10b981', icon:<Server size={20}/>,   bg:'bg-emerald-50 dark:bg-emerald-900/20' },
+              { label:'Live Sessions',  val:totalSessions, color:GOLD,      icon:<Activity size={20}/>, bg:'bg-amber-50 dark:bg-amber-900/20' },
+              { label:'Online Users',   val:totalUsers,    color:'#6366f1', icon:<Users size={20}/>,    bg:'bg-indigo-50 dark:bg-indigo-900/20' },
+            ].map(s=>(
+              <div key={s.label} className={`rounded-2xl p-5 ${s.bg} border border-gray-100 dark:border-[#1a2233] flex items-center gap-4`}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: s.color+'20', color: s.color }}>
+                  {s.icon}
                 </div>
-              )}
-              {servers.map(s => {
-                const load = Math.round((s.current_active_users / s.max_concurrent_users) * 100) || 0
+                <div>
+                  <div className="text-xs text-gray-500 font-medium mb-0.5">{s.label}</div>
+                  <div className="text-2xl font-black" style={{ color: s.color }}>{s.val}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs + Add */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex gap-1 bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-xl p-1">
+              {([
+                { id:'servers',  label:'Servers',                        icon:Server },
+                { id:'sessions', label:`Live Sessions (${sessions.length})`, icon:Activity },
+                { id:'log',      label:'Activity Log',                   icon:Shield },
+              ] as const).map(t => {
+                const Icon = t.icon
                 return (
-                  <div key={s.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        {statusIcon(s.status)}
-                        <div>
-                          <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{s.server_label}</div>
-                          <div className="text-[10px] text-gray-400">{s.tool_name}</div>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tierColor(s.tier_required)}`}>
-                        {s.tier_required.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-                        <span>{s.current_active_users}/{s.max_concurrent_users} users</span>
-                        <span>{load}% load</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${loadColor(load)}`} style={{ width:`${load}%` }}/>
-                      </div>
-                    </div>
-                    {s.proxy_host && (
-                      <div className="text-[10px] text-gray-400 mb-3 flex items-center gap-1">
-                        <Wifi size={10}/>Proxy: {s.proxy_host}:{s.proxy_port}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <button onClick={()=>openEdit(s)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                        <Pencil size={10}/>Edit
-                      </button>
-                      {s.status!=='active' && (
-                        <button onClick={()=>updateStatus(s.id,'active')}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">
-                          <Wifi size={10}/>Activate
-                        </button>
-                      )}
-                      {s.status==='active' && (
-                        <button onClick={()=>updateStatus(s.id,'maintenance')}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors">
-                          <Wrench size={10}/>Maintenance
-                        </button>
-                      )}
-                      <button onClick={()=>updateStatus(s.id,'banned')}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
-                        <Ban size={10}/>Ban
-                      </button>
-                      <button onClick={()=>setDel(s)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ml-auto">
-                        <Trash2 size={10}/>Delete
-                      </button>
-                    </div>
-                  </div>
+                  <button key={t.id} onClick={()=>setTab(t.id)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                      tab===t.id ? 'text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    }`}
+                    style={tab===t.id ? { background: GOLD } : {}}>
+                    <Icon size={13}/>{t.label}
+                  </button>
                 )
               })}
             </div>
+            {tab==='servers' && (
+              <button onClick={openAdd}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-colors hover:opacity-90 shadow-sm"
+                style={{background:GOLD}}>
+                <Plus size={15}/> Add Server
+              </button>
+            )}
+          </div>
+
+          {/* ══ SERVERS TAB ══ */}
+          {tab==='servers' && (
+            loading ? (
+              <div className="flex justify-center py-20">
+                <div className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:`${GOLD} transparent transparent transparent`}}/>
+              </div>
+            ) : servers.length===0 ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233]">
+                <Server size={36} className="text-gray-200 dark:text-gray-700 mb-3"/>
+                <p className="text-sm text-gray-400 mb-4">No servers yet</p>
+                <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold" style={{background:GOLD}}>
+                  <Plus size={14}/>Add First Server
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {servers.map(s => {
+                  const loadPct  = Math.round((s.current_active_users / s.max_concurrent_users) * 100) || 0
+                  const sc       = statusConfig(s.status)
+                  const tc       = tierConfig(s.tier_required)
+                  return (
+                    <div key={s.id} className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233] shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                      {/* Color top stripe */}
+                      <div className="h-1 w-full" style={{ background: s.status==='active' ? '#10b981' : s.status==='maintenance' ? '#f59e0b' : '#ef4444' }}/>
+
+                      <div className="p-4">
+                        {/* Header row */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-8 h-8 rounded-lg border flex items-center justify-center ${sc.bg} ${sc.text}`}>
+                              {sc.icon}
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{s.server_label}</div>
+                              <div className="text-[11px] text-gray-400 mt-0.5">{s.tool_name}</div>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tc.cls}`}>{tc.label}</span>
+                        </div>
+
+                        {/* Load bar */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-[11px] mb-1.5">
+                            <span className="text-gray-500 flex items-center gap-1"><Users size={11}/> {s.current_active_users} / {s.max_concurrent_users} users</span>
+                            <span className="font-bold" style={{ color: loadColor(loadPct) }}>{loadPct}%</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width:`${loadPct}%`, background: loadColor(loadPct) }}/>
+                          </div>
+                        </div>
+
+                        {/* Proxy info */}
+                        {s.proxy_host && (
+                          <div className="text-[11px] text-gray-400 mb-3 flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-2.5 py-1.5">
+                            <Wifi size={11} className="flex-shrink-0"/>
+                            <span className="font-mono truncate">{s.proxy_host}:{s.proxy_port}</span>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button onClick={()=>openEdit(s)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
+                            <Pencil size={11}/>Edit
+                          </button>
+                          {s.status!=='active' && (
+                            <button onClick={()=>updateStatus(s.id,'active')}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition-colors">
+                              <Wifi size={11}/>Activate
+                            </button>
+                          )}
+                          {s.status==='active' && (
+                            <button onClick={()=>updateStatus(s.id,'maintenance')}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-100 transition-colors">
+                              <Wrench size={11}/>Maintenance
+                            </button>
+                          )}
+                          <button onClick={()=>updateStatus(s.id,'banned')}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 transition-colors">
+                            <Ban size={11}/>Ban
+                          </button>
+                          <button onClick={()=>setDel(s)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition-colors ms-auto">
+                            <Trash2 size={11}/>Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
           )}
 
           {/* ══ LIVE SESSIONS TAB ══ */}
           {tab==='sessions' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233] overflow-hidden">
               {sessions.length===0 ? (
-                <div className="text-center py-16">
-                  <Activity size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
-                  <p className="text-sm text-gray-400">No active sessions</p>
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                  <Activity size={36} className="mb-3 opacity-30"/>
+                  <p className="text-sm">No active sessions</p>
                 </div>
               ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-800/50">
-                      {['User','Server','Tool','Started','Last Active','Status','Action'].map(h=>(
-                        <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sessions.map(s=>(
-                      <tr key={s.id} className={`border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${s.status!=='active'?'opacity-60':''}`}>
-                        <td className="px-4 py-2.5">
-                          <div className="text-xs font-medium text-gray-800 dark:text-gray-200">{s.user_name||s.user_email}</div>
-                          <div className="text-[10px] text-gray-400">{s.user_email}</div>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-gray-500">{s.server_label}</td>
-                        <td className="px-4 py-2.5 text-xs text-gray-500">{s.tool_name}</td>
-                        <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(s.started_at).toLocaleTimeString()}</td>
-                        <td className="px-4 py-2.5">
-                          <span className={`text-[10px] font-semibold ${(s.inactive_minutes??0) > 10 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                            {(s.inactive_minutes??0) < 1 ? 'Just now' : `${Math.round(s.inactive_minutes??0)}m ago`}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            s.status==='active' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
-                            s.status==='kicked' ? 'bg-red-100 dark:bg-red-900/30 text-red-500' :
-                            'bg-gray-100 dark:bg-gray-800 text-gray-400'
-                          }`}>{s.status}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {s.status==='active' && (
-                            <button onClick={()=>kickSession(s.id)}
-                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors">
-                              <Zap size={10}/>Kick
-                            </button>
-                          )}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full" style={{borderCollapse:'collapse'}}>
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                        {['User','Server','Tool','Started','Last Active','Status','Action'].map(h=>(
+                          <th key={h} className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 px-4 py-3">{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sessions.map((s,i)=>(
+                        <tr key={s.id} className={`border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors ${s.status!=='active'?'opacity-50':''} ${i%2===0?'':'bg-gray-50/30 dark:bg-gray-800/10'}`}>
+                          <td className="px-4 py-3">
+                            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{s.user_name||s.user_email}</div>
+                            <div className="text-[10px] text-gray-400">{s.user_email}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{s.server_label}</td>
+                          <td className="px-4 py-3 text-xs text-gray-500">{s.tool_name}</td>
+                          <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{new Date(s.started_at).toLocaleTimeString()}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[11px] font-semibold ${(s.inactive_minutes??0) > 10 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                              {(s.inactive_minutes??0) < 1 ? 'Just now' : `${Math.round(s.inactive_minutes??0)}m ago`}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              s.status==='active' ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+                              s.status==='kicked' ? 'bg-red-100 dark:bg-red-500/15 text-red-500' :
+                              'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                            }`}>{s.status}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {s.status==='active' && (
+                              <button onClick={()=>kickSession(s.id)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 transition-colors">
+                                <Zap size={11}/>Kick
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
 
           {/* ══ ACTIVITY LOG TAB ══ */}
           {tab==='log' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-[#1a2233] overflow-hidden">
               {logs.length===0 ? (
-                <div className="text-center py-16">
-                  <Shield size={28} className="text-gray-200 dark:text-gray-700 mx-auto mb-3"/>
-                  <p className="text-sm text-gray-400">No session history</p>
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                  <Shield size={36} className="mb-3 opacity-30"/>
+                  <p className="text-sm">No session history</p>
                 </div>
               ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-800/50">
-                      {['Status','User','Tool','Server','Device','Time'].map(h=>(
-                        <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-4 py-2.5">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logs.map((l:any)=>(
-                      <tr key={l.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                        <td className="px-4 py-2.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            l.status==='active'  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
-                            l.status==='kicked'  ? 'bg-red-100 dark:bg-red-900/30 text-red-500' :
-                            l.status==='expired' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-500' :
-                            'bg-gray-100 dark:bg-gray-800 text-gray-400'
-                          }`}>{l.status||'—'}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{l.members?.full_name||'—'}</div>
-                          <div className="text-[10px] text-gray-400">{l.members?.email||''}</div>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-gray-500">{l.tool_servers?.tool_name||'—'}</td>
-                        <td className="px-4 py-2.5 text-xs text-gray-500">{l.tool_servers?.server_label||'—'}</td>
-                        <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">{l.device_fingerprint?.slice(0,12)||'—'}</td>
-                        <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(l.started_at).toLocaleString()}</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full" style={{borderCollapse:'collapse'}}>
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                        {['Status','User','Tool','Server','Device','Time'].map(h=>(
+                          <th key={h} className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 px-4 py-3">{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {logs.map((l:any,i:number)=>(
+                        <tr key={l.id} className={`border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors ${i%2===0?'':'bg-gray-50/30 dark:bg-gray-800/10'}`}>
+                          <td className="px-4 py-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              l.status==='active'  ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+                              l.status==='kicked'  ? 'bg-red-100 dark:bg-red-500/15 text-red-500' :
+                              l.status==='expired' ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-500' :
+                              'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                            }`}>{l.status||'—'}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{l.members?.full_name||'—'}</div>
+                            <div className="text-[10px] text-gray-400">{l.members?.email||''}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">{l.tool_servers?.tool_name||'—'}</td>
+                          <td className="px-4 py-3 text-xs text-gray-500">{l.tool_servers?.server_label||'—'}</td>
+                          <td className="px-4 py-3 text-xs text-gray-400 font-mono">{l.device_fingerprint?.slice(0,12)||'—'}</td>
+                          <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{new Date(l.started_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* ── Add/Edit Server Modal ── */}
       {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                {modal==='add'?'Add Server':'Edit Server'}
-              </h3>
-              <button onClick={()=>setModal(null)}><X size={16} className="text-gray-400"/></button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={()=>setModal(null)}>
+          <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div>
+                <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">{modal==='add'?'Add Server':'Edit Server'}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{modal==='add'?'Configure a new server':'Update server configuration'}</p>
+              </div>
+              <button onClick={()=>setModal(null)} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white">
+                <X size={14}/>
+              </button>
             </div>
-            <div className="p-5 flex flex-col gap-3">
 
-              {/* Basic info */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Server Info</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Tool *</label>
-                    <select
-                      value={form.shop_tool_id}
+            <div className="p-6 flex flex-col gap-4">
+              {/* Server Info */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Server Info</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Tool *</label>
+                    <select value={form.shop_tool_id}
                       onChange={e => {
                         const p = products.find(x => x.id === e.target.value)
                         setForm(f => ({ ...f, shop_tool_id: e.target.value, tool_name: p?.name || '' }))
                       }}
-                      className={inp}
-                    >
-                      <option value="">— اختر منتج —</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
+                      className={inp}>
+                      <option value="">— Select tool —</option>
+                      {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Server Label *</label>
+                  <div className="col-span-2">
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Server Label *</label>
                     <input value={form.server_label} onChange={e=>setForm({...form,server_label:e.target.value})}
                       placeholder="e.g. Server 1 (VIP)" className={inp}/>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Tier</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Tier</label>
                     <select value={form.tier_required} onChange={e=>setForm({...form,tier_required:e.target.value})} className={inp}>
                       {TIERS.map(t=><option key={t}>{t}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Max Users</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Max Users</label>
                     <input type="number" value={form.max_concurrent_users}
                       onChange={e=>setForm({...form,max_concurrent_users:parseInt(e.target.value)})} className={inp}/>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Status</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Status</label>
                     <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} className={inp}>
                       {STATUSES.map(s=><option key={s}>{s}</option>)}
                     </select>
@@ -468,32 +511,29 @@ export default function ServersPage() {
               </div>
 
               {/* Session Data */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                  Session Data
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Session Data</div>
                   {editId
                     ? savedCookieCount !== null
-                      ? <span className="font-normal normal-case text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">✓ {savedCookieCount} كوكيز محفوظة — اتركه فاضي لو مش هتغير</span>
-                      : <span className="font-normal normal-case text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded">⚠ مفيش كوكيز — الزم تضيف</span>
-                    : <span className="text-red-400">*</span>
+                      ? <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">✓ {savedCookieCount} cookies saved</span>
+                      : <span className="text-[10px] font-semibold text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">⚠ No cookies</span>
+                    : <span className="text-[10px] text-red-400 font-semibold">Required *</span>
                   }
                 </div>
                 <textarea
                   value={form.session_data_encrypted}
                   onChange={e=>setForm({...form,session_data_encrypted:e.target.value})}
                   placeholder={editId && savedCookieCount !== null
-                    ? `اتركه فاضي للإبقاء على الـ ${savedCookieCount} كوكيز المحفوظة، أو الصق JSON جديد للاستبدال`
-                    : `{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com", "path": "/", "httpOnly": false, "expirationDate": 1999999999 }\n  ],\n  "localStorage": {},\n  "indexedDB": []\n}`}
-                  className={inp+" resize-y h-36 font-mono text-[10px] leading-relaxed"}
-                  dir="ltr"
-                  spellCheck={false}
+                    ? `Leave blank to keep ${savedCookieCount} existing cookies, or paste new JSON to replace`
+                    : `{\n  "cookies": [\n    { "name": "session", "value": "abc123", "domain": ".quillbot.com" }\n  ]\n}`}
+                  className={inp+" resize-y h-32 font-mono text-[11px] leading-relaxed"}
+                  dir="ltr" spellCheck={false}
                 />
-
-                {/* Cookies Preview */}
                 {cookiesPreview && (
-                  <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                      ✓ {cookiesPreview.length} cookies detected
+                  <div className="mt-2 rounded-xl overflow-hidden border border-emerald-200 dark:border-emerald-500/20">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                      <Check size={11}/> {cookiesPreview.length} cookies detected
                     </div>
                     <div className="max-h-40 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
                       {cookiesPreview.map((c: any, i: number) => (
@@ -511,41 +551,47 @@ export default function ServersPage() {
               </div>
 
               {/* Proxy */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Proxy (optional)</div>
-                <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Proxy <span className="normal-case font-normal text-gray-400">(optional)</span></div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Host</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Host</label>
                     <input value={form.proxy_host} onChange={e=>setForm({...form,proxy_host:e.target.value})}
                       placeholder="1.2.3.4" className={inp}/>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Port</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Port</label>
                     <input value={form.proxy_port} onChange={e=>setForm({...form,proxy_port:e.target.value})}
                       placeholder="3128" className={inp}/>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Username</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Username</label>
                     <input value={form.proxy_username} onChange={e=>setForm({...form,proxy_username:e.target.value})} className={inp}/>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 mb-1 block">Password</label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Password</label>
                     <div className="relative">
                       <input type={showPass?'text':'password'} value={form.proxy_password_encrypted}
                         onChange={e=>setForm({...form,proxy_password_encrypted:e.target.value})} className={inp}/>
-                      <button onClick={()=>setShowPass(!showPass)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                        {showPass?<EyeOff size={12}/>:<Eye size={12}/>}
+                      <button onClick={()=>setShowPass(!showPass)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPass?<EyeOff size={14}/>:<Eye size={14}/>}
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 px-5 pb-5">
-              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
+
+            <div className="flex gap-3 px-6 pb-6">
+              <button onClick={()=>setModal(null)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
               <button onClick={save} disabled={saving}
-                className="flex-[2] py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
-                {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<><Check size={13}/>{modal==='add'?'Add Server':'Save'}</>}
+                className="flex-[2] py-3 rounded-xl text-white text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+                style={{background:GOLD}}>
+                {saving
+                  ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Saving…</>
+                  : <><Check size={15}/>{modal==='add'?'Add Server':'Save Changes'}</>}
               </button>
             </div>
           </div>
@@ -554,18 +600,18 @@ export default function ServersPage() {
 
       {/* ── Delete Confirm ── */}
       {delConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl p-6">
-            <div className="w-11 h-11 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={18} className="text-red-500"/>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={()=>setDel(null)}>
+          <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] rounded-2xl w-full max-w-sm shadow-2xl p-6" onClick={e=>e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={20} className="text-red-500"/>
             </div>
-            <h3 className="font-bold text-center mb-1">Delete Server?</h3>
+            <h3 className="font-bold text-center text-gray-900 dark:text-white mb-1">Delete Server?</h3>
             <p className="text-xs text-center text-gray-400 mb-5">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">{delConfirm.server_label}</span> will be deleted permanently.
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{delConfirm.server_label}</span> will be permanently deleted.
             </p>
-            <div className="flex gap-2">
-              <button onClick={()=>setDel(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500">Cancel</button>
-              <button onClick={delServer} className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold">Delete</button>
+            <div className="flex gap-3">
+              <button onClick={()=>setDel(null)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+              <button onClick={delServer} className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">Delete</button>
             </div>
           </div>
         </div>
