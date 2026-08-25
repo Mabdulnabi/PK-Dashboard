@@ -22,7 +22,7 @@ import ImageUploadInput from '@/components/admin/ImageUploadInput'
 type FeaturesLayout = 'grid' | 'list' | 'cards'
 type FeaturesPreset = 'grid_center'|'grid_hover'|'row_left'|'row_flat'|'big_icon'|'minimal'
 
-interface FeatureItem { icon: string; icon_url?: string; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }
+interface FeatureItem { icon: string; icon_url?: string; icon_size?: number; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }
 interface CardItem    { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }
 interface FaqItem     { q_en: string; q_ar: string; a_en: string; a_ar: string }
 
@@ -142,7 +142,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {block.layout!=='image_only' && (
+      {!['image_only','features_grid'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -226,21 +226,23 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
                     <X size={10}/>
                   </button>
                 </div>
-                {/* Icon: emoji OR image */}
-                <div className="flex gap-2 items-start">
-                  <div className="flex-shrink-0">
-                    <div className="text-[9px] text-gray-400 mb-1">Emoji</div>
-                    <input value={f.icon} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon:e.target.value}; onChange({features:fs}) }}
-                      placeholder="⚡" className={`${inp} w-12 text-center text-base`}/>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[9px] text-gray-400 mb-1">Or upload icon image</div>
-                    <ImageUploadInput
-                      value={f.icon_url||''}
-                      onChange={url=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon_url:url}; onChange({features:fs}) }}
-                      folder="landing-icons"
-                    />
-                  </div>
+                {/* Icon image + size */}
+                <div>
+                  <div className="text-[9px] text-gray-400 mb-1">Icon (image / GIF)</div>
+                  <ImageUploadInput
+                    value={f.icon_url||''}
+                    onChange={url=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon_url:url}; onChange({features:fs}) }}
+                    folder="landing-icons"
+                  />
+                </div>
+                {/* Size control */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-gray-400 whitespace-nowrap">Size: {f.icon_size||40}px</span>
+                  <input type="range" min={20} max={120} step={4} value={f.icon_size||40}
+                    onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon_size:+e.target.value}; onChange({features:fs}) }}
+                    className="flex-1 accent-amber-500 h-1"/>
+                  <button onClick={()=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon_size:40}; onChange({features:fs}) }}
+                    className="text-[9px] text-gray-400 hover:text-amber-500">↺</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input value={f.en} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,en:e.target.value}; onChange({features:fs}) }}
@@ -254,7 +256,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
                 </div>
               </div>
             ))}
-            <button onClick={()=>onChange({features:[...(block.features||[]),{icon:'⭐',en:'',ar:'',subtitle_en:'',subtitle_ar:''}]})}
+            <button onClick={()=>onChange({features:[...(block.features||[]),{icon:'',en:'',ar:'',subtitle_en:'',subtitle_ar:''}]})}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-amber-600 hover:border-amber-400 dark:hover:border-amber-500 transition-colors w-full justify-center">
               <Plus size={12}/>Add Feature
             </button>

@@ -14,7 +14,7 @@ interface Block {
   video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
-  features?: { icon: string; icon_url?: string; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }[]
+  features?: { icon: string; icon_url?: string; icon_size?: number; en: string; ar: string; subtitle_en?: string; subtitle_ar?: string }[]
   features_layout?: FeaturesLayout
   features_preset?: FeaturesPreset
   faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
@@ -93,10 +93,57 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   )
 }
 
+// Cairo font for Arabic landing pages
+const CAIRO_LINK = typeof document !== 'undefined' ? (()=>{
+  if (!document.getElementById('pk-cairo-font')) {
+    const l = document.createElement('link')
+    l.id = 'pk-cairo-font'; l.rel = 'stylesheet'
+    l.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap'
+    document.head.appendChild(l)
+  }
+})() : null
+
+function useArabicFont(isRtl: boolean) {
+  useEffect(()=>{
+    if (!isRtl) return
+    if (document.getElementById('pk-cairo-font')) return
+    const l = document.createElement('link')
+    l.id = 'pk-cairo-font'; l.rel = 'stylesheet'
+    l.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap'
+    document.head.appendChild(l)
+  }, [isRtl])
+}
+
+// Gold shimmer keyframes injected once
+const GOLD_SHIMMER_CSS = `
+@keyframes pk-gold-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.pk-gold-hover {
+  position: relative; overflow: hidden;
+  transition: border-color .25s, box-shadow .25s, transform .2s;
+}
+.pk-gold-hover::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(217,148,1,.18) 50%, transparent 70%);
+  background-size: 200% 100%;
+  transition: opacity .25s;
+}
+.pk-gold-hover:hover::after { opacity: 1; animation: pk-gold-shimmer .7s linear; }
+.pk-gold-hover:hover { border-color: #d99401 !important; box-shadow: 0 0 0 1.5px #d9940130, 0 6px 22px #d9940118; transform: translateY(-2px); }
+`
+function injectGoldShimmer() {
+  if (typeof document === 'undefined' || document.getElementById('pk-gold-shimmer-css')) return
+  const s = document.createElement('style'); s.id = 'pk-gold-shimmer-css'; s.textContent = GOLD_SHIMMER_CSS
+  document.head.appendChild(s)
+}
+
 // Features Grid renderers
-function FeatureIcon({ icon, icon_url, size = 28 }: { icon: string; icon_url?: string; size?: number }) {
-  if (icon_url) return <img src={icon_url} alt={icon} style={{ width: size, height: size }} className="object-contain"/>
-  return <span style={{ fontSize: size }}>{icon}</span>
+function FeatureIcon({ icon_url, size = 28 }: { icon_url?: string; size?: number }) {
+  if (!icon_url) return null
+  return <img src={icon_url} alt="" style={{ width: size, height: size }} className="object-contain"/>
 }
 
 function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
@@ -105,22 +152,28 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const preset = block.features_preset || 'grid_center'
   const features = block.features || []
 
+  useArabicFont(isRtl)
+  useEffect(()=>{ injectGoldShimmer() }, [])
+
+  const fontStyle = isRtl ? { fontFamily: "'Cairo', sans-serif" } : {}
   const itemTitle = (f: NonNullable<Block['features']>[number]) => isRtl ? (f.ar||f.en) : (f.en||f.ar)
   const itemSub   = (f: NonNullable<Block['features']>[number]) => isRtl ? (f.subtitle_ar||f.subtitle_en) : (f.subtitle_en||f.subtitle_ar)
 
   return (
-    <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
+    <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8" style={fontStyle}>
       {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
       {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-7 leading-relaxed">{body}</p>}
 
-      {/* grid_center — white cards, icon top-center, title below */}
+      {/* grid_center */}
       {preset === 'grid_center' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {features.map((f,i)=>(
-            <div key={i} className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:border-amber-200 dark:hover:border-amber-700/50 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={28}/>
-              </div>
+            <div key={i} className="pk-gold-hover group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+              {f.icon_url && (
+                <div className="rounded-2xl flex items-center justify-center shadow-sm p-2" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
+                  <FeatureIcon icon_url={f.icon_url} size={f.icon_size||40}/>
+                </div>
+              )}
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-snug">{itemTitle(f)}</span>
               {itemSub(f) && <span className="text-xs text-gray-400 leading-snug">{itemSub(f)}</span>}
             </div>
@@ -128,14 +181,16 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         </div>
       )}
 
-      {/* grid_hover — cards flip to amber accent color on hover */}
+      {/* grid_hover */}
       {preset === 'grid_hover' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {features.map((f,i)=>(
-            <div key={i} className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 hover:border-amber-400 hover:bg-amber-500 dark:hover:bg-amber-500 transition-all cursor-default">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-500/20 group-hover:bg-white/20 transition-colors">
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={26}/>
-              </div>
+            <div key={i} className="pk-gold-hover group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 hover:!bg-amber-500 hover:!border-amber-400 cursor-default transition-colors">
+              {f.icon_url && (
+                <div className="rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-500/20 group-hover:bg-white/20 transition-colors p-2">
+                  <FeatureIcon icon_url={f.icon_url} size={f.icon_size||40}/>
+                </div>
+              )}
               <span className="text-sm font-bold text-gray-800 dark:text-gray-200 group-hover:text-white transition-colors leading-snug">{itemTitle(f)}</span>
               {itemSub(f) && <span className="text-xs text-gray-400 group-hover:text-white/80 transition-colors leading-snug">{itemSub(f)}</span>}
             </div>
@@ -143,14 +198,16 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         </div>
       )}
 
-      {/* row_left — horizontal rows: rounded icon left, title+subtitle right */}
+      {/* row_left */}
       {preset === 'row_left' && (
         <div className="space-y-3">
           {features.map((f,i)=>(
-            <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 hover:border-amber-200 dark:hover:border-amber-700/40 transition-colors">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
-              </div>
+            <div key={i} className="pk-gold-hover flex items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60">
+              {f.icon_url && (
+                <div className="rounded-full flex items-center justify-center flex-shrink-0 shadow-sm p-2" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
+                  <FeatureIcon icon_url={f.icon_url} size={f.icon_size||36}/>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-snug">{itemTitle(f)}</p>
                 {itemSub(f) && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{itemSub(f)}</p>}
@@ -160,14 +217,16 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         </div>
       )}
 
-      {/* row_flat — horizontal flat bg rows with square icon box */}
+      {/* row_flat */}
       {preset === 'row_flat' && (
         <div className="space-y-2">
           {features.map((f,i)=>(
-            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 hover:bg-amber-50 dark:hover:bg-amber-500/5 transition-colors">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={22}/>
-              </div>
+            <div key={i} className="pk-gold-hover flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-transparent">
+              {f.icon_url && (
+                <div className="rounded-lg flex items-center justify-center flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 p-1.5">
+                  <FeatureIcon icon_url={f.icon_url} size={f.icon_size||32}/>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{itemTitle(f)}</p>
                 {itemSub(f) && <p className="text-xs text-gray-400 truncate">{itemSub(f)}</p>}
@@ -177,14 +236,16 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         </div>
       )}
 
-      {/* big_icon — large circle icon with heavy card border */}
+      {/* big_icon */}
       {preset === 'big_icon' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {features.map((f,i)=>(
-            <div key={i} className="flex flex-col items-center text-center gap-4 p-7 rounded-3xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-lg transition-all">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-amber-200 dark:border-amber-600/40" style={{background:'linear-gradient(135deg,#fef9ee,#fef3c7)'}}>
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={36}/>
-              </div>
+            <div key={i} className="pk-gold-hover flex flex-col items-center text-center gap-4 p-7 rounded-3xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+              {f.icon_url && (
+                <div className="rounded-full flex items-center justify-center flex-shrink-0 border-2 border-amber-200 dark:border-amber-600/40 p-3" style={{background:'linear-gradient(135deg,#fef9ee,#fef3c7)'}}>
+                  <FeatureIcon icon_url={f.icon_url} size={f.icon_size||56}/>
+                </div>
+              )}
               <div>
                 <p className="text-base font-bold text-gray-900 dark:text-white leading-snug">{itemTitle(f)}</p>
                 {itemSub(f) && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">{itemSub(f)}</p>}
@@ -194,14 +255,16 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         </div>
       )}
 
-      {/* minimal — no card background, just icon + text, clean & airy */}
+      {/* minimal */}
       {preset === 'minimal' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           {features.map((f,i)=>(
-            <div key={i} className="flex flex-col items-center text-center gap-2.5">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-500/10">
-                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
-              </div>
+            <div key={i} className="pk-gold-hover flex flex-col items-center text-center gap-2.5 rounded-2xl border border-transparent p-4">
+              {f.icon_url && (
+                <div className="rounded-2xl flex items-center justify-center border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-500/10 p-2">
+                  <FeatureIcon icon_url={f.icon_url} size={f.icon_size||32}/>
+                </div>
+              )}
               <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-snug">{itemTitle(f)}</p>
               {itemSub(f) && <p className="text-xs text-gray-400 leading-snug">{itemSub(f)}</p>}
             </div>
@@ -216,6 +279,8 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const { t, lang, formatPrice } = useLang()
   const settings = useSiteSettings()
   const isRtl = lang === 'ar'
+  useArabicFont(isRtl)
+  useEffect(()=>{ injectGoldShimmer() }, [])
 
   const [reviews, setReviews]     = useState<Review[]>([])
   const [avgRating, setAvgRating] = useState(0)
@@ -260,7 +325,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const buyUrl = `/u/checkout?tool_id=${tool.id}`
 
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'}>
+    <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'} style={isRtl?{fontFamily:"'Cairo', sans-serif"}:{}}>
 
       {/* ── Hero ── */}
       <div className="p-3 md:p-5 pb-0">
