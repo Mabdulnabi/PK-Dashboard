@@ -40,7 +40,7 @@ interface TestimonialColors {
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -63,6 +63,13 @@ interface LandingBlock {
   banner_images?: { image_url: string; link_url?: string }[]
   banner_gap?: number
   banner_radius?: number
+  countdown_preset?: 1|2|3
+  countdown_hours?: number
+  countdown_title_en?: string
+  countdown_title_ar?: string
+  countdown_number_color?: string
+  countdown_label_color?: string
+  countdown_box_bg?: string
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -93,6 +100,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="17" height="26" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="31" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="15" width="18" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
   { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
+  { value:'countdown',     label:'Countdown Timer',color:'#F59E0B', desc:'Fake deal countdown — 3 styles',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="11" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="21" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="31" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="3" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="3" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="13" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="13" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="23" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="23" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="33" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="33" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/></svg> },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -174,7 +183,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee','testimonials','banners'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials','banners','countdown'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -188,7 +197,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -650,6 +659,72 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
           </div>
         </div>
       )}
+
+      {/* Countdown Timer */}
+      {block.layout==='countdown' && (
+        <div className="space-y-3">
+          {/* Preset picker */}
+          <div>
+            <FL>Style Preset</FL>
+            <div className="grid grid-cols-3 gap-2">
+              {([1,2,3] as const).map(p=>{
+                const labels = ['Dark Boxes','Glow Colors','Inline Strip']
+                const svgs = [
+                  <svg key={1} viewBox="0 0 60 32" className="w-full h-8"><rect x="2" y="4" width="12" height="24" rx="3" fill="#2a2a2a"/><rect x="16" y="4" width="12" height="24" rx="3" fill="#2a2a2a"/><rect x="30" y="4" width="12" height="24" rx="3" fill="#2a2a2a"/><rect x="44" y="4" width="14" height="24" rx="3" fill="#2a2a2a"/></svg>,
+                  <svg key={2} viewBox="0 0 60 32" className="w-full h-8"><rect x="2" y="4" width="12" height="24" rx="3" fill="#2a2a2a" filter="url(#r)"/><rect x="16" y="4" width="12" height="24" rx="3" fill="#2a2a2a"/><rect x="30" y="4" width="12" height="24" rx="3" fill="#2a2a2a"/><rect x="44" y="4" width="14" height="24" rx="3" fill="#2a2a2a"/><rect x="2" y="4" width="12" height="24" rx="3" fill="none" stroke="#ef4444" strokeWidth="1" opacity=".5"/><rect x="16" y="4" width="12" height="24" rx="3" fill="none" stroke="#3b82f6" strokeWidth="1" opacity=".5"/><rect x="30" y="4" width="12" height="24" rx="3" fill="none" stroke="#22c55e" strokeWidth="1" opacity=".5"/><rect x="44" y="4" width="14" height="24" rx="3" fill="none" stroke="#a855f7" strokeWidth="1" opacity=".5"/></svg>,
+                  <svg key={3} viewBox="0 0 60 20" className="w-full h-5"><rect x="0" y="0" width="60" height="20" rx="4" fill="#1a1a2e"/><text x="4" y="14" fontSize="9" fill="#e0e0e0" fontFamily="monospace">04 : 23 : 59</text></svg>,
+                ]
+                return (
+                  <button key={p} onClick={()=>onChange({countdown_preset:p})}
+                    className={`p-2 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${(block.countdown_preset||1)===p?'border-amber-400 bg-amber-50 dark:bg-amber-500/10':'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}>
+                    {svgs[p-1]}
+                    <span className="text-[9px] font-bold text-gray-500">{labels[p-1]}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          {/* Hours */}
+          <div>
+            <FL>Duration: {block.countdown_hours||4} hours</FL>
+            <input type="range" min={1} max={168} step={1} value={block.countdown_hours||4}
+              onChange={e=>onChange({countdown_hours:+e.target.value})}
+              className="w-full accent-amber-500 h-1"/>
+            <div className="flex justify-between text-[9px] text-gray-400 mt-0.5"><span>1h</span><span>168h (1 week)</span></div>
+          </div>
+          {/* Title EN / AR */}
+          <div>
+            <FL>Title (optional)</FL>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={block.countdown_title_en||''} onChange={e=>onChange({countdown_title_en:e.target.value})}
+                placeholder="Title EN" className={inp}/>
+              <input value={block.countdown_title_ar||''} onChange={e=>onChange({countdown_title_ar:e.target.value})}
+                placeholder="العنوان AR" className={inp} dir="rtl"/>
+            </div>
+          </div>
+          {/* Colors */}
+          <div>
+            <FL>Colors</FL>
+            <div className="space-y-2">
+              {([
+                ['Number Color', 'countdown_number_color', '#e0e0e0'],
+                ['Label Color',  'countdown_label_color',  '#b0b0b0'],
+                ['Box / BG Color','countdown_box_bg',      '#2a2a2a'],
+              ] as [string,keyof LandingBlock,string][]).map(([label,key,def])=>(
+                <div key={key} className="flex items-center gap-2">
+                  <input type="color" value={(block[key] as string)||def}
+                    onChange={e=>onChange({[key]:e.target.value})}
+                    className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700 flex-shrink-0"/>
+                  <input value={(block[key] as string)||def}
+                    onChange={e=>onChange({[key]:e.target.value})}
+                    className={`${inp} flex-1 font-mono text-xs`}/>
+                  <span className="text-[10px] text-gray-400 w-24 flex-shrink-0">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -738,6 +813,7 @@ export default function LandingEditorPage() {
     if (layout==='marquee')      { b.marquee_items = [{icon_url:'',text_en:'',text_ar:''}]; b.marquee_bg='#d92d36'; b.marquee_text_color='#ffffff'; b.marquee_speed=15 }
     if (layout==='testimonials') { b.testimonials=[{author_name:'',review:'',type:'facebook'}]; b.testimonial_colors={variant:1}; b.testimonial_title_align='center'; b.testimonial_desc_align='center'; b.testimonial_desc_color='#586174' }
     if (layout==='banners')      { b.banner_variant=1; b.banner_images=[{image_url:''},{image_url:''}]; b.banner_gap=8; b.banner_radius=12 }
+    if (layout==='countdown')    { b.countdown_preset=1; b.countdown_hours=4; b.countdown_number_color='#e0e0e0'; b.countdown_label_color='#b0b0b0'; b.countdown_box_bg='#2a2a2a' }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }

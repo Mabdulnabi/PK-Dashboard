@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -33,6 +33,13 @@ interface Block {
   banner_images?: { image_url: string; link_url?: string }[]
   banner_gap?: number
   banner_radius?: number
+  countdown_preset?: 1 | 2 | 3
+  countdown_hours?: number
+  countdown_title_en?: string
+  countdown_title_ar?: string
+  countdown_number_color?: string
+  countdown_label_color?: string
+  countdown_box_bg?: string
 }
 
 interface Review {
@@ -320,6 +327,116 @@ function StarRow({ n = 5 }: { n?: number }) {
   )
 }
 
+// ── Countdown Block ─────────────────────────────────────────────────────────
+function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
+  const hours = block.countdown_hours || 4
+  const preset = block.countdown_preset || 1
+  const numColor = block.countdown_number_color || '#e0e0e0'
+  const lblColor = block.countdown_label_color || '#b0b0b0'
+  const boxBg = block.countdown_box_bg || '#2a2a2a'
+  const titleText = isRtl ? (block.countdown_title_ar || block.countdown_title_en) : (block.countdown_title_en || block.countdown_title_ar)
+
+  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 })
+
+  useEffect(() => {
+    const key = `pk-cd-${block.id}`
+    const getEnd = () => {
+      try {
+        const stored = localStorage.getItem(key)
+        if (stored) {
+          const end = parseInt(stored, 10)
+          if (end > Date.now()) return end
+        }
+      } catch {}
+      const end = Date.now() + hours * 3600000
+      try { localStorage.setItem(key, String(end)) } catch {}
+      return end
+    }
+
+    let endTime = getEnd()
+
+    const tick = () => {
+      const diff = Math.max(0, endTime - Date.now())
+      if (diff === 0) {
+        // reset
+        endTime = Date.now() + hours * 3600000
+        try { localStorage.setItem(key, String(endTime)) } catch {}
+      }
+      const total = Math.floor(diff / 1000)
+      setTimeLeft({
+        d: Math.floor(total / 86400),
+        h: Math.floor((total % 86400) / 3600),
+        m: Math.floor((total % 3600) / 60),
+        s: total % 60,
+      })
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [block.id, hours])
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const labels = isRtl
+    ? ['يوم', 'ساعة', 'دقيقة', 'ثانية']
+    : ['Days', 'Hours', 'Minutes', 'Seconds']
+  const units = [timeLeft.d, timeLeft.h, timeLeft.m, timeLeft.s]
+  const glowColors = ['rgba(239,68,68,.4)', 'rgba(59,130,246,.4)', 'rgba(34,197,94,.4)', 'rgba(168,85,247,.4)']
+
+  // ── Preset 1: dark boxes ────────────────────────────────────────────────
+  if (preset === 1) return (
+    <section style={{ padding: '24px 0' }}>
+      {titleText && <p style={{ textAlign: 'center', fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 12 }}>{titleText}</p>}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 15, flexWrap: 'wrap', padding: 15, borderRadius: 12, lineHeight: 1 }}>
+        {units.map((val, i) => (
+          <div key={i} style={{ background: boxBg, padding: '15px 20px', borderRadius: 10, minWidth: 75, textAlign: 'center', boxShadow: '0 4px 8px rgba(0,0,0,.6)' }}>
+            <p style={{ fontSize: 28, fontWeight: 700, margin: 0, color: numColor, fontVariantNumeric: 'tabular-nums' }}>{pad(val)}</p>
+            <span style={{ display: 'block', marginTop: 8, fontSize: 13, fontWeight: 500, color: lblColor, letterSpacing: '0.5px' }}>{labels[i]}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+
+  // ── Preset 2: glow boxes ────────────────────────────────────────────────
+  if (preset === 2) return (
+    <section style={{ padding: '24px 0' }}>
+      {titleText && <p style={{ textAlign: 'center', fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 12 }}>{titleText}</p>}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 15, flexWrap: 'wrap', padding: 15, lineHeight: 1 }}>
+        {units.map((val, i) => (
+          <div key={i} style={{ background: boxBg, padding: '15px 20px', borderRadius: 10, minWidth: 75, textAlign: 'center', boxShadow: `0 0 18px ${glowColors[i]}, 0 8px 18px rgba(0,0,0,.6)` }}>
+            <p style={{ fontSize: 28, fontWeight: 700, margin: 0, color: numColor, fontVariantNumeric: 'tabular-nums' }}>{pad(val)}</p>
+            <span style={{ display: 'block', marginTop: 8, fontSize: 13, color: lblColor }}>{labels[i]}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+
+  // ── Preset 3: inline dotted ─────────────────────────────────────────────
+  return (
+    <section style={{ padding: '12px 0' }}>
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        padding: 12, borderRadius: 10,
+        background: `${boxBg} radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px)`,
+        backgroundSize: '12px 12px',
+        border: '1px solid rgba(255,255,255,.08)',
+      }}>
+        {titleText && <p style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', margin: '0 6px 0 0', lineHeight: 1 }}>{titleText}</p>}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', lineHeight: 1 }}>
+          {units.map((val, i) => (
+            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: numColor, fontVariantNumeric: 'tabular-nums' }}>{pad(val)}</span>
+              <span style={{ fontSize: 13, color: lblColor }}>{labels[i]}</span>
+              {i < 3 && <span style={{ fontSize: 15, color: '#ffffff', margin: '0 2px' }}>:</span>}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ── Banners Block ───────────────────────────────────────────────────────────
 function BannersBlock({ block }: { block: Block }) {
   const imgs = block.banner_images || []
@@ -349,7 +466,7 @@ function BannersBlock({ block }: { block: Block }) {
   // ── V2: Large left + 2 stacked right ──────────────────────────────────────
   if (v === 2) return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
-      <Img i={0} style={{ aspectRatio:'3/4', gridRow:'span 2' }}/>
+      <Img i={0} style={{ gridRow:'span 2' }}/>
       <Img i={1} style={{ aspectRatio:'4/3' }}/>
       <Img i={2} style={{ aspectRatio:'4/3' }}/>
     </div>
@@ -375,7 +492,7 @@ function BannersBlock({ block }: { block: Block }) {
   // ── V5: Large left (2/3) + 3 stacked right ────────────────────────────────
   if (v === 5) return (
     <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap }}>
-      <Img i={0} style={{ aspectRatio:'4/5', gridRow:'span 3' }}/>
+      <Img i={0} style={{ gridRow:'span 3' }}/>
       <Img i={1} style={{ aspectRatio:'4/3' }}/>
       <Img i={2} style={{ aspectRatio:'4/3' }}/>
       <Img i={3} style={{ aspectRatio:'4/3' }}/>
@@ -415,7 +532,7 @@ function BannersBlock({ block }: { block: Block }) {
   // ── V9: Mosaic (tall left + top-right + 2 small bottom-right) ────────────
   if (v === 9) return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'auto auto', gap }}>
-      <Img i={0} style={{ aspectRatio:'3/4', gridRow:'span 2' }}/>
+      <Img i={0} style={{ gridRow:'span 2' }}/>
       <Img i={1} style={{ aspectRatio:'16/9' }}/>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
         <Img i={2} style={{ aspectRatio:'1' }}/>
@@ -448,13 +565,13 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const blockId = `tst-${block.id}`
 
   // inject hover styles once per block
-  const hoverCSS = hoverBg ? `
+  const hoverCSS = `
     .${blockId}-card { transition: background .2s, box-shadow .2s, transform .2s; }
-    .${blockId}-card:hover { background: ${hoverBg} !important; }
+    .${blockId}-card:hover { ${hoverBg ? `background: ${hoverBg} !important;` : ''} transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.08); }
     ${tc.hover_text_color ? `.${blockId}-card:hover .tst-review { color: ${tc.hover_text_color} !important; }` : ''}
     ${tc.author_name_color_hover ? `.${blockId}-card:hover .tst-name { color: ${tc.author_name_color_hover} !important; }` : ''}
     ${tc.review_heading_color_hover ? `.${blockId}-card:hover .tst-heading { color: ${tc.review_heading_color_hover} !important; }` : ''}
-  ` : `.${blockId}-card { transition: box-shadow .2s, transform .2s; } .${blockId}-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.08); }`
+  `
 
   const SectionHeader = () => (
     <>
@@ -971,6 +1088,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </section>
             )
           }
+
+          /* Countdown block */
+          if (block.layout === 'countdown') return (
+            <CountdownBlock key={block.id} block={block} isRtl={isRtl}/>
+          )
 
           /* Banners block */
           if (block.layout === 'banners') return (
