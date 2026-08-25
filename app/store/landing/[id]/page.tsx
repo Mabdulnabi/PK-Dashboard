@@ -26,10 +26,21 @@ interface FeatureItem   { icon: string; icon_url?: string; icon_size?: number; e
 interface CardItem      { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }
 interface FaqItem       { q_en: string; q_ar: string; a_en: string; a_ar: string }
 interface MarqueeItem   { icon_url?: string; text_en?: string; text_ar?: string }
+interface TestimonialReview {
+  author_name: string; author_image?: string; review: string
+  type?: 'facebook'|'google'; review_heading?: string
+}
+interface TestimonialColors {
+  variant: number
+  bg_color?: string; hover_color?: string
+  review_color?: string; hover_text_color?: string
+  author_name_color?: string; author_name_color_hover?: string
+  review_heading_color?: string; review_heading_color_hover?: string
+}
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -42,6 +53,12 @@ interface LandingBlock {
   marquee_bg?: string
   marquee_text_color?: string
   marquee_speed?: number
+  testimonials?: TestimonialReview[]
+  testimonial_colors?: TestimonialColors
+  testimonial_title_align?: 'left'|'center'|'right'
+  testimonial_desc?: string
+  testimonial_desc_color?: string
+  testimonial_desc_align?: 'left'|'center'|'right'
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -66,6 +83,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#EC489920" stroke="#EC4899" strokeWidth="1.5"/><circle cx="20" cy="14" r="7" fill="#EC489930"/><polygon points="17,10 27,14 17,18" fill="#EC4899"/></svg> },
   { value:'faq',           label:'FAQ',           color:'#06B6D4', desc:'Accordion FAQ section',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="2" width="38" height="6" rx="2" fill="#06B6D420" stroke="#06B6D4" strokeWidth="1"/><rect x="1" y="11" width="38" height="6" rx="2" fill="#06B6D410" stroke="#06B6D430" strokeWidth="1"/><rect x="1" y="20" width="38" height="6" rx="2" fill="#06B6D410" stroke="#06B6D430" strokeWidth="1"/></svg> },
+  { value:'testimonials',  label:'Testimonials',  color:'#7C3AED', desc:'Customer reviews with 11 styles',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="2" width="17" height="24" rx="3" fill="#7C3AED20" stroke="#7C3AED" strokeWidth="1"/><rect x="22" y="2" width="17" height="24" rx="3" fill="#7C3AED20" stroke="#7C3AED" strokeWidth="1"/><circle cx="9" cy="9" r="4" fill="#7C3AED40"/><circle cx="30" cy="9" r="4" fill="#7C3AED40"/><rect x="4" y="16" width="9" height="1.5" rx=".75" fill="#7C3AED"/><rect x="4" y="19" width="11" height="1.5" rx=".75" fill="#9CA3AF"/><rect x="4" y="22" width="8" height="1.5" rx=".75" fill="#9CA3AF"/><rect x="25" y="16" width="9" height="1.5" rx=".75" fill="#7C3AED"/><rect x="25" y="19" width="11" height="1.5" rx=".75" fill="#9CA3AF"/><rect x="25" y="22" width="8" height="1.5" rx=".75" fill="#9CA3AF"/></svg> },
   { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
 ]
@@ -149,7 +168,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -163,7 +182,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -438,6 +457,126 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
           </div>
         </div>
       )}
+
+      {/* Testimonials */}
+      {block.layout==='testimonials' && (()=>{
+        const tc = block.testimonial_colors || { variant:1 }
+        const setTc = (p: Partial<TestimonialColors>) => onChange({ testimonial_colors:{ ...tc, ...p } })
+        const VARIANTS = [1,2,3,4,5,6,7,8,9,10,11]
+        const colorField = (label: string, val: string|undefined, key: keyof TestimonialColors) => (
+          <div className="flex items-center gap-2">
+            <input type="color" value={val||'#ffffff'}
+              onChange={e=>setTc({[key]:e.target.value})}
+              className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700 flex-shrink-0"/>
+            <input value={val||''} onChange={e=>setTc({[key]:e.target.value})}
+              placeholder={label} className={`${inp} flex-1 font-mono text-xs`}/>
+            {val && <button onClick={()=>setTc({[key]:''})} className="text-gray-400 hover:text-red-400 text-xs flex-shrink-0">✕</button>}
+          </div>
+        )
+        return (
+          <div className="space-y-3">
+            {/* Title + desc */}
+            <div className="grid grid-cols-2 gap-2">
+              <div><FL>Title EN</FL><input value={block.title_en||''} onChange={e=>onChange({title_en:e.target.value})} placeholder="Customer Reviews" className={inp}/></div>
+              <div><FL>عنوان AR</FL><input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})} placeholder="آراء العملاء" className={inp} dir="rtl"/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><FL>Subtitle EN</FL><input value={block.testimonial_desc||''} onChange={e=>onChange({testimonial_desc:e.target.value})} placeholder="What our clients say" className={inp}/></div>
+            </div>
+            {/* Align pickers */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <FL>Title Align</FL>
+                <div className="flex gap-1">{(['left','center','right'] as const).map(a=>(
+                  <button key={a} onClick={()=>onChange({testimonial_title_align:a})}
+                    className={`flex-1 py-1 rounded-lg text-[10px] font-bold border-2 transition-all ${(block.testimonial_title_align||'center')===a?'border-violet-400 text-violet-600 bg-violet-50 dark:bg-violet-500/10':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                    {a==='left'?'←':a==='center'?'↔':'→'}
+                  </button>
+                ))}</div>
+              </div>
+              <div>
+                <FL>Desc Align</FL>
+                <div className="flex gap-1">{(['left','center','right'] as const).map(a=>(
+                  <button key={a} onClick={()=>onChange({testimonial_desc_align:a})}
+                    className={`flex-1 py-1 rounded-lg text-[10px] font-bold border-2 transition-all ${(block.testimonial_desc_align||'center')===a?'border-violet-400 text-violet-600 bg-violet-50 dark:bg-violet-500/10':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                    {a==='left'?'←':a==='center'?'↔':'→'}
+                  </button>
+                ))}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="color" value={block.testimonial_desc_color||'#586174'}
+                onChange={e=>onChange({testimonial_desc_color:e.target.value})}
+                className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700"/>
+              <span className="text-[10px] text-gray-400">Subtitle color</span>
+            </div>
+
+            {/* Variant picker */}
+            <div>
+              <FL>Layout Variant</FL>
+              <div className="grid grid-cols-4 gap-1.5">
+                {VARIANTS.map(v=>(
+                  <button key={v} onClick={()=>setTc({variant:v})}
+                    className={`flex items-center justify-center h-8 rounded-lg border-2 text-[11px] font-black transition-all ${tc.variant===v?'border-violet-500 bg-violet-50 dark:bg-violet-500/10 text-violet-600':'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-gray-300'}`}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl space-y-2 border border-gray-100 dark:border-gray-700">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Colors</div>
+              <div className="grid gap-2">
+                <div><div className="text-[9px] text-gray-400 mb-1">Card Background</div>{colorField('e.g. #fff','bg_color' in tc ? tc.bg_color : '','bg_color')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Hover Background</div>{colorField('e.g. #f5f5f5',tc.hover_color,'hover_color')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Review Text</div>{colorField('e.g. #333',tc.review_color,'review_color')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Review Text on Hover</div>{colorField('e.g. #fff',tc.hover_text_color,'hover_text_color')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Author Name</div>{colorField('e.g. #111',tc.author_name_color,'author_name_color')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Author Name on Hover</div>{colorField('e.g. #fff',tc.author_name_color_hover,'author_name_color_hover')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Heading Color</div>{colorField('e.g. #d99401',tc.review_heading_color,'review_heading_color')}</div>
+                <div><div className="text-[9px] text-gray-400 mb-1">Heading on Hover</div>{colorField('e.g. #fff',tc.review_heading_color_hover,'review_heading_color_hover')}</div>
+              </div>
+            </div>
+
+            {/* Reviews */}
+            <FL>Reviews</FL>
+            <div className="space-y-3">
+              {(block.testimonials||[]).map((r,ri)=>(
+                <div key={ri} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-400">Review {ri+1}</span>
+                    <button onClick={()=>{ const rs=(block.testimonials||[]).filter((_,j)=>j!==ri); onChange({testimonials:rs}) }}
+                      className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors"><X size={10}/></button>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-gray-400 mb-1">Avatar</div>
+                    <ImageUploadInput value={r.author_image||''} onChange={url=>{ const rs=[...(block.testimonials||[])]; rs[ri]={...r,author_image:url}; onChange({testimonials:rs}) }} folder="landing-testimonials"/>
+                  </div>
+                  <input value={r.author_name} onChange={e=>{ const rs=[...(block.testimonials||[])]; rs[ri]={...r,author_name:e.target.value}; onChange({testimonials:rs}) }}
+                    placeholder="اسم العميل" className={inp} dir="rtl"/>
+                  <input value={r.review_heading||''} onChange={e=>{ const rs=[...(block.testimonials||[])]; rs[ri]={...r,review_heading:e.target.value}; onChange({testimonials:rs}) }}
+                    placeholder="Review heading (optional)" className={inp}/>
+                  <textarea value={r.review} onChange={e=>{ const rs=[...(block.testimonials||[])]; rs[ri]={...r,review:e.target.value}; onChange({testimonials:rs}) }}
+                    rows={3} placeholder="نص التقييم..." className={`${inp} resize-none`} dir="rtl"/>
+                  <div className="flex gap-1.5">
+                    {(['facebook','google'] as const).map(t=>(
+                      <button key={t} onClick={()=>{ const rs=[...(block.testimonials||[])]; rs[ri]={...r,type:t}; onChange({testimonials:rs}) }}
+                        className={`flex-1 py-1 rounded-lg text-[10px] font-bold border-2 transition-all capitalize ${r.type===t?'border-violet-400 bg-violet-50 dark:bg-violet-500/10 text-violet-600':'border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>onChange({testimonials:[...(block.testimonials||[]),{author_name:'',review:'',type:'facebook'}]})}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-violet-600 hover:border-violet-400 transition-colors w-full justify-center">
+                <Plus size={12}/>Add Review
+              </button>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -523,7 +662,8 @@ export default function LandingEditorPage() {
     if (layout==='features_grid') { b.features = [{icon:'',en:'',ar:''}]; b.features_layout='grid' }
     if (layout==='faq')           b.faqs          = [{q_en:'',q_ar:'',a_en:'',a_ar:''}]
     if (layout==='cards_grid')    b.cards         = [{image_url:'',title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:''}]
-    if (layout==='marquee')     { b.marquee_items = [{icon_url:'',text_en:'',text_ar:''}]; b.marquee_bg='#d92d36'; b.marquee_text_color='#ffffff'; b.marquee_speed=15 }
+    if (layout==='marquee')      { b.marquee_items = [{icon_url:'',text_en:'',text_ar:''}]; b.marquee_bg='#d92d36'; b.marquee_text_color='#ffffff'; b.marquee_speed=15 }
+    if (layout==='testimonials') { b.testimonials=[{author_name:'',review:'',type:'facebook'}]; b.testimonial_colors={variant:1}; b.testimonial_title_align='center'; b.testimonial_desc_align='center'; b.testimonial_desc_color='#586174' }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }
