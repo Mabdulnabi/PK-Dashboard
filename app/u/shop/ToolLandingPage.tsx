@@ -45,6 +45,10 @@ interface Block {
   stats_number_color?: string
   stats_label_color?: string
   stats_card_bg?: string
+  stats_number_size?: number
+  stats_label_size?: number
+  stats_card_min_width?: number
+  stats_card_padding?: number
 }
 
 interface Review {
@@ -339,6 +343,10 @@ function StatsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const numColor    = block.stats_number_color || '#d99401'
   const lblColor    = block.stats_label_color  || '#101010'
   const cardBg      = block.stats_card_bg      || '#ffffff'
+  const numSize     = block.stats_number_size  || 60
+  const lblSize     = block.stats_label_size   || 18
+  const cardMinW    = block.stats_card_min_width || 180
+  const cardPad     = block.stats_card_padding  || 28
   const title       = isRtl ? (block.title_ar || block.title_en) : (block.title_en || block.title_ar)
 
   const refEl = useRef<HTMLDivElement>(null)
@@ -385,20 +393,20 @@ function StatsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
           <span style={{ width: 40, height: 3, background: '#101010', borderRadius: 2, display: 'block' }}/>
         </h2>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill,minmax(${cardMinW}px,1fr))`, gap: 20 }}>
         {items.map((it, i) => {
           const label = isRtl ? (it.label_ar || it.label_en) : (it.label_en || it.label_ar)
           return (
             <div key={i} style={{
-              background: cardBg, borderRadius: 24, padding: '28px 20px',
+              background: cardBg, borderRadius: 24, padding: `${cardPad}px 20px`,
               textAlign: 'center', display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: '0 4px 20px rgba(0,0,0,.06)',
             }}>
-              <p style={{ fontSize: 'clamp(40px,8vw,60px)', fontWeight: 700, color: numColor, lineHeight: 1, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+              <p style={{ fontSize: numSize, fontWeight: 700, color: numColor, lineHeight: 1, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                 {counts[i].toLocaleString()}{it.suffix || ''}
               </p>
-              {label && <span style={{ fontSize: 18, color: lblColor, fontWeight: 600, lineHeight: 1.4 }}>{label}</span>}
+              {label && <span style={{ fontSize: lblSize, color: lblColor, fontWeight: 600, lineHeight: 1.4 }}>{label}</span>}
             </div>
           )
         })}

@@ -75,6 +75,10 @@ interface LandingBlock {
   stats_number_color?: string
   stats_label_color?: string
   stats_card_bg?: string
+  stats_number_size?: number
+  stats_label_size?: number
+  stats_card_min_width?: number
+  stats_card_padding?: number
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -700,6 +704,37 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
                   <span className="text-[10px] text-gray-400 w-28 flex-shrink-0">{label}</span>
                 </div>
               ))}
+            </div>
+          </div>
+          {/* Size controls */}
+          <div>
+            <FL>Sizes</FL>
+            <div className="space-y-2">
+              <div>
+                <div className="text-[9px] text-gray-400 mb-1">Number Font Size: {block.stats_number_size||60}px</div>
+                <input type="range" min={24} max={100} step={2} value={block.stats_number_size||60}
+                  onChange={e=>onChange({stats_number_size:+e.target.value})}
+                  className="w-full accent-amber-500 h-1"/>
+              </div>
+              <div>
+                <div className="text-[9px] text-gray-400 mb-1">Label Font Size: {block.stats_label_size||18}px</div>
+                <input type="range" min={10} max={32} step={1} value={block.stats_label_size||18}
+                  onChange={e=>onChange({stats_label_size:+e.target.value})}
+                  className="w-full accent-amber-500 h-1"/>
+              </div>
+              <div>
+                <div className="text-[9px] text-gray-400 mb-1">Card Min Width: {block.stats_card_min_width||180}px (controls columns)</div>
+                <input type="range" min={100} max={400} step={10} value={block.stats_card_min_width||180}
+                  onChange={e=>onChange({stats_card_min_width:+e.target.value})}
+                  className="w-full accent-amber-500 h-1"/>
+                <div className="flex justify-between text-[9px] text-gray-400 mt-0.5"><span>100 (more cols)</span><span>400 (fewer cols)</span></div>
+              </div>
+              <div>
+                <div className="text-[9px] text-gray-400 mb-1">Card Padding: {block.stats_card_padding||28}px</div>
+                <input type="range" min={8} max={60} step={4} value={block.stats_card_padding||28}
+                  onChange={e=>onChange({stats_card_padding:+e.target.value})}
+                  className="w-full accent-amber-500 h-1"/>
+              </div>
             </div>
           </div>
           {/* Stat items */}
