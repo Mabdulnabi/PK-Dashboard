@@ -40,7 +40,7 @@ interface TestimonialColors {
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'|'content'|'how_to_work'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'|'content'|'how_to_work'|'html'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -98,6 +98,7 @@ interface LandingBlock {
   hiw_title_align?: 'left'|'center'|'right'
   hiw_desc_color?: string; hiw_step_title_color?: string; hiw_step_desc_color?: string
   hiw_accent_color?: string; hiw_bg?: string; hiw_bg_image?: string
+  html_code?: string
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -134,6 +135,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="16" height="26" rx="2" fill="#10B98120" stroke="#10B981" strokeWidth="1.2"/><rect x="20" y="4" width="19" height="3" rx="1.5" fill="#374151"/><rect x="20" y="9" width="15" height="2" rx="1" fill="#9CA3AF"/><rect x="20" y="13" width="17" height="2" rx="1" fill="#9CA3AF"/><rect x="20" y="18" width="8" height="7" rx="2" fill="#10B98130" stroke="#10B981" strokeWidth="1"/><rect x="30" y="18" width="9" height="7" rx="2" fill="#10B98130" stroke="#10B981" strokeWidth="1"/></svg> },
   { value:'stats',         label:'Stats Numbers',  color:'#D99401', desc:'Animated count-up stats grid',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="6" width="11" height="21" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="15" y="2" width="11" height="25" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="29" y="10" width="10" height="17" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="3" y="3" width="7" height="2" rx="1" fill="#D99401"/><rect x="17" y="3" width="7" height="2" rx="1" fill="#D99401"/><rect x="31" y="3" width="6" height="2" rx="1" fill="#D99401"/></svg> },
+  { value:'html',          label:'HTML Block',     color:'#64748B', desc:'Raw HTML — full design control',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#64748B20" stroke="#64748B" strokeWidth="1.5"/><text x="5" y="19" fontSize="11" fontWeight="bold" fill="#64748B">{'</>'}</text></svg> },
   { value:'countdown',     label:'Countdown Timer',color:'#F59E0B', desc:'Fake deal countdown — 3 styles',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="11" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="21" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="31" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="3" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="3" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="13" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="13" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="23" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="23" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="33" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="33" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/></svg> },
 ]
@@ -217,7 +220,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats','content','how_to_work'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats','content','how_to_work','html'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -231,7 +234,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats','content','how_to_work'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats','content','how_to_work','html'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -1093,6 +1096,24 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
           </div>
         </div>
       )}
+
+      {/* HTML Block */}
+      {block.layout==='html' && (
+        <div className="space-y-2">
+          <div>
+            <FL>HTML Code</FL>
+            <textarea
+              value={block.html_code||''}
+              onChange={e=>onChange({html_code:e.target.value})}
+              className={`${inp} resize-none font-mono text-xs`}
+              rows={16}
+              placeholder={'<div style="background:#007E60;padding:60px;border-radius:40px;">\n  <h2 style="color:#fff;text-align:center;">Your Promo</h2>\n</div>'}
+              spellCheck={false}
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Paste any HTML — inline styles, classes, and media queries all work. Rendered as-is on the page.</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1185,6 +1206,7 @@ export default function LandingEditorPage() {
     if (layout==='stats')        { b.stats_items=[{value:1000,suffix:'+',label_en:'Orders',label_ar:'طلب'},{value:500,suffix:'+',label_en:'Customers',label_ar:'عميل'}]; b.stats_bg='#f7f8fa'; b.stats_number_color='#d99401'; b.stats_label_color='#101010'; b.stats_card_bg='#ffffff' }
     if (layout==='content')      { b.content_helper_en='About Us'; b.content_helper_ar='من نحن'; b.content_helper_color='#007E60'; b.content_img_side='right'; b.content_btn_bg='#000000'; b.content_stats=[]; b.title_en=''; b.title_ar=''; b.body_en=''; b.body_ar='' }
     if (layout==='how_to_work')  { b.hiw_variant=1; b.hiw_steps=[{title_en:'Step 1',title_ar:'الخطوة الأولى',desc_en:'',desc_ar:''},{title_en:'Step 2',title_ar:'الخطوة الثانية',desc_en:'',desc_ar:''}]; b.hiw_accent_color='#d99401'; b.hiw_step_title_color='#111827'; b.hiw_step_desc_color='#586174'; b.hiw_title_align='center' }
+    if (layout==='html')         { b.html_code='' }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }

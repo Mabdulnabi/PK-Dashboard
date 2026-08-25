@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats' | 'content' | 'how_to_work'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats' | 'content' | 'how_to_work' | 'html'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -72,6 +72,7 @@ interface Block {
   hiw_accent_color?: string
   hiw_bg?: string
   hiw_bg_image?: string
+  html_code?: string
 }
 
 interface Review {
@@ -1565,6 +1566,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           if (block.layout === 'countdown') return (
             <CountdownBlock key={block.id} block={block} isRtl={isRtl}/>
           )
+
+          /* Raw HTML block */
+          if (block.layout === 'html') return block.html_code ? (
+            <div key={block.id} dangerouslySetInnerHTML={{ __html: block.html_code }}/>
+          ) : null
 
           /* Banners block */
           if (block.layout === 'banners') return (
