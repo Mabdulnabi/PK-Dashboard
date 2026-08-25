@@ -40,7 +40,7 @@ interface TestimonialColors {
 
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'|'marquee'|'testimonials'|'banners'|'countdown'|'stats'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
@@ -70,6 +70,11 @@ interface LandingBlock {
   countdown_number_color?: string
   countdown_label_color?: string
   countdown_box_bg?: string
+  stats_items?: { value: number; suffix?: string; label_en?: string; label_ar?: string }[]
+  stats_bg?: string
+  stats_number_color?: string
+  stats_label_color?: string
+  stats_card_bg?: string
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -100,6 +105,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="17" height="26" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="31" y="1" width="8" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/><rect x="21" y="15" width="18" height="12" rx="2" fill="#0EA5E920" stroke="#0EA5E9" strokeWidth="1.2"/></svg> },
   { value:'marquee',       label:'Marquee Strip', color:'#D92D36', desc:'Infinite scrolling icon ticker',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#D92D3620" stroke="#D92D36" strokeWidth="1.5"/><circle cx="8" cy="14" r="4" fill="#D92D3640"/><circle cx="20" cy="14" r="4" fill="#D92D3640"/><circle cx="32" cy="14" r="4" fill="#D92D3640"/><rect x="5" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="17" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/><rect x="29" y="10" width="6" height="1.5" rx=".75" fill="#D92D36"/></svg> },
+  { value:'stats',         label:'Stats Numbers',  color:'#D99401', desc:'Animated count-up stats grid',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="6" width="11" height="21" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="15" y="2" width="11" height="25" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="29" y="10" width="10" height="17" rx="2" fill="#D9940120" stroke="#D99401" strokeWidth="1.2"/><rect x="3" y="3" width="7" height="2" rx="1" fill="#D99401"/><rect x="17" y="3" width="7" height="2" rx="1" fill="#D99401"/><rect x="31" y="3" width="6" height="2" rx="1" fill="#D99401"/></svg> },
   { value:'countdown',     label:'Countdown Timer',color:'#F59E0B', desc:'Fake deal countdown — 3 styles',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="11" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="21" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="31" y="4" width="8" height="20" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.2"/><rect x="3" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="3" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="13" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="13" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="23" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="23" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/><rect x="33" y="9" width="4" height="2" rx="1" fill="#F59E0B"/><rect x="33" y="13" width="4" height="2" rx="1" fill="#F59E0B80"/></svg> },
 ]
@@ -183,7 +190,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Title */}
-      {!['image_only','features_grid','marquee','testimonials','banners','countdown'].includes(block.layout) && (
+      {!['image_only','features_grid','marquee','testimonials','banners','countdown','stats'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><Globe size={9}/>Title EN</FL>
@@ -197,7 +204,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid','marquee','testimonials','banners','countdown','stats'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -660,6 +667,82 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
         </div>
       )}
 
+      {/* Stats Numbers */}
+      {block.layout==='stats' && (
+        <div className="space-y-3">
+          {/* Section title */}
+          <div>
+            <FL>Section Title (optional)</FL>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={block.title_en||''} onChange={e=>onChange({title_en:e.target.value})}
+                placeholder="Title EN" className={inp}/>
+              <input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})}
+                placeholder="العنوان AR" className={inp} dir="rtl"/>
+            </div>
+          </div>
+          {/* Colors */}
+          <div>
+            <FL>Colors</FL>
+            <div className="space-y-2">
+              {([
+                ['Number Color',   'stats_number_color', '#d99401'],
+                ['Label Color',    'stats_label_color',  '#101010'],
+                ['Card Background','stats_card_bg',      '#ffffff'],
+                ['Section BG',     'stats_bg',           '#f7f8fa'],
+              ] as [string,keyof LandingBlock,string][]).map(([label,key,def])=>(
+                <div key={key} className="flex items-center gap-2">
+                  <input type="color" value={(block[key] as string)||def}
+                    onChange={e=>onChange({[key]:e.target.value})}
+                    className="w-8 h-7 rounded cursor-pointer border border-gray-200 dark:border-gray-700 flex-shrink-0"/>
+                  <input value={(block[key] as string)||def}
+                    onChange={e=>onChange({[key]:e.target.value})}
+                    className={`${inp} flex-1 font-mono text-xs`}/>
+                  <span className="text-[10px] text-gray-400 w-28 flex-shrink-0">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Stat items */}
+          <FL>Stat Items</FL>
+          <div className="space-y-2">
+            {(block.stats_items||[]).map((s,si)=>(
+              <div key={si} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400">Stat {si+1}</span>
+                  <button onClick={()=>onChange({stats_items:(block.stats_items||[]).filter((_,j)=>j!==si)})}
+                    className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">
+                    <X size={10}/>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[9px] text-gray-400 mb-1">Number</div>
+                    <input type="number" value={s.value||0}
+                      onChange={e=>{ const items=[...(block.stats_items||[])]; items[si]={...s,value:+e.target.value}; onChange({stats_items:items}) }}
+                      className={inp}/>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-gray-400 mb-1">Suffix (e.g. +, K+, %)</div>
+                    <input value={s.suffix||''} onChange={e=>{ const items=[...(block.stats_items||[])]; items[si]={...s,suffix:e.target.value}; onChange({stats_items:items}) }}
+                      placeholder="+" className={inp}/>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={s.label_en||''} onChange={e=>{ const items=[...(block.stats_items||[])]; items[si]={...s,label_en:e.target.value}; onChange({stats_items:items}) }}
+                    placeholder="Label EN" className={inp}/>
+                  <input value={s.label_ar||''} onChange={e=>{ const items=[...(block.stats_items||[])]; items[si]={...s,label_ar:e.target.value}; onChange({stats_items:items}) }}
+                    placeholder="التسمية AR" className={inp} dir="rtl"/>
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>onChange({stats_items:[...(block.stats_items||[]),{value:100,suffix:'+',label_en:'',label_ar:''}]})}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-amber-500 hover:border-amber-400 transition-colors w-full justify-center">
+              <Plus size={12}/>Add Stat
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Countdown Timer */}
       {block.layout==='countdown' && (
         <div className="space-y-3">
@@ -814,6 +897,7 @@ export default function LandingEditorPage() {
     if (layout==='testimonials') { b.testimonials=[{author_name:'',review:'',type:'facebook'}]; b.testimonial_colors={variant:1}; b.testimonial_title_align='center'; b.testimonial_desc_align='center'; b.testimonial_desc_color='#586174' }
     if (layout==='banners')      { b.banner_variant=1; b.banner_images=[{image_url:''},{image_url:''}]; b.banner_gap=8; b.banner_radius=12 }
     if (layout==='countdown')    { b.countdown_preset=1; b.countdown_hours=4; b.countdown_number_color='#e0e0e0'; b.countdown_label_color='#b0b0b0'; b.countdown_box_bg='#2a2a2a' }
+    if (layout==='stats')        { b.stats_items=[{value:1000,suffix:'+',label_en:'Orders',label_ar:'طلب'},{value:500,suffix:'+',label_en:'Customers',label_ar:'عميل'}]; b.stats_bg='#f7f8fa'; b.stats_number_color='#d99401'; b.stats_label_color='#101010'; b.stats_card_bg='#ffffff' }
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }

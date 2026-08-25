@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
@@ -9,7 +9,7 @@ type FeaturesPreset = 'grid_center' | 'grid_hover' | 'row_left' | 'row_flat' | '
 
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid' | 'marquee' | 'testimonials' | 'banners' | 'countdown' | 'stats'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
@@ -40,6 +40,11 @@ interface Block {
   countdown_number_color?: string
   countdown_label_color?: string
   countdown_box_bg?: string
+  stats_items?: { value: number; suffix?: string; label_en?: string; label_ar?: string }[]
+  stats_bg?: string
+  stats_number_color?: string
+  stats_label_color?: string
+  stats_card_bg?: string
 }
 
 interface Review {
@@ -324,6 +329,81 @@ function StarRow({ n = 5 }: { n?: number }) {
         </svg>
       ))}
     </div>
+  )
+}
+
+// ── Stats Block ─────────────────────────────────────────────────────────────
+function StatsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
+  const items = block.stats_items || []
+  const sectionBg   = block.stats_bg          || '#f7f8fa'
+  const numColor    = block.stats_number_color || '#d99401'
+  const lblColor    = block.stats_label_color  || '#101010'
+  const cardBg      = block.stats_card_bg      || '#ffffff'
+  const title       = isRtl ? (block.title_ar || block.title_en) : (block.title_en || block.title_ar)
+
+  const refEl = useRef<HTMLDivElement>(null)
+  const [counts, setCounts] = useState<number[]>(items.map(() => 0))
+  const [started, setStarted] = useState(false)
+
+  useEffect(() => {
+    if (!refEl.current) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && !started) setStarted(true) },
+      { threshold: 0.3 }
+    )
+    obs.observe(refEl.current)
+    return () => obs.disconnect()
+  }, [started])
+
+  useEffect(() => {
+    if (!started || !items.length) return
+    const duration = 1800
+    const startTime = performance.now()
+    const targets = items.map(it => it.value || 0)
+
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
+
+    const frame = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1)
+      const eased = easeOut(progress)
+      setCounts(targets.map(t => Math.round(t * eased)))
+      if (progress < 1) requestAnimationFrame(frame)
+    }
+    requestAnimationFrame(frame)
+  }, [started]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <section ref={refEl} style={{ background: sectionBg, borderRadius: 20, padding: '32px 20px' }}>
+      {title && (
+        <h2 style={{
+          fontSize: 'clamp(20px,4vw,28px)', fontWeight: 800, textAlign: 'center',
+          color: '#101010', margin: '0 0 28px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+        }}>
+          <span style={{ width: 40, height: 3, background: '#101010', borderRadius: 2, display: 'block' }}/>
+          {title}
+          <span style={{ width: 40, height: 3, background: '#101010', borderRadius: 2, display: 'block' }}/>
+        </h2>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 20 }}>
+        {items.map((it, i) => {
+          const label = isRtl ? (it.label_ar || it.label_en) : (it.label_en || it.label_ar)
+          return (
+            <div key={i} style={{
+              background: cardBg, borderRadius: 24, padding: '28px 20px',
+              textAlign: 'center', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 4px 20px rgba(0,0,0,.06)',
+            }}>
+              <p style={{ fontSize: 'clamp(40px,8vw,60px)', fontWeight: 700, color: numColor, lineHeight: 1, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                {counts[i].toLocaleString()}{it.suffix || ''}
+              </p>
+              {label && <span style={{ fontSize: 18, color: lblColor, fontWeight: 600, lineHeight: 1.4 }}>{label}</span>}
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
@@ -1088,6 +1168,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </section>
             )
           }
+
+          /* Stats block */
+          if (block.layout === 'stats') return (
+            <StatsBlock key={block.id} block={block} isRtl={isRtl}/>
+          )
 
           /* Countdown block */
           if (block.layout === 'countdown') return (
