@@ -81,7 +81,8 @@ interface Review {
 }
 
 interface ToolVariant {
-  name: string; price: string; discount_price: string; cost: string; stock: string; sku: string
+  name_en: string; name_ar: string; name?: string
+  price: string; discount_price: string; cost: string; stock: string; sku: string
 }
 
 interface Tool {
@@ -1309,8 +1310,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const displayRating = avgRating || tool.rating
   const displayCount  = totalReviews || tool.review_count
 
+  const activeVariantName = activeVariant
+    ? (isRtl ? (activeVariant.name_ar||activeVariant.name_en||activeVariant.name||'') : (activeVariant.name_en||activeVariant.name_ar||activeVariant.name||''))
+    : ''
   const buyUrl = activeVariant
-    ? `/u/checkout?tool_id=${tool.id}&variant=${encodeURIComponent(activeVariant.name)}&price=${displayPriceEgp}`
+    ? `/u/checkout?tool_id=${tool.id}&variant=${encodeURIComponent(activeVariantName)}&price=${displayPriceEgp}`
     : `/u/checkout?tool_id=${tool.id}`
 
   return (
@@ -1382,15 +1386,18 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
                 {variants.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {variants.map((v,i)=>(
-                      <button key={i} onClick={()=>setSelectedVariant(i)}
-                        className="px-3 py-1.5 rounded-xl text-sm font-bold transition-all border-2"
-                        style={selectedVariant===i
-                          ? {background:'#d99401',borderColor:'#d99401',color:'#fff',boxShadow:'0 4px 14px rgba(217,148,1,0.4)'}
-                          : {background:'rgba(255,255,255,0.06)',borderColor:'rgba(255,255,255,0.18)',color:'rgba(255,255,255,0.75)'}}>
-                        {v.name}
-                      </button>
-                    ))}
+                    {variants.map((v,i)=>{
+                      const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
+                      return (
+                        <button key={i} onClick={()=>setSelectedVariant(i)}
+                          className="px-3 py-1.5 rounded-xl text-sm font-bold transition-all border-2"
+                          style={selectedVariant===i
+                            ? {background:'#d99401',borderColor:'#d99401',color:'#fff',boxShadow:'0 4px 14px rgba(217,148,1,0.4)'}
+                            : {background:'rgba(255,255,255,0.06)',borderColor:'rgba(255,255,255,0.18)',color:'rgba(255,255,255,0.75)'}}>
+                          {vName}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
 
@@ -1437,12 +1444,12 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   ))}
                   {fakeVisits !== null && (
                     <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                      <span>👁</span>{fakeVisits.toLocaleString()} {t('مشاهدة اليوم','views today')}
+                      <span>👁</span>{fakeVisits.toLocaleString()} {t('views today','مشاهدة اليوم')}
                     </div>
                   )}
                   {fakeStock !== null && (
                     <div className="flex items-center gap-2 text-[11px] text-amber-400 mt-0.5 font-semibold">
-                      <span>📦</span>{t('متبقي','Only')} {fakeStock} {t('','left in stock')}
+                      <span>📦</span>{t('Only','متبقي')} {fakeStock} {t('left in stock','في المخزون')}
                     </div>
                   )}
                 </div>

@@ -107,7 +107,7 @@ export default function ShopAdminPage() {
   const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;subtitle_en:string;subtitle_ar:string;emoji:string;tool_ids:string[]}[]>([])
   const [dealSaving,    setDealSaving]    = useState(false)
 
-  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',warranty_label:'',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',sku:'',fake_visits_min:'0',fake_visits_max:'0',fake_stock_min:'0',fake_stock_max:'0',variants:[] as {name:string;price:string;discount_price:string;cost:string;stock:string;sku:string}[] }
+  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',warranty_label:'',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',sku:'',fake_visits_min:'0',fake_visits_max:'0',fake_stock_min:'0',fake_stock_max:'0',variants:[] as {name_en:string;name_ar:string;price:string;discount_price:string;cost:string;stock:string;sku:string}[] }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   const emptyCat = { name:'', name_ar:'', slug:'', color:'#3B82F6', icon:'🔧', image_url:'', image_url_ar:'', sort_order:'0' }
@@ -849,17 +849,22 @@ export default function ShopAdminPage() {
                   </FieldSection>
 
                   <FieldSection title="Subscription Variants">
-                    {((toolForm as any).variants as {name:string;price:string;discount_price:string;cost:string;stock:string;sku:string}[]).map((v,i)=>(
+                    {((toolForm as any).variants as any[]).map((v,i)=>(
                       <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 relative">
                         <button onClick={()=>{const vs=[...(toolForm as any).variants];vs.splice(i,1);setToolForm({...toolForm,...{variants:vs}} as any)}}
                           className="absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                           <X size={11}/>
                         </button>
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="grid grid-cols-3 gap-2 mb-2">
                           <div>
-                            <FL>Variant Name</FL>
-                            <input value={v.name} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],name:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}}
-                              placeholder="e.g. 1 شهر" className={inp} dir="rtl"/>
+                            <FL>Name EN</FL>
+                            <input value={v.name_en||''} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],name_en:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}}
+                              placeholder="1 Month" className={inp}/>
+                          </div>
+                          <div>
+                            <FL>Name AR</FL>
+                            <input value={v.name_ar||''} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],name_ar:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}}
+                              placeholder="شهر واحد" className={inp} dir="rtl"/>
                           </div>
                           <div>
                             <FL>SKU</FL>
@@ -887,10 +892,11 @@ export default function ShopAdminPage() {
                         </div>
                       </div>
                     ))}
-                    <button onClick={()=>{const vs=[...(toolForm as any).variants,{name:'',price:'',discount_price:'',cost:'',stock:'',sku:''}];setToolForm({...toolForm,...{variants:vs}} as any)}}
+                    <button onClick={()=>{const vs=[...(toolForm as any).variants,{name_en:'',name_ar:'',price:'',discount_price:'',cost:'',stock:'',sku:''}];setToolForm({...toolForm,...{variants:vs}} as any)}}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors w-full justify-center">
                       <Plus size={12}/>Add Variant
                     </button>
+                    {/* hidden — keep type compat */}
                     <p className="text-[10px] text-gray-400">Variants let customers choose a subscription period — price updates automatically based on selection.</p>
                   </FieldSection>
                 </>
