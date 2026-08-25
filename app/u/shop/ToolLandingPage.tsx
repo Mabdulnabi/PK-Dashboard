@@ -4,17 +4,19 @@ import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
 import { ArrowLeft, Star, Zap, Send, CheckCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
 
+type FeaturesLayout = 'grid' | 'list' | 'cards'
+
 interface Block {
   id: string
-  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq'
+  layout: 'image_left' | 'image_right' | 'text_only' | 'image_only' | 'features_grid' | 'video' | 'faq' | 'cards_grid'
   image_url?: string
   video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
-  // features_grid: array of {icon, en, ar}
-  features?: { icon: string; en: string; ar: string }[]
-  // faq: array of {q_en, q_ar, a_en, a_ar}
+  features?: { icon: string; icon_url?: string; en: string; ar: string }[]
+  features_layout?: FeaturesLayout
   faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
+  cards?: { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }[]
 }
 
 interface Review {
@@ -64,14 +66,92 @@ function RatingBar({ label, count, total }: { label: string; count: number; tota
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+    <div className={`rounded-xl border-2 transition-all duration-200 overflow-hidden ${open ? 'border-amber-400/60 bg-amber-50/40 dark:bg-amber-500/5' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'}`}>
       <button onClick={()=>setOpen(o=>!o)}
-        className="w-full flex items-center justify-between py-4 text-start gap-4">
-        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{q}</span>
-        {open ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0"/> : <ChevronDown size={16} className="text-gray-400 flex-shrink-0"/>}
+        className="w-full flex items-center gap-3 px-5 py-4 text-start">
+        {/* Q badge */}
+        <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 transition-colors"
+          style={{ background: open ? '#d99401' : '#d9940120', color: open ? '#fff' : '#d99401' }}>
+          Q
+        </span>
+        <span className={`flex-1 text-sm font-semibold leading-snug transition-colors ${open ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{q}</span>
+        <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${open ? 'rotate-180 bg-amber-400/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
+          <ChevronDown size={13} className={open ? 'text-amber-600' : 'text-gray-400'}/>
+        </span>
       </button>
-      {open && <p className="pb-4 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{a}</p>}
+      {open && (
+        <div className="flex gap-3 px-5 pb-5 pt-1">
+          <div className="w-6 flex-shrink-0 flex justify-center">
+            <div className="w-px bg-amber-200 dark:bg-amber-700/40 rounded-full"/>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{a}</p>
+        </div>
+      )}
     </div>
+  )
+}
+
+// Features Grid renderers
+function FeatureIcon({ icon, icon_url, size = 28 }: { icon: string; icon_url?: string; size?: number }) {
+  if (icon_url) return <img src={icon_url} alt={icon} style={{ width: size, height: size }} className="object-contain"/>
+  return <span style={{ fontSize: size }}>{icon}</span>
+}
+
+function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
+  const title = isRtl ? (block.title_ar||block.title_en) : (block.title_en||block.title_ar)
+  const body  = isRtl ? (block.body_ar||block.body_en)  : (block.body_en||block.body_ar)
+  const layout = block.features_layout || 'grid'
+  const features = block.features || []
+
+  return (
+    <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
+      {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
+      {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-7 leading-relaxed">{body}</p>}
+
+      {/* Grid layout */}
+      {layout === 'grid' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {features.map((f,i)=>(
+            <div key={i} className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:border-amber-200 dark:hover:border-amber-700/50 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={28}/>
+              </div>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-snug">{isRtl?f.ar:f.en}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* List layout */}
+      {layout === 'list' && (
+        <div className="space-y-3">
+          {features.map((f,i)=>(
+            <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:border-amber-200 dark:hover:border-amber-700/40 transition-colors">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
+              </div>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{isRtl?f.ar:f.en}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Cards layout */}
+      {layout === 'cards' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {features.map((f,i)=>(
+            <div key={i} className="flex items-start gap-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-500/5 dark:to-gray-900 hover:border-amber-200 dark:hover:border-amber-600/40 transition-all">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)'}}>
+                <FeatureIcon icon={f.icon} icon_url={f.icon_url} size={24}/>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{isRtl?f.ar:f.en}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -130,19 +210,16 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         <div className="relative overflow-hidden rounded-3xl"
           style={{background:'linear-gradient(135deg,#0a0a18 0%,#0d1424 40%,#0a1628 70%,#0d0f1e 100%)'}}>
 
-          {/* Glow blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
             <div className="absolute -top-20 left-1/3 w-72 h-72 rounded-full blur-3xl" style={{background:'#d9940118'}}/>
             <div className="absolute top-10 right-10 w-48 h-48 rounded-full blur-3xl" style={{background:'#3b82f610'}}/>
             <div className="absolute bottom-0 left-10 w-56 h-56 rounded-full blur-3xl" style={{background:'#8b5cf608'}}/>
           </div>
 
-          {/* Subtle grid pattern */}
           <div className="absolute inset-0 opacity-[0.03] rounded-3xl"
             style={{backgroundImage:'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',backgroundSize:'40px 40px'}}/>
 
           <div className="relative px-5 md:px-10 pt-6 pb-8">
-            {/* Back */}
             <button onClick={onBack}
               className="flex items-center gap-2 mb-7 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 group w-fit"
               style={{background:'rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.85)',border:'1px solid rgba(255,255,255,0.18)',backdropFilter:'blur(6px)'}}>
@@ -151,7 +228,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             </button>
 
             <div className="flex flex-col md:flex-row items-start gap-7">
-              {/* Logo */}
               <div className="relative flex-shrink-0">
                 <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl"
                   style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)'}}>
@@ -162,7 +238,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-12 h-3 blur-lg rounded-full" style={{background:'#d99401', opacity:0.5}}/>
               </div>
 
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-3">
                   <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
@@ -213,7 +288,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 )}
               </div>
 
-              {/* CTA */}
               <div className="w-full md:w-52 flex-shrink-0 flex flex-col gap-3">
                 {tool.is_out_of_stock
                   ? <button disabled className="w-full py-3.5 rounded-xl text-gray-400 font-bold cursor-default text-sm"
@@ -246,7 +320,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
       {/* ── Content ── */}
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-14">
 
-        {/* Features list (from tool.features, not description) */}
         {tool.features?.length > 0 && (
           <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">{t('What\'s included','ماذا يشمل الاشتراك')}</h2>
@@ -267,16 +340,37 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* Features Grid block */
           if (block.layout === 'features_grid') return (
-            <section key={block.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
+            <FeaturesGridBlock key={block.id} block={block} isRtl={isRtl}/>
+          )
+
+          /* Cards Grid block */
+          if (block.layout === 'cards_grid') return (
+            <section key={block.id}>
               {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
               {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-7 leading-relaxed">{body}</p>}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {(block.features||[]).map((f,i)=>(
-                  <div key={i} className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                    <span className="text-2xl">{f.icon}</span>
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{isRtl?f.ar:f.en}</span>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+                {(block.cards||[]).map((c,i)=>{
+                  const cardTitle    = isRtl ? (c.title_ar||c.title_en) : (c.title_en||c.title_ar)
+                  const cardSubtitle = isRtl ? (c.subtitle_ar||c.subtitle_en) : (c.subtitle_en||c.subtitle_ar)
+                  return (
+                    <div key={i} className="group rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-amber-200 dark:hover:border-amber-700/50 hover:shadow-lg transition-all">
+                      {c.image_url && (
+                        <div className="aspect-square overflow-hidden bg-gray-50 dark:bg-gray-800">
+                          <img src={c.image_url} alt={cardTitle||''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                        </div>
+                      )}
+                      {!c.image_url && (
+                        <div className="aspect-square bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10 flex items-center justify-center">
+                          <span className="text-4xl opacity-30">🖼</span>
+                        </div>
+                      )}
+                      <div className="p-4">
+                        {cardTitle    && <p className="text-sm font-bold text-gray-800 dark:text-gray-200 leading-snug">{cardTitle}</p>}
+                        {cardSubtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{cardSubtitle}</p>}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </section>
           )
@@ -286,12 +380,20 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             const vUrl = (block.video_url||'').replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/')
             return (
               <section key={block.id}>
-                {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{title}</h2>}
-                {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-5">{body}</p>}
+                {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 text-center">{title}</h2>}
+                {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-6 text-center">{body}</p>}
                 {vUrl && (
-                  <div className="rounded-2xl overflow-hidden shadow-xl aspect-video">
-                    <iframe src={vUrl} className="w-full h-full" allowFullScreen frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"/>
+                  <div className="relative rounded-3xl p-4 md:p-7"
+                    style={{
+                      background: 'linear-gradient(135deg, #fef9ee 0%, #fef3c7 40%, #fde68a 100%)',
+                    }}>
+                    {/* Decorative blobs */}
+                    <div className="absolute -top-4 -left-4 w-24 h-24 rounded-full blur-2xl opacity-60" style={{background:'#fde68a'}}/>
+                    <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full blur-2xl opacity-40" style={{background:'#fed7aa'}}/>
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video">
+                      <iframe src={vUrl} className="w-full h-full" allowFullScreen frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"/>
+                    </div>
                   </div>
                 )}
               </section>
@@ -300,13 +402,16 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* FAQ block */
           if (block.layout === 'faq') return (
-            <section key={block.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
-              {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{title}</h2>}
-              {(block.faqs||[]).map((faq,i)=>(
-                <FaqItem key={i}
-                  q={isRtl?(faq.q_ar||faq.q_en):(faq.q_en||faq.q_ar)}
-                  a={isRtl?(faq.a_ar||faq.a_en):(faq.a_en||faq.a_ar)}/>
-              ))}
+            <section key={block.id}>
+              {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
+              {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">{body}</p>}
+              <div className="space-y-3">
+                {(block.faqs||[]).map((faq,i)=>(
+                  <FaqItem key={i}
+                    q={isRtl?(faq.q_ar||faq.q_en):(faq.q_en||faq.q_ar)}
+                    a={isRtl?(faq.a_ar||faq.a_en):(faq.a_en||faq.a_ar)}/>
+                ))}
+              </div>
             </section>
           )
 
@@ -346,7 +451,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         <section>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','آراء العملاء')}</h2>
 
-          {/* Summary */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
             <div className="flex flex-col md:flex-row gap-8 items-start">
               <div className="flex flex-col items-center flex-shrink-0 w-32">
@@ -366,7 +470,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             </div>
           </div>
 
-          {/* Write review */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
             <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('Write a Review','اكتب تقييمك')}</h3>
             {submitted ? (
@@ -379,7 +482,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 <textarea value={myComment} onChange={e=>setMyComment(e.target.value)}
                   rows={3} placeholder={t('Share your experience (optional)','شارك تجربتك (اختياري)')}
                   className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none resize-none transition-all"
-                  style={{}}
                   onFocus={e=>e.currentTarget.style.borderColor='#d99401'}
                   onBlur={e=>e.currentTarget.style.borderColor=''}/>
                 {submitErr && <p className="text-red-500 text-sm">{submitErr}</p>}
@@ -392,7 +494,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             )}
           </div>
 
-          {/* Review list */}
           {reviews.length > 0 && (
             <div className="space-y-3">
               {reviews.map(r=>(
@@ -431,7 +532,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           )}
         </section>
 
-        {/* Bottom CTA */}
         <div className="text-center pb-8">
           {!tool.is_out_of_stock && (
             <button onClick={()=>{ window.location.href=buyUrl }}
@@ -443,7 +543,6 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         </div>
       </div>
 
-      {/* Mobile sticky bar */}
       {!tool.is_out_of_stock && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-3">

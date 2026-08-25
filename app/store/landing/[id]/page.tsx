@@ -14,19 +14,27 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   ArrowLeft, Plus, Trash2, Check, AlertCircle, Save, Globe,
   GripVertical, ChevronLeft, Download, Upload, X, Image as ImageIcon,
-  AlignLeft, LayoutGrid, Video, HelpCircle, FileText, Layers,
+  AlignLeft, LayoutGrid, Video, HelpCircle, FileText, Layers, Grid3X3,
 } from 'lucide-react'
 import ImageUploadInput from '@/components/admin/ImageUploadInput'
 
 // ── Types ──────────────────────────────────────────────────────────────────
+type FeaturesLayout = 'grid' | 'list' | 'cards'
+
+interface FeatureItem { icon: string; icon_url?: string; en: string; ar: string }
+interface CardItem    { image_url?: string; title_en?: string; title_ar?: string; subtitle_en?: string; subtitle_ar?: string }
+interface FaqItem     { q_en: string; q_ar: string; a_en: string; a_ar: string }
+
 interface LandingBlock {
   id: string
-  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'
+  layout: 'image_left'|'image_right'|'text_only'|'image_only'|'features_grid'|'video'|'faq'|'cards_grid'
   image_url?: string; video_url?: string
   title_en?: string; title_ar?: string
   body_en?: string;  body_ar?: string
-  features?: { icon: string; en: string; ar: string }[]
-  faqs?: { q_en: string; q_ar: string; a_en: string; a_ar: string }[]
+  features?: FeatureItem[]
+  features_layout?: FeaturesLayout
+  faqs?: FaqItem[]
+  cards?: CardItem[]
 }
 
 interface Tool { id: string; name: string; details_slug?: string; image_url?: string; landing_blocks?: LandingBlock[] }
@@ -45,6 +53,8 @@ const BLOCK_TYPES: { value: LandingBlock['layout']; label: string; icon: React.R
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#F59E0B20" stroke="#F59E0B" strokeWidth="1.5"/><circle cx="20" cy="14" r="5" fill="#F59E0B40"/><path d="M16 14l2.5 2.5L24 11" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg> },
   { value:'features_grid', label:'Features Grid', color:'#EF4444', desc:'Icon grid of features',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="11" height="12" rx="2" fill="#EF444420" stroke="#EF4444" strokeWidth="1"/><rect x="15" y="1" width="11" height="12" rx="2" fill="#EF444420" stroke="#EF4444" strokeWidth="1"/><rect x="29" y="1" width="10" height="12" rx="2" fill="#EF444420" stroke="#EF4444" strokeWidth="1"/><rect x="1" y="16" width="11" height="11" rx="2" fill="#EF444420" stroke="#EF4444" strokeWidth="1"/><rect x="15" y="16" width="11" height="11" rx="2" fill="#EF444420" stroke="#EF4444" strokeWidth="1"/><rect x="29" y="16" width="10" height="11" rx="2" fill="#EF444420" stroke="#EF4444" strokeWidth="1"/></svg> },
+  { value:'cards_grid',    label:'Cards Grid',    color:'#F97316', desc:'Image + title + subtitle cards',
+    icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="12" height="26" rx="2" fill="#F9731620" stroke="#F97316" strokeWidth="1"/><rect x="15" y="1" width="12" height="26" rx="2" fill="#F9731620" stroke="#F97316" strokeWidth="1"/><rect x="29" y="1" width="10" height="26" rx="2" fill="#F9731620" stroke="#F97316" strokeWidth="1"/><rect x="3" y="3" width="8" height="8" rx="1" fill="#F9731640"/><rect x="17" y="3" width="8" height="8" rx="1" fill="#F9731640"/><rect x="31" y="3" width="6" height="8" rx="1" fill="#F9731640"/></svg> },
   { value:'video',         label:'Video Embed',   color:'#EC4899', desc:'YouTube / video embed',
     icon: <svg viewBox="0 0 40 28" className="w-10 h-7"><rect x="1" y="1" width="38" height="26" rx="2" fill="#EC489920" stroke="#EC4899" strokeWidth="1.5"/><circle cx="20" cy="14" r="7" fill="#EC489930"/><polygon points="17,10 27,14 17,18" fill="#EC4899"/></svg> },
   { value:'faq',           label:'FAQ',           color:'#06B6D4', desc:'Accordion FAQ section',
@@ -83,17 +93,14 @@ function SortableBlockRow({ block, isSelected, onClick, onRemove }: {
           : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
       }`}
       onClick={onClick}>
-      {/* Drag handle */}
       <button {...attributes} {...listeners}
         className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0 touch-none"
         onClick={e => e.stopPropagation()}>
         <GripVertical size={16}/>
       </button>
-      {/* Icon */}
       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: (bType?.color||GOLD)+'18' }}>
         <div className="scale-75">{bType?.icon}</div>
       </div>
-      {/* Label */}
       <div className="flex-1 min-w-0">
         <div className={`text-xs font-bold truncate ${isSelected?'text-amber-700 dark:text-amber-400':'text-gray-700 dark:text-gray-300'}`}>
           {bType?.label || block.layout}
@@ -102,7 +109,6 @@ function SortableBlockRow({ block, isSelected, onClick, onRemove }: {
           <div className="text-[10px] text-gray-400 truncate mt-0.5">{block.title_en||block.title_ar}</div>
         )}
       </div>
-      {/* Delete */}
       <button onClick={e=>{ e.stopPropagation(); onRemove() }}
         className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex-shrink-0">
         <Trash2 size={11}/>
@@ -148,7 +154,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
       )}
 
       {/* Body */}
-      {!['image_only','features_grid','faq','video'].includes(block.layout) && (
+      {!['image_only','features_grid','faq','video','cards_grid'].includes(block.layout) && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <FL><FileText size={9}/>Body EN</FL>
@@ -163,7 +169,7 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
         </div>
       )}
 
-      {/* Features */}
+      {/* Features Grid */}
       {block.layout==='features_grid' && (
         <div>
           <div className="grid grid-cols-2 gap-2 mb-3">
@@ -176,25 +182,110 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
               <input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})} placeholder="لماذا تختارنا" className={inp} dir="rtl"/>
             </div>
           </div>
-          <FL><LayoutGrid size={9}/>Feature Items</FL>
-          <div className="space-y-2">
-            {(block.features||[]).map((f,fi)=>(
-              <div key={fi} className="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                <input value={f.icon} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon:e.target.value}; onChange({features:fs}) }}
-                  placeholder="⚡" className={`${inp} w-12 text-center text-base flex-shrink-0`}/>
-                <input value={f.en} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,en:e.target.value}; onChange({features:fs}) }}
-                  placeholder="Feature EN" className={`${inp} flex-1`}/>
-                <input value={f.ar} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,ar:e.target.value}; onChange({features:fs}) }}
-                  placeholder="ميزة AR" className={`${inp} flex-1`} dir="rtl"/>
-                <button onClick={()=>{ const fs=(block.features||[]).filter((_,j)=>j!==fi); onChange({features:fs}) }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0 transition-colors">
-                  <X size={12}/>
+
+          {/* Layout picker */}
+          <div className="mb-3">
+            <FL><LayoutGrid size={9}/>Display Layout</FL>
+            <div className="flex gap-1.5">
+              {(['grid','list','cards'] as const).map(l=>(
+                <button key={l} onClick={()=>onChange({features_layout:l})}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold capitalize border-2 transition-all ${(block.features_layout||'grid')===l?'border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-500/10':'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-gray-300'}`}>
+                  {l}
                 </button>
+              ))}
+            </div>
+          </div>
+
+          <FL><LayoutGrid size={9}/>Feature Items</FL>
+          <div className="space-y-3">
+            {(block.features||[]).map((f,fi)=>(
+              <div key={fi} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400">Item {fi+1}</span>
+                  <button onClick={()=>{ const fs=(block.features||[]).filter((_,j)=>j!==fi); onChange({features:fs}) }}
+                    className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                    <X size={10}/>
+                  </button>
+                </div>
+                {/* Icon: emoji OR image */}
+                <div className="flex gap-2 items-start">
+                  <div className="flex-shrink-0">
+                    <div className="text-[9px] text-gray-400 mb-1">Emoji</div>
+                    <input value={f.icon} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon:e.target.value}; onChange({features:fs}) }}
+                      placeholder="⚡" className={`${inp} w-12 text-center text-base`}/>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] text-gray-400 mb-1">Or upload icon image</div>
+                    <ImageUploadInput
+                      value={f.icon_url||''}
+                      onChange={url=>{ const fs=[...(block.features||[])]; fs[fi]={...f,icon_url:url}; onChange({features:fs}) }}
+                      folder="landing-icons"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={f.en} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,en:e.target.value}; onChange({features:fs}) }}
+                    placeholder="Feature EN" className={inp}/>
+                  <input value={f.ar} onChange={e=>{ const fs=[...(block.features||[])]; fs[fi]={...f,ar:e.target.value}; onChange({features:fs}) }}
+                    placeholder="ميزة AR" className={inp} dir="rtl"/>
+                </div>
               </div>
             ))}
             <button onClick={()=>onChange({features:[...(block.features||[]),{icon:'⭐',en:'',ar:''}]})}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-amber-600 hover:border-amber-400 dark:hover:border-amber-500 transition-colors w-full justify-center">
               <Plus size={12}/>Add Feature
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cards Grid */}
+      {block.layout==='cards_grid' && (
+        <div>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div>
+              <FL>Title EN</FL>
+              <input value={block.title_en||''} onChange={e=>onChange({title_en:e.target.value})} placeholder="Our Plans" className={inp}/>
+            </div>
+            <div>
+              <FL>عنوان AR</FL>
+              <input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})} placeholder="باقاتنا" className={inp} dir="rtl"/>
+            </div>
+          </div>
+          <FL><Grid3X3 size={9}/>Cards</FL>
+          <div className="space-y-3">
+            {(block.cards||[]).map((c,ci)=>(
+              <div key={ci} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold text-gray-400">Card {ci+1}</span>
+                  <button onClick={()=>{ const cs=(block.cards||[]).filter((_,j)=>j!==ci); onChange({cards:cs}) }}
+                    className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                    <X size={10}/>
+                  </button>
+                </div>
+                <div>
+                  <div className="text-[9px] text-gray-400 mb-1">Card image</div>
+                  <ImageUploadInput
+                    value={c.image_url||''}
+                    onChange={url=>{ const cs=[...(block.cards||[])]; cs[ci]={...c,image_url:url}; onChange({cards:cs}) }}
+                    folder="landing-cards"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={c.title_en||''} onChange={e=>{ const cs=[...(block.cards||[])]; cs[ci]={...c,title_en:e.target.value}; onChange({cards:cs}) }}
+                    placeholder="Title EN" className={inp}/>
+                  <input value={c.title_ar||''} onChange={e=>{ const cs=[...(block.cards||[])]; cs[ci]={...c,title_ar:e.target.value}; onChange({cards:cs}) }}
+                    placeholder="عنوان AR" className={inp} dir="rtl"/>
+                  <input value={c.subtitle_en||''} onChange={e=>{ const cs=[...(block.cards||[])]; cs[ci]={...c,subtitle_en:e.target.value}; onChange({cards:cs}) }}
+                    placeholder="Subtitle EN" className={inp}/>
+                  <input value={c.subtitle_ar||''} onChange={e=>{ const cs=[...(block.cards||[])]; cs[ci]={...c,subtitle_ar:e.target.value}; onChange({cards:cs}) }}
+                    placeholder="عنوان فرعي AR" className={inp} dir="rtl"/>
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>onChange({cards:[...(block.cards||[]),{image_url:'',title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:''}]})}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-amber-600 hover:border-amber-400 transition-colors w-full justify-center">
+              <Plus size={12}/>Add Card
             </button>
           </div>
         </div>
@@ -207,22 +298,34 @@ function BlockSettings({ block, onChange }: { block: LandingBlock; onChange: (p:
             <FL>Section Title EN</FL>
             <input value={block.title_en||''} onChange={e=>onChange({title_en:e.target.value})} placeholder="Frequently Asked Questions" className={inp}/>
           </div>
+          <div className="mb-3">
+            <FL>Section Title AR</FL>
+            <input value={block.title_ar||''} onChange={e=>onChange({title_ar:e.target.value})} placeholder="الأسئلة الشائعة" className={inp} dir="rtl"/>
+          </div>
           <FL><HelpCircle size={9}/>FAQ Items</FL>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {(block.faqs||[]).map((faq,fi)=>(
-              <div key={fi} className="border border-gray-100 dark:border-gray-700 rounded-xl p-3 space-y-2 bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{background:GOLD+'20',color:GOLD}}>Q{fi+1}</span>
+              <div key={fi} className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+                {/* Question header */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-100 dark:border-amber-500/20">
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md" style={{background:GOLD+'25',color:GOLD}}>Q{fi+1}</span>
+                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 flex-1">Question</span>
                   <button onClick={()=>{ const fs=(block.faqs||[]).filter((_,j)=>j!==fi); onChange({faqs:fs}) }}
                     className="w-5 h-5 rounded flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
                     <X size={10}/>
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input value={faq.q_en} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,q_en:e.target.value}; onChange({faqs:fs}) }} placeholder="Question EN" className={inp}/>
-                  <input value={faq.q_ar} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,q_ar:e.target.value}; onChange({faqs:fs}) }} placeholder="السؤال AR" className={inp} dir="rtl"/>
-                  <textarea value={faq.a_en} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,a_en:e.target.value}; onChange({faqs:fs}) }} rows={2} placeholder="Answer EN" className={`${inp} resize-none`}/>
-                  <textarea value={faq.a_ar} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,a_ar:e.target.value}; onChange({faqs:fs}) }} rows={2} placeholder="الإجابة AR" className={`${inp} resize-none`} dir="rtl"/>
+                <div className="p-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={faq.q_en} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,q_en:e.target.value}; onChange({faqs:fs}) }} placeholder="Question EN" className={inp}/>
+                    <input value={faq.q_ar} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,q_ar:e.target.value}; onChange({faqs:fs}) }} placeholder="السؤال AR" className={inp} dir="rtl"/>
+                  </div>
+                  {/* Answer */}
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-gray-400 pt-1">Answer</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <textarea value={faq.a_en} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,a_en:e.target.value}; onChange({faqs:fs}) }} rows={2} placeholder="Answer EN" className={`${inp} resize-none`}/>
+                    <textarea value={faq.a_ar} onChange={e=>{ const fs=[...(block.faqs||[])]; fs[fi]={...faq,a_ar:e.target.value}; onChange({faqs:fs}) }} rows={2} placeholder="الإجابة AR" className={`${inp} resize-none`} dir="rtl"/>
+                  </div>
                 </div>
               </div>
             ))}
@@ -281,8 +384,13 @@ export default function LandingEditorPage() {
   const [toast,         setToast]         = useState<{msg:string;type:'ok'|'err'}|null>(null)
   const [iframeLoaded,  setIframeLoaded]  = useState(false)
   const [previewMode,   setPreviewMode]   = useState<'desktop'|'mobile'>('desktop')
-  // Sidebar state: 'list' | 'add' | block-id (settings)
   const [panel,         setPanel]         = useState<'list'|'add'|string>('list')
+
+  // Resizable sidebar
+  const [sidebarW, setSidebarW] = useState(288)
+  const resizingRef = useRef(false)
+  const startXRef   = useRef(0)
+  const startWRef   = useRef(0)
 
   const selectedId = panel !== 'list' && panel !== 'add' ? panel : null
   const selectedBlock = blocks.find(b => b.id === selectedId) ?? null
@@ -310,8 +418,9 @@ export default function LandingEditorPage() {
 
   const addBlock = (layout: LandingBlock['layout']) => {
     const b: LandingBlock = { id:uuid(), layout, image_url:'', title_en:'', title_ar:'', body_en:'', body_ar:'' }
-    if (layout==='features_grid') b.features = [{icon:'⭐',en:'',ar:''}]
+    if (layout==='features_grid') { b.features = [{icon:'⭐',en:'',ar:''}]; b.features_layout='grid' }
     if (layout==='faq')           b.faqs     = [{q_en:'',q_ar:'',a_en:'',a_ar:''}]
+    if (layout==='cards_grid')    b.cards    = [{image_url:'',title_en:'',title_ar:'',subtitle_en:'',subtitle_ar:''}]
     setBlocks(prev=>[...prev, b])
     setPanel(b.id)
   }
@@ -335,6 +444,31 @@ export default function LandingEditorPage() {
     })
   }
 
+  // Resizer mouse handlers
+  const onResizerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    resizingRef.current = true
+    startXRef.current = e.clientX
+    startWRef.current = sidebarW
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return
+      const delta = ev.clientX - startXRef.current
+      setSidebarW(Math.max(220, Math.min(500, startWRef.current + delta)))
+    }
+    const onUp = () => {
+      resizingRef.current = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
   const save = async () => {
     if (!tool) return
     setSaving(true)
@@ -344,7 +478,6 @@ export default function LandingEditorPage() {
     setToast({ msg:'Landing page saved ✓', type:'ok' })
   }
 
-  // Export
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(blocks, null, 2)], { type:'application/json' })
     const url  = URL.createObjectURL(blob)
@@ -353,7 +486,6 @@ export default function LandingEditorPage() {
     URL.revokeObjectURL(url)
   }
 
-  // Import
   const importJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
     const reader = new FileReader()
@@ -371,7 +503,8 @@ export default function LandingEditorPage() {
     e.target.value = ''
   }
 
-  const iframeSrc = tool?.details_slug ? `/u/tool/${tool.details_slug}` : null
+  // Preview uses isolated preview route — no nav/sidebar shown
+  const iframeSrc = tool?.details_slug ? `/preview/${tool.details_slug}` : null
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -401,7 +534,6 @@ export default function LandingEditorPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {/* Preview mode */}
           {iframeSrc && (
             <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
               {(['desktop','mobile'] as const).map(m=>(
@@ -413,20 +545,17 @@ export default function LandingEditorPage() {
             </div>
           )}
 
-          {/* Import */}
           <button onClick={()=>importRef.current?.click()}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Upload size={12}/>Import
           </button>
           <input ref={importRef} type="file" accept=".json" className="hidden" onChange={importJSON}/>
 
-          {/* Export */}
           <button onClick={exportJSON}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Download size={12}/>Export
           </button>
 
-          {/* Save */}
           <button onClick={save} disabled={saving}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-bold disabled:opacity-60 transition-colors"
             style={{background:GOLD}}>
@@ -439,10 +568,10 @@ export default function LandingEditorPage() {
       {/* ── Body ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── LEFT SIDEBAR ── */}
-        <aside className="w-72 flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
+        {/* ── LEFT SIDEBAR (resizable) ── */}
+        <aside style={{ width: sidebarW, flexShrink: 0 }}
+          className="bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
 
-          {/* Sidebar header */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
             {(panel==='add' || selectedId) && (
               <button onClick={()=>setPanel('list')}
@@ -464,10 +593,7 @@ export default function LandingEditorPage() {
             )}
           </div>
 
-          {/* Sidebar content */}
           <div className="flex-1 overflow-y-auto">
-
-            {/* Block list */}
             {panel==='list' && (
               <div className="p-3 space-y-1">
                 {blocks.length===0 && (
@@ -494,17 +620,28 @@ export default function LandingEditorPage() {
               </div>
             )}
 
-            {/* Add section picker */}
             {panel==='add' && (
               <BlockTypePicker onAdd={addBlock} onClose={()=>setPanel('list')}/>
             )}
 
-            {/* Block settings */}
             {selectedBlock && (
               <BlockSettings block={selectedBlock} onChange={p=>updateBlock(selectedBlock.id, p)}/>
             )}
           </div>
         </aside>
+
+        {/* ── RESIZER HANDLE ── */}
+        <div
+          onMouseDown={onResizerMouseDown}
+          className="w-1.5 flex-shrink-0 bg-gray-200 dark:bg-gray-800 hover:bg-amber-400 dark:hover:bg-amber-500 cursor-col-resize transition-colors group relative"
+          title="Drag to resize">
+          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-gray-300 dark:bg-gray-700 group-hover:bg-amber-300 transition-colors"/>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-8 rounded-full bg-gray-300 dark:bg-gray-700 group-hover:bg-amber-400 flex flex-col items-center justify-center gap-0.5 transition-colors">
+            <div className="w-0.5 h-1 rounded-full bg-white/60"/>
+            <div className="w-0.5 h-1 rounded-full bg-white/60"/>
+            <div className="w-0.5 h-1 rounded-full bg-white/60"/>
+          </div>
+        </div>
 
         {/* ── PREVIEW ── */}
         <main className="flex-1 flex flex-col overflow-hidden bg-gray-100 dark:bg-gray-950 p-4">
