@@ -82,7 +82,7 @@ interface Review {
 
 interface ToolVariant {
   name_en: string; name_ar: string; name?: string
-  price: string; discount_price: string; cost: string; stock: string; sku: string
+  price: string; retail_price?: string; discount_price?: string; cost: string; stock: string; sku: string
 }
 
 interface Tool {
@@ -1294,7 +1294,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
     ? (parseFloat(activeVariant.price)||tool.price_egp)
     : tool.price_egp
   const displayRetailEgp = activeVariant
-    ? (parseFloat(activeVariant.discount_price)||tool.retail_price_egp||0)
+    ? (parseFloat(activeVariant.retail_price||activeVariant.discount_price||'')||tool.retail_price_egp||0)
     : (tool.retail_price_egp||0)
 
   const price = formatPrice(displayPriceEgp, parseFloat(settings.usd_to_egp_rate)||50)

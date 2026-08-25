@@ -875,15 +875,24 @@ export default function ShopAdminPage() {
                               placeholder="PK-QB-28" className={`${inp} font-mono`}/>
                           </div>
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 gap-2 mb-2">
                           <div>
-                            <FL>Price EGP</FL>
-                            <input type="number" value={v.price} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],price:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}} className={inp}/>
+                            <FL>Selling Price EGP *</FL>
+                            <input type="number" value={v.price} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],price:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}} className={inp} placeholder="0"/>
                           </div>
                           <div>
-                            <FL>Discount EGP</FL>
-                            <input type="number" value={v.discount_price} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],discount_price:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}} className={inp}/>
+                            <FL>Retail Price EGP (original)</FL>
+                            <div className="flex items-center gap-1.5">
+                              <input type="number" value={v.retail_price||''} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],retail_price:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}} className={inp} placeholder="0"/>
+                              {parseFloat(v.retail_price||0)>0 && parseFloat(v.price||0)>0 && parseFloat(v.retail_price)>parseFloat(v.price) && (
+                                <span className="flex-shrink-0 px-2 py-1 rounded-lg text-[11px] font-black text-white" style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
+                                  -{Math.round((1-parseFloat(v.price)/parseFloat(v.retail_price))*100)}%
+                                </span>
+                              )}
+                            </div>
                           </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <FL>Cost EGP</FL>
                             <input type="number" value={v.cost} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],cost:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}} className={inp}/>
@@ -892,10 +901,18 @@ export default function ShopAdminPage() {
                             <FL>Stock</FL>
                             <input type="number" value={v.stock} onChange={e=>{const vs=[...(toolForm as any).variants];vs[i]={...vs[i],stock:e.target.value};setToolForm({...toolForm,...{variants:vs}} as any)}} className={inp}/>
                           </div>
+                          <div className="flex items-end pb-0.5">
+                            {parseFloat(v.retail_price||0)>0 && parseFloat(v.price||0)>0 && (
+                              <div className="text-[10px] text-gray-400 leading-tight">
+                                <div className="font-bold text-gray-600 dark:text-gray-300">Margin</div>
+                                <div>{parseFloat(v.price||0)>0?`EGP ${(parseFloat(v.price)-parseFloat(v.cost||0)).toFixed(0)}`:'—'}</div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
-                    <button onClick={()=>{const vs=[...(toolForm as any).variants,{name_en:'',name_ar:'',price:'',discount_price:'',cost:'',stock:'',sku:''}];setToolForm({...toolForm,...{variants:vs}} as any)}}
+                    <button onClick={()=>{const vs=[...(toolForm as any).variants,{name_en:'',name_ar:'',price:'',retail_price:'',cost:'',stock:'',sku:''}];setToolForm({...toolForm,...{variants:vs}} as any)}}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors w-full justify-center">
                       <Plus size={12}/>Add Variant
                     </button>
