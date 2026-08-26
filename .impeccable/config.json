@@ -1,5 +1,25 @@
 {
   "detector": {
-    "ignoreRules": ["gray-on-color"]
+    "ignoreRules": [
+      "gray-on-color"
+    ],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-08-26T00:03:03.539Z",
+        "reason": "Plus Jakarta Sans is intentional — confirmed part of the premium glass theme used across sidebar, topbar, and landing page hero"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "app/u/shop/ToolLandingPage.tsx"
+        ],
+        "createdAt": "2026-08-26T00:03:11.611Z",
+        "reason": "All Img usages are a custom React component rendering real tool images from data — not raw img tags with empty src"
+      }
+    ]
   }
 }
