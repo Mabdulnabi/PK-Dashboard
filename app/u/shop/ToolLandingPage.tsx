@@ -188,6 +188,33 @@ function useArabicFont(isRtl: boolean) {
   }, [isRtl])
 }
 
+// Hero CSS — aura glow + live dot + responsive split
+const HERO_CSS = `
+@keyframes pk-aura-pulse {
+  0%, 100% { opacity: 0.28; transform: scale(0.97); }
+  50%       { opacity: 0.50; transform: scale(1.07); }
+}
+@keyframes pk-live-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+.pk-hero-body    { display: flex; }
+.pk-hero-vdiv    { width: 1px; background: rgba(0,0,0,0.07); align-self: stretch; margin: 20px 0; flex-shrink: 0; }
+.pk-hero-left    { flex: 0 0 56%; min-width: 260px; padding: 22px 22px 26px; }
+.pk-hero-right   { flex: 1 1 190px; min-width: 190px; padding: 22px 22px 26px; display: flex; flex-direction: column; gap: 14px; }
+@media (max-width: 620px) {
+  .pk-hero-body  { flex-direction: column; }
+  .pk-hero-vdiv  { width: auto; height: 1px; margin: 0 22px; }
+  .pk-hero-left  { flex: none; width: 100%; padding-bottom: 4px; }
+  .pk-hero-right { flex: none; width: 100%; padding-top: 16px; }
+}
+`
+function injectHeroCss() {
+  if (typeof document === 'undefined' || document.getElementById('pk-hero-css')) return
+  const s = document.createElement('style'); s.id = 'pk-hero-css'; s.textContent = HERO_CSS
+  document.head.appendChild(s)
+}
+
 // Gold shimmer keyframes injected once
 const GOLD_SHIMMER_CSS = `
 @keyframes pk-gold-shimmer {
@@ -1246,7 +1273,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const settings = useSiteSettings()
   const isRtl = lang === 'ar'
   useArabicFont(isRtl)
-  useEffect(()=>{ injectGoldShimmer() }, [])
+  useEffect(()=>{ injectGoldShimmer(); injectHeroCss(); injectPlusJakarta() }, [])
 
   const [reviews, setReviews]     = useState<Review[]>([])
   const [avgRating, setAvgRating] = useState(0)
@@ -1267,11 +1294,19 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   useEffect(()=>{
     const vMin = tool.fake_visits_min||0; const vMax = tool.fake_visits_max||0
     const sMin = tool.fake_stock_min||0;  const sMax = tool.fake_stock_max||0
+    let visitTimeout: ReturnType<typeof setTimeout>
     if (vMin > 0 || vMax > 0) {
-      const key = `pk_fv_${tool.id}`
-      try { const cached = sessionStorage.getItem(key); if (cached) { setFakeVisits(parseInt(cached)); } else {
-        const v = vMin + Math.floor(Math.random()*(vMax-vMin+1)); sessionStorage.setItem(key, String(v)); setFakeVisits(v)
-      }} catch { setFakeVisits(vMin + Math.floor(Math.random()*(vMax-vMin+1))) }
+      const range = Math.max(vMax - vMin, 1)
+      let current = vMin + Math.floor(Math.random() * (range + 1))
+      setFakeVisits(current)
+      const drift = () => {
+        const delta = Math.floor(Math.random() * Math.max(1, range * 0.07)) + 1
+        const dir = Math.random() > 0.42 ? 1 : -1
+        current = Math.max(vMin, Math.min(vMax, current + dir * delta))
+        setFakeVisits(current)
+        visitTimeout = setTimeout(drift, 8000 + Math.random() * 7000)
+      }
+      visitTimeout = setTimeout(drift, 9000 + Math.random() * 6000)
     }
     if (sMax > 0) {
       const TICK = 5 * 60 * 1000
@@ -1293,8 +1328,9 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
       }
       setFakeStock(getStock())
       const id = setInterval(()=>setFakeStock(getStock()), TICK)
-      return ()=>clearInterval(id)
+      return ()=>{ clearInterval(id); clearTimeout(visitTimeout) }
     }
+    return ()=>{ clearTimeout(visitTimeout) }
   },[tool.id])
 
   const activeVariant = selectedVariant >= 0 && variants[selectedVariant] ? variants[selectedVariant] : null
@@ -1347,184 +1383,218 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
       {/* ── Hero ── */}
       <div style={{
         position:'relative',
-        padding:'16px 12px 24px',
+        padding:'16px 12px 20px',
         background:'radial-gradient(ellipse 130% 100% at 5% 0%, rgba(217,148,1,0.14) 0%, transparent 50%), radial-gradient(ellipse 80% 100% at 95% 100%, rgba(99,102,241,0.11) 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.06) 0%, transparent 60%), #e8eef5',
+        fontFamily:"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
       }}>
         {/* ambient orbs */}
         <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0}}>
-          <div style={{position:'absolute',top:-80,left:'25%',width:260,height:260,borderRadius:'50%',background:'rgba(217,148,1,0.10)',filter:'blur(70px)'}}/>
-          <div style={{position:'absolute',bottom:-60,right:'8%',width:200,height:200,borderRadius:'50%',background:'rgba(99,102,241,0.09)',filter:'blur(70px)'}}/>
-          <div style={{position:'absolute',top:'40%',right:'35%',width:140,height:140,borderRadius:'50%',background:'rgba(56,189,248,0.06)',filter:'blur(50px)'}}/>
+          <div style={{position:'absolute',top:-80,left:'25%',width:280,height:280,borderRadius:'50%',background:'rgba(217,148,1,0.09)',filter:'blur(72px)'}}/>
+          <div style={{position:'absolute',bottom:-60,right:'8%',width:220,height:220,borderRadius:'50%',background:'rgba(99,102,241,0.09)',filter:'blur(72px)'}}/>
         </div>
 
         {/* Glass card */}
         <div style={{
           position:'relative',zIndex:1,
-          borderRadius:22,
-          background:'rgba(255,255,255,0.54)',
+          borderRadius:24,
+          background:'rgba(255,255,255,0.56)',
           backdropFilter:'blur(28px)',
           WebkitBackdropFilter:'blur(28px)',
-          border:'1px solid rgba(255,255,255,0.72)',
-          boxShadow:'0 8px 40px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.92)',
+          border:'1px solid rgba(255,255,255,0.75)',
+          boxShadow:'0 2px 0 rgba(255,255,255,0.9) inset, 0 10px 48px rgba(0,0,0,0.08)',
           overflow:'hidden',
-          fontFamily:"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
         }}>
           {/* Gold accent line */}
-          <div style={{height:3,background:'linear-gradient(90deg,rgba(217,148,1,0) 0%,#D99401 15%,#F5BC00 50%,#D99401 85%,rgba(217,148,1,0) 100%)'}}/>
+          <div style={{height:3,background:'linear-gradient(90deg,rgba(217,148,1,0) 0%,#D99401 18%,#F5C842 50%,#D99401 82%,rgba(217,148,1,0) 100%)'}}/>
 
-          <div style={{padding:'18px 20px 22px',display:'flex',flexDirection:'column',gap:0}}>
+          {/* Nav row */}
+          <div style={{padding:'14px 22px 0',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+            <button onClick={onBack} style={{
+              display:'inline-flex',alignItems:'center',gap:5,
+              padding:'5px 13px',borderRadius:9,cursor:'pointer',
+              background:'rgba(255,255,255,0.70)',border:'1px solid rgba(0,0,0,0.08)',
+              color:'#4A5368',fontSize:12,fontWeight:600,
+              boxShadow:'0 1px 3px rgba(0,0,0,0.05)',
+            }}>
+              <ArrowLeft size={12} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
+              {t('Back','رجوع')}
+            </button>
+            <div style={{display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
+              <span style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 10px',borderRadius:20,background:'rgba(16,185,129,0.10)',color:'#0B7A4B',fontSize:10,fontWeight:800,letterSpacing:0.4,border:'1px solid rgba(16,185,129,0.20)'}}>
+                <Zap size={8} fill="#0B7A4B"/>{tool.delivery_label||t('INSTANT','فوري')}
+              </span>
+              <span style={{display:'inline-flex',alignItems:'center',padding:'3px 10px',borderRadius:20,background:'rgba(0,0,0,0.05)',color:'#5A6478',fontSize:10,fontWeight:600,border:'1px solid rgba(0,0,0,0.07)'}}>
+                ⏱ {durLabel}
+              </span>
+              {(tool.sales_count||0) > 0 && (
+                <span style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 10px',borderRadius:20,background:'rgba(217,148,1,0.10)',color:'#8A5F00',fontSize:10,fontWeight:700,border:'1px solid rgba(217,148,1,0.20)'}}>
+                  <ShoppingCart size={8}/>{(tool.sales_count||0).toLocaleString()} {t('sold','مبيعة')}
+                </span>
+              )}
+            </div>
+          </div>
 
-            {/* Back + status badges */}
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8,marginBottom:16}}>
-              <button onClick={onBack} style={{
-                display:'inline-flex',alignItems:'center',gap:6,
-                padding:'6px 14px',borderRadius:10,cursor:'pointer',
-                background:'rgba(255,255,255,0.72)',border:'1px solid rgba(0,0,0,0.09)',
-                backdropFilter:'blur(8px)',color:'#444B5A',fontSize:13,fontWeight:600,
-                boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
+          {/* Two-column body */}
+          <div className="pk-hero-body">
+
+            {/* ── LEFT: Identity ── */}
+            <div className="pk-hero-left">
+
+              {/* Logo with gold aura */}
+              <div style={{position:'relative',width:88,height:88,marginBottom:18}}>
+                <div style={{
+                  position:'absolute',inset:-18,borderRadius:'50%',
+                  background:'radial-gradient(circle, rgba(217,148,1,0.30) 0%, rgba(217,148,1,0.08) 55%, transparent 75%)',
+                  animation:'pk-aura-pulse 3.2s ease-in-out infinite',
+                }}/>
+                <div style={{
+                  position:'relative',width:88,height:88,borderRadius:22,
+                  background:'rgba(255,255,255,0.88)',
+                  border:'1px solid rgba(255,255,255,1)',
+                  boxShadow:'0 4px 24px rgba(0,0,0,0.09),0 1px 0 rgba(255,255,255,1) inset',
+                  display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',
+                }}>
+                  {tool.image_url
+                    ? <img src={tool.image_url} alt={tool.name} style={{width:62,height:62,objectFit:'contain'}}/>
+                    : <span style={{fontSize:26,fontWeight:800,color:'#BFC7D5',letterSpacing:-1}}>{tool.name.slice(0,2).toUpperCase()}</span>
+                  }
+                </div>
+              </div>
+
+              {/* Tool name */}
+              <h1 style={{
+                margin:'0 0 10px',lineHeight:1.1,
+                fontSize:'clamp(24px,4.5vw,34px)',fontWeight:800,
+                color:'#080D1A',letterSpacing:-0.8,
               }}>
-                <ArrowLeft size={13} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
-                {t('Back to Store','رجوع للمتجر')}
-              </button>
-              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(16,185,129,0.11)',color:'#0D7A4E',fontSize:11,fontWeight:700,border:'1px solid rgba(16,185,129,0.22)'}}>
-                  <Zap size={9} style={{fill:'#0D7A4E'}}/>{tool.delivery_label||t('INSTANT','فوري')}
-                </span>
-                <span style={{display:'inline-flex',alignItems:'center',padding:'4px 11px',borderRadius:20,background:'rgba(0,0,0,0.055)',color:'#5A6478',fontSize:11,fontWeight:600,border:'1px solid rgba(0,0,0,0.08)'}}>
-                  ⏱ {durLabel}
-                </span>
-                {(tool.sales_count||0) > 0 && (
-                  <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(217,148,1,0.11)',color:'#9A6700',fontSize:11,fontWeight:700,border:'1px solid rgba(217,148,1,0.22)'}}>
-                    <ShoppingCart size={9}/>{(tool.sales_count||0).toLocaleString()} {t('sold','مبيعة')}
-                  </span>
-                )}
+                {tool.name}
+              </h1>
+
+              {/* Rating row */}
+              <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:18}}>
+                <div style={{display:'flex',gap:1.5}}>
+                  {[1,2,3,4,5].map(i=>(
+                    <Star key={i} size={14} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D4D8E2'}/>
+                  ))}
+                </div>
+                <span style={{fontSize:14,fontWeight:700,color:'#C88800'}}>{displayRating.toFixed(1)}</span>
+                <span style={{fontSize:13,color:'rgba(0,0,0,0.20)'}}>·</span>
+                <span style={{fontSize:13,color:'#8C96AB'}}>{displayCount.toLocaleString()} {t('reviews','تقييم')}</span>
               </div>
+
+              {/* Thin rule */}
+              <div style={{height:1,background:'linear-gradient(90deg, rgba(217,148,1,0.18) 0%, rgba(0,0,0,0.05) 100%)',marginBottom:16}}/>
+
+              {/* Short description */}
+              {tool.description && (
+                <p style={{
+                  margin:0,fontSize:13,color:'#7A8499',lineHeight:1.65,
+                  display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical' as const,overflow:'hidden',
+                }}>
+                  {tool.description}
+                </p>
+              )}
             </div>
 
-            {/* Identity: logo + name + rating */}
-            <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:16}}>
-              <div style={{
-                width:72,height:72,borderRadius:18,flexShrink:0,
-                background:'rgba(255,255,255,0.82)',
-                border:'1px solid rgba(255,255,255,0.95)',
-                boxShadow:'0 4px 20px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,1)',
-                display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',
-              }}>
-                {tool.image_url
-                  ? <img src={tool.image_url} alt={tool.name} style={{width:52,height:52,objectFit:'contain'}}/>
-                  : <span style={{fontSize:22,fontWeight:800,color:'#C5CDD9'}}>{tool.name.slice(0,2).toUpperCase()}</span>
-                }
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <h1 style={{margin:0,marginBottom:8,lineHeight:1.15,fontSize:'clamp(22px,5vw,30px)',fontWeight:800,color:'#0B0F1A',letterSpacing:-0.5}}>
-                  {tool.name}
-                </h1>
-                <div style={{display:'flex',alignItems:'center',gap:7,flexWrap:'wrap'}}>
-                  <div style={{display:'flex',gap:2}}>
-                    {[1,2,3,4,5].map(i=>(
-                      <Star key={i} size={13} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D1D5DB'}/>
-                    ))}
+            {/* vertical hairline */}
+            <div className="pk-hero-vdiv"/>
+
+            {/* ── RIGHT: Conversion ── */}
+            <div className="pk-hero-right">
+
+              {/* Plan selector */}
+              {variants.length > 0 && (
+                <div>
+                  <div style={{fontSize:9,fontWeight:800,letterSpacing:1.2,color:'#A4ABBE',textTransform:'uppercase',marginBottom:8}}>
+                    {t('Choose Plan','اختر الباقة')}
                   </div>
-                  <span style={{fontSize:13,fontWeight:700,color:'#D99401'}}>{displayRating.toFixed(1)}</span>
-                  <span style={{fontSize:13,color:'rgba(0,0,0,0.22)'}}>·</span>
-                  <span style={{fontSize:13,color:'#8A93A6'}}>{displayCount.toLocaleString()} {t('reviews','تقييم')}</span>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                    {variants.map((v,i)=>{
+                      const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
+                      const active = selectedVariant===i
+                      return (
+                        <button key={i} onClick={()=>setSelectedVariant(i)} style={{
+                          padding:'7px 16px',borderRadius:10,fontSize:12,fontWeight:700,cursor:'pointer',
+                          border:active?'1.5px solid rgba(217,148,1,0.50)':'1.5px solid rgba(0,0,0,0.09)',
+                          background:active?'rgba(217,148,1,0.11)':'rgba(255,255,255,0.68)',
+                          color:active?'#8A5F00':'#505A72',
+                          boxShadow:active?'0 2px 12px rgba(217,148,1,0.16)':'0 1px 2px rgba(0,0,0,0.04)',
+                          transition:'all 0.13s',
+                        }}>
+                          {vName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Price block */}
+              <div>
+                <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap',marginBottom:4}}>
+                  <span style={{fontSize:'clamp(32px,7vw,44px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-1.5,fontVariantNumeric:'tabular-nums'}}>
+                    {price}
+                  </span>
+                  {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
+                    <span style={{fontSize:17,color:'rgba(0,0,0,0.22)',textDecoration:'line-through',fontWeight:500,letterSpacing:-0.3}}>
+                      {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
+                    </span>
+                  )}
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <span style={{fontSize:12,color:'#9BA8BF',fontWeight:500}}>/ {durLabel}</span>
+                  {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
+                    <span style={{padding:'2px 8px',borderRadius:20,background:'rgba(239,68,68,0.10)',color:'#B53030',fontSize:11,fontWeight:800,border:'1px solid rgba(239,68,68,0.16)'}}>
+                      -{Math.round((1-displayPriceEgp/displayRetailEgp)*100)}%
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Divider */}
-            <div style={{height:1,background:'rgba(0,0,0,0.07)',marginBottom:16}}/>
+              {/* CTA */}
+              {tool.is_out_of_stock
+                ? <button disabled style={{width:'100%',padding:'13px',borderRadius:13,background:'rgba(0,0,0,0.05)',color:'rgba(0,0,0,0.26)',fontSize:14,fontWeight:700,border:'1px solid rgba(0,0,0,0.07)',cursor:'not-allowed'}}>
+                    {t('Out of Stock','نفذت الكمية')}
+                  </button>
+                : <button onClick={()=>{ window.location.href=buyUrl }}
+                    style={{width:'100%',padding:'14px',borderRadius:13,background:'#D99401',color:'#fff',fontSize:14,fontWeight:800,border:'none',cursor:'pointer',
+                      boxShadow:'0 5px 22px rgba(217,148,1,0.38),0 1px 0 rgba(255,255,255,0.20) inset',
+                      transition:'transform 0.11s,box-shadow 0.11s',display:'flex',alignItems:'center',justifyContent:'center',gap:7,letterSpacing:0.2}}
+                    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 28px rgba(217,148,1,0.46),0 1px 0 rgba(255,255,255,0.20) inset'}}
+                    onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 5px 22px rgba(217,148,1,0.38),0 1px 0 rgba(255,255,255,0.20) inset'}}>
+                    🛒 {t('Buy Now','اشتري الآن')}
+                  </button>
+              }
 
-            {/* Variants */}
-            {variants.length > 0 && (
-              <div style={{marginBottom:16}}>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:'#9BA3B2',textTransform:'uppercase',marginBottom:9}}>
-                  {t('Choose Plan','اختر الباقة')}
-                </div>
-                <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
-                  {variants.map((v,i)=>{
-                    const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
-                    const active = selectedVariant===i
-                    return (
-                      <button key={i} onClick={()=>setSelectedVariant(i)} style={{
-                        padding:'8px 18px',borderRadius:11,fontSize:13,fontWeight:700,cursor:'pointer',
-                        border:active?'1.5px solid rgba(217,148,1,0.55)':'1.5px solid rgba(0,0,0,0.10)',
-                        background:active?'rgba(217,148,1,0.13)':'rgba(255,255,255,0.70)',
-                        color:active?'#9A6700':'#5A6478',
-                        backdropFilter:'blur(8px)',
-                        boxShadow:active?'0 2px 14px rgba(217,148,1,0.18)':'0 1px 3px rgba(0,0,0,0.05)',
-                        transition:'all 0.14s',
-                      }}>
-                        {vName}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Price */}
-            <div style={{marginBottom:14}}>
-              <div style={{display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap',marginBottom:0}}>
-                <span style={{fontSize:'clamp(36px,8vw,50px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-1.5,fontVariantNumeric:'tabular-nums'}}>
-                  {price}
-                </span>
-                {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                  <span style={{fontSize:20,color:'rgba(0,0,0,0.22)',textDecoration:'line-through',fontWeight:500}}>
-                    {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
+              {/* Trust row */}
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                {[{icon:'⚡',en:'Instant',ar:'فوري'},{icon:'🔒',en:'Secure',ar:'آمن'},{icon:'💬',en:'Support',ar:'دعم'}].map(b=>(
+                  <span key={b.en} style={{fontSize:11,color:'#9BA8BF',display:'flex',alignItems:'center',gap:3,fontWeight:500}}>
+                    {b.icon}{isRtl?b.ar:b.en}
                   </span>
-                )}
-                <span style={{fontSize:14,color:'#9BA3B2',fontWeight:500}}>/ {durLabel}</span>
-                {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                  <span style={{padding:'3px 10px',borderRadius:20,background:'rgba(239,68,68,0.11)',color:'#C53030',fontSize:12,fontWeight:800,border:'1px solid rgba(239,68,68,0.18)'}}>
-                    -{Math.round((1-displayPriceEgp/displayRetailEgp)*100)}%
-                  </span>
-                )}
+                ))}
               </div>
+
+              {/* Live counters */}
+              {(fakeVisits !== null || fakeStock !== null) && (
+                <div style={{display:'flex',flexDirection:'column',gap:6,paddingTop:2}}>
+                  {fakeVisits !== null && (
+                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:10,background:'rgba(255,255,255,0.65)',border:'1px solid rgba(0,0,0,0.06)'}}>
+                      <span style={{width:7,height:7,borderRadius:'50%',background:'#22C55E',flexShrink:0,animation:'pk-live-dot 1.8s ease-in-out infinite',display:'inline-block'}}/>
+                      <span style={{fontSize:13,fontWeight:800,color:'#0B1220',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
+                      <span style={{fontSize:11,color:'#8C96AB',fontWeight:500}}>{t('viewing now','يشاهد الآن')}</span>
+                    </div>
+                  )}
+                  {fakeStock !== null && (
+                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:10,background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.14)'}}>
+                      <span style={{fontSize:13}}>📦</span>
+                      <span style={{fontSize:13,fontWeight:800,color:'#B53030',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
+                      <span style={{fontSize:11,color:'#C47070',fontWeight:500}}>{t('left in stock','متبقي في المخزون')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* CTA button */}
-            {tool.is_out_of_stock
-              ? <button disabled style={{width:'100%',padding:'14px',borderRadius:14,background:'rgba(0,0,0,0.06)',color:'rgba(0,0,0,0.28)',fontSize:15,fontWeight:700,border:'1px solid rgba(0,0,0,0.08)',cursor:'not-allowed'}}>
-                  {t('Out of Stock','نفذت الكمية')}
-                </button>
-              : <button onClick={()=>{ window.location.href=buyUrl }}
-                  style={{width:'100%',padding:'15px',borderRadius:14,background:'#D99401',color:'#fff',fontSize:15,fontWeight:800,border:'none',cursor:'pointer',boxShadow:'0 6px 24px rgba(217,148,1,0.36),inset 0 1px 0 rgba(255,255,255,0.22)',transition:'transform 0.12s,box-shadow 0.12s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
-                  onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 30px rgba(217,148,1,0.44),inset 0 1px 0 rgba(255,255,255,0.22)'}}
-                  onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 6px 24px rgba(217,148,1,0.36),inset 0 1px 0 rgba(255,255,255,0.22)'}}>
-                  🛒 {t('Buy Now','اشتري الآن')}
-                </button>
-            }
-
-            {/* Trust signals */}
-            <div style={{display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap',marginTop:10}}>
-              {[{icon:'⚡',en:'Instant activation',ar:'تفعيل فوري'},{icon:'🔒',en:'Secure payment',ar:'دفع آمن'},{icon:'💬',en:'24/7 support',ar:'دعم مستمر'}].map(b=>(
-                <span key={b.en} style={{fontSize:11,color:'#8A93A6',display:'flex',alignItems:'center',gap:4}}>
-                  {b.icon}{isRtl?b.ar:b.en}
-                </span>
-              ))}
-            </div>
-
-            {/* Social proof chips */}
-            {(fakeVisits !== null || fakeStock !== null) && (<>
-              <div style={{height:1,background:'rgba(0,0,0,0.07)',margin:'14px 0 12px'}}/>
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-                {fakeVisits !== null && (
-                  <div style={{display:'flex',alignItems:'center',gap:5,padding:'5px 13px',borderRadius:10,background:'rgba(255,255,255,0.72)',border:'1px solid rgba(0,0,0,0.07)',backdropFilter:'blur(8px)'}}>
-                    <span style={{fontSize:13}}>👁</span>
-                    <span style={{fontSize:12,fontWeight:700,color:'#0B0F1A',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
-                    <span style={{fontSize:12,color:'#8A93A6'}}>{t('viewing today','مشاهدة اليوم')}</span>
-                  </div>
-                )}
-                {fakeStock !== null && (
-                  <div style={{display:'flex',alignItems:'center',gap:5,padding:'5px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.16)',backdropFilter:'blur(8px)'}}>
-                    <span style={{fontSize:13}}>📦</span>
-                    <span style={{fontSize:12,fontWeight:700,color:'#C53030',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
-                    <span style={{fontSize:12,color:'#E07070'}}>{t('left in stock','متبقي في المخزون')}</span>
-                  </div>
-                )}
-              </div>
-            </>)}
           </div>
         </div>
       </div>
