@@ -50,8 +50,8 @@ function FakeStockBadge({ toolId, min, max, lang }: { toolId:string; min:number;
   },[toolId, min, max])
   if (!max || max <= 0) return null
   return (
-    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-red-600"
-      style={{background:'rgba(239,68,68,0.10)',border:'1px solid rgba(239,68,68,0.20)'}}>
+    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+      style={{background:'linear-gradient(135deg,#f97316,#dc2626)',boxShadow:'0 2px 6px rgba(249,115,22,0.35)'}}>
       📦 {lang==='ar'?`متبقي ${stock}`:`${stock} left`}
     </span>
   )
