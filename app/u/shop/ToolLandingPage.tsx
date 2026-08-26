@@ -1836,7 +1836,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               </div>
               <div className="flex-1 space-y-2 w-full">
                 {dist.map(d=>(
-                  <RatingBar key={d.stars} label={`${d.stars} â˜…`} count={d.count} total={totalReviews}/>
+                  <RatingBar key={d.stars} label={`${d.stars} ★`} count={d.count} total={totalReviews}/>
                 ))}
               </div>
             </div>
