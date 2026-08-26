@@ -95,6 +95,7 @@ interface Tool {
   fake_visits_min?: number; fake_visits_max?: number
   fake_stock_min?: number; fake_stock_max?: number
   variants?: ToolVariant[]
+  warranty_label?: string
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange:(v:number)=>void }) {
@@ -188,7 +189,7 @@ function useArabicFont(isRtl: boolean) {
   }, [isRtl])
 }
 
-// Hero CSS â€” aura glow + live dot + responsive split
+// Hero CSS — aura glow + live dot + responsive split
 const HERO_CSS = `
 @keyframes pk-aura-pulse {
   0%, 100% { opacity: 0.25; transform: scale(0.96); }
@@ -1464,7 +1465,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
               <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:18}}>
                 <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(16,185,129,0.10)',color:'#0B7A4B',fontSize:11,fontWeight:700,border:'1px solid rgba(16,185,129,0.20)'}}>
-                  <Zap size={9} fill="#0B7A4B" stroke="none"/>{tool.delivery_label||t('Instant','\u0641\u0648\u0631\u064a')}
+                  <Zap size={9} fill="#0B7A4B" stroke="none"/>{isRtl?(tool.delivery_label||'INSTANT').replace(/^INSTANT$/i,'\u0641\u0648\u0631\u064a').replace(/instant delivery/i,'\u062a\u0633\u0644\u064a\u0645 \u0641\u0648\u0631\u064a').replace(/instant/i,'\u0641\u0648\u0631\u064a').replace(/within 24/i,'\u062e\u0644\u0627\u0644 24 \u0633\u0627\u0639\u0629'):(tool.delivery_label||'INSTANT')}
                 </span>
                 <span style={{display:'inline-flex',alignItems:'center',padding:'4px 11px',borderRadius:20,background:'rgba(0,0,0,0.05)',color:'#5A6478',fontSize:11,fontWeight:600,border:'1px solid rgba(0,0,0,0.07)'}}>
                   ⏱ {durLabel}
@@ -1472,6 +1473,11 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 {(tool.sales_count||0) > 0 && (
                   <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(217,148,1,0.10)',color:'#8A5F00',fontSize:11,fontWeight:700,border:'1px solid rgba(217,148,1,0.20)'}}>
                     <ShoppingCart size={9}/>{(tool.sales_count||0).toLocaleString()} {t('sold','\u0645\u0628\u064a\u0639\u0629')}
+                  </span>
+                )}
+                {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
+                  <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(99,102,241,0.10)',color:'#4338CA',fontSize:11,fontWeight:700,border:'1px solid rgba(99,102,241,0.20)'}}>
+                    {'🛡️'} {isRtl?(tool.warranty_label).replace(/(\d+)\s*Year[s]?\s*Warranty/i,(_,n)=>`\u0636\u0645\u0627\u0646 ${n} \u0633\u0646\u0629`).replace(/(\d+)\s*Month[s]?\s*Warranty/i,(_,n)=>`\u0636\u0645\u0627\u0646 ${n} \u0634\u0647\u0631`).replace(/(\d+)\s*Day[s]?\s*Warranty/i,(_,n)=>`\u0636\u0645\u0627\u0646 ${n} \u064a\u0648\u0645`).replace(/Full\s*Warranty/i,'\u0636\u0645\u0627\u0646 \u0643\u0627\u0645\u0644').replace(/Warranty/i,'\u0636\u0645\u0627\u0646'):tool.warranty_label}
                   </span>
                 )}
               </div>
@@ -1548,7 +1554,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                       transition:'transform 0.11s,box-shadow 0.11s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
                     onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 9px 30px rgba(217,148,1,0.50), inset 0 1px 0 rgba(255,255,255,0.22)'}}
                     onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 5px 24px rgba(217,148,1,0.40), inset 0 1px 0 rgba(255,255,255,0.22)'}}>
-                    \ud83d\uded2 {t('Buy Now','\u0627\u0634\u062a\u0631\u064a \u0627\u0644\u0622\u0646')}
+                    {'🛒'} {t('Buy Now','\u0627\u0634\u062a\u0631\u064a \u0627\u0644\u0622\u0646')}
                   </button>
               }
 
@@ -1571,7 +1577,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   )}
                   {fakeStock !== null && (
                     <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.15)',flex:1,minWidth:0}}>
-                      <span style={{fontSize:13}}>\ud83d\udce6</span>
+                      <span style={{fontSize:13}}>📦</span>
                       <span style={{fontSize:13,fontWeight:800,color:'#C0392B',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
                       <span style={{fontSize:11,color:'#C47070',fontWeight:500,whiteSpace:'nowrap'}}>{t('left in Stock','\u0645\u062a\u0628\u0642\u064a \u0628\u0627\u0644\u0645\u062E\u0632\u0646')}</span>
                     </div>
@@ -1627,7 +1633,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                       )}
                       {!c.image_url && (
                         <div className="aspect-square bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10 flex items-center justify-center">
-                          <span className="text-4xl opacity-30">ðŸ–¼</span>
+                          <span className="text-4xl opacity-30">🖼</span>
                         </div>
                       )}
                       <div className="p-4">
@@ -1889,9 +1895,14 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
-                      {new Date(r.created_at).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB',{day:'numeric',month:'short',year:'numeric'})}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'3px 9px',borderRadius:20,fontSize:10,fontWeight:800,background:'linear-gradient(135deg,#D99401,#B87E00)',color:'#fff',letterSpacing:0.3,boxShadow:'0 2px 8px rgba(217,148,1,0.25)',whiteSpace:'nowrap'}}>
+                        {'✓'} {isRtl?'عملية شراء موثقة':'Verified Purchase'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(r.created_at).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB',{day:'numeric',month:'short',year:'numeric'})}
+                      </span>
+                    </div>
                   </div>
                   {r.comment && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{r.comment}</p>}
                 </div>
@@ -1910,7 +1921,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="px-10 py-4 rounded-2xl text-white font-bold text-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{background:'#d99401', boxShadow:'0 8px 24px rgba(217,148,1,0.3)'}}>
-              ðŸ›’ {t('Buy Now â€” ','اشتري الآن — ')}{price}
+              🛒 {t('Buy Now — ','اشتري الآن — ')}{price}
             </button>
           )}
         </div>
@@ -1926,7 +1937,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm"
               style={{background:'#d99401'}}>
-              ðŸ›’ {t('Buy Now','اشتري الآن')}
+              🛒 {t('Buy Now','اشتري الآن')}
             </button>
           </div>
         </div>

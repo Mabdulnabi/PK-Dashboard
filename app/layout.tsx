@@ -179,7 +179,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       btn.style.bottom=inPortal?'88px':'20px';
 
       function applyRtlPos(){
-        var isRtl=(localStorage.getItem('pk_lang')||'en')==='ar';
+        var isAdmin=window.location.pathname.startsWith('/store')||window.location.pathname.startsWith('/admin');
+        var isRtl=!isAdmin&&(localStorage.getItem('pk_lang')||'en')==='ar';
         document.documentElement.dir=isRtl?'rtl':'ltr';
         if(isRtl){btn.style.right='auto';btn.style.left='18px';}else{btn.style.left='auto';btn.style.right='18px';}
       }
