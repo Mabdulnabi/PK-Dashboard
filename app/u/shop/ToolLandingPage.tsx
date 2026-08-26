@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
@@ -188,25 +188,20 @@ function useArabicFont(isRtl: boolean) {
   }, [isRtl])
 }
 
-// Hero CSS — aura glow + live dot + responsive split
+// Hero CSS â€” aura glow + live dot + responsive split
 const HERO_CSS = `
-@keyframes pk-aura-pulse {
-  0%, 100% { opacity: 0.28; transform: scale(0.97); }
-  50%       { opacity: 0.50; transform: scale(1.07); }
-}
 @keyframes pk-live-dot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.2; }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
 }
-.pk-hero-body    { display: flex; }
-.pk-hero-vdiv    { width: 1px; background: rgba(0,0,0,0.07); align-self: stretch; margin: 20px 0; flex-shrink: 0; }
-.pk-hero-left    { flex: 0 0 56%; min-width: 260px; padding: 22px 22px 26px; }
-.pk-hero-right   { flex: 1 1 190px; min-width: 190px; padding: 22px 22px 26px; display: flex; flex-direction: column; gap: 14px; }
-@media (max-width: 620px) {
-  .pk-hero-body  { flex-direction: column; }
-  .pk-hero-vdiv  { width: auto; height: 1px; margin: 0 22px; }
-  .pk-hero-left  { flex: none; width: 100%; padding-bottom: 4px; }
-  .pk-hero-right { flex: none; width: 100%; padding-top: 16px; }
+.pk-hero-nav   { background:#0A0F1E; padding:10px 22px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; min-height:46px; }
+.pk-hero-body  { display:flex; }
+.pk-hero-dark  { background:#0D1326; padding:30px 26px 34px; display:flex; flex-direction:column; justify-content:center; flex:0 0 42%; min-width:220px; box-sizing:border-box; }
+.pk-hero-white { background:#FFFFFF; padding:22px 24px 26px; flex:1 1 260px; display:flex; flex-direction:column; gap:15px; box-sizing:border-box; }
+@media (max-width:640px) {
+  .pk-hero-body  { flex-direction:column; }
+  .pk-hero-dark  { flex:none; width:100%; min-width:0; padding:20px 20px 22px; }
+  .pk-hero-white { flex:none; width:100%; padding:18px 20px 22px; }
 }
 `
 function injectHeroCss() {
@@ -384,7 +379,7 @@ function FeaturesGridBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   )
 }
 
-// ── Platform icons ─────────────────────────────────────────────────────────
+// â”€â”€ Platform icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FacebookIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
 }
@@ -404,7 +399,7 @@ function StarRow({ n = 5 }: { n?: number }) {
   )
 }
 
-// ── How To Work Block ────────────────────────────────────────────────────────
+// â”€â”€ How To Work Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const v           = block.hiw_variant || 1
   const steps       = block.hiw_steps || []
@@ -444,7 +439,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     background: bgImage ? 'transparent' : sectionBg,
   }
 
-  // ── V1: Numbered cards grid ──────────────────────────────────────────────
+  // â”€â”€ V1: Numbered cards grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 1) return (
     <section style={wrapStyle}>
       {bgImage && <img src={bgImage} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', zIndex:0 }}/>}
@@ -470,7 +465,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── V2: Vertical timeline with line ──────────────────────────────────────
+  // â”€â”€ V2: Vertical timeline with line â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 2) return (
     <section style={{ ...wrapStyle, background: sectionBg }}>
       <SectionHeader/>
@@ -495,7 +490,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── V3: Horizontal connected steps ───────────────────────────────────────
+  // â”€â”€ V3: Horizontal connected steps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 3) return (
     <section style={{ ...wrapStyle, background: sectionBg }}>
       <SectionHeader/>
@@ -517,7 +512,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
               </div>
               {i < steps.length - 1 && (
                 <div style={{ paddingTop:30, color:`${accent}80`, fontSize:20, flexShrink:0 }}>
-                  {isRtl ? '←' : '→'}
+                  {isRtl ? 'â†' : 'â†’'}
                 </div>
               )}
             </div>
@@ -527,7 +522,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── V4: Alternating image + text rows ────────────────────────────────────
+  // â”€â”€ V4: Alternating image + text rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 4) return (
     <section style={{ ...wrapStyle, background: sectionBg }}>
       <SectionHeader/>
@@ -556,7 +551,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── V5: Icon cards centered with gold accent ─────────────────────────────
+  // â”€â”€ V5: Icon cards centered with gold accent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <section style={{ ...wrapStyle, background: sectionBg }}>
       <SectionHeader/>
@@ -582,7 +577,7 @@ function HowToWorkBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   )
 }
 
-// ── Content Block ───────────────────────────────────────────────────────────
+// â”€â”€ Content Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ContentBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const title      = isRtl ? (block.title_ar || block.title_en) : (block.title_en || block.title_ar)
   const desc       = isRtl ? (block.body_ar  || block.body_en)  : (block.body_en  || block.body_ar)
@@ -685,7 +680,7 @@ function ContentBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   )
 }
 
-// ── Stats Block ─────────────────────────────────────────────────────────────
+// â”€â”€ Stats Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StatsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const items = block.stats_items || []
   const sectionBg   = block.stats_bg          || '#f7f8fa'
@@ -765,7 +760,7 @@ function StatsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   )
 }
 
-// ── Countdown Block ─────────────────────────────────────────────────────────
+// â”€â”€ Countdown Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const hours = block.countdown_hours || 4
   const preset = block.countdown_preset || 1
@@ -815,12 +810,12 @@ function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
 
   const pad = (n: number) => String(n).padStart(2, '0')
   const labels = isRtl
-    ? ['يوم', 'ساعة', 'دقيقة', 'ثانية']
+    ? ['ÙŠÙˆÙ…', 'Ø³Ø§Ø¹Ø©', 'Ø¯Ù‚ÙŠÙ‚Ø©', 'Ø«Ø§Ù†ÙŠØ©']
     : ['Days', 'Hours', 'Minutes', 'Seconds']
   const units = [timeLeft.d, timeLeft.h, timeLeft.m, timeLeft.s]
   const glowColors = ['rgba(239,68,68,.4)', 'rgba(59,130,246,.4)', 'rgba(34,197,94,.4)', 'rgba(168,85,247,.4)']
 
-  // ── Preset 1: dark boxes ────────────────────────────────────────────────
+  // â”€â”€ Preset 1: dark boxes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (preset === 1) return (
     <section style={{ padding: '24px 0' }}>
       {titleText && <p style={{ textAlign: 'center', fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 12 }}>{titleText}</p>}
@@ -835,7 +830,7 @@ function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Preset 2: glow boxes ────────────────────────────────────────────────
+  // â”€â”€ Preset 2: glow boxes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (preset === 2) return (
     <section style={{ padding: '24px 0' }}>
       {titleText && <p style={{ textAlign: 'center', fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 12 }}>{titleText}</p>}
@@ -850,7 +845,7 @@ function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Preset 3: inline dotted ─────────────────────────────────────────────
+  // â”€â”€ Preset 3: inline dotted â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <section style={{ padding: '12px 0' }}>
       <div style={{
@@ -875,7 +870,7 @@ function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   )
 }
 
-// ── Banners Block ───────────────────────────────────────────────────────────
+// â”€â”€ Banners Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BannersBlock({ block }: { block: Block }) {
   const imgs = block.banner_images || []
   const v    = block.banner_variant || 1
@@ -894,14 +889,14 @@ function BannersBlock({ block }: { block: Block }) {
     return <div style={{ overflow:'hidden', borderRadius: r, ...style }}>{wrapped}</div>
   }
 
-  // ── V1: 2 equal columns ───────────────────────────────────────────────────
+  // â”€â”€ V1: 2 equal columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 1) return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
       {[0,1].map(i=><Img key={i} i={i} style={{ aspectRatio:'4/3' }}/>)}
     </div>
   )
 
-  // ── V2: Large left + 2 stacked right ──────────────────────────────────────
+  // â”€â”€ V2: Large left + 2 stacked right â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 2) return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
       <Img i={0} style={{ gridRow:'span 2' }}/>
@@ -910,14 +905,14 @@ function BannersBlock({ block }: { block: Block }) {
     </div>
   )
 
-  // ── V3: 2×2 grid ─────────────────────────────────────────────────────────
+  // â”€â”€ V3: 2Ã—2 grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 3) return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
       {[0,1,2,3].map(i=><Img key={i} i={i} style={{ aspectRatio:'1' }}/>)}
     </div>
   )
 
-  // ── V4: Wide top + 4 equal bottom ─────────────────────────────────────────
+  // â”€â”€ V4: Wide top + 4 equal bottom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 4) return (
     <div style={{ display:'flex', flexDirection:'column', gap }}>
       <Img i={0} style={{ aspectRatio:'21/9', width:'100%' }}/>
@@ -927,7 +922,7 @@ function BannersBlock({ block }: { block: Block }) {
     </div>
   )
 
-  // ── V5: Large left (2/3) + 3 stacked right ────────────────────────────────
+  // â”€â”€ V5: Large left (2/3) + 3 stacked right â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 5) return (
     <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap }}>
       <Img i={0} style={{ gridRow:'span 3' }}/>
@@ -937,14 +932,14 @@ function BannersBlock({ block }: { block: Block }) {
     </div>
   )
 
-  // ── V6: 3 equal columns ───────────────────────────────────────────────────
+  // â”€â”€ V6: 3 equal columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 6) return (
     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap }}>
       {[0,1,2].map(i=><Img key={i} i={i} style={{ aspectRatio:'3/4' }}/>)}
     </div>
   )
 
-  // ── V7: 2 top + 3 bottom ──────────────────────────────────────────────────
+  // â”€â”€ V7: 2 top + 3 bottom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 7) return (
     <div style={{ display:'flex', flexDirection:'column', gap }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap }}>
@@ -957,7 +952,7 @@ function BannersBlock({ block }: { block: Block }) {
     </div>
   )
 
-  // ── V8: Wide top + 3 bottom ───────────────────────────────────────────────
+  // â”€â”€ V8: Wide top + 3 bottom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 8) return (
     <div style={{ display:'flex', flexDirection:'column', gap }}>
       <Img i={0} style={{ aspectRatio:'21/9', width:'100%' }}/>
@@ -967,7 +962,7 @@ function BannersBlock({ block }: { block: Block }) {
     </div>
   )
 
-  // ── V9: Mosaic (tall left + top-right + 2 small bottom-right) ────────────
+  // â”€â”€ V9: Mosaic (tall left + top-right + 2 small bottom-right) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 9) return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'auto auto', gap }}>
       <Img i={0} style={{ gridRow:'span 2' }}/>
@@ -982,7 +977,7 @@ function BannersBlock({ block }: { block: Block }) {
   return null
 }
 
-// ── Testimonials Block ──────────────────────────────────────────────────────
+// â”€â”€ Testimonials Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   const tc = block.testimonial_colors || { variant: 1 }
   const v = tc.variant || 1
@@ -1018,7 +1013,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </>
   )
 
-  // ── Variant 1: grid cards with image+heading ──────────────────────────────
+  // â”€â”€ Variant 1: grid cards with image+heading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 1) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1027,7 +1022,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:24, boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
-              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:48, height:48, borderRadius:'50%', background:'#e8e8f0', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>👤</div>}
+              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:48, height:48, borderRadius:'50%', background:'#e8e8f0', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>ðŸ‘¤</div>}
               <div>
                 <div className="tst-name" style={{ fontWeight:700, fontSize:15, color:nameColor }}>{r.author_name}</div>
                 <StarRow/>
@@ -1042,7 +1037,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 2: quote cards, no image, centered ────────────────────────────
+  // â”€â”€ Variant 2: quote cards, no image, centered â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 2) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1063,7 +1058,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 3: avatar top-center, stars, review text ─────────────────────
+  // â”€â”€ Variant 3: avatar top-center, stars, review text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 3) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1071,7 +1066,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:28, textAlign:'center', boxShadow:'0 2px 16px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
-            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', margin:'0 auto 14px', display:'block', border:'3px solid #fde68a' }}/> : <div style={{ width:64, height:64, borderRadius:'50%', background:'#fde68a', margin:'0 auto 14px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26 }}>👤</div>}
+            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', margin:'0 auto 14px', display:'block', border:'3px solid #fde68a' }}/> : <div style={{ width:64, height:64, borderRadius:'50%', background:'#fde68a', margin:'0 auto 14px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26 }}>ðŸ‘¤</div>}
             <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><StarRow/></div>
             <p className="tst-review" style={{ color:revColor, fontSize:14, lineHeight:'1.7', margin:'0 0 16px' }}>{r.review}</p>
             <div className="tst-name" style={{ fontWeight:700, fontSize:14, color:nameColor }}>{r.author_name}</div>
@@ -1082,7 +1077,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 4: horizontal card (avatar left, text right) ──────────────────
+  // â”€â”€ Variant 4: horizontal card (avatar left, text right) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 4) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1090,7 +1085,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:16 }}>
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:20, display:'flex', gap:16, alignItems:'flex-start', boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
-            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:56, height:56, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:56, height:56, borderRadius:'50%', background:'#fde68a', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>👤</div>}
+            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:56, height:56, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:56, height:56, borderRadius:'50%', background:'#fde68a', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>ðŸ‘¤</div>}
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
                 <div className="tst-name" style={{ fontWeight:700, fontSize:15, color:nameColor }}>{r.author_name}</div>
@@ -1105,7 +1100,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 5: light-gray bg section, white shadow cards ─────────────────
+  // â”€â”€ Variant 5: light-gray bg section, white shadow cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 5) return (
     <section style={{ background: tc.bg_color||'#F3F3F7', borderRadius:20, padding:'36px 24px' }}>
       <style>{hoverCSS}</style>
@@ -1115,7 +1110,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:'#fff', borderRadius:16, padding:24, boxShadow:'0 4px 24px rgba(0,0,0,.08)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:44, height:44, borderRadius:'50%', background:'#e8e8f0', display:'flex', alignItems:'center', justifyContent:'center' }}>👤</div>}
+                {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:44, height:44, borderRadius:'50%', background:'#e8e8f0', display:'flex', alignItems:'center', justifyContent:'center' }}>ðŸ‘¤</div>}
                 <div>
                   <div className="tst-name" style={{ fontWeight:700, fontSize:14, color:nameColor }}>{r.author_name}</div>
                   <StarRow/>
@@ -1130,7 +1125,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 6: masonry-like multi-size cards ──────────────────────────────
+  // â”€â”€ Variant 6: masonry-like multi-size cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 6) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1139,7 +1134,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:tc.bg_color||'#fff', borderRadius:16, padding:24, marginBottom:20, breakInside:'avoid', boxShadow:'0 4px 20px rgba(0,0,0,.07)', border:'1px solid #f0f0f5' }}>
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:42, height:42, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center' }}>👤</div>}
+              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:42, height:42, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center' }}>ðŸ‘¤</div>}
               <div>
                 <div className="tst-name" style={{ fontWeight:700, fontSize:13, color:nameColor }}>{r.author_name}</div>
                 <div style={{ display:'flex', gap:4, alignItems:'center', marginTop:2 }}><StarRow/>{r.type==='google'?<GoogleIcon/>:<FacebookIcon/>}</div>
@@ -1152,7 +1147,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 7: list, left-aligned, heading prominent ─────────────────────
+  // â”€â”€ Variant 7: list, left-aligned, heading prominent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 7) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1160,7 +1155,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:16, padding:24, display:'flex', gap:20, alignItems:'flex-start', boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #f0f0f5' }}>
-            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:64, height:64, borderRadius:'50%', background:'#fde68a', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26 }}>👤</div>}
+            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/> : <div style={{ width:64, height:64, borderRadius:'50%', background:'#fde68a', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26 }}>ðŸ‘¤</div>}
             <div style={{ flex:1 }}>
               {r.review_heading && <div className="tst-heading" style={{ fontWeight:800, fontSize:16, color:headColor, marginBottom:8 }}>{r.review_heading}</div>}
               <p className="tst-review" style={{ color:revColor, fontSize:14, lineHeight:'1.7', margin:'0 0 12px' }}>{r.review}</p>
@@ -1175,7 +1170,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 8: colored avatar bg, compact grid ────────────────────────────
+  // â”€â”€ Variant 8: colored avatar bg, compact grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const avatarColors = ['#dbeafe','#fce7f3','#d1fae5','#fef3c7','#ede9fe','#fee2e2']
   if (v === 8) return (
     <section style={{ padding:'32px 0' }}>
@@ -1185,7 +1180,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg, borderRadius:20, padding:24, boxShadow:'0 4px 20px rgba(0,0,0,.07)', border:'1px solid #f0f0f5' }}>
             <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:14 }}>
-              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:12, objectFit:'cover' }}/> : <div style={{ width:48, height:48, borderRadius:12, background:avatarColors[i%avatarColors.length], display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>👤</div>}
+              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:12, objectFit:'cover' }}/> : <div style={{ width:48, height:48, borderRadius:12, background:avatarColors[i%avatarColors.length], display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>ðŸ‘¤</div>}
               <div>
                 <div className="tst-name" style={{ fontWeight:700, fontSize:14, color:nameColor }}>{r.author_name}</div>
                 <StarRow/>
@@ -1199,7 +1194,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 9: minimal chip-style compact ─────────────────────────────────
+  // â”€â”€ Variant 9: minimal chip-style compact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 9) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1207,7 +1202,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
       <div style={{ display:'flex', flexWrap:'wrap', gap:14 }}>
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:cardBg||'#f8f9fc', borderRadius:50, padding:'14px 24px', display:'flex', alignItems:'center', gap:12, boxShadow:'0 2px 8px rgba(0,0,0,.06)', border:'1px solid #e8e8f0' }}>
-            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:36, height:36, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:36, height:36, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>👤</div>}
+            {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:36, height:36, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:36, height:36, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>ðŸ‘¤</div>}
             <div>
               <div className="tst-name" style={{ fontWeight:700, fontSize:13, color:nameColor }}>{r.author_name}</div>
               <div style={{ display:'flex', gap:4 }}><StarRow n={5}/></div>
@@ -1219,7 +1214,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 10: dark cards, gold accent ───────────────────────────────────
+  // â”€â”€ Variant 10: dark cards, gold accent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 10) return (
     <section style={{ padding:'32px 0' }}>
       <style>{`.${blockId}-card { transition: transform .2s, box-shadow .2s; } .${blockId}-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(217,148,1,.2) !important; }`}</style>
@@ -1228,7 +1223,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
         {reviews.map((r,i)=>(
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ background:tc.bg_color||'#1a1a2e', borderRadius:20, padding:28, boxShadow:'0 4px 24px rgba(0,0,0,.2)', border:'1px solid rgba(217,148,1,.2)' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', border:'2px solid #d99401' }}/> : <div style={{ width:48, height:48, borderRadius:'50%', background:'rgba(217,148,1,.2)', border:'2px solid #d99401', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>👤</div>}
+              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', border:'2px solid #d99401' }}/> : <div style={{ width:48, height:48, borderRadius:'50%', background:'rgba(217,148,1,.2)', border:'2px solid #d99401', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>ðŸ‘¤</div>}
               <div>
                 <div className="tst-name" style={{ fontWeight:700, fontSize:15, color:tc.author_name_color||'#fff' }}>{r.author_name}</div>
                 <StarRow/>
@@ -1243,7 +1238,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
     </section>
   )
 
-  // ── Variant 11: minimal 2-col with large quote ────────────────────────────
+  // â”€â”€ Variant 11: minimal 2-col with large quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (v === 11) return (
     <section style={{ padding:'32px 0' }}>
       <style>{hoverCSS}</style>
@@ -1253,7 +1248,7 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
           <div key={i} className={`pk-gold-hover ${blockId}-card`} style={{ padding:'28px 0', borderTop:'3px solid #d99401' }}>
             <p className="tst-review" style={{ color:revColor, fontSize:16, lineHeight:'1.8', margin:'0 0 20px', fontStyle:'italic' }}>"{r.review}"</p>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:44, height:44, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>👤</div>}
+              {r.author_image ? <img src={r.author_image} alt={r.author_name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover' }}/> : <div style={{ width:44, height:44, borderRadius:'50%', background:'#fde68a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>ðŸ‘¤</div>}
               <div>
                 <div className="tst-name" style={{ fontWeight:700, fontSize:14, color:nameColor }}>{r.author_name}</div>
                 <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:4 }}><StarRow/>{r.type==='google'?<GoogleIcon/>:<FacebookIcon/>}</div>
@@ -1350,7 +1345,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   },[tool.id])
 
   const submitReview = async()=>{
-    if (!myStars) return setSubmitErr(t('Please choose a star rating','اختر عدد النجوم أولاً'))
+    if (!myStars) return setSubmitErr(t('Please choose a star rating','Ø§Ø®ØªØ± Ø¹Ø¯Ø¯ Ø§Ù„Ù†Ø¬ÙˆÙ… Ø£ÙˆÙ„Ø§Ù‹'))
     setSubmit(true); setSubmitErr('')
     const res = await fetch(`/api/tools/${tool.id}/reviews`, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -1358,13 +1353,13 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
     })
     setSubmit(false)
     if (res.ok) { setSubmitted(true) }
-    else { const d = await res.json(); setSubmitErr(d.error||t('Error, try again','حدث خطأ')) }
+    else { const d = await res.json(); setSubmitErr(d.error||t('Error, try again','Ø­Ø¯Ø« Ø®Ø·Ø£')) }
   }
 
   const blocks: Block[] = Array.isArray(tool.landing_blocks) ? tool.landing_blocks : []
 
   const durLabel = lang==='ar'
-    ? tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة')
+    ? tool.duration_label.replace('Days','ÙŠÙˆÙ…').replace('Day','ÙŠÙˆÙ…').replace('Month','Ø´Ù‡Ø±').replace('Months','Ø´Ù‡Ø±').replace('Year','Ø³Ù†Ø©').replace('Years','Ø³Ù†Ø©')
     : tool.duration_label
 
   const displayRating = avgRating || tool.rating
@@ -1380,216 +1375,133 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'} style={isRtl?{fontFamily:"'Cairo', sans-serif"}:{}}>
 
-      {/* ── Hero ── */}
+      {/* â”€â”€ Hero â”€â”€ */}
       <div style={{
-        position:'relative',
-        padding:'16px 12px 20px',
-        background:'radial-gradient(ellipse 130% 100% at 5% 0%, rgba(217,148,1,0.14) 0%, transparent 50%), radial-gradient(ellipse 80% 100% at 95% 100%, rgba(99,102,241,0.11) 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.06) 0%, transparent 60%), #e8eef5',
+        padding:'12px 12px 0',
         fontFamily:"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
       }}>
-        {/* ambient orbs */}
-        <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0}}>
-          <div style={{position:'absolute',top:-80,left:'25%',width:280,height:280,borderRadius:'50%',background:'rgba(217,148,1,0.09)',filter:'blur(72px)'}}/>
-          <div style={{position:'absolute',bottom:-60,right:'8%',width:220,height:220,borderRadius:'50%',background:'rgba(99,102,241,0.09)',filter:'blur(72px)'}}/>
-        </div>
-
-        {/* Glass card */}
-        <div style={{
-          position:'relative',zIndex:1,
-          borderRadius:24,
-          background:'rgba(255,255,255,0.56)',
-          backdropFilter:'blur(28px)',
-          WebkitBackdropFilter:'blur(28px)',
-          border:'1px solid rgba(255,255,255,0.75)',
-          boxShadow:'0 2px 0 rgba(255,255,255,0.9) inset, 0 10px 48px rgba(0,0,0,0.08)',
-          overflow:'hidden',
-        }}>
-          {/* Gold accent line */}
-          <div style={{height:3,background:'linear-gradient(90deg,rgba(217,148,1,0) 0%,#D99401 18%,#F5C842 50%,#D99401 82%,rgba(217,148,1,0) 100%)'}}/>
-
-          {/* Nav row */}
-          <div style={{padding:'14px 22px 0',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
-            <button onClick={onBack} style={{
-              display:'inline-flex',alignItems:'center',gap:5,
-              padding:'5px 13px',borderRadius:9,cursor:'pointer',
-              background:'rgba(255,255,255,0.70)',border:'1px solid rgba(0,0,0,0.08)',
-              color:'#4A5368',fontSize:12,fontWeight:600,
-              boxShadow:'0 1px 3px rgba(0,0,0,0.05)',
-            }}>
-              <ArrowLeft size={12} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
-              {t('Back','رجوع')}
+        <div style={{borderRadius:20,overflow:'hidden',boxShadow:'0 4px 32px rgba(0,0,0,0.14)'}}>
+          <div className="pk-hero-nav">
+            <button onClick={onBack} style={{display:'inline-flex',alignItems:'center',gap:5,padding:0,background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.42)',fontSize:12,fontWeight:600,letterSpacing:0.2,transition:'color 0.12s'}}
+              onMouseEnter={e=>e.currentTarget.style.color='rgba(255,255,255,0.9)'}
+              onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.42)'}>
+              <ArrowLeft size={13} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
+              {t('Store','Ø§Ù„Ù…ØªØ¬Ø±')}
             </button>
-            <div style={{display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
-              <span style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 10px',borderRadius:20,background:'rgba(16,185,129,0.10)',color:'#0B7A4B',fontSize:10,fontWeight:800,letterSpacing:0.4,border:'1px solid rgba(16,185,129,0.20)'}}>
-                <Zap size={8} fill="#0B7A4B"/>{tool.delivery_label||t('INSTANT','فوري')}
+            <div style={{display:'flex',alignItems:'center',gap:0,overflow:'hidden'}}>
+              <span style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:700,color:'#D99401',letterSpacing:0.3}}>
+                <Zap size={9} fill="#D99401" stroke="none"/>{tool.delivery_label||t('Instant','ÙÙˆØ±ÙŠ')}
               </span>
-              <span style={{display:'inline-flex',alignItems:'center',padding:'3px 10px',borderRadius:20,background:'rgba(0,0,0,0.05)',color:'#5A6478',fontSize:10,fontWeight:600,border:'1px solid rgba(0,0,0,0.07)'}}>
-                ⏱ {durLabel}
-              </span>
-              {(tool.sales_count||0) > 0 && (
-                <span style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 10px',borderRadius:20,background:'rgba(217,148,1,0.10)',color:'#8A5F00',fontSize:10,fontWeight:700,border:'1px solid rgba(217,148,1,0.20)'}}>
-                  <ShoppingCart size={8}/>{(tool.sales_count||0).toLocaleString()} {t('sold','مبيعة')}
+              <span style={{color:'rgba(255,255,255,0.14)',margin:'0 10px'}}>Â·</span>
+              <span style={{fontSize:11,fontWeight:500,color:'rgba(255,255,255,0.35)'}}>â± {durLabel}</span>
+              {(tool.sales_count||0) > 0 && (<>
+                <span style={{color:'rgba(255,255,255,0.14)',margin:'0 10px'}}>Â·</span>
+                <span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:11,fontWeight:500,color:'rgba(255,255,255,0.35)'}}>
+                  <ShoppingCart size={9}/>{(tool.sales_count||0).toLocaleString()} {t('sold','Ù…Ø¨ÙŠØ¹Ø©')}
                 </span>
-              )}
+              </>)}
             </div>
           </div>
-
-          {/* Two-column body */}
           <div className="pk-hero-body">
-
-            {/* ── LEFT: Identity ── */}
-            <div className="pk-hero-left">
-
-              {/* Logo with gold aura */}
-              <div style={{position:'relative',width:88,height:88,marginBottom:18}}>
-                <div style={{
-                  position:'absolute',inset:-18,borderRadius:'50%',
-                  background:'radial-gradient(circle, rgba(217,148,1,0.30) 0%, rgba(217,148,1,0.08) 55%, transparent 75%)',
-                  animation:'pk-aura-pulse 3.2s ease-in-out infinite',
-                }}/>
-                <div style={{
-                  position:'relative',width:88,height:88,borderRadius:22,
-                  background:'rgba(255,255,255,0.88)',
-                  border:'1px solid rgba(255,255,255,1)',
-                  boxShadow:'0 4px 24px rgba(0,0,0,0.09),0 1px 0 rgba(255,255,255,1) inset',
-                  display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',
-                }}>
-                  {tool.image_url
-                    ? <img src={tool.image_url} alt={tool.name} style={{width:62,height:62,objectFit:'contain'}}/>
-                    : <span style={{fontSize:26,fontWeight:800,color:'#BFC7D5',letterSpacing:-1}}>{tool.name.slice(0,2).toUpperCase()}</span>
-                  }
-                </div>
+            <div className="pk-hero-dark">
+              <div style={{width:80,height:80,borderRadius:18,marginBottom:20,background:'rgba(255,255,255,0.07)',border:'1.5px solid rgba(217,148,1,0.32)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',boxShadow:'0 0 0 4px rgba(217,148,1,0.07)'}}>
+                {tool.image_url
+                  ? <img src={tool.image_url} alt={tool.name} style={{width:56,height:56,objectFit:'contain'}}/>
+                  : <span style={{fontSize:22,fontWeight:800,color:'rgba(255,255,255,0.22)'}}>{tool.name.slice(0,2).toUpperCase()}</span>
+                }
               </div>
-
-              {/* Tool name */}
-              <h1 style={{
-                margin:'0 0 10px',lineHeight:1.1,
-                fontSize:'clamp(24px,4.5vw,34px)',fontWeight:800,
-                color:'#080D1A',letterSpacing:-0.8,
-              }}>
+              <h1 style={{margin:'0 0 12px',lineHeight:1.08,fontSize:'clamp(22px,4vw,30px)',fontWeight:800,color:'#FFFFFF',letterSpacing:-0.7}}>
                 {tool.name}
               </h1>
-
-              {/* Rating row */}
-              <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:18}}>
+              <div style={{display:'flex',alignItems:'center',gap:5,flexWrap:'wrap',marginBottom:18}}>
                 <div style={{display:'flex',gap:1.5}}>
                   {[1,2,3,4,5].map(i=>(
-                    <Star key={i} size={14} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D4D8E2'}/>
+                    <Star key={i} size={13} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'rgba(255,255,255,0.16)'}/>
                   ))}
                 </div>
-                <span style={{fontSize:14,fontWeight:700,color:'#C88800'}}>{displayRating.toFixed(1)}</span>
-                <span style={{fontSize:13,color:'rgba(0,0,0,0.20)'}}>·</span>
-                <span style={{fontSize:13,color:'#8C96AB'}}>{displayCount.toLocaleString()} {t('reviews','تقييم')}</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#D99401'}}>{displayRating.toFixed(1)}</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.20)'}}>Â·</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.36)'}}>{displayCount.toLocaleString()} {t('reviews','ØªÙ‚ÙŠÙŠÙ…')}</span>
               </div>
-
-              {/* Thin rule */}
-              <div style={{height:1,background:'linear-gradient(90deg, rgba(217,148,1,0.18) 0%, rgba(0,0,0,0.05) 100%)',marginBottom:16}}/>
-
-              {/* Short description */}
               {tool.description && (
-                <p style={{
-                  margin:0,fontSize:13,color:'#7A8499',lineHeight:1.65,
-                  display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical' as const,overflow:'hidden',
-                }}>
+                <p style={{margin:0,fontSize:12,color:'rgba(255,255,255,0.30)',lineHeight:1.7,display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical' as const,overflow:'hidden'}}>
                   {tool.description}
                 </p>
               )}
             </div>
 
-            {/* vertical hairline */}
-            <div className="pk-hero-vdiv"/>
-
-            {/* ── RIGHT: Conversion ── */}
-            <div className="pk-hero-right">
-
-              {/* Plan selector */}
+            <div className="pk-hero-white">
               {variants.length > 0 && (
                 <div>
-                  <div style={{fontSize:9,fontWeight:800,letterSpacing:1.2,color:'#A4ABBE',textTransform:'uppercase',marginBottom:8}}>
-                    {t('Choose Plan','اختر الباقة')}
-                  </div>
+                  <div style={{fontSize:9,fontWeight:800,letterSpacing:1.4,color:'#B0B9CC',textTransform:'uppercase',marginBottom:9}}>{t('Choose Plan','Ø§Ø®ØªØ± Ø§Ù„Ø¨Ø§Ù‚Ø©')}</div>
                   <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                     {variants.map((v,i)=>{
                       const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
                       const active = selectedVariant===i
                       return (
-                        <button key={i} onClick={()=>setSelectedVariant(i)} style={{
-                          padding:'7px 16px',borderRadius:10,fontSize:12,fontWeight:700,cursor:'pointer',
-                          border:active?'1.5px solid rgba(217,148,1,0.50)':'1.5px solid rgba(0,0,0,0.09)',
-                          background:active?'rgba(217,148,1,0.11)':'rgba(255,255,255,0.68)',
-                          color:active?'#8A5F00':'#505A72',
-                          boxShadow:active?'0 2px 12px rgba(217,148,1,0.16)':'0 1px 2px rgba(0,0,0,0.04)',
-                          transition:'all 0.13s',
-                        }}>
+                        <button key={i} onClick={()=>setSelectedVariant(i)} style={{padding:'7px 16px',borderRadius:9,fontSize:13,fontWeight:700,cursor:'pointer',border:active?'2px solid #D99401':'2px solid #EAEDF3',background:active?'#FFFBEE':'#F8F9FC',color:active?'#8A5F00':'#5A6478',boxShadow:active?'0 2px 10px rgba(217,148,1,0.18)':'none',transition:'all 0.12s'}}>
                           {vName}
                         </button>
                       )
                     })}
                   </div>
+                  <div style={{height:1,background:'#F0F2F7',margin:'14px 0 0'}}/>
                 </div>
               )}
 
-              {/* Price block */}
               <div>
-                <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap',marginBottom:4}}>
-                  <span style={{fontSize:'clamp(32px,7vw,44px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-1.5,fontVariantNumeric:'tabular-nums'}}>
+                <div style={{display:'flex',alignItems:'baseline',gap:9,flexWrap:'wrap',marginBottom:4}}>
+                  <span style={{fontSize:'clamp(36px,8vw,48px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-2,fontVariantNumeric:'tabular-nums'}}>
                     {price}
                   </span>
                   {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                    <span style={{fontSize:17,color:'rgba(0,0,0,0.22)',textDecoration:'line-through',fontWeight:500,letterSpacing:-0.3}}>
+                    <span style={{fontSize:18,color:'#C8CEDB',textDecoration:'line-through',fontWeight:500}}>
                       {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
                     </span>
                   )}
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:6}}>
-                  <span style={{fontSize:12,color:'#9BA8BF',fontWeight:500}}>/ {durLabel}</span>
                   {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                    <span style={{padding:'2px 8px',borderRadius:20,background:'rgba(239,68,68,0.10)',color:'#B53030',fontSize:11,fontWeight:800,border:'1px solid rgba(239,68,68,0.16)'}}>
+                    <span style={{padding:'3px 9px',borderRadius:6,background:'#FFF0F0',color:'#C0392B',fontSize:12,fontWeight:800,border:'1px solid #FACCCC'}}>
                       -{Math.round((1-displayPriceEgp/displayRetailEgp)*100)}%
                     </span>
                   )}
                 </div>
+                <span style={{fontSize:12,color:'#B0B9CC',fontWeight:500}}>/ {durLabel}</span>
               </div>
 
-              {/* CTA */}
               {tool.is_out_of_stock
-                ? <button disabled style={{width:'100%',padding:'13px',borderRadius:13,background:'rgba(0,0,0,0.05)',color:'rgba(0,0,0,0.26)',fontSize:14,fontWeight:700,border:'1px solid rgba(0,0,0,0.07)',cursor:'not-allowed'}}>
-                    {t('Out of Stock','نفذت الكمية')}
+                ? <button disabled style={{width:'100%',padding:'14px',borderRadius:12,background:'#F3F4F7',color:'#B0B9CC',fontSize:15,fontWeight:700,border:'none',cursor:'not-allowed'}}>
+                    {t('Out of Stock','Ù†ÙØ°Øª Ø§Ù„ÙƒÙ…ÙŠØ©')}
                   </button>
                 : <button onClick={()=>{ window.location.href=buyUrl }}
-                    style={{width:'100%',padding:'14px',borderRadius:13,background:'#D99401',color:'#fff',fontSize:14,fontWeight:800,border:'none',cursor:'pointer',
-                      boxShadow:'0 5px 22px rgba(217,148,1,0.38),0 1px 0 rgba(255,255,255,0.20) inset',
-                      transition:'transform 0.11s,box-shadow 0.11s',display:'flex',alignItems:'center',justifyContent:'center',gap:7,letterSpacing:0.2}}
-                    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 28px rgba(217,148,1,0.46),0 1px 0 rgba(255,255,255,0.20) inset'}}
-                    onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 5px 22px rgba(217,148,1,0.38),0 1px 0 rgba(255,255,255,0.20) inset'}}>
-                    🛒 {t('Buy Now','اشتري الآن')}
+                    style={{width:'100%',padding:'14px',borderRadius:12,background:'#D99401',color:'#fff',fontSize:15,fontWeight:800,border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(217,148,1,0.38)',transition:'transform 0.1s,box-shadow 0.1s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
+                    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 26px rgba(217,148,1,0.48)'}}
+                    onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 4px 20px rgba(217,148,1,0.38)'}}>
+                    ðŸ›’ {t('Buy Now','Ø§Ø´ØªØ±ÙŠ Ø§Ù„Ø¢Ù†')}
                   </button>
               }
 
-              {/* Trust row */}
-              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-                {[{icon:'⚡',en:'Instant',ar:'فوري'},{icon:'🔒',en:'Secure',ar:'آمن'},{icon:'💬',en:'Support',ar:'دعم'}].map(b=>(
-                  <span key={b.en} style={{fontSize:11,color:'#9BA8BF',display:'flex',alignItems:'center',gap:3,fontWeight:500}}>
-                    {b.icon}{isRtl?b.ar:b.en}
+              <div style={{display:'flex',gap:16,flexWrap:'wrap',justifyContent:'center'}}>
+                {[{icon:'âš¡',en:'Instant',ar:'ÙÙˆØ±ÙŠ'},{icon:'ðŸ”’',en:'Secure',ar:'Ø¢Ù…Ù†'},{icon:'ðŸ’¬',en:'Support',ar:'Ø¯Ø¹Ù…'}].map(b=>(
+                  <span key={b.en} style={{fontSize:11,color:'#B0B9CC',display:'flex',alignItems:'center',gap:3,fontWeight:500}}>
+                    {b.icon} {isRtl?b.ar:b.en}
                   </span>
                 ))}
               </div>
 
-              {/* Live counters */}
               {(fakeVisits !== null || fakeStock !== null) && (
-                <div style={{display:'flex',flexDirection:'column',gap:6,paddingTop:2}}>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   {fakeVisits !== null && (
-                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:10,background:'rgba(255,255,255,0.65)',border:'1px solid rgba(0,0,0,0.06)'}}>
-                      <span style={{width:7,height:7,borderRadius:'50%',background:'#22C55E',flexShrink:0,animation:'pk-live-dot 1.8s ease-in-out infinite',display:'inline-block'}}/>
-                      <span style={{fontSize:13,fontWeight:800,color:'#0B1220',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
-                      <span style={{fontSize:11,color:'#8C96AB',fontWeight:500}}>{t('viewing now','يشاهد الآن')}</span>
+                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'8px 13px',borderRadius:9,background:'#F8F9FC',border:'1px solid #EAEDF3',flex:1,minWidth:0}}>
+                      <span style={{width:8,height:8,borderRadius:'50%',background:'#22C55E',flexShrink:0,display:'inline-block',animation:'pk-live-dot 2s ease-in-out infinite'}}/>
+                      <span style={{fontSize:13,fontWeight:800,color:'#0D1326',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
+                      <span style={{fontSize:11,color:'#9BA8BF',fontWeight:500,whiteSpace:'nowrap'}}>{t('viewing now','ÙŠØ´Ø§Ù‡Ø¯ Ø§Ù„Ø¢Ù†')}</span>
                     </div>
                   )}
                   {fakeStock !== null && (
-                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:10,background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.14)'}}>
-                      <span style={{fontSize:13}}>📦</span>
-                      <span style={{fontSize:13,fontWeight:800,color:'#B53030',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
-                      <span style={{fontSize:11,color:'#C47070',fontWeight:500}}>{t('left in stock','متبقي في المخزون')}</span>
+                    <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:9,background:'#FFF5F5',border:'1px solid #FACCCC'}}>
+                      <span style={{fontSize:13}}>ðŸ“¦</span>
+                      <span style={{fontSize:13,fontWeight:800,color:'#C0392B',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
+                      <span style={{fontSize:11,color:'#D08080',fontWeight:500,whiteSpace:'nowrap'}}>{t('left','Ù…ØªØ¨Ù‚ÙŠ')}</span>
                     </div>
                   )}
                 </div>
@@ -1599,23 +1511,23 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         </div>
       </div>
 
-      {/* ── Content ── */}
+      {/* â”€â”€ Content â”€â”€ */}
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-14">
 
         {tool.features?.length > 0 && (
           <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">{t('What\'s included','ماذا يشمل الاشتراك')}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">{t('What\'s included','Ù…Ø§Ø°Ø§ ÙŠØ´Ù…Ù„ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {tool.features.map((f,i)=>(
                 <div key={i} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-bold flex-shrink-0 mt-0.5" style={{color:'#d99401'}}>✓</span>{f}
+                  <span className="font-bold flex-shrink-0 mt-0.5" style={{color:'#d99401'}}>âœ“</span>{f}
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* ── Content Blocks ── */}
+        {/* â”€â”€ Content Blocks â”€â”€ */}
         {blocks.map((block)=>{
           const title = isRtl ? (block.title_ar||block.title_en) : (block.title_en||block.title_ar)
           const body  = isRtl ? (block.body_ar||block.body_en)  : (block.body_en||block.body_ar)
@@ -1643,7 +1555,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                       )}
                       {!c.image_url && (
                         <div className="aspect-square bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10 flex items-center justify-center">
-                          <span className="text-4xl opacity-30">🖼</span>
+                          <span className="text-4xl opacity-30">ðŸ–¼</span>
                         </div>
                       )}
                       <div className="p-4">
@@ -1836,9 +1748,9 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           )
         })}
 
-        {/* ── Reviews ── */}
+        {/* â”€â”€ Reviews â”€â”€ */}
         <section>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','آراء العملاء')}</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','Ø¢Ø±Ø§Ø¡ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡')}</h2>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
             <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -1849,27 +1761,27 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                     <Star key={i} size={16} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D1D5DB'}/>
                   ))}
                 </div>
-                <span className="text-sm text-gray-400 text-center">{displayCount} {t('reviews','تقييم')}</span>
+                <span className="text-sm text-gray-400 text-center">{displayCount} {t('reviews','ØªÙ‚ÙŠÙŠÙ…')}</span>
               </div>
               <div className="flex-1 space-y-2 w-full">
                 {dist.map(d=>(
-                  <RatingBar key={d.stars} label={`${d.stars} ★`} count={d.count} total={totalReviews}/>
+                  <RatingBar key={d.stars} label={`${d.stars} â˜…`} count={d.count} total={totalReviews}/>
                 ))}
               </div>
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
-            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('Write a Review','اكتب تقييمك')}</h3>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('Write a Review','Ø§ÙƒØªØ¨ ØªÙ‚ÙŠÙŠÙ…Ùƒ')}</h3>
             {submitted ? (
               <div className="flex items-center gap-2 text-emerald-500 font-medium">
-                <CheckCircle size={20}/>{t('Thank you! Your review is pending approval.','شكراً! تقييمك قيد المراجعة.')}
+                <CheckCircle size={20}/>{t('Thank you! Your review is pending approval.','Ø´ÙƒØ±Ø§Ù‹! ØªÙ‚ÙŠÙŠÙ…Ùƒ Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©.')}
               </div>
             ) : (
               <div className="space-y-4">
                 <StarPicker value={myStars} onChange={setMyStars}/>
                 <textarea value={myComment} onChange={e=>setMyComment(e.target.value)}
-                  rows={3} placeholder={t('Share your experience (optional)','شارك تجربتك (اختياري)')}
+                  rows={3} placeholder={t('Share your experience (optional)','Ø´Ø§Ø±Ùƒ ØªØ¬Ø±Ø¨ØªÙƒ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)')}
                   className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none resize-none transition-all"
                   onFocus={e=>e.currentTarget.style.borderColor='#d99401'}
                   onBlur={e=>e.currentTarget.style.borderColor=''}/>
@@ -1877,7 +1789,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 <button onClick={submitReview} disabled={submitting||!myStars}
                   className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 transition-opacity"
                   style={{background:'#d99401'}}>
-                  <Send size={14}/>{submitting ? t('Sending...','جاري الإرسال...') : t('Submit Review','إرسال التقييم')}
+                  <Send size={14}/>{submitting ? t('Sending...','Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„...') : t('Submit Review','Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…')}
                 </button>
               </div>
             )}
@@ -1916,7 +1828,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           )}
           {reviews.length === 0 && (
             <div className="text-center py-10 text-gray-400 text-sm">
-              {t('No reviews yet. Be the first!','لا توجد تقييمات بعد. كن الأول!')}
+              {t('No reviews yet. Be the first!','Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯. ÙƒÙ† Ø§Ù„Ø£ÙˆÙ„!')}
             </div>
           )}
         </section>
@@ -1926,7 +1838,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="px-10 py-4 rounded-2xl text-white font-bold text-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{background:'#d99401', boxShadow:'0 8px 24px rgba(217,148,1,0.3)'}}>
-              🛒 {t('Buy Now — ','اشتري الآن — ')}{price}
+              ðŸ›’ {t('Buy Now â€” ','Ø§Ø´ØªØ±ÙŠ Ø§Ù„Ø¢Ù† â€” ')}{price}
             </button>
           )}
         </div>
@@ -1942,7 +1854,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm"
               style={{background:'#d99401'}}>
-              🛒 {t('Buy Now','اشتري الآن')}
+              ðŸ›’ {t('Buy Now','Ø§Ø´ØªØ±ÙŠ Ø§Ù„Ø¢Ù†')}
             </button>
           </div>
         </div>
