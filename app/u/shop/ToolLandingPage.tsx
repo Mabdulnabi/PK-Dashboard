@@ -1477,7 +1477,23 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 )}
                 {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
                   <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(99,102,241,0.10)',color:'#4338CA',fontSize:11,fontWeight:700,border:'1px solid rgba(99,102,241,0.20)'}}>
-                    {'🛡️'} {isRtl?(tool.warranty_label).replace(/(\d+)\s*Year[s]?\s*Warranty/i,(_,n)=>`\u0636\u0645\u0627\u0646 ${n} \u0633\u0646\u0629`).replace(/(\d+)\s*Month[s]?\s*Warranty/i,(_,n)=>`\u0636\u0645\u0627\u0646 ${n} \u0634\u0647\u0631`).replace(/(\d+)\s*Day[s]?\s*Warranty/i,(_,n)=>`\u0636\u0645\u0627\u0646 ${n} \u064a\u0648\u0645`).replace(/Full\s*Warranty/i,'\u0636\u0645\u0627\u0646 \u0643\u0627\u0645\u0644').replace(/Warranty/i,'\u0636\u0645\u0627\u0646'):tool.warranty_label}
+                    {'🛡️'} {isRtl?(()=>{
+                      const w=tool.warranty_label!
+                      let r=w
+                        .replace(/Lifetime\s*Warranty/i,'ضمان مدى الحياة')
+                        .replace(/Full\s*Warranty/i,'ضمان كامل')
+                        .replace(/Money[- ]?Back\s*(Guarantee)?/i,'استرداد المال')
+                        .replace(/(\d+)\s*Year[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} سنة`)
+                        .replace(/(\d+)\s*Month[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} شهر`)
+                        .replace(/(\d+)\s*Week[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} أسبوع`)
+                        .replace(/(\d+)\s*Day[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} يوم`)
+                        .replace(/\bLifetime\b/i,'مدى الحياة')
+                        .replace(/\bWarranty\b/i,'ضمان').replace(/\bGuarantee\b/i,'ضمان')
+                        .replace(/\bYear[s]?\b/i,'سنة').replace(/\bMonth[s]?\b/i,'شهر')
+                        .replace(/\bWeek[s]?\b/i,'أسبوع').replace(/\bDay[s]?\b/i,'يوم')
+                        .replace(/\bFull\b/i,'كامل').replace(/\bLimited\b/i,'محدود')
+                      return r
+                    })():tool.warranty_label}
                   </span>
                 )}
               </div>
