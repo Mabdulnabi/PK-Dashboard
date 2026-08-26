@@ -1591,7 +1591,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {tool.features.map((f,i)=>(
                 <div key={i} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                  <span className=”font-bold flex-shrink-0 mt-0.5” style={{color:'#d99401'}}>✓</span>{f}
+                  <span className="font-bold flex-shrink-0 mt-0.5" style={{color:'#d99401'}}>{'✓'}</span>{f}
                 </div>
               ))}
             </div>
