@@ -1559,7 +1559,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               }
 
               <div style={{display:'flex',gap:14,flexWrap:'wrap',justifyContent:'center'}}>
-                {[{icon:'\u26A1',en:'Instant',ar:'\u0641\u0648\u0631\u064a'},{icon:'\uD83D\uDD12',en:'Secure',ar:'\u0622\u0645\u0646'},{icon:'\uD83D\uDCAC',en:'Support',ar:'\u062f\u0639\u0645'}].map(b=>(
+                {[{icon:'\u26A1',en:'Instant Delivery',ar:'\u062A\u0633\u0644\u064a\u0645 \u0641\u0648\u0631\u064a'},{icon:'\uD83D\uDD12',en:'Secure Payment',ar:'\u062f\u0641\u0639 \u0622\u0645\u0646'},{icon:'\uD83D\uDCAC',en:'Support 24/7',ar:'\u062f\u0639\u0645 24/7'}].map(b=>(
                   <span key={b.en} style={{fontSize:11,color:'#A8B2C5',display:'flex',alignItems:'center',gap:3,fontWeight:500}}>
                     {b.icon} {isRtl?b.ar:b.en}
                   </span>

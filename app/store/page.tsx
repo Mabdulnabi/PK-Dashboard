@@ -1091,7 +1091,7 @@ export default function ShopAdminPage() {
 
             <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3">
               {/* Live preview */}
-              <div className="flex items-center gap-3 p-3 rounded-xl border-l-4" style={{background:catForm.color+'12', borderColor:catForm.color, borderLeft:`4px solid ${catForm.color}`, border:`1px solid ${catForm.color}25`, borderLeftWidth:4}}>
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{background:catForm.color+'12', border:`1px solid ${catForm.color}25`}}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl overflow-hidden" style={{background:catForm.color+'20'}}>
                   {catForm.image_url ? <img src={catForm.image_url} className="w-full h-full object-cover" alt=""/> : catForm.icon}
                 </div>
