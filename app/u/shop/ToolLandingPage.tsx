@@ -815,7 +815,7 @@ function CountdownBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
 
   const pad = (n: number) => String(n).padStart(2, '0')
   const labels = isRtl
-    ? ['ÙŠÙˆÙ…', 'Ø³Ø§Ø¹Ø©', 'Ø¯Ù‚ÙŠÙ‚Ø©', 'Ø«Ø§Ù†ÙŠØ©']
+    ? ['يوم', 'ساعة', 'دقيقة', 'ثانية']
     : ['Days', 'Hours', 'Minutes', 'Seconds']
   const units = [timeLeft.d, timeLeft.h, timeLeft.m, timeLeft.s]
   const glowColors = ['rgba(239,68,68,.4)', 'rgba(59,130,246,.4)', 'rgba(34,197,94,.4)', 'rgba(168,85,247,.4)']
@@ -1350,7 +1350,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   },[tool.id])
 
   const submitReview = async()=>{
-    if (!myStars) return setSubmitErr(t('Please choose a star rating','Ø§Ø®ØªØ± Ø¹Ø¯Ø¯ Ø§Ù„Ù†Ø¬ÙˆÙ… Ø£ÙˆÙ„Ø§Ù‹'))
+    if (!myStars) return setSubmitErr(t('Please choose a star rating','اختر عدد النجوم أولاً'))
     setSubmit(true); setSubmitErr('')
     const res = await fetch(`/api/tools/${tool.id}/reviews`, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -1358,13 +1358,13 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
     })
     setSubmit(false)
     if (res.ok) { setSubmitted(true) }
-    else { const d = await res.json(); setSubmitErr(d.error||t('Error, try again','Ø­Ø¯Ø« Ø®Ø·Ø£')) }
+    else { const d = await res.json(); setSubmitErr(d.error||t('Error, try again','حدث خطأ')) }
   }
 
   const blocks: Block[] = Array.isArray(tool.landing_blocks) ? tool.landing_blocks : []
 
   const durLabel = lang==='ar'
-    ? tool.duration_label.replace('Days','ÙŠÙˆÙ…').replace('Day','ÙŠÙˆÙ…').replace('Month','Ø´Ù‡Ø±').replace('Months','Ø´Ù‡Ø±').replace('Year','Ø³Ù†Ø©').replace('Years','Ø³Ù†Ø©')
+    ? tool.duration_label.replace('Days','يوم').replace('Day','يوم').replace('Month','شهر').replace('Months','شهر').replace('Year','سنة').replace('Years','سنة')
     : tool.duration_label
 
   const displayRating = avgRating || tool.rating
@@ -1385,7 +1385,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         position:'relative',
         padding:'14px 12px 0',
         background:'radial-gradient(ellipse 130% 100% at 5% 0%, rgba(217,148,1,0.13) 0%, transparent 52%), radial-gradient(ellipse 80% 100% at 95% 100%, rgba(99,102,241,0.10) 0%, transparent 52%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.05) 0%, transparent 60%), #e8eef5',
-        fontFamily:"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
+        fontFamily:isRtl?"'Cairo','Plus Jakarta Sans',-apple-system,sans-serif":"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
       }}>
         {/* ambient orbs */}
         <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0}}>
@@ -1410,12 +1410,13 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           {/* Nav */}
           <div style={{padding:'12px 24px 0',display:'flex',alignItems:'center',gap:8}}>
             <button onClick={onBack} style={{
-              display:'inline-flex',alignItems:'center',gap:5,
-              padding:'5px 12px 5px 8px',borderRadius:8,cursor:'pointer',
-              background:'rgba(255,255,255,0.68)',border:'1px solid rgba(0,0,0,0.08)',
-              color:'#4A5368',fontSize:12,fontWeight:600,
+              display:'inline-flex',alignItems:'center',gap:6,
+              padding:'8px 18px 8px 14px',borderRadius:10,cursor:'pointer',
+              background:'rgba(255,255,255,0.80)',border:'1px solid rgba(0,0,0,0.10)',
+              color:'#3A4461',fontSize:13,fontWeight:700,
+              boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
             }}>
-              <ArrowLeft size={12} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
+              <ArrowLeft size={14} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
               {t('Back to Store','\u0631\u062c\u0648\u0639 \u0644\u0644\u0645\u062a\u062c\u0631')}
             </button>
           </div>
@@ -1587,7 +1588,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
         {tool.features?.length > 0 && (
           <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">{t('What\'s included','Ù…Ø§Ø°Ø§ ÙŠØ´Ù…Ù„ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ')}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">{t('What\'s included','ماذا يشمل الاشتراك')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {tool.features.map((f,i)=>(
                 <div key={i} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
@@ -1821,7 +1822,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
         {/* â”€â”€ Reviews â”€â”€ */}
         <section>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','Ø¢Ø±Ø§Ø¡ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡')}</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','آراء العملاء')}</h2>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
             <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -1832,7 +1833,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                     <Star key={i} size={16} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D1D5DB'}/>
                   ))}
                 </div>
-                <span className="text-sm text-gray-400 text-center">{displayCount} {t('reviews','ØªÙ‚ÙŠÙŠÙ…')}</span>
+                <span className="text-sm text-gray-400 text-center">{displayCount} {t('reviews','تقييم')}</span>
               </div>
               <div className="flex-1 space-y-2 w-full">
                 {dist.map(d=>(
@@ -1843,16 +1844,16 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
-            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('Write a Review','Ø§ÙƒØªØ¨ ØªÙ‚ÙŠÙŠÙ…Ùƒ')}</h3>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('Write a Review','اكتب تقييمك')}</h3>
             {submitted ? (
               <div className="flex items-center gap-2 text-emerald-500 font-medium">
-                <CheckCircle size={20}/>{t('Thank you! Your review is pending approval.','Ø´ÙƒØ±Ø§Ù‹! ØªÙ‚ÙŠÙŠÙ…Ùƒ Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©.')}
+                <CheckCircle size={20}/>{t('Thank you! Your review is pending approval.','شكراً! تقييمك قيد المراجعة.')}
               </div>
             ) : (
               <div className="space-y-4">
                 <StarPicker value={myStars} onChange={setMyStars}/>
                 <textarea value={myComment} onChange={e=>setMyComment(e.target.value)}
-                  rows={3} placeholder={t('Share your experience (optional)','Ø´Ø§Ø±Ùƒ ØªØ¬Ø±Ø¨ØªÙƒ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)')}
+                  rows={3} placeholder={t('Share your experience (optional)','شارك تجربتك (اختياري)')}
                   className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none resize-none transition-all"
                   onFocus={e=>e.currentTarget.style.borderColor='#d99401'}
                   onBlur={e=>e.currentTarget.style.borderColor=''}/>
@@ -1860,7 +1861,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 <button onClick={submitReview} disabled={submitting||!myStars}
                   className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 transition-opacity"
                   style={{background:'#d99401'}}>
-                  <Send size={14}/>{submitting ? t('Sending...','Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„...') : t('Submit Review','Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…')}
+                  <Send size={14}/>{submitting ? t('Sending...','جاري الإرسال...') : t('Submit Review','إرسال التقييم')}
                 </button>
               </div>
             )}
@@ -1899,7 +1900,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           )}
           {reviews.length === 0 && (
             <div className="text-center py-10 text-gray-400 text-sm">
-              {t('No reviews yet. Be the first!','Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯. ÙƒÙ† Ø§Ù„Ø£ÙˆÙ„!')}
+              {t('No reviews yet. Be the first!','لا توجد تقييمات بعد. كن الأول!')}
             </div>
           )}
         </section>
@@ -1909,7 +1910,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="px-10 py-4 rounded-2xl text-white font-bold text-lg flex items-center gap-2 mx-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{background:'#d99401', boxShadow:'0 8px 24px rgba(217,148,1,0.3)'}}>
-              ðŸ›’ {t('Buy Now â€” ','Ø§Ø´ØªØ±ÙŠ Ø§Ù„Ø¢Ù† â€” ')}{price}
+              ðŸ›’ {t('Buy Now â€” ','اشتري الآن — ')}{price}
             </button>
           )}
         </div>
@@ -1925,7 +1926,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <button onClick={()=>{ window.location.href=buyUrl }}
               className="flex-shrink-0 px-5 py-2.5 rounded-xl text-white font-bold text-sm"
               style={{background:'#d99401'}}>
-              ðŸ›’ {t('Buy Now','Ø§Ø´ØªØ±ÙŠ Ø§Ù„Ø¢Ù†')}
+              ðŸ›’ {t('Buy Now','اشتري الآن')}
             </button>
           </div>
         </div>
