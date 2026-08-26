@@ -190,18 +190,23 @@ function useArabicFont(isRtl: boolean) {
 
 // Hero CSS â€” aura glow + live dot + responsive split
 const HERO_CSS = `
-@keyframes pk-live-dot {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
-  50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+@keyframes pk-aura-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.96); }
+  50%       { opacity: 0.48; transform: scale(1.06); }
 }
-.pk-hero-nav   { background:#0A0F1E; padding:10px 22px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; min-height:46px; }
-.pk-hero-body  { display:flex; }
-.pk-hero-dark  { background:#0D1326; padding:30px 26px 34px; display:flex; flex-direction:column; justify-content:center; flex:0 0 42%; min-width:220px; box-sizing:border-box; }
-.pk-hero-white { background:#FFFFFF; padding:22px 24px 26px; flex:1 1 260px; display:flex; flex-direction:column; gap:15px; box-sizing:border-box; }
-@media (max-width:640px) {
-  .pk-hero-body  { flex-direction:column; }
-  .pk-hero-dark  { flex:none; width:100%; min-width:0; padding:20px 20px 22px; }
-  .pk-hero-white { flex:none; width:100%; padding:18px 20px 22px; }
+@keyframes pk-live-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+.pk-hero-body  { display: flex; align-items: stretch; }
+.pk-hero-vdiv  { width: 1px; background: rgba(0,0,0,0.06); flex-shrink: 0; margin: 24px 0; }
+.pk-hero-left  { flex: 0 0 58%; min-width: 270px; padding: 26px 28px 30px; box-sizing: border-box; }
+.pk-hero-right { flex: 1 1 200px; min-width: 200px; padding: 26px 28px 30px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; }
+@media (max-width: 640px) {
+  .pk-hero-body  { flex-direction: column; }
+  .pk-hero-vdiv  { width: auto; height: 1px; margin: 0 28px; }
+  .pk-hero-left  { flex: none; width: 100%; padding-bottom: 18px; }
+  .pk-hero-right { flex: none; width: 100%; padding-top: 20px; }
 }
 `
 function injectHeroCss() {
@@ -1375,114 +1380,180 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'} style={isRtl?{fontFamily:"'Cairo', sans-serif"}:{}}>
 
-      {/* â”€â”€ Hero â”€â”€ */}
+      {/* ── Hero ── */}
       <div style={{
-        padding:'12px 12px 0',
+        position:'relative',
+        padding:'14px 12px 0',
+        background:'radial-gradient(ellipse 130% 100% at 5% 0%, rgba(217,148,1,0.13) 0%, transparent 52%), radial-gradient(ellipse 80% 100% at 95% 100%, rgba(99,102,241,0.10) 0%, transparent 52%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.05) 0%, transparent 60%), #e8eef5',
         fontFamily:"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
       }}>
-        <div style={{borderRadius:20,overflow:'hidden',boxShadow:'0 4px 32px rgba(0,0,0,0.14)'}}>
-          <div className="pk-hero-nav">
-            <button onClick={onBack} style={{display:'inline-flex',alignItems:'center',gap:5,padding:0,background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.42)',fontSize:12,fontWeight:600,letterSpacing:0.2,transition:'color 0.12s'}}
-              onMouseEnter={e=>e.currentTarget.style.color='rgba(255,255,255,0.9)'}
-              onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.42)'}>
-              <ArrowLeft size={13} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
-              {t('Store','Ø§Ù„Ù…ØªØ¬Ø±')}
+        {/* ambient orbs */}
+        <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0}}>
+          <div style={{position:'absolute',top:-100,left:'20%',width:320,height:320,borderRadius:'50%',background:'rgba(217,148,1,0.08)',filter:'blur(80px)'}}/>
+          <div style={{position:'absolute',bottom:-80,right:'5%',width:260,height:260,borderRadius:'50%',background:'rgba(99,102,241,0.08)',filter:'blur(80px)'}}/>
+        </div>
+
+        {/* Glass card */}
+        <div style={{
+          position:'relative',zIndex:1,
+          borderRadius:22,
+          background:'rgba(255,255,255,0.58)',
+          backdropFilter:'blur(28px)',
+          WebkitBackdropFilter:'blur(28px)',
+          border:'1px solid rgba(255,255,255,0.78)',
+          boxShadow:'inset 0 1px 0 rgba(255,255,255,0.95), 0 12px 52px rgba(0,0,0,0.09)',
+          overflow:'hidden',
+        }}>
+          {/* Gold top accent */}
+          <div style={{height:3,background:'linear-gradient(90deg,rgba(217,148,1,0) 0%,#D99401 15%,#F5C842 50%,#D99401 85%,rgba(217,148,1,0) 100%)'}}/>
+
+          {/* Nav */}
+          <div style={{padding:'12px 24px 0',display:'flex',alignItems:'center',gap:8}}>
+            <button onClick={onBack} style={{
+              display:'inline-flex',alignItems:'center',gap:5,
+              padding:'5px 12px 5px 8px',borderRadius:8,cursor:'pointer',
+              background:'rgba(255,255,255,0.68)',border:'1px solid rgba(0,0,0,0.08)',
+              color:'#4A5368',fontSize:12,fontWeight:600,
+            }}>
+              <ArrowLeft size={12} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
+              {t('Back to Store','\u0631\u062c\u0648\u0639 \u0644\u0644\u0645\u062a\u062c\u0631')}
             </button>
-            <div style={{display:'flex',alignItems:'center',gap:0,overflow:'hidden'}}>
-              <span style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:700,color:'#D99401',letterSpacing:0.3}}>
-                <Zap size={9} fill="#D99401" stroke="none"/>{tool.delivery_label||t('Instant','ÙÙˆØ±ÙŠ')}
-              </span>
-              <span style={{color:'rgba(255,255,255,0.14)',margin:'0 10px'}}>Â·</span>
-              <span style={{fontSize:11,fontWeight:500,color:'rgba(255,255,255,0.35)'}}>â± {durLabel}</span>
-              {(tool.sales_count||0) > 0 && (<>
-                <span style={{color:'rgba(255,255,255,0.14)',margin:'0 10px'}}>Â·</span>
-                <span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:11,fontWeight:500,color:'rgba(255,255,255,0.35)'}}>
-                  <ShoppingCart size={9}/>{(tool.sales_count||0).toLocaleString()} {t('sold','Ù…Ø¨ÙŠØ¹Ø©')}
-                </span>
-              </>)}
-            </div>
           </div>
+
+          {/* Two-column body */}
           <div className="pk-hero-body">
-            <div className="pk-hero-dark">
-              <div style={{width:80,height:80,borderRadius:18,marginBottom:20,background:'rgba(255,255,255,0.07)',border:'1.5px solid rgba(217,148,1,0.32)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',boxShadow:'0 0 0 4px rgba(217,148,1,0.07)'}}>
-                {tool.image_url
-                  ? <img src={tool.image_url} alt={tool.name} style={{width:56,height:56,objectFit:'contain'}}/>
-                  : <span style={{fontSize:22,fontWeight:800,color:'rgba(255,255,255,0.22)'}}>{tool.name.slice(0,2).toUpperCase()}</span>
-                }
+
+            {/* LEFT */}
+            <div className="pk-hero-left">
+              {/* Logo with gold aura */}
+              <div style={{position:'relative',width:96,height:96,marginBottom:20}}>
+                <div style={{
+                  position:'absolute',inset:-20,borderRadius:'50%',
+                  background:'radial-gradient(circle, rgba(217,148,1,0.28) 0%, rgba(217,148,1,0.06) 55%, transparent 75%)',
+                  animation:'pk-aura-pulse 3.4s ease-in-out infinite',
+                }}/>
+                <div style={{
+                  position:'relative',width:96,height:96,borderRadius:24,
+                  background:'rgba(255,255,255,0.90)',
+                  border:'1px solid rgba(255,255,255,1)',
+                  boxShadow:'0 6px 28px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,1)',
+                  display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',
+                }}>
+                  {tool.image_url
+                    ? <img src={tool.image_url} alt={tool.name} style={{width:68,height:68,objectFit:'contain'}}/>
+                    : <span style={{fontSize:28,fontWeight:800,color:'#C0C9D8',letterSpacing:-1}}>{tool.name.slice(0,2).toUpperCase()}</span>
+                  }
+                </div>
               </div>
-              <h1 style={{margin:'0 0 12px',lineHeight:1.08,fontSize:'clamp(22px,4vw,30px)',fontWeight:800,color:'#FFFFFF',letterSpacing:-0.7}}>
+
+              <h1 style={{margin:'0 0 10px',lineHeight:1.08,fontSize:'clamp(24px,4vw,34px)',fontWeight:800,color:'#070C1A',letterSpacing:-0.8}}>
                 {tool.name}
               </h1>
-              <div style={{display:'flex',alignItems:'center',gap:5,flexWrap:'wrap',marginBottom:18}}>
-                <div style={{display:'flex',gap:1.5}}>
+
+              <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:14}}>
+                <div style={{display:'flex',gap:2}}>
                   {[1,2,3,4,5].map(i=>(
-                    <Star key={i} size={13} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'rgba(255,255,255,0.16)'}/>
+                    <Star key={i} size={14} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D8DCE8'}/>
                   ))}
                 </div>
-                <span style={{fontSize:13,fontWeight:700,color:'#D99401'}}>{displayRating.toFixed(1)}</span>
-                <span style={{fontSize:12,color:'rgba(255,255,255,0.20)'}}>Â·</span>
-                <span style={{fontSize:12,color:'rgba(255,255,255,0.36)'}}>{displayCount.toLocaleString()} {t('reviews','ØªÙ‚ÙŠÙŠÙ…')}</span>
+                <span style={{fontSize:14,fontWeight:700,color:'#C88800'}}>{displayRating.toFixed(1)}</span>
+                <span style={{fontSize:13,color:'rgba(0,0,0,0.18)'}}>·</span>
+                <span style={{fontSize:13,color:'#8C97AE'}}>{displayCount.toLocaleString()} {t('reviews','\u062a\u0642\u064a\u064a\u0645')}</span>
               </div>
+
+              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:18}}>
+                <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(16,185,129,0.10)',color:'#0B7A4B',fontSize:11,fontWeight:700,border:'1px solid rgba(16,185,129,0.20)'}}>
+                  <Zap size={9} fill="#0B7A4B" stroke="none"/>{tool.delivery_label||t('Instant','\u0641\u0648\u0631\u064a')}
+                </span>
+                <span style={{display:'inline-flex',alignItems:'center',padding:'4px 11px',borderRadius:20,background:'rgba(0,0,0,0.05)',color:'#5A6478',fontSize:11,fontWeight:600,border:'1px solid rgba(0,0,0,0.07)'}}>
+                  &#x23F1; {durLabel}
+                </span>
+                {(tool.sales_count||0) > 0 && (
+                  <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(217,148,1,0.10)',color:'#8A5F00',fontSize:11,fontWeight:700,border:'1px solid rgba(217,148,1,0.20)'}}>
+                    <ShoppingCart size={9}/>{(tool.sales_count||0).toLocaleString()} {t('sold','\u0645\u0628\u064a\u0639\u0629')}
+                  </span>
+                )}
+              </div>
+
+              <div style={{height:1,background:'linear-gradient(90deg,rgba(217,148,1,0.20),rgba(0,0,0,0.04))',marginBottom:16}}/>
+
               {tool.description && (
-                <p style={{margin:0,fontSize:12,color:'rgba(255,255,255,0.30)',lineHeight:1.7,display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical' as const,overflow:'hidden'}}>
+                <p style={{margin:0,fontSize:13,color:'#7A8499',lineHeight:1.7,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical' as const,overflow:'hidden'}}>
                   {tool.description}
                 </p>
               )}
             </div>
 
-            <div className="pk-hero-white">
+            {/* vertical divider */}
+            <div className="pk-hero-vdiv"/>
+
+            {/* RIGHT */}
+            <div className="pk-hero-right">
+
               {variants.length > 0 && (
                 <div>
-                  <div style={{fontSize:9,fontWeight:800,letterSpacing:1.4,color:'#B0B9CC',textTransform:'uppercase',marginBottom:9}}>{t('Choose Plan','Ø§Ø®ØªØ± Ø§Ù„Ø¨Ø§Ù‚Ø©')}</div>
-                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  <div style={{fontSize:9,fontWeight:800,letterSpacing:1.4,color:'#A8B2C5',textTransform:'uppercase',marginBottom:10}}>
+                    {t('Choose Plan','\u0627\u062e\u062a\u0631 \u0627\u0644\u0628\u0627\u0642\u0629')}
+                  </div>
+                  <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
                     {variants.map((v,i)=>{
                       const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
                       const active = selectedVariant===i
                       return (
-                        <button key={i} onClick={()=>setSelectedVariant(i)} style={{padding:'7px 16px',borderRadius:9,fontSize:13,fontWeight:700,cursor:'pointer',border:active?'2px solid #D99401':'2px solid #EAEDF3',background:active?'#FFFBEE':'#F8F9FC',color:active?'#8A5F00':'#5A6478',boxShadow:active?'0 2px 10px rgba(217,148,1,0.18)':'none',transition:'all 0.12s'}}>
+                        <button key={i} onClick={()=>setSelectedVariant(i)} style={{
+                          padding:'8px 18px',borderRadius:10,fontSize:13,fontWeight:700,cursor:'pointer',
+                          border:active?'1.5px solid rgba(217,148,1,0.55)':'1.5px solid rgba(0,0,0,0.09)',
+                          background:active?'rgba(217,148,1,0.12)':'rgba(255,255,255,0.72)',
+                          color:active?'#8A5F00':'#505A72',
+                          boxShadow:active?'0 2px 12px rgba(217,148,1,0.18)':'0 1px 3px rgba(0,0,0,0.04)',
+                          transition:'all 0.13s',
+                        }}>
                           {vName}
                         </button>
                       )
                     })}
                   </div>
-                  <div style={{height:1,background:'#F0F2F7',margin:'14px 0 0'}}/>
                 </div>
               )}
 
+              <div style={{height:1,background:'rgba(0,0,0,0.06)'}}/>
+
               <div>
-                <div style={{display:'flex',alignItems:'baseline',gap:9,flexWrap:'wrap',marginBottom:4}}>
-                  <span style={{fontSize:'clamp(36px,8vw,48px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-2,fontVariantNumeric:'tabular-nums'}}>
+                <div style={{display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap',marginBottom:5}}>
+                  <span style={{fontSize:'clamp(36px,8vw,50px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-2,fontVariantNumeric:'tabular-nums'}}>
                     {price}
                   </span>
                   {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                    <span style={{fontSize:18,color:'#C8CEDB',textDecoration:'line-through',fontWeight:500}}>
+                    <span style={{fontSize:19,color:'rgba(0,0,0,0.20)',textDecoration:'line-through',fontWeight:500}}>
                       {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
                     </span>
                   )}
                   {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                    <span style={{padding:'3px 9px',borderRadius:6,background:'#FFF0F0',color:'#C0392B',fontSize:12,fontWeight:800,border:'1px solid #FACCCC'}}>
+                    <span style={{padding:'3px 9px',borderRadius:20,background:'rgba(239,68,68,0.10)',color:'#C0392B',fontSize:12,fontWeight:800,border:'1px solid rgba(239,68,68,0.16)'}}>
                       -{Math.round((1-displayPriceEgp/displayRetailEgp)*100)}%
                     </span>
                   )}
                 </div>
-                <span style={{fontSize:12,color:'#B0B9CC',fontWeight:500}}>/ {durLabel}</span>
+                <span style={{fontSize:12,color:'#A8B2C5',fontWeight:500}}>/ {durLabel}</span>
               </div>
 
               {tool.is_out_of_stock
-                ? <button disabled style={{width:'100%',padding:'14px',borderRadius:12,background:'#F3F4F7',color:'#B0B9CC',fontSize:15,fontWeight:700,border:'none',cursor:'not-allowed'}}>
-                    {t('Out of Stock','Ù†ÙØ°Øª Ø§Ù„ÙƒÙ…ÙŠØ©')}
+                ? <button disabled style={{width:'100%',padding:'14px',borderRadius:13,background:'rgba(0,0,0,0.05)',color:'rgba(0,0,0,0.26)',fontSize:15,fontWeight:700,border:'1px solid rgba(0,0,0,0.07)',cursor:'not-allowed'}}>
+                    {t('Out of Stock','\u0646\u0641\u0630\u062a \u0627\u0644\u0643\u0645\u064a\u0629')}
                   </button>
                 : <button onClick={()=>{ window.location.href=buyUrl }}
-                    style={{width:'100%',padding:'14px',borderRadius:12,background:'#D99401',color:'#fff',fontSize:15,fontWeight:800,border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(217,148,1,0.38)',transition:'transform 0.1s,box-shadow 0.1s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
-                    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 26px rgba(217,148,1,0.48)'}}
-                    onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 4px 20px rgba(217,148,1,0.38)'}}>
-                    ðŸ›’ {t('Buy Now','Ø§Ø´ØªØ±ÙŠ Ø§Ù„Ø¢Ù†')}
+                    style={{width:'100%',padding:'15px',borderRadius:13,background:'#D99401',color:'#fff',fontSize:15,fontWeight:800,border:'none',cursor:'pointer',
+                      boxShadow:'0 5px 24px rgba(217,148,1,0.40), inset 0 1px 0 rgba(255,255,255,0.22)',
+                      transition:'transform 0.11s,box-shadow 0.11s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
+                    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 9px 30px rgba(217,148,1,0.50), inset 0 1px 0 rgba(255,255,255,0.22)'}}
+                    onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 5px 24px rgba(217,148,1,0.40), inset 0 1px 0 rgba(255,255,255,0.22)'}}>
+                    &#x1F6D2; {t('Buy Now','\u0627\u0634\u062a\u0631\u064a \u0627\u0644\u0622\u0646')}
                   </button>
               }
 
-              <div style={{display:'flex',gap:16,flexWrap:'wrap',justifyContent:'center'}}>
-                {[{icon:'âš¡',en:'Instant',ar:'ÙÙˆØ±ÙŠ'},{icon:'ðŸ”’',en:'Secure',ar:'Ø¢Ù…Ù†'},{icon:'ðŸ’¬',en:'Support',ar:'Ø¯Ø¹Ù…'}].map(b=>(
-                  <span key={b.en} style={{fontSize:11,color:'#B0B9CC',display:'flex',alignItems:'center',gap:3,fontWeight:500}}>
+              <div style={{display:'flex',gap:14,flexWrap:'wrap',justifyContent:'center'}}>
+                {[{icon:'\u26A1',en:'Instant',ar:'\u0641\u0648\u0631\u064a'},{icon:'\uD83D\uDD12',en:'Secure',ar:'\u0622\u0645\u0646'},{icon:'\uD83D\uDCAC',en:'Support',ar:'\u062f\u0639\u0645'}].map(b=>(
+                  <span key={b.en} style={{fontSize:11,color:'#A8B2C5',display:'flex',alignItems:'center',gap:3,fontWeight:500}}>
                     {b.icon} {isRtl?b.ar:b.en}
                   </span>
                 ))}
@@ -1491,17 +1562,17 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
               {(fakeVisits !== null || fakeStock !== null) && (
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   {fakeVisits !== null && (
-                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'8px 13px',borderRadius:9,background:'#F8F9FC',border:'1px solid #EAEDF3',flex:1,minWidth:0}}>
-                      <span style={{width:8,height:8,borderRadius:'50%',background:'#22C55E',flexShrink:0,display:'inline-block',animation:'pk-live-dot 2s ease-in-out infinite'}}/>
-                      <span style={{fontSize:13,fontWeight:800,color:'#0D1326',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
-                      <span style={{fontSize:11,color:'#9BA8BF',fontWeight:500,whiteSpace:'nowrap'}}>{t('viewing now','ÙŠØ´Ø§Ù‡Ø¯ Ø§Ù„Ø¢Ù†')}</span>
+                    <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:10,background:'rgba(255,255,255,0.72)',border:'1px solid rgba(0,0,0,0.07)',flex:1,minWidth:0}}>
+                      <span style={{width:8,height:8,borderRadius:'50%',background:'#22C55E',flexShrink:0,display:'inline-block',animation:'pk-live-dot 1.8s ease-in-out infinite'}}/>
+                      <span style={{fontSize:13,fontWeight:800,color:'#070C1A',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
+                      <span style={{fontSize:11,color:'#8C97AE',fontWeight:500,whiteSpace:'nowrap'}}>{t('viewing now','\u064a\u0634\u0627\u0647\u062f \u0627\u0644\u0622\u0646')}</span>
                     </div>
                   )}
                   {fakeStock !== null && (
-                    <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:9,background:'#FFF5F5',border:'1px solid #FACCCC'}}>
-                      <span style={{fontSize:13}}>ðŸ“¦</span>
+                    <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.15)'}}>
+                      <span style={{fontSize:13}}>\uD83D\uDCE6</span>
                       <span style={{fontSize:13,fontWeight:800,color:'#C0392B',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
-                      <span style={{fontSize:11,color:'#D08080',fontWeight:500,whiteSpace:'nowrap'}}>{t('left','Ù…ØªØ¨Ù‚ÙŠ')}</span>
+                      <span style={{fontSize:11,color:'#C47070',fontWeight:500,whiteSpace:'nowrap'}}>{t('left','\u0645\u062a\u0628\u0642\u064a')}</span>
                     </div>
                   )}
                 </div>
