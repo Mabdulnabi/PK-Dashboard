@@ -15,6 +15,7 @@ interface Tool {
   is_out_of_stock: boolean; landing_blocks?: any[]
   rating: number; review_count: number; sales_count?: number
   delivery_label?: string; details_slug?: string; warranty_label?: string
+  fake_stock_min?: number; fake_stock_max?: number
 }
 interface Category {
   id: string; name: string; name_ar?: string; slug: string
@@ -58,6 +59,14 @@ function StoreCard({ tool, lang, formatPrice }: {
   const { addToCart, removeFromCart, inCart, toggleFav, isFav } = useCart()
   const { member, requireAuth } = useMember()
   const [toast, setToast] = useState('')
+  const [fakeStock, setFakeStock] = useState<number>(0)
+  useEffect(()=>{
+    const sMax = tool.fake_stock_max||0; const sMin = tool.fake_stock_min||1
+    if(sMax<=0){setFakeStock(0);return}
+    const key=`pk_fstock_${tool.id}`;const TICK=5*60*1000
+    const get=()=>{try{const raw=localStorage.getItem(key);const now=Date.now();let val=sMax,ts=now;if(raw){const p=JSON.parse(raw);val=p.val;ts=p.ts}const ticks=Math.floor((now-ts)/TICK);if(ticks>0){val=val-ticks;if(val<=sMin)val=sMax;localStorage.setItem(key,JSON.stringify({val,ts:ts+ticks*TICK}))}else if(!raw){localStorage.setItem(key,JSON.stringify({val,ts:now}))}return Math.max(val,sMin)}catch{return sMax}}
+    setFakeStock(get());const id=setInterval(()=>setFakeStock(get()),TICK);return()=>clearInterval(id)
+  },[tool.id,tool.fake_stock_max,tool.fake_stock_min])
   const faved   = isFav(tool.id)
   const cartted = inCart(tool.id)
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2000) }
@@ -104,6 +113,12 @@ function StoreCard({ tool, lang, formatPrice }: {
             style={{background:'linear-gradient(135deg,#10b981,#059669)'}}>
             <Zap size={10} fill="white"/>{t('فوري', tool.delivery_label||'INSTANT')}
           </span>
+          {fakeStock > 0 && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+              style={{background:'linear-gradient(135deg,#f97316,#dc2626)',boxShadow:'0 2px 6px rgba(249,115,22,0.35)'}}>
+              📦 {isRtl?`متبقي ${fakeStock}`:`${fakeStock} left`}
+            </span>
+          )}
         </div>
         {/* Logo */}
         <div className="w-14 h-14 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden shadow-sm">
