@@ -82,11 +82,13 @@ function Row({ cols=2, children }: { cols?:2|3; children: React.ReactNode }) {
   )
 }
 
-const TOOL_TABS = ['Basics', 'Pricing', 'Content', 'Meta']
+const TOOL_TABS = ['Basics', 'Pricing', 'Content', 'Meta', 'Social', 'Counters']
 
 export default function ShopAdminPage() {
   const router = useRouter()
-  const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'>('tools')
+  const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'|'reviews'>('tools')
+  const [reviews,  setReviews]  = useState<any[]>([])
+  const [revLoading,setRevLoading]=useState(false)
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
   const [toolCat,  setToolCat]  = useState('all')
@@ -124,6 +126,15 @@ export default function ShopAdminPage() {
   },[])
 
   useEffect(()=>{load()},[load])
+  useEffect(()=>{
+    if(tab!=='reviews') return
+    setRevLoading(true)
+    fetch('/api/admin/reviews').then(r=>r.json()).then(d=>{
+      setReviews(d.reviews||[])
+      setRevLoading(false)
+    })
+  },[tab])
+
   useEffect(()=>{
     if(tab!=='deals') return
     fetch('/api/admin/ui-settings').then(r=>r.json()).then(d=>{
@@ -327,7 +338,7 @@ export default function ShopAdminPage() {
         {/* ── Tab bar + toolbar ── */}
         <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-            {([['tools',`Tools (${tools.length})`],['categories',`Categories (${cats.length})`],['bundles','Bundles'],['deals','Deals']] as const).map(([id,label])=>(
+            {([['tools',`Tools (${tools.length})`],['categories',`Categories (${cats.length})`],['bundles','Bundles'],['deals','Deals'],['reviews',`Reviews (${reviews.filter((r:any)=>!r.approved).length} pending)`]] as const).map(([id,label])=>(
               <button key={id} onClick={()=>setTab(id as any)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab===id?'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm':'text-gray-500 dark:text-gray-400'}`}>
                 {id==='tools'&&<Package size={11}/>}{id==='categories'&&<Tag size={11}/>}
@@ -636,6 +647,47 @@ export default function ShopAdminPage() {
 
           {/* ── Bundles tab ── */}
           {tab==='bundles' && <BundlesTab/>}
+
+          {/* ── Reviews tab ── */}
+          {tab==='reviews' && (
+            <div className="space-y-3">
+              {revLoading && <div className="text-center py-12 text-sm text-gray-400">Loading…</div>}
+              {!revLoading && reviews.length===0 && <div className="text-center py-12 text-sm text-gray-400">No reviews yet</div>}
+              {!revLoading && reviews.map((r:any)=>(
+                <div key={r.id} className={`bg-white dark:bg-gray-900 border rounded-xl p-4 flex gap-4 items-start ${r.approved?'border-green-200 dark:border-green-800':'border-amber-200 dark:border-amber-800'}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.approved?'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400':'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                        {r.approved?'Approved':'Pending'}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{r.member_name||'Anonymous'}</span>
+                      <span className="text-[11px] text-gray-400">{r.shop_tools?.name}</span>
+                      <span className="text-[11px] text-amber-500">{'★'.repeat(r.stars||0)}</span>
+                      <span className="text-[10px] text-gray-400 ml-auto">{new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{r.comment}</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 flex-shrink-0">
+                    {!r.approved && (
+                      <button onClick={async()=>{
+                        await fetch(`/api/admin/reviews/${r.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved:true})})
+                        setReviews(prev=>prev.map((x:any)=>x.id===r.id?{...x,approved:true}:x))
+                      }} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-green-500 hover:bg-green-600 text-white transition-colors">
+                        Approve
+                      </button>
+                    )}
+                    <button onClick={async()=>{
+                      if(!confirm('Delete this review?')) return
+                      await fetch(`/api/admin/reviews/${r.id}`,{method:'DELETE'})
+                      setReviews(prev=>prev.filter((x:any)=>x.id!==r.id))
+                    }} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -807,50 +859,6 @@ export default function ShopAdminPage() {
                     </Row>
                   </FieldSection>
 
-                  <FieldSection title="Social Proof">
-                    <Row cols={3}>
-                      <div>
-                        <FL>Rating (0–5)</FL>
-                        <input type="number" step="0.1" min="0" max="5" value={toolForm.rating} onChange={e=>setToolForm({...toolForm,rating:e.target.value})} className={inp}/>
-                      </div>
-                      <div>
-                        <FL>Review Count</FL>
-                        <input type="number" value={toolForm.review_count} onChange={e=>setToolForm({...toolForm,review_count:e.target.value})} className={inp}/>
-                      </div>
-                      <div>
-                        <FL>Sales Count (base)</FL>
-                        <input type="number" min="0" value={(toolForm as any).sales_count} onChange={e=>setToolForm({...toolForm,...{sales_count:e.target.value}} as any)} className={inp} placeholder="0"/>
-                      </div>
-                    </Row>
-                  </FieldSection>
-
-                  <FieldSection title="Fake Counters">
-                    <Row>
-                      <div>
-                        <FL>Visit Counter Min</FL>
-                        <input type="number" min="0" value={(toolForm as any).fake_visits_min} onChange={e=>setToolForm({...toolForm,...{fake_visits_min:e.target.value}} as any)} className={inp} placeholder="0"/>
-                      </div>
-                      <div>
-                        <FL>Visit Counter Max</FL>
-                        <input type="number" min="0" value={(toolForm as any).fake_visits_max} onChange={e=>setToolForm({...toolForm,...{fake_visits_max:e.target.value}} as any)} className={inp} placeholder="0"/>
-                      </div>
-                    </Row>
-                    <Row>
-                      <div>
-                        <FL>Stock Start Value</FL>
-                        <input type="number" min="0" value={(toolForm as any).fake_stock_max} onChange={e=>setToolForm({...toolForm,...{fake_stock_max:e.target.value}} as any)} className={inp} placeholder="0"/>
-                        <p className="text-[10px] text-gray-400 mt-1">Starting count — set 0 to hide</p>
-                      </div>
-                      <div>
-                        <FL>Stock Floor (reset at)</FL>
-                        <input type="number" min="0" value={(toolForm as any).fake_stock_min} onChange={e=>setToolForm({...toolForm,...{fake_stock_min:e.target.value}} as any)} className={inp} placeholder="1"/>
-                        <p className="text-[10px] text-gray-400 mt-1">Resets to start when it reaches this</p>
-                      </div>
-                    </Row>
-                    <p className="text-[10px] text-gray-400">Countdown decreases by 1 every 5 minutes automatically.</p>
-                    <p className="text-[10px] text-gray-400">Set min=max=0 to hide the counter. A random value in the range is shown to visitors per session.</p>
-                  </FieldSection>
-
                   <FieldSection title="Subscription Variants">
                     {((toolForm as any).variants as any[]).map((v,i)=>(
                       <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 relative">
@@ -980,6 +988,65 @@ export default function ShopAdminPage() {
                         <div className="text-[10px] text-gray-400">Hides purchase button, shows "Sold Out" badge</div>
                       </div>
                     </label>
+                  </FieldSection>
+                </>
+              )}
+
+              {/* TAB 4 — Social Proof */}
+              {modalTab===4 && (
+                <>
+                  <FieldSection title="Social Proof">
+                    <Row cols={3}>
+                      <div>
+                        <FL>Rating (0–5)</FL>
+                        <input type="number" step="0.1" min="0" max="5" value={toolForm.rating} onChange={e=>setToolForm({...toolForm,rating:e.target.value})} className={inp}/>
+                      </div>
+                      <div>
+                        <FL>Review Count</FL>
+                        <input type="number" value={toolForm.review_count} onChange={e=>setToolForm({...toolForm,review_count:e.target.value})} className={inp}/>
+                        <p className="text-[10px] text-gray-400 mt-1">Displayed total — auto-updated when reviews are approved</p>
+                      </div>
+                      <div>
+                        <FL>Sales Count (base)</FL>
+                        <input type="number" min="0" value={(toolForm as any).sales_count} onChange={e=>setToolForm({...toolForm,...{sales_count:e.target.value}} as any)} className={inp} placeholder="0"/>
+                        <p className="text-[10px] text-gray-400 mt-1">Base number shown on "X sold" badge</p>
+                      </div>
+                    </Row>
+                  </FieldSection>
+                </>
+              )}
+
+              {/* TAB 5 — Counters */}
+              {modalTab===5 && (
+                <>
+                  <FieldSection title="Viewing Now Counter">
+                    <Row>
+                      <div>
+                        <FL>Visit Counter Min</FL>
+                        <input type="number" min="0" value={(toolForm as any).fake_visits_min} onChange={e=>setToolForm({...toolForm,...{fake_visits_min:e.target.value}} as any)} className={inp} placeholder="0"/>
+                      </div>
+                      <div>
+                        <FL>Visit Counter Max</FL>
+                        <input type="number" min="0" value={(toolForm as any).fake_visits_max} onChange={e=>setToolForm({...toolForm,...{fake_visits_max:e.target.value}} as any)} className={inp} placeholder="0"/>
+                      </div>
+                    </Row>
+                    <p className="text-[10px] text-gray-400">Live "X viewing now" chip — random value in range, changes every few seconds. Set 0 to hide.</p>
+                  </FieldSection>
+
+                  <FieldSection title="Stock Counter">
+                    <Row>
+                      <div>
+                        <FL>Stock Start Value</FL>
+                        <input type="number" min="0" value={(toolForm as any).fake_stock_max} onChange={e=>setToolForm({...toolForm,...{fake_stock_max:e.target.value}} as any)} className={inp} placeholder="0"/>
+                        <p className="text-[10px] text-gray-400 mt-1">Starting count — set 0 to hide</p>
+                      </div>
+                      <div>
+                        <FL>Stock Floor (reset at)</FL>
+                        <input type="number" min="0" value={(toolForm as any).fake_stock_min} onChange={e=>setToolForm({...toolForm,...{fake_stock_min:e.target.value}} as any)} className={inp} placeholder="1"/>
+                        <p className="text-[10px] text-gray-400 mt-1">Resets to start when it reaches this</p>
+                      </div>
+                    </Row>
+                    <p className="text-[10px] text-gray-400">Decreases by 1 every 5 minutes automatically. Shown as "X left" badge on shop cards.</p>
                   </FieldSection>
                 </>
               )}

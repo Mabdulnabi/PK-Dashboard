@@ -42,7 +42,7 @@ function getFakeStock(toolId: string, min: number, max: number): number {
 }
 
 function FakeStockBadge({ toolId, min, max, lang }: { toolId:string; min:number; max:number; lang:string }) {
-  const [stock, setStock] = useState<number>(0)
+  const [stock, setStock] = useState<number>(()=>getFakeStock(toolId, min, max))
   useEffect(()=>{
     setStock(getFakeStock(toolId, min, max))
     const id = setInterval(()=>setStock(getFakeStock(toolId, min, max)), STOCK_TICK_MS)
