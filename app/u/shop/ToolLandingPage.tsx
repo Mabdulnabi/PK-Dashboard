@@ -214,6 +214,14 @@ function injectGoldShimmer() {
   document.head.appendChild(s)
 }
 
+function injectPlusJakarta() {
+  if (typeof document === 'undefined' || document.getElementById('pk-jakarta-font')) return
+  const l = document.createElement('link')
+  l.id = 'pk-jakarta-font'; l.rel = 'stylesheet'
+  l.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'
+  document.head.appendChild(l)
+}
+
 // Features Grid renderers
 function FeatureIcon({ icon_url, size = 28 }: { icon_url?: string; size?: number }) {
   if (!icon_url) return null
@@ -1337,140 +1345,186 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
     <div className="min-h-full bg-gray-50 dark:bg-gray-950" dir={isRtl?'rtl':'ltr'} style={isRtl?{fontFamily:"'Cairo', sans-serif"}:{}}>
 
       {/* ── Hero ── */}
-      <div className="p-3 md:p-5 pb-0">
-        <div className="relative overflow-hidden rounded-3xl"
-          style={{background:'linear-gradient(135deg,#0a0a18 0%,#0d1424 40%,#0a1628 70%,#0d0f1e 100%)'}}>
+      <div style={{
+        position:'relative',
+        padding:'16px 12px 24px',
+        background:'radial-gradient(ellipse 130% 100% at 5% 0%, rgba(217,148,1,0.14) 0%, transparent 50%), radial-gradient(ellipse 80% 100% at 95% 100%, rgba(99,102,241,0.11) 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 50% 50%, rgba(56,189,248,0.06) 0%, transparent 60%), #e8eef5',
+      }}>
+        {/* ambient orbs */}
+        <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0}}>
+          <div style={{position:'absolute',top:-80,left:'25%',width:260,height:260,borderRadius:'50%',background:'rgba(217,148,1,0.10)',filter:'blur(70px)'}}/>
+          <div style={{position:'absolute',bottom:-60,right:'8%',width:200,height:200,borderRadius:'50%',background:'rgba(99,102,241,0.09)',filter:'blur(70px)'}}/>
+          <div style={{position:'absolute',top:'40%',right:'35%',width:140,height:140,borderRadius:'50%',background:'rgba(56,189,248,0.06)',filter:'blur(50px)'}}/>
+        </div>
 
-          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
-            <div className="absolute -top-20 left-1/3 w-72 h-72 rounded-full blur-3xl" style={{background:'#d9940118'}}/>
-            <div className="absolute top-10 right-10 w-48 h-48 rounded-full blur-3xl" style={{background:'#3b82f610'}}/>
-            <div className="absolute bottom-0 left-10 w-56 h-56 rounded-full blur-3xl" style={{background:'#8b5cf608'}}/>
-          </div>
+        {/* Glass card */}
+        <div style={{
+          position:'relative',zIndex:1,
+          borderRadius:22,
+          background:'rgba(255,255,255,0.54)',
+          backdropFilter:'blur(28px)',
+          WebkitBackdropFilter:'blur(28px)',
+          border:'1px solid rgba(255,255,255,0.72)',
+          boxShadow:'0 8px 40px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.92)',
+          overflow:'hidden',
+          fontFamily:"'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
+        }}>
+          {/* Gold accent line */}
+          <div style={{height:3,background:'linear-gradient(90deg,rgba(217,148,1,0) 0%,#D99401 15%,#F5BC00 50%,#D99401 85%,rgba(217,148,1,0) 100%)'}}/>
 
-          <div className="absolute inset-0 opacity-[0.03] rounded-3xl"
-            style={{backgroundImage:'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',backgroundSize:'40px 40px'}}/>
+          <div style={{padding:'18px 20px 22px',display:'flex',flexDirection:'column',gap:0}}>
 
-          <div className="relative px-5 md:px-10 pt-6 pb-8">
-            <button onClick={onBack}
-              className="flex items-center gap-2 mb-7 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 group w-fit"
-              style={{background:'rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.85)',border:'1px solid rgba(255,255,255,0.18)',backdropFilter:'blur(6px)'}}>
-              <ArrowLeft size={14} className={`transition-transform group-hover:${isRtl?'translate-x-0.5':'-translate-x-0.5'} ${isRtl?'rotate-180':''}`}/>
-              {t('Back to Store','رجوع للمتجر')}
-            </button>
-
-            <div className="flex flex-col md:flex-row items-start gap-7">
-              <div className="relative flex-shrink-0">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl"
-                  style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)'}}>
-                  {tool.image_url
-                    ? <img src={tool.image_url} alt={tool.name} className="w-14 h-14 md:w-16 md:h-16 object-contain"/>
-                    : <span className="text-3xl font-bold" style={{color:'rgba(255,255,255,0.25)'}}>{tool.name.slice(0,2).toUpperCase()}</span>}
-                </div>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-12 h-3 blur-lg rounded-full" style={{background:'#d99401', opacity:0.5}}/>
+            {/* Back + status badges */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8,marginBottom:16}}>
+              <button onClick={onBack} style={{
+                display:'inline-flex',alignItems:'center',gap:6,
+                padding:'6px 14px',borderRadius:10,cursor:'pointer',
+                background:'rgba(255,255,255,0.72)',border:'1px solid rgba(0,0,0,0.09)',
+                backdropFilter:'blur(8px)',color:'#444B5A',fontSize:13,fontWeight:600,
+                boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
+              }}>
+                <ArrowLeft size={13} style={isRtl?{transform:'rotate(180deg)'}:{}}/>
+                {t('Back to Store','رجوع للمتجر')}
+              </button>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(16,185,129,0.11)',color:'#0D7A4E',fontSize:11,fontWeight:700,border:'1px solid rgba(16,185,129,0.22)'}}>
+                  <Zap size={9} style={{fill:'#0D7A4E'}}/>{tool.delivery_label||t('INSTANT','فوري')}
+                </span>
+                <span style={{display:'inline-flex',alignItems:'center',padding:'4px 11px',borderRadius:20,background:'rgba(0,0,0,0.055)',color:'#5A6478',fontSize:11,fontWeight:600,border:'1px solid rgba(0,0,0,0.08)'}}>
+                  ⏱ {durLabel}
+                </span>
+                {(tool.sales_count||0) > 0 && (
+                  <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(217,148,1,0.11)',color:'#9A6700',fontSize:11,fontWeight:700,border:'1px solid rgba(217,148,1,0.22)'}}>
+                    <ShoppingCart size={9}/>{(tool.sales_count||0).toLocaleString()} {t('sold','مبيعة')}
+                  </span>
+                )}
               </div>
+            </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-3">
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-                    style={{background:'rgba(16,185,129,0.85)'}}>
-                    <Zap size={9} fill="white"/>{tool.delivery_label||t('INSTANT','فوري')}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-300"
-                    style={{border:'1px solid rgba(255,255,255,0.12)'}}>
-                    ⏱ {durLabel}
-                  </span>
-                  {(tool.sales_count||0) > 0 && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-                      style={{background:'rgba(217,148,1,0.85)'}}>
-                      <ShoppingCart size={9} strokeWidth={2.5}/>{(tool.sales_count||0).toLocaleString()} {t('sold','مبيعة')}
-                    </span>
-                  )}
-                </div>
-
-                <h1 className="text-2xl md:text-4xl font-bold text-white mb-3 leading-tight tracking-tight">{tool.name}</h1>
-
-                <div className="flex items-center gap-2 mb-5">
-                  <div className="flex gap-0.5">
+            {/* Identity: logo + name + rating */}
+            <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:16}}>
+              <div style={{
+                width:72,height:72,borderRadius:18,flexShrink:0,
+                background:'rgba(255,255,255,0.82)',
+                border:'1px solid rgba(255,255,255,0.95)',
+                boxShadow:'0 4px 20px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,1)',
+                display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',
+              }}>
+                {tool.image_url
+                  ? <img src={tool.image_url} alt={tool.name} style={{width:52,height:52,objectFit:'contain'}}/>
+                  : <span style={{fontSize:22,fontWeight:800,color:'#C5CDD9'}}>{tool.name.slice(0,2).toUpperCase()}</span>
+                }
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <h1 style={{margin:0,marginBottom:8,lineHeight:1.15,fontSize:'clamp(22px,5vw,30px)',fontWeight:800,color:'#0B0F1A',letterSpacing:-0.5}}>
+                  {tool.name}
+                </h1>
+                <div style={{display:'flex',alignItems:'center',gap:7,flexWrap:'wrap'}}>
+                  <div style={{display:'flex',gap:2}}>
                     {[1,2,3,4,5].map(i=>(
-                      <Star key={i} size={14} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#374151'}/>
+                      <Star key={i} size={13} fill={i<=Math.round(displayRating)?'#F59E0B':'none'} stroke={i<=Math.round(displayRating)?'#F59E0B':'#D1D5DB'}/>
                     ))}
                   </div>
-                  <span className="text-sm font-bold text-amber-400">{displayRating.toFixed(1)}</span>
-                  <span className="text-sm text-gray-600">·</span>
-                  <span className="text-sm text-gray-500">{displayCount} {t('reviews','تقييم')}</span>
-                </div>
-
-                {variants.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {variants.map((v,i)=>{
-                      const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
-                      return (
-                        <button key={i} onClick={()=>setSelectedVariant(i)}
-                          className="px-3 py-1.5 rounded-xl text-sm font-bold transition-all border-2"
-                          style={selectedVariant===i
-                            ? {background:'#d99401',borderColor:'#d99401',color:'#fff',boxShadow:'0 4px 14px rgba(217,148,1,0.4)'}
-                            : {background:'rgba(255,255,255,0.06)',borderColor:'rgba(255,255,255,0.18)',color:'rgba(255,255,255,0.75)'}}>
-                          {vName}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-baseline gap-2 gap-y-1">
-                  <span className="text-3xl md:text-5xl font-extrabold tracking-tight" style={{color:'#d99401'}}>{price}</span>
-                  {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                    <span className="text-lg md:text-2xl text-gray-400 line-through font-medium">
-                      {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
-                    </span>
-                  )}
-                  <span className="text-base md:text-lg text-gray-500 font-medium">/ {durLabel}</span>
-                </div>
-                {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
-                  <div className="mt-1">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black text-white"
-                      style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
-                      {(() => { const pct = Math.round((1 - displayPriceEgp / displayRetailEgp) * 100); return `${pct}% ${t('خصم عن السعر الأصلي','OFF retail price')}` })()}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="w-full md:w-52 flex-shrink-0 flex flex-col gap-3">
-                {tool.is_out_of_stock
-                  ? <button disabled className="w-full py-3.5 rounded-xl text-gray-400 font-bold cursor-default text-sm"
-                      style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)'}}>
-                      {t('Out of Stock','نفذت الكمية')}
-                    </button>
-                  : <button onClick={()=>{ window.location.href=buyUrl }}
-                      className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      style={{background:'#d99401', boxShadow:'0 6px 20px rgba(217,148,1,0.35)'}}>
-                      🛒 {t('Buy Now','اشتري الآن')}
-                    </button>
-                }
-                <div className="flex flex-col gap-1.5 pt-1">
-                  {[
-                    {icon:'⚡', en:'Instant activation', ar:'تفعيل فوري'},
-                    {icon:'🔒', en:'Secure payment',    ar:'دفع آمن'},
-                    {icon:'💬', en:'24/7 support',      ar:'دعم على مدار الساعة'},
-                  ].map(b=>(
-                    <div key={b.en} className="flex items-center gap-2 text-[11px] text-gray-500">
-                      <span>{b.icon}</span>{isRtl?b.ar:b.en}
-                    </div>
-                  ))}
-                  {fakeVisits !== null && (
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                      <span>👁</span>{fakeVisits.toLocaleString()} {t('views today','مشاهدة اليوم')}
-                    </div>
-                  )}
-                  {fakeStock !== null && (
-                    <div className="flex items-center gap-2 text-[11px] text-amber-400 mt-0.5 font-semibold">
-                      <span>📦</span>{t('Only','متبقي')} {fakeStock} {t('left in stock','في المخزون')}
-                    </div>
-                  )}
+                  <span style={{fontSize:13,fontWeight:700,color:'#D99401'}}>{displayRating.toFixed(1)}</span>
+                  <span style={{fontSize:13,color:'rgba(0,0,0,0.22)'}}>·</span>
+                  <span style={{fontSize:13,color:'#8A93A6'}}>{displayCount.toLocaleString()} {t('reviews','تقييم')}</span>
                 </div>
               </div>
             </div>
+
+            {/* Divider */}
+            <div style={{height:1,background:'rgba(0,0,0,0.07)',marginBottom:16}}/>
+
+            {/* Variants */}
+            {variants.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:'#9BA3B2',textTransform:'uppercase',marginBottom:9}}>
+                  {t('Choose Plan','اختر الباقة')}
+                </div>
+                <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+                  {variants.map((v,i)=>{
+                    const vName = isRtl ? (v.name_ar||v.name_en||v.name||'') : (v.name_en||v.name_ar||v.name||'')
+                    const active = selectedVariant===i
+                    return (
+                      <button key={i} onClick={()=>setSelectedVariant(i)} style={{
+                        padding:'8px 18px',borderRadius:11,fontSize:13,fontWeight:700,cursor:'pointer',
+                        border:active?'1.5px solid rgba(217,148,1,0.55)':'1.5px solid rgba(0,0,0,0.10)',
+                        background:active?'rgba(217,148,1,0.13)':'rgba(255,255,255,0.70)',
+                        color:active?'#9A6700':'#5A6478',
+                        backdropFilter:'blur(8px)',
+                        boxShadow:active?'0 2px 14px rgba(217,148,1,0.18)':'0 1px 3px rgba(0,0,0,0.05)',
+                        transition:'all 0.14s',
+                      }}>
+                        {vName}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Price */}
+            <div style={{marginBottom:14}}>
+              <div style={{display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap',marginBottom:0}}>
+                <span style={{fontSize:'clamp(36px,8vw,50px)',fontWeight:800,color:'#D99401',lineHeight:1,letterSpacing:-1.5,fontVariantNumeric:'tabular-nums'}}>
+                  {price}
+                </span>
+                {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
+                  <span style={{fontSize:20,color:'rgba(0,0,0,0.22)',textDecoration:'line-through',fontWeight:500}}>
+                    {formatPrice(displayRetailEgp, parseFloat(settings.usd_to_egp_rate)||50)}
+                  </span>
+                )}
+                <span style={{fontSize:14,color:'#9BA3B2',fontWeight:500}}>/ {durLabel}</span>
+                {displayRetailEgp > displayPriceEgp && displayPriceEgp > 0 && (
+                  <span style={{padding:'3px 10px',borderRadius:20,background:'rgba(239,68,68,0.11)',color:'#C53030',fontSize:12,fontWeight:800,border:'1px solid rgba(239,68,68,0.18)'}}>
+                    -{Math.round((1-displayPriceEgp/displayRetailEgp)*100)}%
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* CTA button */}
+            {tool.is_out_of_stock
+              ? <button disabled style={{width:'100%',padding:'14px',borderRadius:14,background:'rgba(0,0,0,0.06)',color:'rgba(0,0,0,0.28)',fontSize:15,fontWeight:700,border:'1px solid rgba(0,0,0,0.08)',cursor:'not-allowed'}}>
+                  {t('Out of Stock','نفذت الكمية')}
+                </button>
+              : <button onClick={()=>{ window.location.href=buyUrl }}
+                  style={{width:'100%',padding:'15px',borderRadius:14,background:'#D99401',color:'#fff',fontSize:15,fontWeight:800,border:'none',cursor:'pointer',boxShadow:'0 6px 24px rgba(217,148,1,0.36),inset 0 1px 0 rgba(255,255,255,0.22)',transition:'transform 0.12s,box-shadow 0.12s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
+                  onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 30px rgba(217,148,1,0.44),inset 0 1px 0 rgba(255,255,255,0.22)'}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 6px 24px rgba(217,148,1,0.36),inset 0 1px 0 rgba(255,255,255,0.22)'}}>
+                  🛒 {t('Buy Now','اشتري الآن')}
+                </button>
+            }
+
+            {/* Trust signals */}
+            <div style={{display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap',marginTop:10}}>
+              {[{icon:'⚡',en:'Instant activation',ar:'تفعيل فوري'},{icon:'🔒',en:'Secure payment',ar:'دفع آمن'},{icon:'💬',en:'24/7 support',ar:'دعم مستمر'}].map(b=>(
+                <span key={b.en} style={{fontSize:11,color:'#8A93A6',display:'flex',alignItems:'center',gap:4}}>
+                  {b.icon}{isRtl?b.ar:b.en}
+                </span>
+              ))}
+            </div>
+
+            {/* Social proof chips */}
+            {(fakeVisits !== null || fakeStock !== null) && (<>
+              <div style={{height:1,background:'rgba(0,0,0,0.07)',margin:'14px 0 12px'}}/>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                {fakeVisits !== null && (
+                  <div style={{display:'flex',alignItems:'center',gap:5,padding:'5px 13px',borderRadius:10,background:'rgba(255,255,255,0.72)',border:'1px solid rgba(0,0,0,0.07)',backdropFilter:'blur(8px)'}}>
+                    <span style={{fontSize:13}}>👁</span>
+                    <span style={{fontSize:12,fontWeight:700,color:'#0B0F1A',fontVariantNumeric:'tabular-nums'}}>{fakeVisits.toLocaleString()}</span>
+                    <span style={{fontSize:12,color:'#8A93A6'}}>{t('viewing today','مشاهدة اليوم')}</span>
+                  </div>
+                )}
+                {fakeStock !== null && (
+                  <div style={{display:'flex',alignItems:'center',gap:5,padding:'5px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.16)',backdropFilter:'blur(8px)'}}>
+                    <span style={{fontSize:13}}>📦</span>
+                    <span style={{fontSize:12,fontWeight:700,color:'#C53030',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
+                    <span style={{fontSize:12,color:'#E07070'}}>{t('left in stock','متبقي في المخزون')}</span>
+                  </div>
+                )}
+              </div>
+            </>)}
           </div>
         </div>
       </div>
