@@ -14,7 +14,7 @@ interface Tool {
   duration_label: string; category_slug: string; category_id?: string
   is_out_of_stock: boolean; landing_blocks?: any[]
   rating: number; review_count: number; sales_count?: number
-  delivery_label?: string; details_slug?: string; warranty_label?: string
+  delivery_label?: string; details_slug?: string; warranty_label?: string; warranty_label_ar?: string
   fake_stock_min?: number; fake_stock_max?: number
 }
 interface Category {
@@ -94,7 +94,7 @@ function StoreCard({ tool, lang, formatPrice }: {
 
       <div className="p-5 pb-3">
         {/* Top badges: delivery + discount only */}
-        <div className="flex items-center gap-1.5 mb-3 flex-wrap justify-end">
+        <div className={`flex items-center gap-1.5 mb-3 flex-wrap ${isRtl?'justify-start flex-row-reverse':'justify-end'}`}>
           {(() => {
             const retail = tool.retail_price_egp || 0
             const mine   = tool.price_egp || 0
@@ -102,7 +102,7 @@ function StoreCard({ tool, lang, formatPrice }: {
               const pct = Math.round((1 - mine / retail) * 100)
               return (
                 <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black text-white"
-                  style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>
+                  style={{background:'linear-gradient(135deg,#ef4444,#dc2626)',flexDirection:isRtl?'row-reverse':'row'}}>
                   <TrendingDown size={10} strokeWidth={2.5}/>{pct}% {t('خصم','OFF')}
                 </span>
               )
@@ -110,12 +110,12 @@ function StoreCard({ tool, lang, formatPrice }: {
             return null
           })()}
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-            style={{background:'linear-gradient(135deg,#10b981,#059669)'}}>
+            style={{background:'linear-gradient(135deg,#10b981,#059669)',flexDirection:isRtl?'row-reverse':'row'}}>
             <Zap size={10} fill="white"/>{t('فوري', tool.delivery_label||'INSTANT')}
           </span>
           {fakeStock > 0 && (
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-              style={{background:'linear-gradient(135deg,#f97316,#dc2626)',boxShadow:'0 2px 6px rgba(249,115,22,0.35)'}}>
+              style={{background:'linear-gradient(135deg,#f97316,#dc2626)',boxShadow:'0 2px 6px rgba(249,115,22,0.35)',flexDirection:isRtl?'row-reverse':'row'}}>
               📦 {isRtl?`متبقي ${fakeStock}`:`${fakeStock} left`}
             </span>
           )}
@@ -138,22 +138,23 @@ function StoreCard({ tool, lang, formatPrice }: {
         <Stars rating={tool.rating} count={tool.review_count}/>
         {(tool.sales_count || 0) > 0 && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-            style={{background:`linear-gradient(135deg,${accent},${accent}bb)`}}>
+            style={{background:`linear-gradient(135deg,${accent},${accent}bb)`,flexDirection:isRtl?'row-reverse':'row'}}>
             <ShoppingCart size={9} strokeWidth={2.5} color="white"/>
             {(tool.sales_count||0).toLocaleString()} {t('مبيعة','sold')}
           </span>
         )}
         {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-            style={{background:'linear-gradient(135deg,#6366f1,#4f46e5)'}}>
+            style={{background:'linear-gradient(135deg,#6366f1,#4f46e5)',flexDirection:isRtl?'row-reverse':'row'}}>
             <Shield size={9} strokeWidth={2.5} color="white"/>
             {isRtl
-              ? tool.warranty_label
-                  .replace(/(\d+)\s*Year[s]?\s*Warranty/i, (_,n)=>`ضمان ${n} سنة`)
+              ? ((tool as any).warranty_label_ar || tool.warranty_label
+                  .replace(/Lifetime\s*Warranty/i,'ضمان مدى الحياة')
+                  .replace(/Full\s*Warranty/i,'ضمان كامل')
+                  .replace(/(\d+)\s*Year[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} سنة`)
                   .replace(/(\d+)\s*Month[s]?\s*Warranty/i,(_,n)=>`ضمان ${n} شهر`)
                   .replace(/(\d+)\s*Day[s]?\s*Warranty/i,  (_,n)=>`ضمان ${n} يوم`)
-                  .replace(/Full\s*Warranty/i,'ضمان كامل')
-                  .replace(/Warranty/i,'ضمان')
+                  .replace(/\bWarranty\b/i,'ضمان').replace(/\bGuarantee\b/i,'ضمان'))
               : tool.warranty_label}
           </span>
         )}

@@ -109,7 +109,7 @@ export default function ShopAdminPage() {
   const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;subtitle_en:string;subtitle_ar:string;emoji:string;tool_ids:string[]}[]>([])
   const [dealSaving,    setDealSaving]    = useState(false)
 
-  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',warranty_label:'',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',sku:'',fake_visits_min:'0',fake_visits_max:'0',fake_stock_min:'0',fake_stock_max:'0',variants:[] as {name_en:string;name_ar:string;price:string;discount_price:string;cost:string;stock:string;sku:string}[] }
+  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',warranty_label:'',warranty_label_ar:'',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',sku:'',fake_visits_min:'0',fake_visits_max:'0',fake_stock_min:'0',fake_stock_max:'0',variants:[] as {name_en:string;name_ar:string;price:string;discount_price:string;cost:string;stock:string;sku:string}[] }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   const emptyCat = { name:'', name_ar:'', slug:'', color:'#3B82F6', icon:'🔧', image_url:'', image_url_ar:'', sort_order:'0' }
@@ -146,7 +146,7 @@ export default function ShopAdminPage() {
 
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModalTab(0); setModal('add-tool') }
   const openEditTool = async (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,warranty_label:(t as any).warranty_label||'',rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0),sku:(t as any).sku||'',fake_visits_min:String((t as any).fake_visits_min||0),fake_visits_max:String((t as any).fake_visits_max||0),fake_stock_min:String((t as any).fake_stock_min||0),fake_stock_max:String((t as any).fake_stock_max||0),variants:((t as any).variants||[])})
+    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,warranty_label:(t as any).warranty_label||'',warranty_label_ar:(t as any).warranty_label_ar||'',rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0),sku:(t as any).sku||'',fake_visits_min:String((t as any).fake_visits_min||0),fake_visits_max:String((t as any).fake_visits_max||0),fake_stock_min:String((t as any).fake_stock_min||0),fake_stock_max:String((t as any).fake_stock_max||0),variants:((t as any).variants||[])})
     if (t.category_slug === 'bundle') {
       const res = await fetch('/api/admin/bundles')
       const d   = await res.json()
@@ -184,6 +184,7 @@ export default function ShopAdminPage() {
       duration_label:toolForm.duration_label, duration_days:parseInt(toolForm.duration_days)||28,
       delivery_label:toolForm.delivery_label||'INSTANT',
       warranty_label:toolForm.warranty_label||null,
+      warranty_label_ar:(toolForm as any).warranty_label_ar||null,
       rating:parseFloat(toolForm.rating)||5.0, review_count:parseInt(toolForm.review_count)||0,
       video_url:toolForm.video_url||null,
       features:toolForm.features.split('\n').map(f=>f.trim()).filter(Boolean),
@@ -851,6 +852,8 @@ export default function ShopAdminPage() {
                         </select>
                         <input value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)}
                           placeholder="or type custom…" className={`${inp} mt-1.5`}/>
+                        <input value={(toolForm as any).warranty_label_ar||''} onChange={e=>setToolForm({...toolForm,warranty_label_ar:e.target.value} as any)}
+                          placeholder="الترجمة العربية (اختياري)…" className={`${inp} mt-1.5`} dir="rtl"/>
                       </div>
                       <div>
                         <FL>Delivery Label</FL>

@@ -96,6 +96,7 @@ interface Tool {
   fake_stock_min?: number; fake_stock_max?: number
   variants?: ToolVariant[]
   warranty_label?: string
+  warranty_label_ar?: string
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange:(v:number)=>void }) {
@@ -1478,6 +1479,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                 {tool.warranty_label && tool.warranty_label !== 'no_warranty' && (
                   <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(99,102,241,0.10)',color:'#4338CA',fontSize:11,fontWeight:700,border:'1px solid rgba(99,102,241,0.20)'}}>
                     {'🛡️'} {isRtl?(()=>{
+                      if(tool.warranty_label_ar) return tool.warranty_label_ar
                       const w=tool.warranty_label!
                       let r=w
                         .replace(/Lifetime\s*Warranty/i,'ضمان مدى الحياة')
