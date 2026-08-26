@@ -1466,7 +1466,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   <Zap size={9} fill="#0B7A4B" stroke="none"/>{tool.delivery_label||t('Instant','\u0641\u0648\u0631\u064a')}
                 </span>
                 <span style={{display:'inline-flex',alignItems:'center',padding:'4px 11px',borderRadius:20,background:'rgba(0,0,0,0.05)',color:'#5A6478',fontSize:11,fontWeight:600,border:'1px solid rgba(0,0,0,0.07)'}}>
-                  &#x23F1; {durLabel}
+                  ⏱ {durLabel}
                 </span>
                 {(tool.sales_count||0) > 0 && (
                   <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 11px',borderRadius:20,background:'rgba(217,148,1,0.10)',color:'#8A5F00',fontSize:11,fontWeight:700,border:'1px solid rgba(217,148,1,0.20)'}}>
@@ -1547,7 +1547,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                       transition:'transform 0.11s,box-shadow 0.11s',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
                     onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 9px 30px rgba(217,148,1,0.50), inset 0 1px 0 rgba(255,255,255,0.22)'}}
                     onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 5px 24px rgba(217,148,1,0.40), inset 0 1px 0 rgba(255,255,255,0.22)'}}>
-                    &#x1F6D2; {t('Buy Now','\u0627\u0634\u062a\u0631\u064a \u0627\u0644\u0622\u0646')}
+                    \ud83d\uded2 {t('Buy Now','\u0627\u0634\u062a\u0631\u064a \u0627\u0644\u0622\u0646')}
                   </button>
               }
 
@@ -1569,10 +1569,9 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                     </div>
                   )}
                   {fakeStock !== null && (
-                    <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.15)'}}>
-                      <span style={{fontSize:13}}>\uD83D\uDCE6</span>
+                    <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.15)',flex:1,minWidth:0}}>
                       <span style={{fontSize:13,fontWeight:800,color:'#C0392B',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
-                      <span style={{fontSize:11,color:'#C47070',fontWeight:500,whiteSpace:'nowrap'}}>{t('left','\u0645\u062a\u0628\u0642\u064a')}</span>
+                      <span style={{fontSize:11,color:'#C47070',fontWeight:500,whiteSpace:'nowrap'}}>{t('left in Stock','\u0645\u062a\u0628\u0642\u064a \u0628\u0627\u0644\u0645\u062E\u0632\u0646')}</span>
                     </div>
                   )}
                 </div>
