@@ -1570,6 +1570,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                   )}
                   {fakeStock !== null && (
                     <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 13px',borderRadius:10,background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.15)',flex:1,minWidth:0}}>
+                      <span style={{fontSize:13}}>\ud83d\udce6</span>
                       <span style={{fontSize:13,fontWeight:800,color:'#C0392B',fontVariantNumeric:'tabular-nums'}}>{fakeStock}</span>
                       <span style={{fontSize:11,color:'#C47070',fontWeight:500,whiteSpace:'nowrap'}}>{t('left in Stock','\u0645\u062a\u0628\u0642\u064a \u0628\u0627\u0644\u0645\u062E\u0632\u0646')}</span>
                     </div>
@@ -1590,7 +1591,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {tool.features.map((f,i)=>(
                 <div key={i} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-bold flex-shrink-0 mt-0.5" style={{color:'#d99401'}}>âœ“</span>{f}
+                  <span className=”font-bold flex-shrink-0 mt-0.5” style={{color:'#d99401'}}>✓</span>{f}
                 </div>
               ))}
             </div>
