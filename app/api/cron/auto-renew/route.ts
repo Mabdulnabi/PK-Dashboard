@@ -1,91 +1,102 @@
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 
-// Called by Vercel Cron every hour — renews subscriptions expiring in ≤24h if wallet has balance
+const service = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+// Vercel Cron calls this daily at 09:00 UTC
+// Protected by CRON_SECRET env var
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization')
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const now = new Date()
-  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  const now = new Date().toISOString()
 
-  // Get purchases with auto_renew=true expiring within 24h
-  const { data: expiring } = await db
+  // Find expired purchases with auto_renew = true
+  const { data: expired } = await service
     .from('tool_purchases')
-    .select('id, member_id, amount_egp, expires_at, shop_tools(duration_days, retail_price_egp, name)')
+    .select('id, member_id, tool_id, price_egp, duration_days, expires_at, shop_tools(name)')
+    .eq('status', 'confirmed')
     .eq('auto_renew', true)
-    .in('status', ['confirmed', 'delivered'])
-    .lte('expires_at', in24h.toISOString())
-    .gte('expires_at', now.toISOString())
+    .lt('expires_at', now)
 
-  if (!expiring?.length) return NextResponse.json({ renewed: 0 })
+  if (!expired?.length) return NextResponse.json({ ok: true, renewed: 0 })
 
-  let renewed = 0
-  const results: any[] = []
+  const renewed: string[] = []
+  const failed:  string[] = []
 
-  for (const purchase of expiring) {
-    const tool = (purchase as any).shop_tools
-    const price = Number(tool?.retail_price_egp ?? purchase.amount_egp ?? 0)
-    const days  = Number(tool?.duration_days ?? 30)
+  for (const p of expired) {
+    const price = Number(p.price_egp) || 0
+    const days  = Number(p.duration_days) || 30
+    const name  = (p as any).shop_tools?.name || 'الأداة'
 
     // Get wallet balance
-    const { data: tx } = await db
+    const { data: txRow } = await service
       .from('wallet_transactions')
       .select('balance_after')
-      .eq('member_id', purchase.member_id)
+      .eq('member_id', p.member_id)
       .eq('currency', 'EGP')
       .order('created_at', { ascending: false })
       .limit(1)
+      .single()
 
-    const balance = Number(tx?.[0]?.balance_after ?? 0)
+    const balance = Number(txRow?.balance_after ?? 0)
+
     if (balance < price) {
-      // Notify member — insufficient balance
-      await db.from('member_notifications').insert({
-        member_id: purchase.member_id,
-        title:    'فشل التجديد التلقائي',
-        title_en: 'Auto-Renew Failed',
-        message:    `رصيد المحفظة غير كافٍ لتجديد "${tool?.name}". يرجى شحن المحفظة.`,
-        message_en: `Insufficient wallet balance to renew "${tool?.name}". Please top up.`,
-        type: 'warning',
-        link: '/u/wallet',
+      // Not enough balance — notify member
+      await service.from('member_notifications').insert({
+        member_id:  p.member_id,
+        title:      'رصيد غير كافٍ للتجديد التلقائي ⚠️',
+        title_en:   'Insufficient balance for auto-renewal ⚠️',
+        message:    `لم يتم تجديد اشتراكك في ${name} تلقائياً بسبب نقص الرصيد. الرصيد المطلوب: ${price} ج. اشحن محفظتك الآن.`,
+        message_en: `Your ${name} subscription could not be auto-renewed due to insufficient balance. Required: ${price} EGP. Top up your wallet now.`,
+        type:       'warning',
+        link:       '/u/wallet',
       })
-      results.push({ id: purchase.id, status: 'insufficient_balance' })
+      failed.push(p.id)
       continue
     }
 
-    // Deduct wallet
+    // Deduct from wallet
     const newBalance = balance - price
-    const { error: deductErr } = await db.from('wallet_transactions').insert({
-      member_id:    purchase.member_id,
-      type:         'deduct',
-      amount:       price,
-      currency:     'EGP',
+    const { error: txError } = await service.from('wallet_transactions').insert({
+      member_id:     p.member_id,
+      type:          'deduct',
+      amount:        price,
+      currency:      'EGP',
       balance_after: newBalance,
-      note:         `تجديد تلقائي: ${tool?.name}`,
+      note:          `تجديد تلقائي: ${name}`,
     })
-    if (deductErr) { results.push({ id: purchase.id, status: 'deduct_error', error: deductErr.message }); continue }
+    if (txError) { failed.push(p.id); continue }
 
-    // Extend expiry
-    const currentExpiry = new Date(purchase.expires_at)
-    const newExpiry = new Date(currentExpiry.getTime() + days * 24 * 60 * 60 * 1000)
-    await db.from('tool_purchases').update({ expires_at: newExpiry.toISOString() }).eq('id', purchase.id)
+    // Extend subscription
+    const newExpiry = new Date(
+      Math.max(Date.now(), new Date(p.expires_at!).getTime()) + days * 86400000
+    ).toISOString()
 
-    // Notify member
-    await db.from('member_notifications').insert({
-      member_id: purchase.member_id,
-      title:    'تم التجديد التلقائي',
-      title_en: 'Auto-Renewed Successfully',
-      message:    `تم تجديد اشتراك "${tool?.name}" تلقائياً بخصم ${price} ج من محفظتك.`,
-      message_en: `Your "${tool?.name}" subscription was auto-renewed. ${price} EGP deducted from wallet.`,
-      type: 'success',
-      link: '/u/orders',
+    const { error: upError } = await service
+      .from('tool_purchases')
+      .update({ expires_at: newExpiry, status: 'confirmed' })
+      .eq('id', p.id)
+    if (upError) { failed.push(p.id); continue }
+
+    // Notify member of successful renewal
+    await service.from('member_notifications').insert({
+      member_id:  p.member_id,
+      title:      `تم تجديد اشتراكك في ${name} ✅`,
+      title_en:   `Your ${name} subscription was renewed ✅`,
+      message:    `تم خصم ${price} ج من محفظتك وتجديد اشتراكك تلقائياً لمدة ${days} يوم. ينتهي بتاريخ ${new Date(newExpiry).toLocaleDateString('ar-EG')}.`,
+      message_en: `${price} EGP was deducted and your subscription was renewed for ${days} days. Expires on ${new Date(newExpiry).toLocaleDateString('en-GB')}.`,
+      type:       'success',
+      link:       '/u/orders',
     })
 
-    renewed++
-    results.push({ id: purchase.id, status: 'renewed', new_expiry: newExpiry.toISOString() })
+    renewed.push(p.id)
   }
 
-  return NextResponse.json({ renewed, results })
+  return NextResponse.json({ ok: true, renewed: renewed.length, failed: failed.length })
 }

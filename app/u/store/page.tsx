@@ -116,7 +116,7 @@ function StoreCard({ tool, lang, formatPrice }: {
           {fakeStock > 0 && (
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
               style={{background:'linear-gradient(135deg,#f97316,#dc2626)',boxShadow:'0 2px 6px rgba(249,115,22,0.35)',flexDirection:isRtl?'row-reverse':'row'}}>
-              📦 {isRtl?`متبقي ${fakeStock}`:`${fakeStock} left`}
+              <span>📦</span><span>{isRtl?`متبقي ${fakeStock}`:`${fakeStock} left`}</span>
             </span>
           )}
         </div>

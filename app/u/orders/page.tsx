@@ -759,7 +759,10 @@ export default function MyOrdersPage() {
     setConnectingId(purchase.id)
     activeRef.current = purchase.id
 
-    const sRes  = await fetch(`/api/member/servers?tool=${encodeURIComponent(purchase.tool_name)}`,{credentials:'include'})
+    const sParam = purchase.tool_id
+      ? `tool_id=${encodeURIComponent(purchase.tool_id)}`
+      : `tool=${encodeURIComponent(purchase.tool_name)}`
+    const sRes  = await fetch(`/api/member/servers?${sParam}`,{credentials:'include'})
     const sData = await sRes.json()
     const available = (sData.servers||[]).filter((s:any)=>!s.is_full)
 

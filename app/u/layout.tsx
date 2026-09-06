@@ -40,7 +40,7 @@ import { MemberContext } from '@/lib/member-context'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart } from 'lucide-react'
+import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart, Search } from 'lucide-react'
 import { CartProvider, useCart } from '@/lib/cart-context'
 import AuthModal from '@/components/auth/AuthModal'
 import {
@@ -276,6 +276,23 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     setNavOrder(o); localStorage.setItem('pk_nav_order', JSON.stringify(o))
   }
   const resetNav = () => { const o = NAV_BASE.map((_,i)=>i); setNavOrder(o); localStorage.removeItem('pk_nav_order') }
+  // Search
+  const [searchQ,       setSearchQ]      = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [searchTools,   setSearchTools]   = useState<any[]>([])
+  const searchRef = useRef<HTMLDivElement>(null)
+  const searchLoaded = useRef(false)
+  const loadSearchTools = () => {
+    if (searchLoaded.current) return
+    searchLoaded.current = true
+    fetch('/api/member/shop').then(r=>r.json()).then(d=>setSearchTools(d.tools||[]))
+  }
+  const searchResults = searchQ.trim().length > 0
+    ? searchTools.filter(t => {
+        const q = searchQ.toLowerCase()
+        return t.name?.toLowerCase().includes(q) || t.category_slug?.toLowerCase().includes(q)
+      }).slice(0, 8)
+    : []
   // Tab keep-alive: track which tabs have been mounted so they stay in DOM
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => {
     const tab = TAB_HREFS.find(h => pathname === h)
@@ -389,6 +406,15 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     }
   },[pathname])
 
+  // Close search on outside click
+  useEffect(()=>{
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchFocused(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return ()=>document.removeEventListener('mousedown', handler)
+  },[])
+
   // Apply theme on mount + auto-check interval
   useEffect(()=>{
     const applyMode = (m: 'auto'|'dark'|'light') => {
@@ -497,7 +523,8 @@ if (pathname==='/u/login') return <>{children}</>
           const Icon   = item.icon
           const active = pathname===item.href||pathname.startsWith(item.href+'/')
           return (
-            <motion.div key={item.href} whileHover="hover">
+            <motion.div key={item.href} whileHover="hover"
+              onHoverStart={()=>{ if(TAB_HREFS.includes(item.href)) setMountedTabs(prev=>{const s=new Set(prev);s.add(item.href);return s}) }}>
             <div role="button" onClick={()=>navigateTo(item.href)}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
               className={`cursor-pointer relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
@@ -676,6 +703,73 @@ if (pathname==='/u/login') return <>{children}</>
                 {member ? (isRtl?'في متجر Pro Keys':'to Pro Keys Store') : (isRtl?'سجّل دخولك للوصول الكامل':'Sign in for full access')}
               </span>
             </div>
+          </div>
+
+          {/* Center: Search bar (desktop only) */}
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-xs mx-4 relative">
+            <div className="relative w-full">
+              <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={isRtl?{right:'10px'}:{left:'10px'}}/>
+              <input
+                type="text"
+                value={searchQ}
+                onChange={e=>setSearchQ(e.target.value)}
+                onFocus={()=>{ setSearchFocused(true); loadSearchTools() }}
+                placeholder={isRtl?'ابحث في المنتجات...':'Search products...'}
+                dir={isRtl?'rtl':'ltr'}
+                className="w-full text-xs font-medium text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none rounded-xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-white/5 transition-all focus:border-[#d99401]/60 focus:shadow-sm"
+                style={{
+                  height:'34px',
+                  paddingLeft: isRtl ? '10px' : '30px',
+                  paddingRight: isRtl ? '30px' : '10px',
+                  backdropFilter:'blur(8px)',
+                }}
+              />
+            </div>
+            {searchFocused && searchResults.length > 0 && (
+              <div className="absolute top-10 left-0 right-0 rounded-xl overflow-hidden z-50 shadow-xl border"
+                style={{
+                  background: dark ? 'rgba(10,14,24,0.97)' : 'rgba(255,255,255,0.98)',
+                  backdropFilter:'blur(32px)',
+                  WebkitBackdropFilter:'blur(32px)',
+                  borderColor: dark ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.7)',
+                  boxShadow: dark ? '0 16px 48px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)',
+                }}>
+                {searchResults.map((t:any) => (
+                  <button key={t.id}
+                    onMouseDown={()=>{
+                      setSearchQ('')
+                      setSearchFocused(false)
+                      navigateTo('/u/store')
+                      setTimeout(()=>window.dispatchEvent(new CustomEvent('pk-search-tool',{detail:{id:t.id}})),150)
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-start border-b border-gray-100 dark:border-white/05 last:border-0">
+                    {t.image_url
+                      ? <img src={t.image_url} alt={t.name} className="w-7 h-7 object-contain rounded-lg flex-shrink-0"/>
+                      : <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-white/10 flex-shrink-0"/>
+                    }
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{t.name}</div>
+                      {t.category_slug && (
+                        <div className="text-[10px] text-gray-400 capitalize">{t.category_slug.replace(/-/g,' ')}</div>
+                      )}
+                    </div>
+                    <div className="text-xs font-bold flex-shrink-0" style={{color:'#d99401'}}>
+                      {t.price_egp ? `${t.price_egp} ج` : ''}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {searchFocused && searchQ.trim().length > 0 && searchResults.length === 0 && (
+              <div className="absolute top-10 left-0 right-0 rounded-xl z-50 px-4 py-3 text-xs text-gray-400 text-center"
+                style={{
+                  background: dark ? 'rgba(10,14,24,0.97)' : 'rgba(255,255,255,0.98)',
+                  border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
+                  boxShadow: dark ? '0 16px 48px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)',
+                }}>
+                {isRtl ? 'لا توجد نتائج' : 'No results found'}
+              </div>
+            )}
           </div>
 
           {/* Right: actions */}
