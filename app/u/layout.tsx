@@ -276,23 +276,25 @@ const [sidebarOpen,   setSidebar]    = useState(false)
     setNavOrder(o); localStorage.setItem('pk_nav_order', JSON.stringify(o))
   }
   const resetNav = () => { const o = NAV_BASE.map((_,i)=>i); setNavOrder(o); localStorage.removeItem('pk_nav_order') }
-  // Search
-  const [searchQ,       setSearchQ]      = useState('')
-  const [searchFocused, setSearchFocused] = useState(false)
-  const [searchTools,   setSearchTools]   = useState<any[]>([])
-  const searchRef = useRef<HTMLDivElement>(null)
+  // Search modal
+  const [searchQ,      setSearchQ]     = useState('')
+  const [searchModal,  setSearchModal] = useState(false)
+  const [searchTools,  setSearchTools] = useState<any[]>([])
   const searchLoaded = useRef(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const loadSearchTools = () => {
     if (searchLoaded.current) return
     searchLoaded.current = true
     fetch('/api/member/shop').then(r=>r.json()).then(d=>setSearchTools(d.tools||[]))
   }
+  const openSearch = () => { loadSearchTools(); setSearchModal(true); setTimeout(()=>searchInputRef.current?.focus(),80) }
+  const closeSearch = () => { setSearchModal(false); setSearchQ('') }
   const searchResults = searchQ.trim().length > 0
     ? searchTools.filter(t => {
         const q = searchQ.toLowerCase()
         return t.name?.toLowerCase().includes(q) || t.category_slug?.toLowerCase().includes(q)
-      }).slice(0, 8)
-    : []
+      }).slice(0, 10)
+    : searchTools.filter(t=>t.is_active!==false).slice(0,6)
   // Tab keep-alive: track which tabs have been mounted so they stay in DOM
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => {
     const tab = TAB_HREFS.find(h => pathname === h)
@@ -405,15 +407,6 @@ const [sidebarOpen,   setSidebar]    = useState(false)
       setActiveTab(null)
     }
   },[pathname])
-
-  // Close search on outside click
-  useEffect(()=>{
-    const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchFocused(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return ()=>document.removeEventListener('mousedown', handler)
-  },[])
 
   // Apply theme on mount + auto-check interval
   useEffect(()=>{
@@ -705,83 +698,8 @@ if (pathname==='/u/login') return <>{children}</>
             </div>
           </div>
 
-          {/* Center: Search bar (desktop only) */}
-          <div ref={searchRef} className="hidden md:flex flex-1 max-w-xs mx-4 relative">
-            <div className="relative w-full">
-              <Search size={13} className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={isRtl?{right:'10px'}:{left:'10px'}}/>
-              <input
-                type="text"
-                value={searchQ}
-                onChange={e=>setSearchQ(e.target.value)}
-                onFocus={()=>{ setSearchFocused(true); loadSearchTools() }}
-                placeholder={isRtl?'ابحث في المنتجات...':'Search products...'}
-                dir={isRtl?'rtl':'ltr'}
-                className="w-full text-xs font-medium text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none rounded-xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-white/5 transition-all focus:border-[#d99401]/60 focus:shadow-sm"
-                style={{
-                  height:'34px',
-                  paddingLeft: isRtl ? '10px' : '30px',
-                  paddingRight: isRtl ? '30px' : '10px',
-                  backdropFilter:'blur(8px)',
-                }}
-              />
-            </div>
-            {searchFocused && searchResults.length > 0 && (
-              <div className="absolute top-10 left-0 right-0 rounded-xl overflow-hidden z-50 shadow-xl border"
-                style={{
-                  background: dark ? 'rgba(10,14,24,0.97)' : 'rgba(255,255,255,0.98)',
-                  backdropFilter:'blur(32px)',
-                  WebkitBackdropFilter:'blur(32px)',
-                  borderColor: dark ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.7)',
-                  boxShadow: dark ? '0 16px 48px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)',
-                }}>
-                {searchResults.map((t:any) => (
-                  <button key={t.id}
-                    onMouseDown={()=>{
-                      setSearchQ('')
-                      setSearchFocused(false)
-                      navigateTo('/u/store')
-                      setTimeout(()=>window.dispatchEvent(new CustomEvent('pk-search-tool',{detail:{id:t.id}})),150)
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-start border-b border-gray-100 dark:border-white/05 last:border-0">
-                    {t.image_url
-                      ? <img src={t.image_url} alt={t.name} className="w-7 h-7 object-contain rounded-lg flex-shrink-0"/>
-                      : <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-white/10 flex-shrink-0"/>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{t.name}</div>
-                      {t.category_slug && (
-                        <div className="text-[10px] text-gray-400 capitalize">{t.category_slug.replace(/-/g,' ')}</div>
-                      )}
-                    </div>
-                    <div className="text-xs font-bold flex-shrink-0" style={{color:'#d99401'}}>
-                      {t.price_egp ? `${t.price_egp} ج` : ''}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            {searchFocused && searchQ.trim().length > 0 && searchResults.length === 0 && (
-              <div className="absolute top-10 left-0 right-0 rounded-xl z-50 px-4 py-3 text-xs text-gray-400 text-center"
-                style={{
-                  background: dark ? 'rgba(10,14,24,0.97)' : 'rgba(255,255,255,0.98)',
-                  border: dark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.7)',
-                  boxShadow: dark ? '0 16px 48px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)',
-                }}>
-                {isRtl ? 'لا توجد نتائج' : 'No results found'}
-              </div>
-            )}
-          </div>
-
-          {/* Right: actions */}
+          {/* Right: actions — order: SignUp · Notif · Theme · Cart · Search · Logout */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Theme cycle: auto → light → dark */}
-            <button onClick={cycleTheme} title={isRtl ? (themeMode==='auto'?'تلقائي':themeMode==='light'?'فاتح':'داكن') : (themeMode==='auto'?'Auto':themeMode==='light'?'Light':'Dark')}
-              className={`w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                themeMode !== 'auto' ? 'text-gray-600 dark:text-white' : ''
-              }`}
-              style={themeMode === 'auto' ? {color:'#d99401'} : {}}>
-              {themeMode === 'light' ? <Sun size={14}/> : themeMode === 'dark' ? <Moon size={14}/> : <SunMoon size={14}/>}
-            </button>
 
             {/* Visitor: Sign Up + Login */}
             {!member && (
@@ -798,10 +716,8 @@ if (pathname==='/u/login') return <>{children}</>
               </>
             )}
 
-            {/* Logged-in: Cart + Notifications + Logout */}
+            {/* Logged-in: Notifications */}
             {member && (
-              <>
-                <CartIcon/>
                 <div className="relative">
                   <button onClick={()=>{
                       setNotif(o=>{
@@ -854,9 +770,39 @@ if (pathname==='/u/login') return <>{children}</>
                     </div>
                   )}
                 </div>
-                <button onClick={logout}
-                  className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-[#d99401] hover:bg-[#d9940112] transition-colors">
+                {/* Theme */}
+                <button onClick={cycleTheme} title={isRtl?(themeMode==='auto'?'تلقائي':themeMode==='light'?'فاتح':'داكن'):(themeMode==='auto'?'Auto':themeMode==='light'?'Light':'Dark')}
+                  className={`w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${themeMode!=='auto'?'text-gray-600 dark:text-white':''}`}
+                  style={themeMode==='auto'?{color:'#d99401'}:{}}>
+                  {themeMode==='light'?<Sun size={14}/>:themeMode==='dark'?<Moon size={14}/>:<SunMoon size={14}/>}
+                </button>
+                {/* Cart */}
+                <CartIcon/>
+                {/* Search icon */}
+                <button onClick={openSearch} title={isRtl?'بحث':'Search'}
+                  className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <Search size={14}/>
+                </button>
+                {/* Logout */}
+                <button onClick={logout} title={isRtl?'تسجيل الخروج':'Sign out'}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                  style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.28)',color:'#ef4444',backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)'}}>
                   <LogOut size={14}/>
+                </button>
+              </>
+            )}
+
+            {/* Visitor: Theme + Search */}
+            {!member && (
+              <>
+                <button onClick={cycleTheme}
+                  className={`w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${themeMode!=='auto'?'text-gray-600 dark:text-white':''}`}
+                  style={themeMode==='auto'?{color:'#d99401'}:{}}>
+                  {themeMode==='light'?<Sun size={14}/>:themeMode==='dark'?<Moon size={14}/>:<SunMoon size={14}/>}
+                </button>
+                <button onClick={openSearch} title={isRtl?'بحث':'Search'}
+                  className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <Search size={14}/>
                 </button>
               </>
             )}
@@ -1203,6 +1149,108 @@ if (pathname==='/u/login') return <>{children}</>
           logo={ui.logo_url}
           siteName="Pro Keys"
         />
+      )}
+
+      {/* ── Search Modal ── */}
+      {searchModal && (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[10vh] px-4"
+          style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)'}}
+          onClick={closeSearch}>
+          <div className="w-full max-w-xl rounded-2xl overflow-hidden"
+            style={{
+              background: dark ? 'rgba(10,14,26,0.92)' : 'rgba(255,255,255,0.94)',
+              backdropFilter:'blur(40px)', WebkitBackdropFilter:'blur(40px)',
+              border: dark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.75)',
+              boxShadow: dark ? '0 32px 80px rgba(0,0,0,0.7)' : '0 32px 80px rgba(0,0,0,0.18)',
+            }}
+            onClick={e=>e.stopPropagation()}
+            dir={isRtl?'rtl':'ltr'}>
+            {/* Search input */}
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b" style={{borderColor: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)'}}>
+              <Search size={16} className="text-gray-400 flex-shrink-0"/>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQ}
+                onChange={e=>setSearchQ(e.target.value)}
+                onKeyDown={e=>{ if(e.key==='Escape') closeSearch() }}
+                placeholder={isRtl?'ابحث عن أي اشتراك...':'Search any subscription...'}
+                className="flex-1 bg-transparent text-sm font-medium text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none"
+              />
+              {searchQ && (
+                <button onClick={()=>setSearchQ('')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                  <X size={14}/>
+                </button>
+              )}
+              <button onClick={closeSearch}
+                className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-[10px] font-bold border border-gray-200 dark:border-gray-700">
+                Esc
+              </button>
+            </div>
+            {/* Results */}
+            <div className="max-h-[60vh] overflow-y-auto">
+              {searchResults.length === 0 && searchQ.trim().length > 0 ? (
+                <div className="text-center py-12 text-sm text-gray-400">{isRtl?'لا توجد نتائج':'No results found'}</div>
+              ) : (
+                <>
+                  {searchQ.trim().length === 0 && (
+                    <div className="px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      {isRtl ? 'كل المنتجات' : 'All Products'}
+                    </div>
+                  )}
+                  {searchResults.map((t:any) => {
+                    const retail = Number(t.retail_price_egp||0)
+                    const price  = Number(t.price_egp||0)
+                    const pct    = retail>0&&price>0 ? Math.round((1-price/retail)*100) : 0
+                    const rating = Number(t.rating||0)
+                    return (
+                      <button key={t.id}
+                        onMouseDown={()=>{
+                          closeSearch()
+                          navigateTo('/u/store')
+                          setTimeout(()=>window.dispatchEvent(new CustomEvent('pk-search-tool',{detail:{id:t.id}})),150)
+                        }}
+                        className="w-full flex items-center gap-3.5 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-start border-b last:border-0"
+                        style={{borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}>
+                        {/* Image */}
+                        {t.image_url
+                          ? <img src={t.image_url} alt={t.name} className="w-11 h-11 object-contain rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}/>
+                          : <div className="w-11 h-11 rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'}}/>
+                        }
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{t.name}</div>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {t.category_slug && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize"
+                                style={{background:'rgba(217,148,1,0.12)',color:'#d99401'}}>
+                                {t.category_slug.replace(/-/g,' ')}
+                              </span>
+                            )}
+                            {rating > 0 && (
+                              <span className="flex items-center gap-0.5 text-[10px] text-amber-500 font-semibold">
+                                ★ {rating.toFixed(1)}
+                                {t.review_count>0 && <span className="text-gray-400 font-normal">({t.review_count})</span>}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Price */}
+                        <div className="flex-shrink-0 text-end">
+                          <div className="text-sm font-black" style={{color:'#d99401'}}>{price>0?`${price} ج`:''}</div>
+                          <div className="flex items-center gap-1 justify-end">
+                            {retail>0&&retail>price && <span className="text-[10px] text-gray-400 line-through">{retail} ج</span>}
+                            {pct>0 && <span className="text-[9px] font-black px-1 py-0.5 rounded text-white" style={{background:'#ef4444'}}>{pct}%</span>}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Member-only floating widgets */}

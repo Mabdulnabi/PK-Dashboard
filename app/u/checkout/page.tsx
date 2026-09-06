@@ -266,11 +266,12 @@ function CheckoutInner() {
   if (!cartMode && isBundle && !bundle) return <div className="text-center py-32 text-gray-400 text-lg">{t('Bundle not found','الباقة غير موجودة')}</div>
   if (cartMode && cartItems.length === 0) return <div className="text-center py-32 text-gray-400 text-lg">{t('Your cart is empty','السلة فارغة')}</div>
 
-  // ── Duplicate purchase blocker — skip for private tools (can repurchase freely) ──
-  if (existingPurchase && tool?.category_slug !== 'private') {
-    const daysLeft = existingPurchase.expires_at
-      ? Math.ceil((new Date(existingPurchase.expires_at).getTime()-Date.now())/86400000)
-      : null
+  // ── Duplicate purchase blocker — skip for private tools and expired subscriptions ──
+  const existingDaysLeft = existingPurchase?.expires_at
+    ? Math.ceil((new Date(existingPurchase.expires_at).getTime()-Date.now())/86400000)
+    : null
+  if (existingPurchase && tool?.category_slug !== 'private' && (existingDaysLeft === null || existingDaysLeft > 0)) {
+    const daysLeft = existingDaysLeft
     return (
       <div dir={dir} className="p-4 md:p-8 max-w-lg mx-auto min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-8 text-center shadow-sm w-full">
