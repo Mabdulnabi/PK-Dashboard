@@ -716,8 +716,9 @@ if (pathname==='/u/login') return <>{children}</>
               </>
             )}
 
-            {/* Logged-in: Notifications */}
+            {/* Logged-in: Notifications + Theme + Cart + Search + Logout */}
             {member && (
+              <>
                 <div className="relative">
                   <button onClick={()=>{
                       setNotif(o=>{
