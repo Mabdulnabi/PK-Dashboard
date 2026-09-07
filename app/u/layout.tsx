@@ -490,31 +490,54 @@ if (pathname==='/u/login') return <>{children}</>
     return (
     <>
       {/* Logo */}
-      <Link href="/u/dashboard" className="flex items-center gap-2.5 px-4 py-4 border-b border-transparent hover:opacity-80 transition-opacity overflow-hidden" style={{minHeight:57,borderColor:'transparent'}}>
-        {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
-          const w = Number(ui.logo_width) || 40
-          const h = Number(ui.logo_height) || 40
-          return (
-            <div style={{ width:w, height:h, position:'relative', flexShrink:0, overflow:'hidden' }}>
-              <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
-                style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
-              <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
-                style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 1 : 0, transition:'opacity 0.15s' }}/>
-            </div>
-          )
-        })() : (
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#d99401',boxShadow:'0 4px 10px #d9940140'}}>
-            <Key size={16} className="text-white"/>
-          </div>
+      <Link href="/u/dashboard"
+        className="flex items-center gap-2.5 border-b hover:opacity-80 transition-opacity overflow-hidden"
+        style={{
+          minHeight: 57,
+          borderColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.5)',
+          padding: col ? '8px 0' : '8px 16px',
+          justifyContent: col ? 'center' : 'flex-start',
+          transition: 'padding 0.32s cubic-bezier(0.4,0,0.2,1)',
+        }}>
+
+        {/* Collapsed: show logo image sized to fit the 66px strip */}
+        {col && (
+          <img
+            src="https://mluqxggjbumtmyfldaon.supabase.co/storage/v1/object/public/site-assets/Logo.png"
+            alt="Logo"
+            style={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0 }}
+          />
         )}
-        <div style={{opacity: col ? 0 : 1, transform: col ? 'translateX(-6px)' : 'translateX(0)', transition:'opacity 0.22s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', whiteSpace:'nowrap', flexShrink:0}}>
-          {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? null : (
-            <>
-              <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span style={{color:'#d99401'}}>Keys</span></div>
-              <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
-            </>
-          )}
-        </div>
+
+        {/* Expanded: show custom logo from settings OR default ProKeys wordmark */}
+        {!col && (
+          <>
+            {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
+              const w = Number(ui.logo_width) || 40
+              const h = Number(ui.logo_height) || 40
+              return (
+                <div style={{ width: w, height: h, position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
+                  <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
+                    style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
+                  <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
+                    style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 1 : 0, transition:'opacity 0.15s' }}/>
+                </div>
+              )
+            })() : (
+              <>
+                <img
+                  src="https://mluqxggjbumtmyfldaon.supabase.co/storage/v1/object/public/site-assets/Logo.png"
+                  alt="Logo"
+                  style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }}
+                />
+                <div style={{ whiteSpace: 'nowrap' }}>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span style={{color:'#d99401'}}>Keys</span></div>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </Link>
 
       {/* Nav */}
