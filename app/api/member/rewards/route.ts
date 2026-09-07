@@ -29,11 +29,11 @@ export async function GET() {
       .limit(15),
     // Member referral code
     service.from('members').select('referral_code, full_name').eq('id', mid).single(),
-    // Total spent (for rank)
-    service.from('tool_purchases')
-      .select('amount_egp')
-      .eq('member_id', mid)
-      .in('status', ['confirmed', 'delivered']),
+    // Total spent (for rank) — same source as profile page
+    service.from('payments')
+      .select('amount, currency')
+      .eq('user_id', mid)
+      .in('status', ['confirmed', 'completed']),
     // Referral rewards (points from referrals)
     service.from('referral_rewards')
       .select('reward_egp, status')
@@ -52,9 +52,10 @@ export async function GET() {
   const total_redeemed = lp?.total_redeemed ?? 0
   const last_activity = lp?.last_activity ?? null
 
-  const total_spent_egp = (spentRes.data || []).reduce(
-    (s: number, r: any) => s + Number(r.amount_egp || 0), 0
-  )
+  const total_spent_egp = (spentRes.data || []).reduce((s: number, r: any) => {
+    const amt = Number(r.amount) || 0
+    return s + (r.currency === 'USD' ? amt * 50 : amt)
+  }, 0)
 
   const referral_code   = memberRes.data?.referral_code ?? null
   const total_referred  = referredRes.data?.length ?? 0
