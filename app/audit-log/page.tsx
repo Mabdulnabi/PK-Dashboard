@@ -57,7 +57,7 @@ export default function AuditLogPage() {
     <div className="flex h-screen overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Sidebar/>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar/>
+        <Topbar title="سجل النشاط" subtitle="Activity Log"/>
         <main className="flex-1 overflow-y-auto p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">

@@ -14,6 +14,8 @@ export interface AuditEntry {
   target_id?: string
   details?: Record<string, unknown>
   ip?: string
+  // Allow extra fields from legacy callers — they are ignored
+  [key: string]: unknown
 }
 
 export async function logAudit(entry: AuditEntry) {
