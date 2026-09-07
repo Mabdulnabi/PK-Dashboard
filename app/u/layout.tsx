@@ -40,7 +40,7 @@ import { MemberContext } from '@/lib/member-context'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart, Search } from 'lucide-react'
+import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart, Search } from 'lucide-react'
 import { CartProvider, useCart } from '@/lib/cart-context'
 import { ScrollRevealProvider } from '@/components/ui/ScrollRevealProvider'
 import AuthModal from '@/components/auth/AuthModal'
@@ -250,8 +250,9 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const { lang, currency, setLang, setCurrency } = useLang()
   const ui = useUISettings()
 const [sidebarOpen,   setSidebar]    = useState(false)
-  const [collapsed,     setCollapsed]  = useState(false)
   const [sideHover,     setSideHover]  = useState(false)
+  // sidebar is always collapsed — hover is the only way to expand
+  const collapsed = true
   const [profileOpen,   setProfile]    = useState(false)
   const [notifOpen,     setNotif]      = useState(false)
   const [notifications, setNotifs]     = useState<any[]>([])
@@ -627,7 +628,7 @@ if (pathname==='/u/login') return <>{children}</>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
       <aside className={`hidden md:flex flex-shrink-0 flex-col h-screen border-r relative z-10 overflow-hidden`}
-        onMouseEnter={() => collapsed && setSideHover(true)}
+        onMouseEnter={() => setSideHover(true)}
         onMouseLeave={() => setSideHover(false)}
         style={{
           width: collapsed && !sideHover ? 66 : 220,
@@ -640,18 +641,6 @@ if (pathname==='/u/login') return <>{children}</>
           boxShadow: dark ? '4px 0 40px -4px rgba(0,0,0,0.55)' : '4px 0 32px -4px rgba(0,0,0,0.07)',
         }}>
         {SidebarContent({})}
-        <button
-          onClick={() => setCollapsed(c => !c)}
-          className={`absolute -${isRtl ? 'left' : 'right'}-3 bottom-16 w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow z-10`}
-          style={{
-            background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.7)',
-          }}
-        >
-          <ChevronLeft size={13} className={`text-gray-500 transition-transform duration-200 ${isRtl ? (collapsed ? '' : 'rotate-180') : (collapsed ? 'rotate-180' : '')}`}/>
-        </button>
       </aside>
 
       {/* ── Mobile Sidebar overlay ───────────────────── */}
