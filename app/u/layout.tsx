@@ -920,9 +920,6 @@ if (pathname==='/u/login') return <>{children}</>
           {Array.from(mountedTabs).map(href => {
             const TabComp = TAB_MAP[href]
             const isActive = href === activeTab
-            const activeIdx = TAB_HREFS.indexOf(activeTab)
-            const thisIdx   = TAB_HREFS.indexOf(href)
-            const xOffset   = isActive ? 0 : (thisIdx < activeIdx ? -60 : 60)
             return (
               <motion.div
                 key={href}
