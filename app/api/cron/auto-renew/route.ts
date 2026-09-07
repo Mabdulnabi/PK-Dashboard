@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       amount:        price,
       currency:      'EGP',
       balance_after: newBalance,
-      note:          `تجديد تلقائي: ${name}`,
+      description:   `تجديد تلقائي: ${name}`,
     })
     if (txError) { failed.push(p.id); continue }
 

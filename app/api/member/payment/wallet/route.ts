@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       amount:        price,
       currency:      'EGP',
       balance_after: newBalance,
-      note:          `شراء: ${toolName}${coupon_code ? ` (${coupon_code})` : ''}`,
+      description:   `شراء: ${toolName}${coupon_code ? ` (${coupon_code})` : ''}`,
     })
     if (txError) throw txError
 

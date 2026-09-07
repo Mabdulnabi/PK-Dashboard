@@ -532,7 +532,7 @@ function CheckoutInner() {
                   <p className="text-sm text-red-500">{error}</p>
                 </div>
               )}
-              <button onClick={()=>setStep('details')} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-3">{t('← Back','← رجوع')}</button>
+              <button onClick={()=>setStep('details')} className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mt-2">{t('← Back to Details','← رجوع لتفاصيل الطلب')}</button>
             </div>
           )}
 
