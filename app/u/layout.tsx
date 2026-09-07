@@ -539,10 +539,9 @@ if (pathname==='/u/login') return <>{children}</>
               </motion.div>
               <span style={{
                 opacity: col ? 0 : 1,
-                maxWidth: col ? 0 : 160,
-                overflow: 'hidden',
+                transform: col ? 'translateX(-8px)' : 'translateX(0)',
                 whiteSpace: 'nowrap',
-                transition: 'opacity 0.2s ease, max-width 0.3s cubic-bezier(0.4,0,0.2,1)',
+                transition: 'opacity 0.22s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)',
                 ...(active ? {color: item.color, fontWeight:600} : {}),
               }}>{isRtl?item.ar:item.en}</span>
             </div>
@@ -571,7 +570,7 @@ if (pathname==='/u/login') return <>{children}</>
                 ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
                 : member?.full_name?.slice(0,1).toUpperCase()}
             </div>
-            <div className="flex-1 text-start min-w-0 flex items-center gap-1" style={{opacity: col ? 0 : 1, maxWidth: col ? 0 : 160, overflow:'hidden', transition:'opacity 0.2s ease, max-width 0.3s cubic-bezier(0.4,0,0.2,1)'}}>
+            <div className="flex-1 text-start min-w-0 flex items-center gap-1" style={{opacity: col ? 0 : 1, transform: col ? 'translateX(-8px)' : 'translateX(0)', transition:'opacity 0.2s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden'}}>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
                 <div className="mt-0.5 flex items-center gap-1 flex-wrap">
@@ -589,7 +588,7 @@ if (pathname==='/u/login') return <>{children}</>
             </div>
           </button>
         ) : (
-          <div className="flex flex-col gap-2 overflow-hidden" style={{opacity: col ? 0 : 1, maxHeight: col ? 0 : 200, transition:'opacity 0.2s ease, max-height 0.32s cubic-bezier(0.4,0,0.2,1)', pointerEvents: col ? 'none' : 'auto'}}>
+          <div className="flex flex-col gap-2" style={{opacity: col ? 0 : 1, transform: col ? 'translateY(-4px)' : 'translateY(0)', transition:'opacity 0.2s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)', pointerEvents: col ? 'none' : 'auto'}}>
             <button onClick={()=>setAuthModal('signup')}
               className="w-full py-2 rounded-lg text-xs font-bold text-white text-center transition-colors"
               style={{background:'#d99401'}}>
@@ -633,6 +632,7 @@ if (pathname==='/u/login') return <>{children}</>
         style={{
           width: collapsed && !sideHover ? 66 : 220,
           transition: 'width 0.32s cubic-bezier(0.4,0,0.2,1)',
+          willChange: 'width',
           background: sidebarGlassBg,
           backdropFilter: 'blur(28px)',
           WebkitBackdropFilter: 'blur(28px)',
