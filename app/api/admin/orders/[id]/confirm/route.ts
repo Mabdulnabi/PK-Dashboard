@@ -187,7 +187,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       message:    'أحد أصدقائك أتم أول عملية شراء! حصلت على 20 جنيه مكافأة إحالة.',
       message_en: 'Your referred friend completed their first purchase! You earned a 20 EGP referral reward.',
       type:       'success',
-      link:       '/u/referrals',
+      link:       '/u/loyalty',
     })
   })()
 
