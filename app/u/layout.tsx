@@ -488,34 +488,33 @@ if (pathname==='/u/login') return <>{children}</>
     const col = !forMobile && collapsed && !sideHover
     return (
     <>
-      {/* Logo — hidden when collapsed */}
-      {!col && (
-        <Link href="/u/dashboard" className="flex items-center justify-center gap-2.5 px-4 py-4 border-b border-transparent hover:opacity-80 transition-opacity">
-          {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
-            const w = Number(ui.logo_width) || 40
-            const h = Number(ui.logo_height) || 40
-            return (
-              <div style={{ width:w, height:h, position:'relative', flexShrink:0, overflow:'hidden' }}>
-                <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
-                  style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
-                <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
-                  style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 1 : 0, transition:'opacity 0.15s' }}/>
-              </div>
-            )
-          })() : (
+      {/* Logo */}
+      <Link href="/u/dashboard" className="flex items-center gap-2.5 px-4 py-4 border-b border-transparent hover:opacity-80 transition-opacity overflow-hidden" style={{minHeight:57,borderColor:'transparent'}}>
+        {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? (() => {
+          const w = Number(ui.logo_width) || 40
+          const h = Number(ui.logo_height) || 40
+          return (
+            <div style={{ width:w, height:h, position:'relative', flexShrink:0, overflow:'hidden' }}>
+              <img src={ui.logo_light_url || ui.logo_url} alt="Logo"
+                style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 0 : 1, transition:'opacity 0.15s' }}/>
+              <img src={ui.logo_dark_url || ui.logo_url} alt="Logo"
+                style={{ position:'absolute', top:0, left:0, width:w, height:h, objectFit:'contain', opacity: dark ? 1 : 0, transition:'opacity 0.15s' }}/>
+            </div>
+          )
+        })() : (
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#d99401',boxShadow:'0 4px 10px #d9940140'}}>
+            <Key size={16} className="text-white"/>
+          </div>
+        )}
+        <div style={{opacity: col ? 0 : 1, transform: col ? 'translateX(-6px)' : 'translateX(0)', transition:'opacity 0.22s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', whiteSpace:'nowrap', flexShrink:0}}>
+          {(ui.logo_light_url || ui.logo_dark_url || ui.logo_url) ? null : (
             <>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#d99401',boxShadow:'0 4px 10px #d9940140'}}>
-                <Key size={16} className="text-white"/>
-              </div>
-              <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span style={{color:'#d99401'}}>Keys</span></div>
-                <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
-              </div>
+              <div className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Pro<span style={{color:'#d99401'}}>Keys</span></div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-widest leading-none">{isRtl?'منطقة الأعضاء':'Member Portal'}</div>
             </>
           )}
-        </Link>
-      )}
-      {col && <div className="h-[57px]"/>}
+        </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
@@ -527,7 +526,7 @@ if (pathname==='/u/login') return <>{children}</>
               onHoverStart={()=>{ if(TAB_HREFS.includes(item.href)) setMountedTabs(prev=>{const s=new Set(prev);s.add(item.href);return s}) }}>
             <div role="button" onClick={()=>navigateTo(item.href)}
               title={col ? (isRtl ? item.ar : item.en) : undefined}
-              className={`cursor-pointer relative flex items-center ${col ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-lg text-sm font-medium ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+              className={`cursor-pointer relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium overflow-hidden ${active?'':'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               {active && <motion.div layoutId={`nav-pill-${isRtl}`} className="absolute inset-0 rounded-lg" style={{background: item.color+'15'}} transition={{type:'spring',stiffness:350,damping:30}}/>}
               <motion.div
                 variants={{hover:{scale:1.18, rotate: isRtl ? -8 : 8}}}
@@ -538,7 +537,14 @@ if (pathname==='/u/login') return <>{children}</>
                   : <Icon size={15} weight="duotone" style={{color: item.color}}/>
                 }
               </motion.div>
-              {!col && <span style={active ? {color: item.color, fontWeight:600} : {}}>{isRtl?item.ar:item.en}</span>}
+              <span style={{
+                opacity: col ? 0 : 1,
+                maxWidth: col ? 0 : 160,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                transition: 'opacity 0.2s ease, max-width 0.3s cubic-bezier(0.4,0,0.2,1)',
+                ...(active ? {color: item.color, fontWeight:600} : {}),
+              }}>{isRtl?item.ar:item.en}</span>
             </div>
             </motion.div>
           )
@@ -546,10 +552,11 @@ if (pathname==='/u/login') return <>{children}</>
       </nav>
 
       {/* Customize sidebar button */}
-      {!col && member && (
+      {member && (
         <button onClick={()=>setCustomizeOpen(true)}
-          className="mx-3 mb-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-[calc(100%-24px)]">
-          <SlidersHorizontal size={12}/><span>{isRtl ? 'تخصيص الشريط الجانبي' : 'Customize sidebar'}</span>
+          className="mx-3 mb-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors overflow-hidden"
+          style={{opacity: col ? 0 : 1, pointerEvents: col ? 'none' : 'auto', transition:'opacity 0.2s ease', whiteSpace:'nowrap'}}>
+          <SlidersHorizontal size={12} className="flex-shrink-0"/><span>{isRtl ? 'تخصيص الشريط الجانبي' : 'Customize sidebar'}</span>
         </button>
       )}
 
@@ -558,45 +565,41 @@ if (pathname==='/u/login') return <>{children}</>
         {member ? (
           <button onClick={()=>setProfile(o=>!o)}
             title={col ? member?.full_name : undefined}
-            className={`w-full flex items-center ${col ? 'justify-center px-0' : 'gap-2.5 px-2'} py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
+            className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors overflow-hidden">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden" style={{background:'#d99401'}}>
               {member?.avatar_url
                 ? <img src={member.avatar_url} className="w-full h-full object-cover" alt=""/>
                 : member?.full_name?.slice(0,1).toUpperCase()}
             </div>
-            {!col && (
-              <>
-                <div className="flex-1 text-start min-w-0">
-                  <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
-                  <div className="mt-0.5 flex items-center gap-1 flex-wrap">
-                    {member?.member_code && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
-                    )}
-                    {(() => { const r = getMemberRank(member?.total_spent_egp); return (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${r.color}22`,color:r.color,border:`1px solid ${r.color}44`}}>
-                        {isRtl ? r.ar : r.en}
-                      </span>
-                    )})()}
-                  </div>
+            <div className="flex-1 text-start min-w-0 flex items-center gap-1" style={{opacity: col ? 0 : 1, maxWidth: col ? 0 : 160, overflow:'hidden', transition:'opacity 0.2s ease, max-width 0.3s cubic-bezier(0.4,0,0.2,1)'}}>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{member?.full_name}</div>
+                <div className="mt-0.5 flex items-center gap-1 flex-wrap">
+                  {member?.member_code && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:'#d9940120',color:'#d99401',border:'1px solid #d9940140'}}>{member.member_code}</span>
+                  )}
+                  {(() => { const r = getMemberRank(member?.total_spent_egp); return (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{background:`${r.color}22`,color:r.color,border:`1px solid ${r.color}44`}}>
+                      {isRtl ? r.ar : r.en}
+                    </span>
+                  )})()}
                 </div>
-                <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
-              </>
-            )}
+              </div>
+              <ChevronDown size={13} className="text-gray-400 flex-shrink-0"/>
+            </div>
           </button>
         ) : (
-          !col && (
-            <div className="flex flex-col gap-2">
-              <button onClick={()=>setAuthModal('signup')}
-                className="w-full py-2 rounded-lg text-xs font-bold text-white text-center transition-colors"
-                style={{background:'#d99401'}}>
-                {isRtl ? 'إنشاء حساب' : 'Sign Up'}
-              </button>
-              <button onClick={()=>setAuthModal('login')}
-                className="w-full py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-center">
-                {isRtl ? 'تسجيل الدخول' : 'Login'}
-              </button>
-            </div>
-          )
+          <div className="flex flex-col gap-2 overflow-hidden" style={{opacity: col ? 0 : 1, maxHeight: col ? 0 : 200, transition:'opacity 0.2s ease, max-height 0.32s cubic-bezier(0.4,0,0.2,1)', pointerEvents: col ? 'none' : 'auto'}}>
+            <button onClick={()=>setAuthModal('signup')}
+              className="w-full py-2 rounded-lg text-xs font-bold text-white text-center transition-colors"
+              style={{background:'#d99401'}}>
+              {isRtl ? 'إنشاء حساب' : 'Sign Up'}
+            </button>
+            <button onClick={()=>setAuthModal('login')}
+              className="w-full py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-center">
+              {isRtl ? 'تسجيل الدخول' : 'Login'}
+            </button>
+          </div>
         )}
       </div>
     </>
@@ -624,10 +627,12 @@ if (pathname==='/u/login') return <>{children}</>
     <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'} style={{background: glassPageBg}}>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
-      <aside className={`hidden md:flex ${collapsed && !sideHover ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen border-r transition-all duration-200 relative z-10`}
+      <aside className={`hidden md:flex flex-shrink-0 flex-col h-screen border-r relative z-10 overflow-hidden`}
         onMouseEnter={() => collapsed && setSideHover(true)}
         onMouseLeave={() => setSideHover(false)}
         style={{
+          width: collapsed && !sideHover ? 66 : 220,
+          transition: 'width 0.32s cubic-bezier(0.4,0,0.2,1)',
           background: sidebarGlassBg,
           backdropFilter: 'blur(28px)',
           WebkitBackdropFilter: 'blur(28px)',
