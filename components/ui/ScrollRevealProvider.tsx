@@ -2,47 +2,78 @@
 import { useEffect } from 'react'
 import './scroll-reveal.css'
 
+function getActiveContainer(): Element | null {
+  // The active tab has opacity > 0.5 (framer-motion sets inline style)
+  const containers = document.querySelectorAll<HTMLElement>('[data-scroll-container="1"]')
+  for (const c of Array.from(containers)) {
+    const op = parseFloat(c.style.opacity ?? '1')
+    if (isNaN(op) || op > 0.5) return c
+  }
+  return null
+}
+
+function revealInContainer(container: Element | null) {
+  const scope = container || document.body
+  const els = scope.querySelectorAll<HTMLElement>(
+    '[data-reveal]:not(.revealed), [data-reveal-stagger]:not(.revealed)'
+  )
+  els.forEach(el => {
+    const r = el.getBoundingClientRect()
+    if (r.bottom > 20 && r.top < window.innerHeight - 20) {
+      el.classList.add('revealed')
+    }
+  })
+}
+
 export function ScrollRevealProvider() {
   useEffect(() => {
-    // Use viewport-based IntersectionObserver (root: null = viewport)
-    // Works for elements that are visually on screen even inside absolute containers
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed')
-            obs.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
-    )
+    let activeContainer: Element | null = null
 
-    const observed = new WeakSet<Element>()
+    const onTabChange = () => {
+      // Wait for framer-motion transition (0.32s tween)
+      setTimeout(() => {
+        activeContainer = getActiveContainer()
+        if (!activeContainer) return
 
-    const scan = () => {
-      document.querySelectorAll('[data-reveal]:not(.revealed), [data-reveal-stagger]:not(.revealed)').forEach((el) => {
-        if (!observed.has(el)) {
-          observed.add(el)
-          obs.observe(el)
-        }
+        // Reset previously revealed elements in this container so they animate again
+        activeContainer.querySelectorAll('.revealed[data-reveal], .revealed[data-reveal-stagger]')
+          .forEach(el => el.classList.remove('revealed'))
+
+        // Trigger reveal for elements currently in view
+        revealInContainer(activeContainer)
+      }, 360)
+    }
+
+    const onScroll = () => revealInContainer(activeContainer)
+
+    window.addEventListener('pk-tab-change', onTabChange)
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+
+    // Attach scroll listeners to each tab container
+    const attachContainerScroll = () => {
+      document.querySelectorAll('[data-scroll-container="1"]').forEach(el => {
+        el.removeEventListener('scroll', onScroll)
+        el.addEventListener('scroll', onScroll, { passive: true })
       })
     }
 
-    scan()
+    // Watch for new containers (lazy-loaded tabs)
+    const domObs = new MutationObserver(() => {
+      attachContainerScroll()
+    })
+    domObs.observe(document.body, { childList: true, subtree: true })
 
-    // Re-scan on DOM changes (tab switches, dynamic loads)
-    const mutObs = new MutationObserver(() => setTimeout(scan, 60))
-    mutObs.observe(document.body, { childList: true, subtree: true })
-
-    // Also re-scan on any scroll (for elements already in DOM but not yet visible)
-    const onScroll = () => scan()
-    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+    // Initial setup
+    setTimeout(() => {
+      activeContainer = getActiveContainer()
+      attachContainerScroll()
+      revealInContainer(activeContainer)
+    }, 100)
 
     return () => {
-      obs.disconnect()
-      mutObs.disconnect()
+      window.removeEventListener('pk-tab-change', onTabChange)
       document.removeEventListener('scroll', onScroll, { capture: true })
+      domObs.disconnect()
     }
   }, [])
 
