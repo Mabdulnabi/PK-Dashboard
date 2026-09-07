@@ -151,9 +151,26 @@ export default function RewardsPage() {
   const [tab,        setTab]        = useState<'points' | 'referral'>('points')
   const [redeemOpen,    setRedeemOpen]    = useState(false)
   const [generating,    setGenerating]    = useState(false)
-  const [generatedCode, setGeneratedCode] = useState<{ code: string; value_egp: number; expires_at: string } | null>(null)
+  const [generatedCode, setGeneratedCodeState] = useState<{ code: string; value_egp: number; expires_at: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('pk_reward_coupon')
+      if (!saved) return null
+      const parsed = JSON.parse(saved)
+      if (new Date(parsed.expires_at) > new Date()) return parsed
+      localStorage.removeItem('pk_reward_coupon')
+    } catch {}
+    return null
+  })
   const [codeCopied,    setCodeCopied]    = useState(false)
   const [redeemError,   setRedeemError]   = useState('')
+
+  const setGeneratedCode = (v: { code: string; value_egp: number; expires_at: string } | null) => {
+    setGeneratedCodeState(v)
+    try {
+      if (v) localStorage.setItem('pk_reward_coupon', JSON.stringify(v))
+      else localStorage.removeItem('pk_reward_coupon')
+    } catch {}
+  }
 
   const load = useCallback(async () => {
     try {
@@ -163,6 +180,7 @@ export default function RewardsPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (generatedCode) setRedeemOpen(true) }, [])
 
   const spent    = data?.total_spent_egp ?? 0
   const rank     = getRank(spent)
@@ -318,14 +336,14 @@ export default function RewardsPage() {
             <button onClick={() => setRedeemOpen(o => !o)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0"
               style={{background:'#d99401', color:'#000'}}>
-              {isRtl ? `استبدل ${redeemEgp} ج` : `Redeem ${redeemEgp} EGP`}
+              {isRtl ? `استبدل ${fmtAmt(redeemEgp)}` : `Redeem ${fmtAmt(redeemEgp)}`}
               {redeemOpen ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
             </button>
           )}
         </div>
 
         {/* ── Coupon Generator Panel ────────────────────────────────────── */}
-        {redeemOpen && redeemEgp > 0 && (
+        {redeemOpen && (redeemEgp > 0 || generatedCode) && (
           <InfoCard accent="#d99401" className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Ticket size={16} style={{color:'#d99401'}}/>
@@ -340,15 +358,15 @@ export default function RewardsPage() {
                 <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 mb-4 text-xs text-amber-800 dark:text-amber-400 space-y-1">
                   <div className="flex items-center gap-1.5 font-semibold mb-1"><Info size={11}/>{isRtl ? 'تفاصيل الكوبون' : 'Coupon Details'}</div>
                   {(isRtl ? [
-                    `القيمة: ${redeemEgp} جنيه خصم (${Math.floor((data?.balance ?? 0) / 100) * 100} نقطة)`,
+                    `القيمة: ${fmtAmt(redeemEgp)} خصم (${Math.floor((data?.balance ?? 0) / 100) * 100} نقطة)`,
                     `صالح لمدة 7 أيام من الآن`,
                     `استخدام مرة واحدة فقط على أي اشتراك`,
-                    `الحد الأدنى للفاتورة: 300 جنيه`,
+                    `الحد الأدنى للفاتورة: ${fmtAmt(300)}`,
                   ] : [
-                    `Value: ${redeemEgp} EGP off (${Math.floor((data?.balance ?? 0) / 100) * 100} points)`,
+                    `Value: ${fmtAmt(redeemEgp)} off (${Math.floor((data?.balance ?? 0) / 100) * 100} points)`,
                     `Valid for 7 days from now`,
                     `Single-use on any subscription`,
-                    `Minimum order: 300 EGP`,
+                    `Minimum order: ${fmtAmt(300)}`,
                   ]).map((c, i) => (
                     <div key={i} className="flex items-center gap-1.5"><span style={{color:'#d99401'}}>•</span>{c}</div>
                   ))}
@@ -363,7 +381,7 @@ export default function RewardsPage() {
                   style={{background:'#d99401', color:'#000'}}>
                   {generating
                     ? <><Loader2 size={15} className="animate-spin"/>{isRtl ? 'جاري التوليد...' : 'Generating...'}</>
-                    : <><Ticket size={15}/>{isRtl ? `احصل على كوبون ${redeemEgp} جنيه` : `Get ${redeemEgp} EGP Coupon`}</>
+                    : <><Ticket size={15}/>{isRtl ? `احصل على كوبون ${fmtAmt(redeemEgp)}` : `Get ${fmtAmt(redeemEgp)} Coupon`}</>
                   }
                 </button>
               </>
@@ -400,6 +418,10 @@ export default function RewardsPage() {
                     {isRtl ? 'استخدم الكود عند الدفع في المتجر' : 'Apply this code at checkout in the store'}
                   </div>
                 </div>
+                <button onClick={() => setGeneratedCode(null)}
+                  className="mt-4 w-full py-2 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                  {isRtl ? 'إخفاء / توليد كوبون جديد' : 'Hide / Generate new coupon'}
+                </button>
               </>
             )}
           </InfoCard>
@@ -439,10 +461,10 @@ export default function RewardsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon:'🛒', ar:'كل 1 جنيه = 1 نقطة',        en:'1 EGP = 1 point',           sub_ar:'على أي اشتراك',   sub_en:'on any order' },
-                  { icon:'⚡', ar:'من 500 جنيه → +100 نقطة',   en:'From 500 EGP → +100 pts',   sub_ar:'أقل من 1500 ج',   sub_en:'under 1500 EGP' },
-                  { icon:'💎', ar:'من 1500 جنيه → +300 نقطة',  en:'From 1500 EGP → +300 pts',  sub_ar:'بونص الطلب الكبير', sub_en:'big order bonus' },
-                  { icon:'🎁', ar:'أول اشتراك → +200 نقطة',   en:'First order → +200 pts',    sub_ar:'مكافأة ترحيب',    sub_en:'welcome gift' },
+                  { icon:'🛒', ar:`كل ${fmtAmt(1)} = 1 نقطة`,           en:`1 ${currency==='usd'?'USD':'EGP'} = 1 point`,           sub_ar:'على أي اشتراك',     sub_en:'on any order' },
+                  { icon:'⚡', ar:`من ${fmtAmt(500)} → +100 نقطة`,   en:`From ${fmtAmt(500)} → +100 pts`,   sub_ar:`أقل من ${fmtAmt(1500)}`,  sub_en:`under ${fmtAmt(1500)}` },
+                  { icon:'💎', ar:`من ${fmtAmt(1500)} → +300 نقطة`,  en:`From ${fmtAmt(1500)} → +300 pts`,  sub_ar:'بونص الطلب الكبير',         sub_en:'big order bonus' },
+                  { icon:'🎁', ar:'أول اشتراك → +200 نقطة',          en:'First order → +200 pts',            sub_ar:'مكافأة ترحيب',              sub_en:'welcome gift' },
                 ].map((rule, i) => (
                   <div key={i} className="flex items-start gap-2.5 p-3 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
                     <span className="text-base leading-none flex-shrink-0">{rule.icon}</span>
@@ -462,8 +484,8 @@ export default function RewardsPage() {
               </div>
               <div className="space-y-2">
                 {[
-                  { ar:'100 نقطة = 5 جنيه خصم على أي طلب',           en:'100 pts = 5 EGP discount on any order' },
-                  { ar:'الحد الأدنى للفاتورة: 300 جنيه',              en:'Minimum order to redeem: 300 EGP' },
+                  { ar:`100 نقطة = ${fmtAmt(5)} خصم على أي طلب`,      en:`100 pts = ${fmtAmt(5)} discount on any order` },
+                  { ar:`الحد الأدنى للفاتورة: ${fmtAmt(300)}`,         en:`Minimum order to redeem: ${fmtAmt(300)}` },
                   { ar:'حد أقصى للاستخدام: 15% من قيمة الفاتورة',     en:'Max per order: 15% of bill value' },
                   { ar:'النقاط تنتهي بعد 4 أشهر من آخر شراء',        en:'Points expire 4 months after last purchase' },
                 ].map((rule, i) => (
@@ -477,7 +499,7 @@ export default function RewardsPage() {
                 <button onClick={() => { setRedeemOpen(true); window.scrollTo({top:0, behavior:'smooth'}) }}
                   className="mt-4 w-full py-2.5 rounded-lg text-sm font-bold border transition-colors"
                   style={{borderColor:'#8b5cf6', color:'#8b5cf6', background:'rgba(139,92,246,0.06)'}}>
-                  {isRtl ? `لديك ${redeemEgp} جنيه جاهزة للاستبدال ←` : `You have ${redeemEgp} EGP ready to redeem →`}
+                  {isRtl ? `لديك ${fmtAmt(redeemEgp)} جاهزة للاستبدال ←` : `You have ${fmtAmt(redeemEgp)} ready to redeem →`}
                 </button>
               )}
             </InfoCard>

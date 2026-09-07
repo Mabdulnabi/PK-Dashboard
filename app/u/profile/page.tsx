@@ -172,9 +172,9 @@ export default function MemberProfilePage() {
             {/* Language */}
             <div className="flex items-center gap-2">
               <Globe size={12} className="text-indigo-500 flex-shrink-0"/>
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','Ø§Ù„Ù„ØºØ©')}</span>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
               <div className="flex gap-1.5">
-                {([{ key:'en', flag:'ðŸ‡¬ðŸ‡§', label:'English' }, { key:'ar', flag:'ðŸ‡ªðŸ‡¬', label:'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' }] as const).map(o => (
+                {([{ key:'en', flag:'🇬🇧', label:'English' }, { key:'ar', flag:'🇪🇬', label:'العربية' }] as const).map(o => (
                   <button key={o.key} onClick={()=>setLang(o.key)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
                     <span>{o.flag}</span>{o.label}{lang===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
@@ -186,9 +186,9 @@ export default function MemberProfilePage() {
             {/* Currency */}
             <div className="flex items-center gap-2">
               <DollarSign size={12} className="text-emerald-500 flex-shrink-0"/>
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','Ø§Ù„Ø¹Ù…Ù„Ø©')}</span>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
               <div className="flex gap-1.5">
-                {([{ key:'egp', flag:'ðŸ‡ªðŸ‡¬', label:'EGP' }, { key:'usd', flag:'ðŸ‡ºðŸ‡¸', label:'USD' }] as const).map(o => (
+                {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
                   <button key={o.key} onClick={()=>setCurrency(o.key)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
                     <span>{o.flag}</span>{o.label}{currency===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
