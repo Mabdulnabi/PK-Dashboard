@@ -924,10 +924,11 @@ if (pathname==='/u/login') return <>{children}</>
               <motion.div
                 key={href}
                 data-scroll-container="1"
+                initial={{ opacity: 0, y: 24 }}
                 animate={isActive
                   ? { opacity: 1, y: 0, pointerEvents: 'auto' as const }
-                  : { opacity: 0, y: 32, pointerEvents: 'none' as const }}
-                transition={{ type: 'spring', damping: 26, stiffness: 300, mass: 0.8 }}
+                  : { opacity: 0, y: 24, pointerEvents: 'none' as const }}
+                transition={{ type: 'tween', ease: [0.22, 1, 0.36, 1], duration: 0.32 }}
                 style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
                 <TabComp/>
               </motion.div>
@@ -1232,7 +1233,10 @@ if (pathname==='/u/login') return <>{children}</>
                             setTimeout(()=>window.dispatchEvent(new CustomEvent('pk-search-tool',{detail:{id:t.id}})),150)
                           }
                         }}
-                        className="w-full flex items-center gap-3.5 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-start border-b last:border-0"
+                        className="w-full flex items-center gap-3.5 px-4 py-3 text-start border-b last:border-0"
+                        style={{background:'transparent'}}
+                        onMouseEnter={e=>(e.currentTarget.style.background=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)')}
+                        onMouseLeave={e=>(e.currentTarget.style.background='transparent')}
                         style={{borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}>
                         {/* Image */}
                         {t.image_url

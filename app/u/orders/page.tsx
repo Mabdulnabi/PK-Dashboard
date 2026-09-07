@@ -237,14 +237,16 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
 
   if (loading || dismissed) return null
 
-  const soonest = [...purchases].sort((a,b)=>(daysLeft(a.expires_at)??9999)-(daysLeft(b.expires_at)??9999))[0]
+  // Only consider active (not expired) subscriptions for soonest
+  const activePurchases = purchases.filter(p => (daysLeft(p.expires_at) ?? 1) > 0)
+  const soonest = [...activePurchases].sort((a,b)=>(daysLeft(a.expires_at)??9999)-(daysLeft(b.expires_at)??9999))[0]
   const days = soonest ? daysLeft(soonest?.expires_at) : null
   const unreadNotif = notifications.find(n=>!n.is_read)
   const isNewMember = purchases.length === 0
 
   let action: SmartAction | null = null
 
-  if (days !== null && days <= 3 && soonest) {
+  if (days !== null && days > 0 && days <= 3 && soonest) {
     action = {
       type: 'urgent',
       title: lang==='ar' ? `⚠ ${soonest.tool_name} ينتهي بعد ${days} ${days===1?'يوم':'أيام'}` : `⚠ ${soonest.tool_name} expires in ${days} day${days===1?'':'s'}`,
@@ -252,7 +254,7 @@ function SmartNextAction({ purchases, notifications, loading, t, lang }: {
       cta: lang==='ar' ? 'تجديد الآن' : 'Renew Now',
       href: `/u/checkout?tool_id=${soonest.tool_id||soonest.id}&renew=1`,
     }
-  } else if (days !== null && days <= 7 && soonest) {
+  } else if (days !== null && days > 0 && days <= 7 && soonest) {
     action = {
       type: 'warning',
       title: lang==='ar' ? `${soonest.tool_name} ينتهي بعد ${days} أيام` : `${soonest.tool_name} expires in ${days} days`,
@@ -335,11 +337,16 @@ function translateDuration(label: string, isAr: boolean): string {
 }
 
 function subProgress(p: Purchase): number | null {
-  if (!p.expires_at || !p.duration_days) return null
+  if (!p.expires_at) return null
   const expiresMs = new Date(p.expires_at).getTime()
-  const totalMs   = p.duration_days * 86400000
-  const startsMs  = p.starts_at ? new Date(p.starts_at).getTime() : expiresMs - totalMs
-  return Math.min(100, Math.max(0, ((Date.now() - startsMs) / totalMs) * 100))
+  const now = Date.now()
+  // If already expired, show 100%
+  if (now >= expiresMs) return 100
+  const durationMs = (p.duration_days || 30) * 86400000
+  const startsMs   = p.starts_at ? new Date(p.starts_at).getTime() : expiresMs - durationMs
+  const totalMs    = expiresMs - startsMs
+  if (totalMs <= 0) return 0
+  return Math.min(100, Math.max(0, ((now - startsMs) / totalMs) * 100))
 }
 interface FreeTool { id:string; name:string; image_url?:string; access_url:string }
 
@@ -535,10 +542,10 @@ function QuickStats({ purchases, t, lang, currency, formatPrice, usdRate }: {
 }) {
   if (purchases.length === 0) return null
 
-  const active = purchases.length
+  const active = purchases.filter(p => (daysLeft(p.expires_at) ?? 1) > 0).length
 
   const soonest = [...purchases]
-    .filter(p => p.expires_at)
+    .filter(p => p.expires_at && (daysLeft(p.expires_at) ?? 0) > 0)
     .sort((a,b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime())[0]
   const nextDays = soonest ? daysLeft(soonest.expires_at) : null
 
