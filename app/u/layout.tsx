@@ -1234,10 +1234,9 @@ if (pathname==='/u/login') return <>{children}</>
                           }
                         }}
                         className="w-full flex items-center gap-3.5 px-4 py-3 text-start border-b last:border-0"
-                        style={{background:'transparent'}}
+                        style={{background:'transparent', borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}
                         onMouseEnter={e=>(e.currentTarget.style.background=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)')}
-                        onMouseLeave={e=>(e.currentTarget.style.background='transparent')}
-                        style={{borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}>
+                        onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                         {/* Image */}
                         {t.image_url
                           ? <img src={t.image_url} alt={t.name} className="w-11 h-11 object-contain rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}/>
