@@ -4,50 +4,45 @@ import './scroll-reveal.css'
 
 export function ScrollRevealProvider() {
   useEffect(() => {
-    // Each scroll container needs its own observer (layout uses absolute positioned scroll divs)
-    const observers: IntersectionObserver[] = []
+    // Use viewport-based IntersectionObserver (root: null = viewport)
+    // Works for elements that are visually on screen even inside absolute containers
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed')
+            obs.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
+    )
 
-    const makeObs = (root: Element | null) => {
-      const obs = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('revealed')
-              obs.unobserve(entry.target)
-            }
-          })
-        },
-        { root, threshold: 0.06, rootMargin: '0px 0px -30px 0px' }
-      )
-      observers.push(obs)
-      return obs
-    }
+    const observed = new WeakSet<Element>()
 
     const scan = () => {
-      // Get all active scroll containers
-      const containers = Array.from(document.querySelectorAll('[data-scroll-container="1"]'))
-
       document.querySelectorAll('[data-reveal]:not(.revealed), [data-reveal-stagger]:not(.revealed)').forEach((el) => {
-        // Find which scroll container this element lives in
-        const container = containers.find(c => c.contains(el)) || null
-        // Reuse or create an observer for this root
-        let obs = observers.find(o => {
-          const ro = (o as any).root
-          return ro === container
-        })
-        if (!obs) obs = makeObs(container)
-        obs.observe(el)
+        if (!observed.has(el)) {
+          observed.add(el)
+          obs.observe(el)
+        }
       })
     }
 
     scan()
 
-    const mutObs = new MutationObserver(scan)
+    // Re-scan on DOM changes (tab switches, dynamic loads)
+    const mutObs = new MutationObserver(() => setTimeout(scan, 60))
     mutObs.observe(document.body, { childList: true, subtree: true })
 
+    // Also re-scan on any scroll (for elements already in DOM but not yet visible)
+    const onScroll = () => scan()
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+
     return () => {
-      observers.forEach(o => o.disconnect())
+      obs.disconnect()
       mutObs.disconnect()
+      document.removeEventListener('scroll', onScroll, { capture: true })
     }
   }, [])
 

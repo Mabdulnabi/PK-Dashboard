@@ -338,13 +338,17 @@ function translateDuration(label: string, isAr: boolean): string {
 
 function subProgress(p: Purchase): number | null {
   if (!p.expires_at) return null
-  const expiresMs = new Date(p.expires_at).getTime()
-  const now = Date.now()
-  // If already expired, show 100%
+  const expiresMs  = new Date(p.expires_at).getTime()
+  const now        = Date.now()
   if (now >= expiresMs) return 100
   const durationMs = (p.duration_days || 30) * 86400000
-  const startsMs   = p.starts_at ? new Date(p.starts_at).getTime() : expiresMs - durationMs
-  const totalMs    = expiresMs - startsMs
+  // Only trust starts_at if it's within 2× the subscription duration from expires_at
+  // (guards against stale/wrong starts_at from old records)
+  const rawStarts  = p.starts_at ? new Date(p.starts_at).getTime() : null
+  const startsMs   = rawStarts && (expiresMs - rawStarts) <= durationMs * 2
+    ? rawStarts
+    : expiresMs - durationMs
+  const totalMs = expiresMs - startsMs
   if (totalMs <= 0) return 0
   return Math.min(100, Math.max(0, ((now - startsMs) / totalMs) * 100))
 }

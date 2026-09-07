@@ -133,7 +133,7 @@ export default function ShopAdminPage() {
   const [dealSections,  setDealSections]  = useState<{id:string;title_en:string;title_ar:string;subtitle_en:string;subtitle_ar:string;emoji:string;tool_ids:string[]}[]>([])
   const [dealSaving,    setDealSaving]    = useState(false)
 
-  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',warranty_label:'' }
+  const emptyTool = { name:'',description:'',description_ar:'',image_url:'',category_slug:'shared',category_id:'',price_egp:'',price_usd:'',retail_price_egp:'',duration_label:'28 Days',duration_days:'28',delivery_label:'INSTANT',rating:'5.0',review_count:'0',video_url:'',features:'',sort_order:'0',is_out_of_stock:false,details_url:'',details_slug:'',sales_count:'0',warranty_label:'',warranty_label_ar:'' }
   const [toolForm, setToolForm] = useState(emptyTool)
 
   const emptyCat = { name:'', name_ar:'', slug:'', color:'#3B82F6', icon:'🔧', image_url:'', image_url_ar:'', sort_order:'0' }
@@ -161,7 +161,7 @@ export default function ShopAdminPage() {
 
   const openAddTool  = ()=>{ setToolForm(emptyTool); setEdit(null); setModalTab(0); setModal('add-tool') }
   const openEditTool = async (t:Tool)=>{
-    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0),warranty_label:(t as any).warranty_label||''})
+    setToolForm({name:t.name,description:t.description||'',description_ar:(t as any).description_ar||'',image_url:t.image_url||'',category_slug:t.category_slug,category_id:t.category_id||'',price_egp:String(t.price_egp),price_usd:String(t.price_usd||''),retail_price_egp:String(t.retail_price_egp||''),duration_label:t.duration_label,duration_days:String(t.duration_days),delivery_label:t.delivery_label,rating:String(t.rating),review_count:String(t.review_count),video_url:t.video_url||'',features:(t.features||[]).join('\n'),sort_order:String(t.sort_order),is_out_of_stock:t.is_out_of_stock,details_url:(t as any).details_url||'',details_slug:(t as any).details_slug||'',sales_count:String((t as any).sales_count||0),warranty_label:(t as any).warranty_label||'',warranty_label_ar:(t as any).warranty_label_ar||''})
     if (t.category_slug === 'bundle') {
       const res = await fetch('/api/admin/bundles')
       const d   = await res.json()
@@ -206,6 +206,7 @@ export default function ShopAdminPage() {
       details_slug:toolForm.details_slug||null,
       sales_count:parseInt((toolForm as any).sales_count)||0,
       warranty_label:(toolForm as any).warranty_label||null,
+      warranty_label_ar:(toolForm as any).warranty_label_ar||null,
     }
     const res = editItem
       ? await supabase.from('shop_tools').update(payload).eq('id',editItem.id)
@@ -883,7 +884,7 @@ export default function ShopAdminPage() {
                   <FieldSection title="Badges & Delivery">
                     <Row>
                       <div>
-                        <FL>Warranty Badge</FL>
+                        <FL>Warranty Badge (English)</FL>
                         <select value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)} {...inputProps as any}>
                           <option value="">No Warranty</option>
                           <option value="Full Warranty">Full Warranty</option>
@@ -894,6 +895,9 @@ export default function ShopAdminPage() {
                         </select>
                         <input value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)}
                           placeholder="or type custom e.g. '3 Months Warranty'" {...inputProps} style={{...inpStyle, marginTop:6}}/>
+                        <FL style={{marginTop:10}}>Warranty Badge (Arabic / عربي)</FL>
+                        <input value={(toolForm as any).warranty_label_ar||''} onChange={e=>setToolForm({...toolForm,warranty_label_ar:e.target.value} as any)}
+                          placeholder="مثال: ضمان شهر كامل" {...inputProps} dir="rtl"/>
                       </div>
                       <div>
                         <FL>Delivery Label</FL>

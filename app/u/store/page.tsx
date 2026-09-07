@@ -283,10 +283,14 @@ function ToolCarousel({ tools, lang, formatPrice }: { tools: Tool[]; lang: strin
   const btnCls = "absolute top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all hover:scale-105 active:scale-95"
   const btnSty = { background:'#d99401', borderColor:'#b37a00', color:'#fff' }
 
+  const pauseTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null } }
+
   return (
     <div className="relative" dir="ltr" style={{paddingInline: '20px'}}>
       <button onClick={() => { advance(-1); startTimer() }} className={`${btnCls} left-0`} style={btnSty}><ChevronLeft size={16}/></button>
-      <div ref={wrapRef} className="overflow-hidden">
+      <div ref={wrapRef} className="overflow-hidden"
+        onMouseEnter={pauseTimer}
+        onMouseLeave={startTimer}>
         <div ref={trackRef} style={{ display:'flex', gap:GAP, willChange:'transform' }}>
           {items.map((t, i) => (
             <div key={`${t.id}-${i}`} style={{ flexShrink:0 }}>
