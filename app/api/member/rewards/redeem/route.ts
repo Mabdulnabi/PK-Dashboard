@@ -54,7 +54,7 @@ export async function POST() {
     // Insert coupon
     const { data: coupon, error: couponErr } = await service.from('coupons').insert({
       code,
-      type: 'fixed',
+      type: 'redeem',
       value: redeemable_egp,
       max_uses: 1,
       used_count: 0,

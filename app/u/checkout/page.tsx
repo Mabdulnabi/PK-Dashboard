@@ -231,7 +231,10 @@ function CheckoutInner() {
   const basePrice = ()=> cartMode ? cartTotal : isBundle ? (bundle?.price_egp||0) : (tool?.price_egp||0)
   const finalPriceEgp = ()=>{
     let p = basePrice()
-    if (!isBundle && couponResult?.valid && couponResult.type==='discount') p=p*(1-couponResult.value/100)
+    if (!isBundle && couponResult?.valid) {
+      if (couponResult.type === 'discount') p = p * (1 - couponResult.value / 100)
+      else if (couponResult.type === 'redeem') p = Math.max(0, p - couponResult.value)
+    }
     return Math.round(p)
   }
   const amountForGateway = ()=> isEgp ? finalPriceEgp() : Math.round(finalPriceEgp()/exchangeRate*100)/100
@@ -545,7 +548,14 @@ function CheckoutInner() {
                 <button onClick={applyCoupon} className="px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-bold text-gray-700 dark:text-gray-200 transition-colors">{t('Apply','تطبيق')}</button>
               </div>
               {couponResult?.error && <p className="text-sm text-red-400 mt-1 mb-3">{couponResult.error}</p>}
-              {couponResult?.valid && <p className="text-sm text-emerald-500 mt-1 mb-3">{t(`✓ Coupon applied — ${couponResult.value}% off`,`✓ تم تطبيق الكود — خصم ${couponResult.value}%`)}</p>}
+              {couponResult?.valid && (
+                <p className="text-sm text-emerald-500 mt-1 mb-3">
+                  {couponResult.type === 'redeem'
+                    ? t(`✓ Coupon applied — ${couponResult.value} EGP off`, `✓ تم تطبيق الكود — خصم ${couponResult.value} جنيه`)
+                    : t(`✓ Coupon applied — ${couponResult.value}% off`, `✓ تم تطبيق الكود — خصم ${couponResult.value}%`)
+                  }
+                </p>
+              )}
               </>)}
 
               <button onClick={async()=>{

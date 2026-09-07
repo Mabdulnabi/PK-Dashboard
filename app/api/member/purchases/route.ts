@@ -87,8 +87,9 @@ export async function POST(req: NextRequest) {
     const { data: coupon } = await service.rpc('apply_coupon', {
       p_code: coupon_code, p_member_id: session.member_id, p_plan_slug: 'none'
     })
-    if (coupon?.valid && coupon.type === 'discount') {
-      price = price - price * (coupon.value / 100)
+    if (coupon?.valid) {
+      if (coupon.type === 'discount') price = price * (1 - coupon.value / 100)
+      else if (coupon.type === 'redeem') price = Math.max(0, price - coupon.value)
     }
   }
 
