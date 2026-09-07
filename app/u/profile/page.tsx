@@ -207,7 +207,7 @@ export default function MemberProfilePage() {
       <NotifBanner lang={lang} match={['تقييم','Review','Approved','Rejected','قبول','رفض']}/>
 
       {/* ── Rank card — top ── */}
-      <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0">
+      <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0" data-reveal>
         <div className="px-4 md:px-6 py-4 md:py-6"
           style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
           {/* Desktop: 3-col grid — Mobile: badge+info row then badges row below */}
@@ -265,7 +265,7 @@ export default function MemberProfilePage() {
       </div>
 
       {/* ── Profile card ── */}
-      <div className="glass-card-themed rounded-2xl overflow-hidden flex flex-col">
+      <div className="glass-card-themed rounded-2xl overflow-hidden flex flex-col" data-reveal>
         {/* Avatar hero */}
         <div className="relative px-4 md:px-6 py-5 flex items-center gap-4 md:gap-5"
           style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>

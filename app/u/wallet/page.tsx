@@ -339,7 +339,7 @@ export default function PaymentsPage() {
             const nextRank = RANKS[rankIdx + 1] as typeof RANKS[number] | undefined
             const progress = nextRank ? Math.min(100, ((spent - rank.min) / (nextRank.min - rank.min)) * 100) : 100
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" data-reveal-stagger>
                 {/* 1 — Balance */}
                 <WalletCard icon={Wallet} label={t('Wallet Balance','رصيد المحفظة')} value={fmtAmt(balAmt, balCur)} accent="#d99401" featured>
                   <div className="text-white/70 text-xs font-medium relative z-10">
@@ -543,7 +543,7 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden" data-reveal>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <div>
             <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('Payment History','سجل المدفوعات')}</h2>

@@ -150,7 +150,7 @@ export default function BlogsPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm">{t('No articles yet. Be the first to write!', 'لا توجد مقالات بعد. كن أول من يكتب!')}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3" data-reveal-stagger>
           {posts.map(post => (
             <div key={post.id} onClick={() => router.push(`/u/blogs/${post.id}`)}
               className={`flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-gray-900 border cursor-pointer transition-all hover:shadow-sm

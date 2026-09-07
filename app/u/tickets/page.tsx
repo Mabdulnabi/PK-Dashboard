@@ -267,7 +267,7 @@ export default function HelpdeskPage() {
       {loading ? (
         <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" data-reveal-stagger>
           {(fStatus === 'all' ? tickets : tickets.filter(tk => tk.status === fStatus)).length === 0 ? (
             <div className="text-center py-16 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl">
               <MessageCircle size={24} className="text-gray-200 mx-auto mb-3"/>

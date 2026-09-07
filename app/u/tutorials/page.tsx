@@ -51,7 +51,7 @@ export default function TutorialsPage() {
       {loading&&<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'#d99401',borderTopColor:'transparent'}}/></div>}
 
       {/* Responsive grid: 1 col mobile → 2 col sm → 3 col lg */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" data-reveal-stagger>
         {videos.map(v=>(
           <div key={v.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
             <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 cursor-pointer group" onClick={()=>setPlaying(v.id)}>

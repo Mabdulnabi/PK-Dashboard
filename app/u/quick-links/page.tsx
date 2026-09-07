@@ -24,7 +24,7 @@ export default function QuickLinksPage() {
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{ar ? 'الصفحات والسياسات المهمة' : 'Important pages and policies'}</p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" data-reveal-stagger>
         {PAGES.map(p => (
           <button key={p.slug} onClick={() => router.push(`/u/pages/${p.slug}`)}
             className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-teal-200 dark:hover:border-teal-800 hover:shadow-sm transition-all text-start group">

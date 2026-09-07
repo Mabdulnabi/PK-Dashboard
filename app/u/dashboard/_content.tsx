@@ -503,7 +503,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
               <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>{t('ليه تختارنا','WHY CHOOSE US')}</span>
               <h2 style={{ fontSize:30, fontWeight:800, color:'#1B2556', marginBottom:8 }}>{t(s.lp_feat_title_ar || 'ليه تختار Pro Keys؟', s.lp_feat_title_en || 'Why Choose Pro Keys?').split(' ').map((word, i, arr) => i === arr.length - 1 ? <span key={i} style={{ background:'linear-gradient(90deg,#d99401,#b87e00)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}> {word}</span> : <span key={i}>{i === 0 ? word : ' ' + word}</span>)}</h2>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:28 }} className="lp-feat-grid">
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:28 }} className="lp-feat-grid" data-reveal-stagger>
               {features.map((f, i) => (
                 <div key={f.id || i} className="lp-card" style={{ background:'#fff', border:'1px solid #DCE4F1', borderRadius:20, padding:'40px 36px', transition:'all .2s' }}>
                   <div style={{ fontSize:48, marginBottom:22, lineHeight:1 }}>{f.icon}</div>
@@ -521,7 +521,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
           <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', textAlign:'center' }}>
             <h2 style={{ fontSize:30, fontWeight:800, color:'#fff', marginBottom:8 }}>{t(s.lp_stats_title_ar || 'أرقامنا', s.lp_stats_title_en || 'Our Numbers')}</h2>
             {(s.lp_stats_sub_ar || s.lp_stats_sub_en) && <p style={{ color:'rgba(255,255,255,.65)', fontSize:14.5, marginBottom:48 }}>{t(s.lp_stats_sub_ar || '', s.lp_stats_sub_en || '')}</p>}
-            <div style={{ display:'grid', gridTemplateColumns:`repeat(${stats.length},1fr)`, gap:32, marginTop:40 }} className="lp-stats-grid">
+            <div style={{ display:'grid', gridTemplateColumns:`repeat(${stats.length},1fr)`, gap:32, marginTop:40 }} className="lp-stats-grid" data-reveal-stagger>
               {stats.map((st, i) => (
                 <div key={st.id || i} style={{ padding:'32px 24px', borderRadius:16, background:'rgba(255,255,255,.07)', border:'1px solid rgba(217,148,1,.3)' }}>
                   <div style={{ fontSize:'clamp(36px,5vw,52px)', fontWeight:900, color:'#d99401', fontVariantNumeric:'tabular-nums', lineHeight:1, marginBottom:10 }}><Counter target={parseInt(st.number) || 0} suffix={st.suffix}/></div>
