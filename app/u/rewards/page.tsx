@@ -77,6 +77,7 @@ interface RewardsData {
   transactions: { id:string; delta:number; type:string; label:string; label_ar:string; created_at:string }[]
   referral_code: string | null; total_referred: number; referral_points: number
   referred: { id:string; full_name:string; created_at:string }[]
+  active_coupon: { code: string; value_egp: number; expires_at: string } | null
 }
 
 // ─── Orders-style stat card ────────────────────────────────────────────────────
@@ -166,7 +167,16 @@ export default function RewardsPage() {
   const load = useCallback(async () => {
     try {
       const r = await fetch('/api/member/rewards')
-      if (r.ok) setData(await r.json())
+      if (r.ok) {
+        const json = await r.json()
+        setData(json)
+        // Restore active coupon from DB if not already in localStorage
+        if (json.active_coupon) {
+          setGeneratedCodeState(json.active_coupon)
+          setRedeemOpen(true)
+          try { localStorage.setItem('pk_reward_coupon', JSON.stringify(json.active_coupon)) } catch {}
+        }
+      }
     } finally { setLoading(false) }
   }, [])
 
@@ -193,9 +203,10 @@ export default function RewardsPage() {
     ? Math.min(100, ((spent - rank.min) / (nextRank.min - rank.min)) * 100)
     : 100
 
+  const currLabel = currency === 'usd' ? (isRtl ? 'دولار' : 'USD') : (isRtl ? 'جنيه' : 'EGP')
   const fmtAmt = (egp: number) => currency === 'usd'
-    ? `${(egp / 50).toLocaleString(undefined, { maximumFractionDigits: 1 })} USD`
-    : `${egp.toLocaleString()} ${isRtl ? 'جنيه' : 'EGP'}`
+    ? `${(egp / 50).toLocaleString(undefined, { maximumFractionDigits: 1 })} ${currLabel}`
+    : `${egp.toLocaleString()} ${currLabel}`
 
   const referralLink = typeof window !== 'undefined' && data?.referral_code
     ? `${window.location.origin}/u/login?ref=${data.referral_code}`
@@ -410,8 +421,8 @@ export default function RewardsPage() {
                 <div className="space-y-1.5 text-xs text-center text-gray-500 dark:text-gray-400">
                   <div>
                     {isRtl
-                      ? `قيمة الخصم: ${currency === 'usd' ? `${(generatedCode.value_egp / 50).toFixed(1)} USD` : `${generatedCode.value_egp} جنيه`}`
-                      : `Discount: ${currency === 'usd' ? `${(generatedCode.value_egp / 50).toFixed(1)} USD` : `${generatedCode.value_egp} EGP`}`
+                      ? `قيمة الخصم: ${fmtAmt(generatedCode.value_egp)}`
+                      : `Discount: ${fmtAmt(generatedCode.value_egp)}`
                     }
                   </div>
                   <div>
@@ -464,7 +475,7 @@ export default function RewardsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon:'🛒', ar: currency==='usd' ? '1 USD = 50 نقطة' : 'كل 1 جنيه = 1 نقطة',            en: currency==='usd' ? '1 USD = 50 points' : '1 EGP = 1 point',           sub_ar:'على أي اشتراك',           sub_en:'on any order' },
+                  { icon:'🛒', ar: currency==='usd' ? `1 ${currLabel} = 50 نقطة` : 'كل 1 جنيه = 1 نقطة',   en: currency==='usd' ? `1 ${currLabel} = 50 points` : '1 EGP = 1 point',   sub_ar:'على أي اشتراك',           sub_en:'on any order' },
                   { icon:'⚡', ar:`من ${fmtAmt(500)} → +100 نقطة`,  en:`From ${fmtAmt(500)} → +100 pts`,   sub_ar:`أقل من ${fmtAmt(1500)}`,   sub_en:`under ${fmtAmt(1500)}` },
                   { icon:'💎', ar:`من ${fmtAmt(1500)} → +300 نقطة`, en:`From ${fmtAmt(1500)} → +300 pts`,  sub_ar:'بونص الطلب الكبير',         sub_en:'big order bonus' },
                   { icon:'🎁', ar:'أول اشتراك → +200 نقطة',         en:'First order → +200 pts',            sub_ar:'مكافأة ترحيب',              sub_en:'welcome gift' },

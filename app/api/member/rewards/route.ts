@@ -17,7 +17,7 @@ export async function GET() {
 
   // Run all queries in parallel
   const [
-    lpRes, txRes, memberRes, spentRes, referralRes, referredRes
+    lpRes, txRes, memberRes, spentRes, referralRes, referredRes, couponRes
   ] = await Promise.all([
     // Loyalty balance
     service.from('loyalty_points').select('*').eq('member_id', mid).single(),
@@ -44,6 +44,17 @@ export async function GET() {
       .eq('referred_by', mid)
       .order('created_at', { ascending: false })
       .limit(10),
+    // Active rewards coupon for this member (unused, not expired)
+    service.from('coupons')
+      .select('code, value, expires_at')
+      .eq('member_id', mid)
+      .eq('source', 'rewards_redemption')
+      .eq('is_active', true)
+      .eq('used_count', 0)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const lp = lpRes.data
@@ -76,6 +87,10 @@ export async function GET() {
   // Redeemable EGP = floor(balance / 100) * 5
   const redeemable_egp = Math.floor(balance / 100) * 5
 
+  const activeCoupon = couponRes.data
+    ? { code: couponRes.data.code, value_egp: Number(couponRes.data.value), expires_at: couponRes.data.expires_at }
+    : null
+
   return NextResponse.json({
     balance,
     total_earned,
@@ -88,5 +103,6 @@ export async function GET() {
     total_referred,
     referral_points,
     referred:         referredRes.data ?? [],
+    active_coupon:    activeCoupon,
   })
 }
