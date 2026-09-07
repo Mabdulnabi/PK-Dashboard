@@ -2,35 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { writeAuditLog } from '@/lib/audit'
 import { notFound, serverError } from '@/lib/responses'
-
-async function awardLoyaltyPoints(memberId: string, amountEgp: number, refId: string, toolName: string) {
-  const base   = Math.round(amountEgp)
-  const bonus  = amountEgp >= 1500 ? 300 : amountEgp >= 500 ? 100 : 0
-  const earned = base + bonus
-  const label    = `اشتراك ${toolName}`
-  const labelEn  = `${toolName} subscription`
-  const now = new Date().toISOString()
-
-  // Upsert balance row
-  const { data: existing } = await db.from('loyalty_points').select('balance, total_earned').eq('member_id', memberId).single()
-  if (existing) {
-    await db.from('loyalty_points').update({
-      balance:      existing.balance + earned,
-      total_earned: existing.total_earned + earned,
-      last_activity: now,
-      updated_at:   now,
-    }).eq('member_id', memberId)
-  } else {
-    // First purchase — add welcome bonus
-    const welcome = 200
-    await db.from('loyalty_points').insert({ member_id: memberId, balance: earned + welcome, total_earned: earned + welcome, last_activity: now, updated_at: now })
-    await db.from('loyalty_transactions').insert({ member_id: memberId, delta: welcome, type: 'welcome', label: 'Welcome Bonus', label_ar: 'مكافأة الترحيب', ref_id: null, created_at: now })
-  }
-  // Log earn transaction
-  const txns = [{ member_id: memberId, delta: base, type: 'earn', label: labelEn, label_ar: label, ref_id: refId }]
-  if (bonus > 0) txns.push({ member_id: memberId, delta: bonus, type: 'bonus', label: `Order bonus (${amountEgp >= 1500 ? '1500+' : '500+'} EGP)`, label_ar: `بونص الطلب الكبير`, ref_id: refId })
-  await db.from('loyalty_transactions').insert(txns)
-}
+import { awardOrderRewards } from '@/lib/award-order-rewards'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const { data: purchase } = await db
@@ -145,31 +117,17 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     }
   })()
 
-  // Award loyalty points — use full order value (amount_egp + coupon discount)
+  // Award loyalty points + referral reward
   void (async () => {
     const { data: purchase2 } = await db.from('tool_purchases').select('amount_egp').eq('id', params.id).single()
-    let amountEgp = Number(purchase2?.amount_egp ?? 0)
-    if (!amountEgp) return
-
-    // Add back coupon discount so points reflect the full product price
-    const { data: payment2 } = await db
-      .from('payments')
-      .select('coupon_code')
-      .eq('reference', params.id)
-      .single()
-    if (payment2?.coupon_code) {
-      const { data: coupon2 } = await db
-        .from('coupons')
-        .select('type, value')
-        .eq('code', payment2.coupon_code.toUpperCase().trim())
-        .single()
-      if (coupon2) {
-        // redeem coupon: add the EGP value back; discount (%) already reflected in amount_egp
-        if (coupon2.type === 'redeem') amountEgp += Number(coupon2.value)
-      }
-    }
-
-    await awardLoyaltyPoints(memberId, amountEgp, params.id, toolName)
+    const { data: payment2 }  = await db.from('payments').select('coupon_code').eq('reference', params.id).maybeSingle()
+    void awardOrderRewards(db, {
+      memberId:   memberId,
+      purchaseId: params.id,
+      toolName,
+      amountEgp:  Number(purchase2?.amount_egp ?? 0),
+      couponCode: payment2?.coupon_code ?? null,
+    })
   })()
 
   void writeAuditLog({
@@ -179,73 +137,6 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     target_id:   params.id,
     details:     { member_id: memberId, tool_name: toolName },
   })
-
-  // Referral reward: credit 500 loyalty points to referrer on member's first confirmed payment
-  void (async () => {
-    const { data: mem } = await db.from('members').select('referred_by').eq('id', memberId).single()
-    if (!mem?.referred_by) return
-    const { count: prevPayments } = await db
-      .from('tool_purchases')
-      .select('id', { count: 'exact', head: true })
-      .eq('member_id', memberId)
-      .eq('status', 'confirmed')
-    if ((prevPayments || 0) !== 1) return  // only first payment triggers reward
-    const { data: existing } = await db.from('referral_rewards').select('id').eq('referred_id', memberId).single()
-    if (existing) return  // already rewarded
-
-    const referrerId = mem.referred_by
-    const REFERRAL_PTS = 500
-    const now = new Date().toISOString()
-
-    // Insert referral_reward record (credited immediately)
-    const { data: rr } = await db.from('referral_rewards').insert({
-      referrer_id:  referrerId,
-      referred_id:  memberId,
-      reward_egp:   20,
-      status:       'credited',
-      triggered_by: 'first_payment',
-    }).select('id').single()
-
-    // Add 500 points to referrer's loyalty_points
-    const { data: lp } = await db.from('loyalty_points').select('balance, total_earned').eq('member_id', referrerId).single()
-    if (lp) {
-      await db.from('loyalty_points').update({
-        balance:       lp.balance + REFERRAL_PTS,
-        total_earned:  lp.total_earned + REFERRAL_PTS,
-        last_activity: now,
-        updated_at:    now,
-      }).eq('member_id', referrerId)
-    } else {
-      await db.from('loyalty_points').insert({
-        member_id:    referrerId,
-        balance:      REFERRAL_PTS,
-        total_earned: REFERRAL_PTS,
-        last_activity: now,
-        updated_at:   now,
-      })
-    }
-
-    // Log loyalty transaction
-    await db.from('loyalty_transactions').insert({
-      member_id: referrerId,
-      delta:     REFERRAL_PTS,
-      type:      'referral',
-      label:     'Referral bonus — friend made first purchase',
-      label_ar:  'مكافأة إحالة — صديقك أتم أول عملية شراء',
-      ref_id:    rr?.id ?? null,
-      created_at: now,
-    })
-
-    void db.from('member_notifications').insert({
-      member_id:  referrerId,
-      title:      'مكافأة إحالة 🎁',
-      title_en:   'Referral Reward 🎁',
-      message:    'أحد أصدقائك أتم أول عملية شراء! ربحت 500 نقطة ولاء.',
-      message_en: 'Your referred friend completed their first purchase! You earned 500 loyalty points.',
-      type:       'success',
-      link:       '/u/rewards',
-    })
-  })()
 
   return NextResponse.json({ ok: true })
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { awardOrderRewards } from '@/lib/award-order-rewards'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -183,6 +184,22 @@ export async function POST(req: NextRequest) {
             .update({ used_count: (coupon.used_count || 0) + 1 })
             .eq('id', coupon.id),
         ])
+      }
+    }
+
+    // Award loyalty points + referral reward
+    if (!isCartMode && tool_id) {
+      const { data: newPurch } = await service.from('tool_purchases')
+        .select('id').eq('member_id', member_id).eq('status', 'confirmed')
+        .order('created_at', { ascending: false }).limit(1).single()
+      if (newPurch?.id) {
+        void awardOrderRewards(service, {
+          memberId:   member_id,
+          purchaseId: newPurch.id,
+          toolName,
+          amountEgp:  price,
+          couponCode: coupon_code || null,
+        })
       }
     }
 

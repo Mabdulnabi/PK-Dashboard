@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { awardOrderRewards } from '@/lib/award-order-rewards'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -110,6 +111,20 @@ export async function POST(req: NextRequest) {
       message_en:  `Your ${toolName} subscription is active until ${expiryEn}.`,
       type:        'success',
     }).then(() => {})
+
+    // Award loyalty pts (0 for free orders — skips points, still checks referral)
+    const { data: newPurch } = await service.from('tool_purchases')
+      .select('id').eq('member_id', member_id).eq('status', 'confirmed')
+      .order('created_at', { ascending: false }).limit(1).single()
+    if (newPurch?.id) {
+      void awardOrderRewards(service, {
+        memberId:   member_id,
+        purchaseId: newPurch.id,
+        toolName:   tool?.name || 'الأداة',
+        amountEgp:  0,
+        couponCode: coupon_code || null,
+      })
+    }
 
     return NextResponse.json({ ok: true, payment_id: pay.id })
   } catch (err: any) {
