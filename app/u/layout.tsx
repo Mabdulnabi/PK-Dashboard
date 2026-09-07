@@ -19,6 +19,7 @@ const WalletTab     = dynamic(() => import('./wallet/page'),       { ssr:false, 
 const TicketsTab    = dynamic(() => import('./tickets/page'),      { ssr:false, loading:()=><TabSpinner/> })
 const TutorialsTab  = dynamic(() => import('./tutorials/page'),    { ssr:false, loading:()=><TabSpinner/> })
 const BlogsTab      = dynamic(() => import('./blogs/page'),        { ssr:false, loading:()=><TabSpinner/> })
+const LoyaltyTab    = dynamic(() => import('./loyalty/page'),      { ssr:false, loading:()=><TabSpinner/> })
 const QuickLinksTab = dynamic(() => import('./quick-links/page'),  { ssr:false, loading:()=><TabSpinner/> })
 const ProfileTab    = dynamic(() => import('./profile/page'),      { ssr:false, loading:()=><TabSpinner/> })
 
@@ -31,6 +32,7 @@ const TAB_MAP: Record<string, React.ComponentType> = {
   '/u/tickets':    TicketsTab,
   '/u/tutorials':  TutorialsTab,
   '/u/blogs':      BlogsTab,
+  '/u/loyalty':    LoyaltyTab,
   '/u/quick-links': QuickLinksTab,
   '/u/profile':    ProfileTab,
 }
@@ -88,6 +90,7 @@ const NAV_BASE = [
   { en:'Tickets',              ar:'تذاكر الدعم',       href:'/u/tickets',       icon:Headset,      color:'#f97316', iconKey:'icon_tickets'       },
   { en:'Educational Videos',   ar:'فيديوهات تعليمية', href:'/u/tutorials',     icon:PlayCircle,   color:'#ec4899', iconKey:'icon_tutorials'     },
   { en:'Blogs',                ar:'مقالات',            href:'/u/blogs',         icon:Article,      color:'#8b5cf6', iconKey:'icon_blogs'         },
+  { en:'Rewards',              ar:'نقاطي',             href:'/u/loyalty',       icon:Key,          color:'#d99401', iconKey:'icon_loyalty'        },
   { en:'Quick Links',          ar:'روابط سريعة',       href:'/u/quick-links',   icon:LinkSimple,   color:'#14b8a6', iconKey:'icon_quick_links'   },
   { en:'My Account',           ar:'حسابي',             href:'/u/profile',       icon:UserCircle,   color:'#64748b', iconKey:'icon_profile'       },
 ]
