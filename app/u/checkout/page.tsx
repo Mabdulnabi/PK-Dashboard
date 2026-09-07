@@ -62,6 +62,10 @@ function CheckoutInner() {
   const [walletBalance,  setWalletBalance]  = useState<number|null>(null)
   const [walletCurrency, setWalletCurrency] = useState('EGP')
   const [payWithWallet,  setPayWithWallet]  = useState<boolean|null>(null) // null = not yet chosen
+  const [tapReady,       setTapReady]       = useState(false)
+  const [tapError,       setTapError]       = useState('')
+  const tapInstanceRef = useRef<any>(null)
+  const tapCardRef     = useRef<any>(null)
 
   const fetchGateways = () =>
     fetch('/api/member/gateways').then(r=>r.json()).then(d=>{
@@ -134,6 +138,89 @@ function CheckoutInner() {
       if (pollRef.current) clearInterval(pollRef.current)
     }
   },[toolId, bundleId, cartMode])
+
+  const isTap        = method === 'tap'
+
+  // Load Tap SDK when Tap is selected and payment step is active
+  useEffect(() => {
+    if (!isTap || step !== 'payment') return
+    setTapReady(false); setTapError('')
+
+    const existingScript = document.getElementById('tap-sdk')
+    const initTap = () => {
+      const win = window as any
+      if (!win.Tapjsli) { setTapError('Failed to load Tap SDK'); return }
+      const publicKey = process.env.NEXT_PUBLIC_TAP_PUBLIC_KEY || ''
+      const tap = win.Tapjsli({
+        publicKey,
+        language: 'en',
+        supportedCurrencies: 'all',
+        supportedPaymentMethods: 'all',
+        saveCardOption: 'none',
+        customerData: { allowed_cards: ['MASTERCARD', 'VISA'] },
+        callback: () => {},
+        labels: { cardNumber: 'Card Number', expirationDate: 'MM/YY', cvv: 'CVV', cardHolder: 'Name on Card', actionButton: 'Pay' },
+        style: {
+          base: { color: '#1f2937', lineHeight: '18px', fontFamily: 'system-ui, sans-serif', fontSmoothing: 'antialiased', fontSize: '16px', '::placeholder': { color: '#9ca3af' } },
+          invalid: { color: '#ef4444', iconColor: '#ef4444' },
+        },
+      })
+      const elements = tap.elements({})
+      const card = elements.create('card', {
+        style: {
+          base: { color: '#1f2937', fontFamily: 'system-ui,sans-serif', fontSize: '16px', '::placeholder': { color: '#9ca3af' } },
+          invalid: { color: '#ef4444' },
+        },
+      })
+      card.mount('#tap-card-element')
+      tapInstanceRef.current = tap
+      tapCardRef.current = card
+      setTapReady(true)
+    }
+
+    if (existingScript) { setTimeout(initTap, 200); return }
+    const script = document.createElement('script')
+    script.id  = 'tap-sdk'
+    script.src = 'https://secure.gosell.io/js/sdk/tap.min.js'
+    script.onload = () => setTimeout(initTap, 200)
+    script.onerror = () => setTapError('Failed to load Tap SDK')
+    document.head.appendChild(script)
+  }, [isTap, step])
+
+  const verifyTap = async () => {
+    if (!tapInstanceRef.current || !tapCardRef.current) return
+    setVerifying(true); setError(''); setTapError('')
+    try {
+      const result = await tapInstanceRef.current.createToken(tapCardRef.current)
+      if (result.error) throw new Error(result.error.message || 'Card error')
+      const cardToken = result.id
+
+      const createRes = await fetch('/api/member/payment/create', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gateway: 'tap', amount: amountForGateway(), currency: cfg?.currency || 'EGP', credits: finalPriceEgp(), tool_id: cartMode ? null : (toolId || null), bundle_id: bundleId || null }),
+      })
+      const createData = await createRes.json()
+      if (!createRes.ok) throw new Error(createData.error || 'Failed to create payment')
+      const pid = createData.payment_id
+
+      const tapRes = await fetch('/api/member/payment/tap', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: cardToken, payment_id: pid, amount: amountForGateway(), currency: cfg?.currency || 'EGP' }),
+      })
+      const tapData = await tapRes.json()
+      if (!tapRes.ok) throw new Error(tapData.error || 'Tap charge failed')
+
+      if (tapData.redirect_url) {
+        window.location.href = tapData.redirect_url
+        return
+      }
+      if (tapData.verified) { setStep('done'); return }
+      throw new Error('Payment not confirmed. Status: ' + tapData.status)
+    } catch (e: any) { setError(e.message) }
+    setVerifying(false)
+  }
 
   const cfg          = gateways.find(g=>g.id===method)
   const isEgp        = cfg?.currency==='EGP'
@@ -613,7 +700,20 @@ function CheckoutInner() {
                 </div>
               )}
 
-              {cfg && !cfg.is_dynamic && (
+              {isTap && (
+                <div className="mb-5">
+                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 block">
+                    {lang==='ar' ? 'بيانات البطاقة' : 'Card Details'}
+                  </label>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-2 min-h-[56px] flex items-center">
+                    {!tapReady && !tapError && <span className="text-sm text-gray-400 flex items-center gap-2"><Loader2 size={14} className="animate-spin"/>{lang==='ar'?'جاري تحميل نموذج الدفع...':'Loading payment form...'}</span>}
+                    {tapError && <span className="text-sm text-red-500">{tapError}</span>}
+                    <div id="tap-card-element" className="w-full"/>
+                  </div>
+                  <p className="text-xs text-gray-400 flex items-center gap-1">🔒 {lang==='ar'?'مشفر ومؤمن بواسطة Tap Payments':'Encrypted & secured by Tap Payments'}</p>
+                </div>
+              )}
+              {cfg && !cfg.is_dynamic && !isTap && (
                 <div className="mb-5">
                   <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 block">{lang==='ar'?(cfg.input_label_ar||'رقم العملية'):(cfg.input_label_en||'Transaction ID (Order ID)')}</label>
                   <input value={txRef} onChange={e=>setTxRef(e.target.value)}
@@ -638,7 +738,12 @@ function CheckoutInner() {
 
               <div className="flex gap-3">
                 <button onClick={()=>setStep('details')} className="flex-1 py-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">{t('← Back','← رجوع')}</button>
-                {cfg?.is_dynamic && !polling ? (
+                {isTap ? (
+                  <button onClick={verifyTap} disabled={verifying || !tapReady}
+                    className="flex-[2] py-4 rounded-xl text-white text-base font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors" style={{background:'#d99401'}}>
+                    {verifying ? <Loader2 size={16} className="animate-spin"/> : <>💳 {t('Pay Now','ادفع الآن')}</>}
+                  </button>
+                ) : cfg?.is_dynamic && !polling ? (
                   <button onClick={verify} disabled={verifying}
                     className="flex-[2] py-4 rounded-xl text-white text-base font-bold disabled:opacity-60 flex items-center justify-center gap-2 transition-colors" style={{background:'#d99401'}}>
                     {verifying?<Loader2 size={16} className="animate-spin"/>:<>💳 {t('Pay Now','ادفع الآن')}</>}
