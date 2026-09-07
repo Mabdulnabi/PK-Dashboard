@@ -3,6 +3,35 @@ import { db } from '@/lib/db'
 import { writeAuditLog } from '@/lib/audit'
 import { notFound, serverError } from '@/lib/responses'
 
+async function awardLoyaltyPoints(memberId: string, amountEgp: number, refId: string, toolName: string) {
+  const base   = Math.round(amountEgp)
+  const bonus  = amountEgp >= 1500 ? 300 : amountEgp >= 500 ? 100 : 0
+  const earned = base + bonus
+  const label    = `اشتراك ${toolName}`
+  const labelEn  = `${toolName} subscription`
+  const now = new Date().toISOString()
+
+  // Upsert balance row
+  const { data: existing } = await db.from('loyalty_points').select('balance, total_earned').eq('member_id', memberId).single()
+  if (existing) {
+    await db.from('loyalty_points').update({
+      balance:      existing.balance + earned,
+      total_earned: existing.total_earned + earned,
+      last_activity: now,
+      updated_at:   now,
+    }).eq('member_id', memberId)
+  } else {
+    // First purchase — add welcome bonus
+    const welcome = 200
+    await db.from('loyalty_points').insert({ member_id: memberId, balance: earned + welcome, total_earned: earned + welcome, last_activity: now, updated_at: now })
+    await db.from('loyalty_transactions').insert({ member_id: memberId, delta: welcome, type: 'welcome', label: 'Welcome Bonus', label_ar: 'مكافأة الترحيب', ref_id: null, created_at: now })
+  }
+  // Log earn transaction
+  const txns = [{ member_id: memberId, delta: base, type: 'earn', label: labelEn, label_ar: label, ref_id: refId }]
+  if (bonus > 0) txns.push({ member_id: memberId, delta: bonus, type: 'bonus', label: `Order bonus (${amountEgp >= 1500 ? '1500+' : '500+'} EGP)`, label_ar: `بونص الطلب الكبير`, ref_id: refId })
+  await db.from('loyalty_transactions').insert(txns)
+}
+
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const { data: purchase } = await db
     .from('tool_purchases')
@@ -113,6 +142,14 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
             .eq('id', coupon.id),
         ])
       }
+    }
+  })()
+
+  // Award loyalty points
+  void (async () => {
+    const { data: purchase2 } = await db.from('tool_purchases').select('amount_egp').eq('id', params.id).single()
+    if (purchase2?.amount_egp) {
+      await awardLoyaltyPoints(memberId, Number(purchase2.amount_egp), params.id, toolName)
     }
   })()
 
