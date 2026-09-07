@@ -170,11 +170,14 @@ export default function RewardsPage() {
       if (r.ok) {
         const json = await r.json()
         setData(json)
-        // Restore active coupon from DB if not already in localStorage
         if (json.active_coupon) {
           setGeneratedCodeState(json.active_coupon)
           setRedeemOpen(true)
           try { localStorage.setItem('pk_reward_coupon', JSON.stringify(json.active_coupon)) } catch {}
+        } else {
+          // Coupon was used or expired — clear local state
+          setGeneratedCodeState(null)
+          try { localStorage.removeItem('pk_reward_coupon') } catch {}
         }
       }
     } finally { setLoading(false) }
