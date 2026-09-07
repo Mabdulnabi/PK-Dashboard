@@ -151,16 +151,7 @@ export default function RewardsPage() {
   const [tab,        setTab]        = useState<'points' | 'referral'>('points')
   const [redeemOpen,    setRedeemOpen]    = useState(false)
   const [generating,    setGenerating]    = useState(false)
-  const [generatedCode, setGeneratedCodeState] = useState<{ code: string; value_egp: number; expires_at: string } | null>(() => {
-    try {
-      const saved = localStorage.getItem('pk_reward_coupon')
-      if (!saved) return null
-      const parsed = JSON.parse(saved)
-      if (new Date(parsed.expires_at) > new Date()) return parsed
-      localStorage.removeItem('pk_reward_coupon')
-    } catch {}
-    return null
-  })
+  const [generatedCode, setGeneratedCodeState] = useState<{ code: string; value_egp: number; expires_at: string } | null>(null)
   const [codeCopied,    setCodeCopied]    = useState(false)
   const [redeemError,   setRedeemError]   = useState('')
 
@@ -180,7 +171,19 @@ export default function RewardsPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
-  useEffect(() => { if (generatedCode) setRedeemOpen(true) }, [])
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pk_reward_coupon')
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      if (new Date(parsed.expires_at) > new Date()) {
+        setGeneratedCodeState(parsed)
+        setRedeemOpen(true)
+      } else {
+        localStorage.removeItem('pk_reward_coupon')
+      }
+    } catch {}
+  }, [])
 
   const spent    = data?.total_spent_egp ?? 0
   const rank     = getRank(spent)
