@@ -47,7 +47,7 @@ function CheckoutInner() {
   const [gateways,         setGateways]         = useState<Gateway[]>([])
   const [loading,          setLoading]          = useState(true)
   const [existingPurchase, setExistingPurchase] = useState<any>(null)
-  const [step,         setStep]         = useState<'details'|'payment'|'done'>('details')
+  const [step,         setStep]         = useState<'details'|'wallet-choice'|'payment'|'done'>('details')
   const [method,       setMethod]       = useState('')
   const [txRef,        setTxRef]        = useState('')
   const [coupon,       setCoupon]       = useState('')
@@ -59,6 +59,9 @@ function CheckoutInner() {
   const [polling,      setPolling]      = useState(false)
   const pollRef     = useRef<NodeJS.Timeout|null>(null)
   const paymentIdRef = useRef<string|null>(null)
+  const [walletBalance,  setWalletBalance]  = useState<number|null>(null)
+  const [walletCurrency, setWalletCurrency] = useState('EGP')
+  const [payWithWallet,  setPayWithWallet]  = useState<boolean|null>(null) // null = not yet chosen
 
   const fetchGateways = () =>
     fetch('/api/member/gateways').then(r=>r.json()).then(d=>{
@@ -83,6 +86,12 @@ function CheckoutInner() {
       const s:any={}
       shopData.settings && Object.entries(shopData.settings).forEach(([k,v]:any)=>{ s[k]=v })
       setSettings(s)
+
+      // Load wallet balance
+      fetch('/api/member/wallet', { credentials: 'include' })
+        .then(r=>r.json())
+        .then(d=>{ setWalletBalance(Number(d.balance_egp||0)); setWalletCurrency('EGP') })
+        .catch(()=>{})
 
       if (cartMode) {
         try {
@@ -319,8 +328,9 @@ function CheckoutInner() {
       <div className="flex items-center gap-2 mb-4 md:mb-8 max-w-5xl">
         {(['details','payment','done'] as const).map((s,i)=>{
           const labels=[t('Order Details','تفاصيل الطلب'),t('Payment','الدفع'),t('Done','تم')]
-          const done  = ['details','payment','done'].indexOf(step)>i
-          const active= step===s
+          const stepIdx = ['details','wallet-choice','payment','done'].indexOf(step)
+          const done  = ['details','payment','done'].indexOf(s) < stepIdx - (step==='wallet-choice'?1:0)
+          const active= step===s || (s==='payment' && step==='wallet-choice')
           return (
             <div key={s} className="flex items-center gap-2 flex-1">
               <div className={`flex items-center gap-1.5 px-2 py-2 md:px-4 rounded-xl text-xs md:text-sm font-bold transition-all ${done?'bg-emerald-500 text-white':active?'text-white':'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`} style={active&&!done?{background:'#d99401'}:{}}>
@@ -451,22 +461,80 @@ function CheckoutInner() {
                     const res = await fetch('/api/member/payment/free',{
                       method:'POST', credentials:'include',
                       headers:{'Content-Type':'application/json'},
-                      body:JSON.stringify({ tool_id:toolId, duration_days:tool?.duration_days, coupon_code:coupon })
+                      body:JSON.stringify({ tool_id:toolId, duration_days:tool?.duration_days, coupon_code:coupon, existing_purchase_id: existingPurchase?.id || null })
                     })
                     const data = await res.json()
                     if (!res.ok) throw new Error(data.error||t('Activation failed','فشل التفعيل'))
                     setStep('done')
                   } catch(e:any){ setError(e.message) }
                   setVerifying(false)
+                } else if (walletBalance !== null && walletBalance >= finalPriceEgp()) {
+                  setStep('wallet-choice')
                 } else {
                   setStep('payment')
                 }
               }} disabled={verifying} className="w-full py-4 rounded-xl disabled:opacity-60 text-white text-base font-bold transition-colors mt-4 flex items-center justify-center gap-2" style={{background:'#d99401'}}>
-                {verifying ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>{t('Activating...','جاري التفعيل...')}</> : t('Continue to Payment →','متابعة للدفع ←')}
+                {verifying ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>{t('Activating...','جاري التفعيل...')}</> : t('Continue →','متابعة ←')}
               </button>
             </div>
           )}
 
+
+          {/* Step 1.5: Wallet Choice */}
+          {step==='wallet-choice' && (
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 md:p-8 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('How would you like to pay?','كيف تريد الدفع؟')}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('Your wallet balance is sufficient for this order.','رصيد محفظتك كافٍ لهذا الطلب.')}</p>
+
+              {/* Wallet option */}
+              <button onClick={async()=>{
+                setVerifying(true); setError('')
+                try {
+                  const res = await fetch('/api/member/payment/wallet',{
+                    method:'POST', credentials:'include',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({
+                      tool_id:   toolId || null,
+                      bundle_id: bundleId || null,
+                      amount_egp: finalPriceEgp(),
+                      coupon_code: coupon || null,
+                      existing_purchase_id: existingPurchase?.id || null,
+                    })
+                  })
+                  const data = await res.json()
+                  if (!res.ok) throw new Error(data.error||t('Payment failed','فشل الدفع'))
+                  setStep('done')
+                } catch(e:any){ setError(e.message) }
+                setVerifying(false)
+              }} disabled={verifying}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-[#d99401] bg-[#d9940108] mb-3 text-start transition-all hover:bg-[#d9940115]">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'rgba(217,148,1,0.12)'}}>💰</div>
+                <div className="flex-1">
+                  <div className="text-base font-bold text-gray-900 dark:text-white">{t('Pay from Wallet','الدفع من المحفظة')}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('Available balance','الرصيد المتاح')}: <span className="font-bold" style={{color:'#d99401'}}>{walletBalance?.toLocaleString()} {walletCurrency}</span></div>
+                </div>
+                {verifying ? <span className="w-5 h-5 border-2 border-[#d99401] border-t-transparent rounded-full animate-spin"/> : <Check size={18} style={{color:'#d99401'}}/>}
+              </button>
+
+              {/* Pay normally */}
+              <button onClick={()=>setStep('payment')} disabled={verifying}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mb-5 text-start transition-all hover:border-gray-300 dark:hover:border-gray-600">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 bg-gray-100 dark:bg-gray-700">💳</div>
+                <div className="flex-1">
+                  <div className="text-base font-bold text-gray-900 dark:text-white">{t('Pay Directly','الدفع المباشر')}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('Vodafone Cash, Instapay, Crypto...','فودافون كاش، إنستاباي، كريبتو...')}</div>
+                </div>
+              </button>
+
+              {error && (
+                <div className="flex items-start gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-3">
+                  <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5"/>
+                  <p className="text-sm text-red-500">{error}</p>
+                </div>
+              )}
+              <button onClick={()=>setStep('details')} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-3">{t('← Back','← رجوع')}</button>
+            </div>
+          )}
 
           {/* Step 2: Payment */}
           {step==='payment' && (
@@ -619,11 +687,9 @@ function CheckoutInner() {
 
         {/* Summary sidebar */}
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl p-6 sticky top-6" style={{
-            background:'rgba(255,255,255,0.88)',
+          <div className="rounded-2xl p-6 sticky top-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700" style={{
             backdropFilter:'blur(24px)',
             WebkitBackdropFilter:'blur(24px)',
-            border:'1px solid rgba(255,255,255,0.65)',
             boxShadow:'0 16px 48px rgba(0,0,0,0.1)',
           }}>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">{t('Order Summary','ملخص الطلب')}</h3>

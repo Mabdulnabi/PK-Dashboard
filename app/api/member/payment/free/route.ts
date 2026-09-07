@@ -17,13 +17,12 @@ export async function POST(req: NextRequest) {
     if (sessionErr || !session?.valid)
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
 
-    const { tool_id, duration_days, coupon_code } = await req.json()
+    const { tool_id, duration_days, coupon_code, existing_purchase_id } = await req.json()
     if (!tool_id || !duration_days)
       return NextResponse.json({ error: 'Missing tool_id or duration_days' }, { status: 400 })
 
     const member_id = session.member_id
     const now       = new Date()
-    const expires   = new Date(now.getTime() + duration_days * 86400 * 1000)
 
     // Record zero-amount payment
     const { data: pay, error: payErr } = await service.from('payments').insert({
@@ -38,20 +37,42 @@ export async function POST(req: NextRequest) {
 
     if (payErr) throw payErr
 
-    // Activate tool purchase
-    const { error: purchErr } = await service.from('tool_purchases').insert({
-      member_id,
-      tool_id,
-      amount_egp:     0,
-      payment_method: `coupon${coupon_code ? ':' + coupon_code : ''}`,
-      status:         'confirmed',
-      reference:      coupon_code || 'FREE',
-      starts_at:      now.toISOString(),
-      expires_at:     expires.toISOString(),
-      confirmed_at:   now.toISOString(),
-    })
+    let expires: Date
 
-    if (purchErr) throw purchErr
+    if (existing_purchase_id) {
+      // Renewal: extend existing purchase from its current expiry or now, whichever is later
+      const { data: existing } = await service
+        .from('tool_purchases')
+        .select('expires_at')
+        .eq('id', existing_purchase_id)
+        .single()
+
+      const base = existing?.expires_at
+        ? Math.max(Date.now(), new Date(existing.expires_at).getTime())
+        : Date.now()
+      expires = new Date(base + duration_days * 86400 * 1000)
+
+      const { error: updErr } = await service.from('tool_purchases')
+        .update({ expires_at: expires.toISOString(), status: 'confirmed', confirmed_at: now.toISOString() })
+        .eq('id', existing_purchase_id)
+      if (updErr) throw updErr
+    } else {
+      expires = new Date(now.getTime() + duration_days * 86400 * 1000)
+
+      // Activate tool purchase (new)
+      const { error: purchErr } = await service.from('tool_purchases').insert({
+        member_id,
+        tool_id,
+        amount_egp:     0,
+        payment_method: `coupon${coupon_code ? ':' + coupon_code : ''}`,
+        status:         'confirmed',
+        reference:      coupon_code || 'FREE',
+        starts_at:      now.toISOString(),
+        expires_at:     expires.toISOString(),
+        confirmed_at:   now.toISOString(),
+      })
+      if (purchErr) throw purchErr
+    }
 
     // Track coupon usage
     if (coupon_code) {
