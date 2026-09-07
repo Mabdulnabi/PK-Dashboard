@@ -111,7 +111,7 @@ export default function PrivateStoreContent({ hideBanner }: { hideBanner?: boole
     else setPopup(tool)
   }
 
-  if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)}/>
+  if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)} allTools={tools as any} onSelectTool={(t)=>setLanding(t as any)}/>
 
   return (
     <div className="p-3 md:p-6" dir={isRtl?'rtl':'ltr'}>

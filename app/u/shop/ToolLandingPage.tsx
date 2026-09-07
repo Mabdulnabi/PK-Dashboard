@@ -75,9 +75,14 @@ interface Block {
   html_code?: string
 }
 
+interface ReviewReply {
+  id: string; author_name: string; is_admin: boolean; content: string; created_at: string
+}
 interface Review {
-  id: string; member_name: string; stars: number; comment?: string; created_at: string
+  id: string; member_name: string; member_id?: string; stars: number; comment?: string; created_at: string
   members?: { avatar_url: string | null } | null
+  likes?: number; dislikes?: number; myReaction?: string | null
+  replies?: ReviewReply[]
 }
 
 interface ToolVariant {
@@ -97,6 +102,8 @@ interface Tool {
   variants?: ToolVariant[]
   warranty_label?: string
   warranty_label_ar?: string
+  category_id?: string
+  sort_order?: number
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange:(v:number)=>void }) {
@@ -1270,7 +1277,60 @@ function TestimonialsBlock({ block, isRtl }: { block: Block; isRtl: boolean }) {
   return null
 }
 
-export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: ()=>void }) {
+function SimilarCarousel({ tools, t, isRtl, formatPrice, usdRate, onSelect }: {
+  tools: Tool[]; t: (ar:string,en:string)=>string; isRtl: boolean
+  formatPrice: (p:number,r:number)=>string; usdRate: number; onSelect: (tool:Tool)=>void
+}) {
+  const [idx, setIdx] = useState(0)
+  const visible = 3
+  const max = Math.max(0, tools.length - visible)
+  const prev = () => setIdx(i => Math.max(0, i - 1))
+  const next = () => setIdx(i => Math.min(max, i + 1))
+  const shown = tools.slice(idx, idx + visible)
+  return (
+    <section data-reveal className="mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('منتجات مشابهة','Similar Products')}</h2>
+        {tools.length > visible && (
+          <div className="flex gap-2">
+            <button onClick={prev} disabled={idx===0}
+              className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 disabled:opacity-30 hover:border-amber-400 hover:text-amber-500 transition-colors">
+              {isRtl ? '›' : '‹'}
+            </button>
+            <button onClick={next} disabled={idx>=max}
+              className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 disabled:opacity-30 hover:border-amber-400 hover:text-amber-500 transition-colors">
+              {isRtl ? '‹' : '›'}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {shown.map(tool => (
+          <button key={tool.id} onClick={()=>onSelect(tool)}
+            className="text-start bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md transition-all">
+            <div className="flex items-center gap-3 mb-2">
+              {tool.image_url
+                ? <img src={tool.image_url} alt={tool.name} className="w-10 h-10 object-contain rounded-xl"/>
+                : <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400">{tool.name.slice(0,2).toUpperCase()}</div>
+              }
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-gray-800 dark:text-gray-200 truncate">{tool.name}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Star size={11} fill="#F59E0B" stroke="#F59E0B"/>
+                  <span className="text-xs text-gray-500">{tool.rating.toFixed(1)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-sm font-bold" style={{color:'#d99401'}}>{formatPrice(tool.price_egp, usdRate)}</div>
+            <div className="text-xs text-gray-400 mt-0.5">{tool.duration_label}</div>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export default function ToolLandingPage({ tool, onBack, allTools = [], onSelectTool }: { tool: Tool; onBack: ()=>void; allTools?: Tool[]; onSelectTool?: (t:Tool)=>void }) {
   const { t, lang, formatPrice } = useLang()
   const settings = useSiteSettings()
   const isRtl = lang === 'ar'
@@ -1287,6 +1347,45 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
   const [submitting, setSubmit]   = useState(false)
   const [submitted,  setSubmitted]= useState(false)
   const [submitErr,  setSubmitErr]= useState('')
+
+  // review interactions
+  const [replyOpen, setReplyOpen] = useState<string|null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [replySubmitting, setReplySubmitting] = useState(false)
+
+  const react = async (reviewId: string, type: 'like'|'dislike') => {
+    const res = await fetch(`/api/tools/${tool.id}/reviews/${reviewId}/react`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ type })
+    })
+    if (!res.ok) return
+    setReviews(prev => prev.map(r => {
+      if (r.id !== reviewId) return r
+      const wasMine = r.myReaction === type
+      const wasOther = r.myReaction && r.myReaction !== type
+      return {
+        ...r,
+        likes: type==='like' ? (r.likes||0) + (wasMine?-1:1) : (r.likes||0) - (wasOther?1:0),
+        dislikes: type==='dislike' ? (r.dislikes||0) + (wasMine?-1:1) : (r.dislikes||0) - (wasOther?1:0),
+        myReaction: wasMine ? null : type,
+      }
+    }))
+  }
+
+  const submitReply = async (reviewId: string) => {
+    if (!replyText.trim()) return
+    setReplySubmitting(true)
+    const res = await fetch(`/api/tools/${tool.id}/reviews/${reviewId}/reply`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ content: replyText.trim() })
+    })
+    setReplySubmitting(false)
+    if (!res.ok) return
+    const { reply } = await res.json()
+    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, replies: [...(r.replies||[]), reply] } : r))
+    setReplyText('')
+    setReplyOpen(null)
+  }
 
   const variants = tool.variants || []
   const [selectedVariant, setSelectedVariant] = useState<number>(variants.length > 0 ? 0 : -1)
@@ -1630,12 +1729,12 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* Features Grid block */
           if (block.layout === 'features_grid') return (
-            <FeaturesGridBlock key={block.id} block={block} isRtl={isRtl}/>
+            <div key={block.id} data-reveal><FeaturesGridBlock block={block} isRtl={isRtl}/></div>
           )
 
           /* Cards Grid block */
           if (block.layout === 'cards_grid') return (
-            <section key={block.id}>
+            <section key={block.id} data-reveal>
               {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>}
               {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-7 leading-relaxed">{body}</p>}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
@@ -1674,7 +1773,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             const bg = block.marquee_bg || '#d92d36'
             const textColor = block.marquee_text_color || '#ffffff'
             return (
-              <section key={block.id} style={{ background: bg, overflow: 'hidden', padding: '15px 0' }}>
+              <section key={block.id} data-reveal style={{ background: bg, overflow: 'hidden', padding: '15px 0' }}>
                 <style>{`
                   @keyframes pk-marquee-${block.id} {
                     0%   { transform: translateX(0); }
@@ -1704,44 +1803,44 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* How To Work block */
           if (block.layout === 'how_to_work') return (
-            <HowToWorkBlock key={block.id} block={block} isRtl={isRtl}/>
+            <div key={block.id} data-reveal><HowToWorkBlock block={block} isRtl={isRtl}/></div>
           )
 
           /* Content block */
           if (block.layout === 'content') return (
-            <ContentBlock key={block.id} block={block} isRtl={isRtl}/>
+            <div key={block.id} data-reveal><ContentBlock block={block} isRtl={isRtl}/></div>
           )
 
           /* Stats block */
           if (block.layout === 'stats') return (
-            <StatsBlock key={block.id} block={block} isRtl={isRtl}/>
+            <div key={block.id} data-reveal><StatsBlock block={block} isRtl={isRtl}/></div>
           )
 
           /* Countdown block */
           if (block.layout === 'countdown') return (
-            <CountdownBlock key={block.id} block={block} isRtl={isRtl}/>
+            <div key={block.id} data-reveal><CountdownBlock block={block} isRtl={isRtl}/></div>
           )
 
           /* Raw HTML block */
           if (block.layout === 'html') return block.html_code ? (
-            <div key={block.id} dangerouslySetInnerHTML={{ __html: block.html_code }}/>
+            <div key={block.id} data-reveal dangerouslySetInnerHTML={{ __html: block.html_code }}/>
           ) : null
 
           /* Banners block */
           if (block.layout === 'banners') return (
-            <BannersBlock key={block.id} block={block}/>
+            <div key={block.id} data-reveal><BannersBlock block={block}/></div>
           )
 
           /* Testimonials block */
           if (block.layout === 'testimonials') return (
-            <TestimonialsBlock key={block.id} block={block} isRtl={isRtl}/>
+            <div key={block.id} data-reveal><TestimonialsBlock block={block} isRtl={isRtl}/></div>
           )
 
           /* Video block */
           if (block.layout === 'video') {
             const vUrl = (block.video_url||'').replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/')
             return (
-              <section key={block.id}>
+              <section key={block.id} data-reveal>
                 {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 text-center">{title}</h2>}
                 {body  && <p  className="text-gray-500 dark:text-gray-400 text-sm mb-6 text-center">{body}</p>}
                 {vUrl && (
@@ -1764,7 +1863,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* FAQ block */
           if (block.layout === 'faq') return (
-            <section key={block.id} style={{
+            <section key={block.id} data-reveal style={{
               backgroundImage:`url(https://files.easy-orders.net/1730815545147228170serv-bg.svg)`,
               backgroundSize:'cover', backgroundPosition:'center',
               backgroundColor:'#fdf7e8',
@@ -1814,7 +1913,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* Text only */
           if (block.layout === 'text_only') return (
-            <section key={block.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-10">
+            <section key={block.id} data-reveal className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-10">
               {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{title}</h2>}
               {body  && <p  className="text-gray-600 dark:text-gray-400 leading-relaxed text-base">{body}</p>}
             </section>
@@ -1822,7 +1921,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
 
           /* Image only */
           if (block.layout === 'image_only') return (
-            <section key={block.id} className="rounded-2xl overflow-hidden shadow-lg">
+            <section key={block.id} data-reveal className="rounded-2xl overflow-hidden shadow-lg">
               {block.image_url && <img src={block.image_url} alt={title||''} className="w-full object-cover max-h-[500px]"/>}
             </section>
           )
@@ -1830,7 +1929,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
           /* Image + Text (left / right) */
           const imgRight = block.layout === 'image_right'
           return (
-            <section key={block.id} className={`flex flex-col ${imgRight ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 md:gap-12 items-center`}>
+            <section key={block.id} data-reveal className={`flex flex-col ${imgRight ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 md:gap-12 items-center`}>
               {block.image_url && (
                 <div className="w-full md:w-1/2 rounded-2xl overflow-hidden flex-shrink-0 shadow-xl">
                   <img src={block.image_url} alt={title||''} className="w-full object-cover"/>
@@ -1845,7 +1944,7 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
         })}
 
         {/* â”€â”€ Reviews â”€â”€ */}
-        <section>
+        <section data-reveal>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('Customer Reviews','آراء العملاء')}</h2>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 md:p-8 mb-5">
@@ -1922,7 +2021,63 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
                       </span>
                     </div>
                   </div>
-                  {r.comment && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{r.comment}</p>}
+                  {r.comment && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">{r.comment}</p>}
+
+                  {/* Replies */}
+                  {(r.replies||[]).length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                      {(r.replies||[]).map(rep => (
+                        <div key={rep.id} className="flex gap-2">
+                          <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${rep.is_admin ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                            {rep.is_admin ? '★' : rep.author_name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div className="flex-1">
+                            <span className={`text-xs font-semibold ${rep.is_admin ? 'text-amber-600' : 'text-gray-700 dark:text-gray-300'}`}>{rep.author_name}</span>
+                            {rep.is_admin && <span className="ms-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 font-semibold">{t('Support','دعم')}</span>}
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">{rep.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Like / Dislike / Reply bar */}
+                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <button onClick={()=>react(r.id,'like')}
+                      className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+                      style={{color: r.myReaction==='like' ? '#16a34a' : '#9ca3af'}}>
+                      <span style={{fontSize:14}}>👍</span> {r.likes||0}
+                    </button>
+                    <button onClick={()=>react(r.id,'dislike')}
+                      className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+                      style={{color: r.myReaction==='dislike' ? '#dc2626' : '#9ca3af'}}>
+                      <span style={{fontSize:14}}>👎</span> {r.dislikes||0}
+                    </button>
+                    <button onClick={()=>{ setReplyOpen(replyOpen===r.id?null:r.id); setReplyText('') }}
+                      className="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors ms-auto">
+                      💬 {t('Reply','رد')}
+                    </button>
+                  </div>
+
+                  {/* Reply input */}
+                  {replyOpen === r.id && (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        value={replyText}
+                        onChange={e=>setReplyText(e.target.value)}
+                        placeholder={t('Write a reply…','اكتب ردًا…')}
+                        className="flex-1 text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                        onFocus={e=>e.currentTarget.style.borderColor='#d99401'}
+                        onBlur={e=>e.currentTarget.style.borderColor=''}
+                        onKeyDown={e=>e.key==='Enter'&&submitReply(r.id)}
+                      />
+                      <button onClick={()=>submitReply(r.id)} disabled={replySubmitting||!replyText.trim()}
+                        className="px-4 py-2 rounded-xl text-white text-sm font-bold disabled:opacity-40"
+                        style={{background:'#d99401'}}>
+                        {replySubmitting ? '…' : t('Send','إرسال')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1933,6 +2088,14 @@ export default function ToolLandingPage({ tool, onBack }: { tool: Tool; onBack: 
             </div>
           )}
         </section>
+
+        {/* ── Similar Products ── */}
+        {(() => {
+          const similar = allTools.filter(s => s.id !== tool.id && s.category_id && s.category_id === tool.category_id && !s.is_out_of_stock)
+          if (!similar.length) return null
+          const usdRate = parseFloat(settings.usd_to_egp_rate) || 50
+          return <SimilarCarousel tools={similar} t={t} isRtl={isRtl} formatPrice={formatPrice} usdRate={usdRate} onSelect={(s)=>onSelectTool ? onSelectTool(s) : onBack()}/>
+        })()}
 
         <div className="text-center pb-8">
           {!tool.is_out_of_stock && (

@@ -251,6 +251,7 @@ function UserLayoutInner({ children }: { children: React.ReactNode }) {
   const ui = useUISettings()
 const [sidebarOpen,   setSidebar]    = useState(false)
   const [collapsed,     setCollapsed]  = useState(false)
+  const [sideHover,     setSideHover]  = useState(false)
   const [profileOpen,   setProfile]    = useState(false)
   const [notifOpen,     setNotif]      = useState(false)
   const [notifications, setNotifs]     = useState<any[]>([])
@@ -484,7 +485,7 @@ if (pathname==='/u/login') return <>{children}</>
   const isRtl  = lang==='ar'
 
   const SidebarContent = ({ forMobile = false }: { forMobile?: boolean }) => {
-    const col = !forMobile && collapsed
+    const col = !forMobile && collapsed && !sideHover
     return (
     <>
       {/* Logo — hidden when collapsed */}
@@ -623,7 +624,9 @@ if (pathname==='/u/login') return <>{children}</>
     <div className={`flex h-screen overflow-hidden ${dark?'dark':''}`} dir={isRtl?'rtl':'ltr'} style={{background: glassPageBg}}>
 
       {/* ── Desktop Sidebar ─────────────────────────── */}
-      <aside className={`hidden md:flex ${collapsed ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen border-r transition-all duration-200 relative z-10`}
+      <aside className={`hidden md:flex ${collapsed && !sideHover ? 'w-[66px]' : 'w-[220px]'} flex-shrink-0 flex-col h-screen border-r transition-all duration-200 relative z-10`}
+        onMouseEnter={() => collapsed && setSideHover(true)}
+        onMouseLeave={() => setSideHover(false)}
         style={{
           background: sidebarGlassBg,
           backdropFilter: 'blur(28px)',

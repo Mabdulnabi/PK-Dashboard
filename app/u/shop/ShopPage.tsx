@@ -177,7 +177,7 @@ export default function ShopPage({ category, hideBanner, defaultCatId, compact }
     else setPopup(tool)
   }
 
-  if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)}/>
+  if (landing) return <ToolLandingPage tool={landing as any} onBack={()=>setLanding(null)} allTools={tools as any} onSelectTool={(t)=>setLanding(t as any)}/>
 
   return (
     <div className={compact ? 'pt-3 px-3 pb-3 md:px-6 md:pb-6' : 'p-3 md:p-6'} dir={dir}>

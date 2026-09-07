@@ -497,7 +497,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
       </section>
 
       {features.length > 0 && (
-        <section id="features" style={{ padding:'80px 0', background:'#F9F6EE' }}>
+        <section id="features" data-reveal style={{ padding:'80px 0', background:'#F9F6EE' }}>
           <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
             <div style={{ textAlign:'center', maxWidth:640, margin:'0 auto 52px' }}>
               <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>{t('ليه تختارنا','WHY CHOOSE US')}</span>
@@ -517,7 +517,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
       )}
 
       {stats.length > 0 && (
-        <section id="stats" style={{ padding:'80px 0', background:'linear-gradient(135deg,#1B2556,#2A3A78)' }}>
+        <section id="stats" data-reveal style={{ padding:'80px 0', background:'linear-gradient(135deg,#1B2556,#2A3A78)' }}>
           <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', textAlign:'center' }}>
             <h2 style={{ fontSize:30, fontWeight:800, color:'#fff', marginBottom:8 }}>{t(s.lp_stats_title_ar || 'أرقامنا', s.lp_stats_title_en || 'Our Numbers')}</h2>
             {(s.lp_stats_sub_ar || s.lp_stats_sub_en) && <p style={{ color:'rgba(255,255,255,.65)', fontSize:14.5, marginBottom:48 }}>{t(s.lp_stats_sub_ar || '', s.lp_stats_sub_en || '')}</p>}
@@ -534,7 +534,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
       )}
 
       {(s.lp_map_image || s.lp_map_title_ar || s.lp_map_title_en) && (
-        <section style={{ padding:'80px 0' }}>
+        <section data-reveal style={{ padding:'80px 0' }}>
           <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px', textAlign:'center' }}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>{t('عملاؤنا حول العالم','Our Clients Worldwide')}</span>
             <h2 style={{ fontSize:30, fontWeight:800, color:'#1B2556', marginBottom:8 }}>{t(s.lp_map_title_ar || '', s.lp_map_title_en || '')}</h2>
@@ -545,7 +545,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
       )}
 
       {faq.length > 0 && (
-        <section id="faq" style={{ padding:'80px 0', background:'#F9F6EE' }}>
+        <section id="faq" data-reveal style={{ padding:'80px 0', background:'#F9F6EE' }}>
           <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
             <div style={{ textAlign:'center', maxWidth:640, margin:'0 auto 52px' }}>
               <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>{t('أسئلة شائعة','FAQ')}</span>
@@ -571,7 +571,7 @@ export function LandingInner({ embedded = false, memberActive = false }: { embed
       )}
 
       {reviews.length > 0 && (
-        <section id="reviews" style={{ padding:'80px 0' }}>
+        <section id="reviews" data-reveal style={{ padding:'80px 0' }}>
           <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 24px' }}>
             <div style={{ textAlign:'center', maxWidth:640, margin:'0 auto 52px' }}>
               <span style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#FBF2D8', color:'#b87e00', fontSize:12.5, fontWeight:700, padding:'7px 16px', borderRadius:20, marginBottom:16, border:'1px solid #EDD98A' }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#0E9F6E', display:'inline-block' }}/>{t('آراء العملاء','Customer Reviews')}</span>
