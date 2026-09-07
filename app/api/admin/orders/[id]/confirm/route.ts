@@ -164,8 +164,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         .eq('code', payment2.coupon_code.toUpperCase().trim())
         .single()
       if (coupon2) {
-        // fixed coupon: add the EGP value back; discount (%) already reflected in amount_egp
-        if (coupon2.type === 'fixed') amountEgp += Number(coupon2.value)
+        // redeem coupon: add the EGP value back; discount (%) already reflected in amount_egp
+        if (coupon2.type === 'redeem') amountEgp += Number(coupon2.value)
       }
     }
 
@@ -180,7 +180,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     details:     { member_id: memberId, tool_name: toolName },
   })
 
-  // Referral reward: give referrer 20 EGP on member's first confirmed payment
+  // Referral reward: credit 500 loyalty points to referrer on member's first confirmed payment
   void (async () => {
     const { data: mem } = await db.from('members').select('referred_by').eq('id', memberId).single()
     if (!mem?.referred_by) return
@@ -192,19 +192,56 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     if ((prevPayments || 0) !== 1) return  // only first payment triggers reward
     const { data: existing } = await db.from('referral_rewards').select('id').eq('referred_id', memberId).single()
     if (existing) return  // already rewarded
-    await db.from('referral_rewards').insert({
-      referrer_id:  mem.referred_by,
+
+    const referrerId = mem.referred_by
+    const REFERRAL_PTS = 500
+    const now = new Date().toISOString()
+
+    // Insert referral_reward record (credited immediately)
+    const { data: rr } = await db.from('referral_rewards').insert({
+      referrer_id:  referrerId,
       referred_id:  memberId,
       reward_egp:   20,
-      status:       'pending',
+      status:       'credited',
       triggered_by: 'first_payment',
+    }).select('id').single()
+
+    // Add 500 points to referrer's loyalty_points
+    const { data: lp } = await db.from('loyalty_points').select('balance, total_earned').eq('member_id', referrerId).single()
+    if (lp) {
+      await db.from('loyalty_points').update({
+        balance:       lp.balance + REFERRAL_PTS,
+        total_earned:  lp.total_earned + REFERRAL_PTS,
+        last_activity: now,
+        updated_at:    now,
+      }).eq('member_id', referrerId)
+    } else {
+      await db.from('loyalty_points').insert({
+        member_id:    referrerId,
+        balance:      REFERRAL_PTS,
+        total_earned: REFERRAL_PTS,
+        last_activity: now,
+        updated_at:   now,
+      })
+    }
+
+    // Log loyalty transaction
+    await db.from('loyalty_transactions').insert({
+      member_id: referrerId,
+      delta:     REFERRAL_PTS,
+      type:      'referral',
+      label:     'Referral bonus — friend made first purchase',
+      label_ar:  'مكافأة إحالة — صديقك أتم أول عملية شراء',
+      ref_id:    rr?.id ?? null,
+      created_at: now,
     })
+
     void db.from('member_notifications').insert({
-      member_id:  mem.referred_by,
+      member_id:  referrerId,
       title:      'مكافأة إحالة 🎁',
       title_en:   'Referral Reward 🎁',
-      message:    'أحد أصدقائك أتم أول عملية شراء! حصلت على 20 جنيه مكافأة إحالة.',
-      message_en: 'Your referred friend completed their first purchase! You earned a 20 EGP referral reward.',
+      message:    'أحد أصدقائك أتم أول عملية شراء! ربحت 500 نقطة ولاء.',
+      message_en: 'Your referred friend completed their first purchase! You earned 500 loyalty points.',
       type:       'success',
       link:       '/u/rewards',
     })
