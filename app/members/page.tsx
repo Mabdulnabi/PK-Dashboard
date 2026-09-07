@@ -165,7 +165,7 @@ export default function MembersPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const openAdd  = () => { setMForm(emptyMember); setSel(null); setModal('add') }
-  const openEdit = (m: Member) => { setMForm({ full_name:m.full_name, email:m.email, phone:m.phone||'', telegram:m.telegram||'', whatsapp:m.whatsapp||'', notes:m.notes||'' }); setSel(m); setModal('edit') }
+  const openEdit = (m: Member) => { setMForm({ full_name:m.full_name, email:m.email, phone:m.phone||'', telegram:m.telegram||'', whatsapp:m.whatsapp||'', notes:m.notes||'', password:'' }); setSel(m); setModal('edit') }
   const openWallet = (m: Member, action: 'charge'|'deduct' = 'charge') => {
     setSel(m); setWForm({ ...emptyWallet, action }); setModal('wallet')
   }
