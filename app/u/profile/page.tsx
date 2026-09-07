@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { Camera, Check, AlertCircle, Eye, EyeOff, User, Mail, Phone, Lock, Globe, DollarSign } from 'lucide-react'
@@ -20,21 +20,21 @@ function Toast({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => 
 }
 
 const RANKS = [
-  { key: 'regular',  ar: 'عادي',    en: 'Regular',  min: 0,      color: '#5a8098', light: '#b8d0e0' },
-  { key: 'bronze',   ar: 'برونزي',  en: 'Bronze',   min: 1,      color: '#b06030', light: '#f0bc78' },
-  { key: 'silver',   ar: 'فضي',     en: 'Silver',   min: 2000,   color: '#8888a0', light: '#e4e4f0' },
-  { key: 'gold',     ar: 'ذهبي',    en: 'Gold',     min: 8000,   color: '#c89010', light: '#fff060' },
-  { key: 'platinum', ar: 'بلاتيني', en: 'Platinum', min: 20000,  color: '#7898b8', light: '#dce8f8' },
-  { key: 'emerald',  ar: 'زمردي',   en: 'Emerald',  min: 40000,  color: '#18a050', light: '#78f0a0' },
-  { key: 'diamond',  ar: 'ماسي',    en: 'Diamond',  min: 60000,  color: '#3870b8', light: '#c0e0fc' },
+  { key: 'regular',  ar: 'Ø¹Ø§Ø¯ÙŠ',    en: 'Regular',  min: 0,      color: '#5a8098', light: '#b8d0e0' },
+  { key: 'bronze',   ar: 'Ø¨Ø±ÙˆÙ†Ø²ÙŠ',  en: 'Bronze',   min: 1,      color: '#b06030', light: '#f0bc78' },
+  { key: 'silver',   ar: 'ÙØ¶ÙŠ',     en: 'Silver',   min: 2000,   color: '#8888a0', light: '#e4e4f0' },
+  { key: 'gold',     ar: 'Ø°Ù‡Ø¨ÙŠ',    en: 'Gold',     min: 8000,   color: '#c89010', light: '#fff060' },
+  { key: 'platinum', ar: 'Ø¨Ù„Ø§ØªÙŠÙ†ÙŠ', en: 'Platinum', min: 20000,  color: '#7898b8', light: '#dce8f8' },
+  { key: 'emerald',  ar: 'Ø²Ù…Ø±Ø¯ÙŠ',   en: 'Emerald',  min: 40000,  color: '#18a050', light: '#78f0a0' },
+  { key: 'diamond',  ar: 'Ù…Ø§Ø³ÙŠ',    en: 'Diamond',  min: 60000,  color: '#3870b8', light: '#c0e0fc' },
 ] as const
 function getRank(s: number) { for (let i = RANKS.length - 1; i >= 0; i--) { if (s >= RANKS[i].min) return RANKS[i] } return RANKS[0] }
 
 const PLAN_COLOR: Record<string, string> = { basic: '#3B82F6', vip: '#F59E0B', private: '#8B5CF6' }
 const PLAN_LABEL: Record<string, { en: string; ar: string }> = {
-  basic:   { en: 'Basic',   ar: 'أساسي' },
+  basic:   { en: 'Basic',   ar: 'Ø£Ø³Ø§Ø³ÙŠ' },
   vip:     { en: 'VIP',     ar: 'VIP'   },
-  private: { en: 'Private', ar: 'خاص'   },
+  private: { en: 'Private', ar: 'Ø®Ø§Øµ'   },
 }
 
 export default function MemberProfilePage() {
@@ -64,8 +64,8 @@ export default function MemberProfilePage() {
     const res  = await fetch('/api/member/profile/avatar', { method: 'POST', body: fd })
     const data = await res.json()
     setUploading(false)
-    if (data.url) { setAvatarUrl(data.url); setToast({ msg: t('Photo updated', 'تم تحديث الصورة'), ok: true }) }
-    else setToast({ msg: data.error || t('Upload failed', 'فشل الرفع'), ok: false })
+    if (data.url) { setAvatarUrl(data.url); setToast({ msg: t('Photo updated', 'ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙˆØ±Ø©'), ok: true }) }
+    else setToast({ msg: data.error || t('Upload failed', 'ÙØ´Ù„ Ø§Ù„Ø±ÙØ¹'), ok: false })
   }
 
   const save = async () => {
@@ -76,18 +76,18 @@ export default function MemberProfilePage() {
     if (whatsapp !== (profile?.whatsapp || ''))    body.whatsapp  = whatsapp
     if (password.trim())                           body.password  = password
     if (Object.keys(body).length === 0) {
-      setSaving(false); setToast({ msg: t('Nothing changed', 'لا يوجد تغييرات'), ok: false }); return
+      setSaving(false); setToast({ msg: t('Nothing changed', 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ ØªØºÙŠÙŠØ±Ø§Øª'), ok: false }); return
     }
     const res  = await fetch('/api/member/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const data = await res.json()
     setSaving(false)
-    if (res.ok) { setToast({ msg: t('Saved successfully ✓', 'تم الحفظ بنجاح ✓'), ok: true }); setPassword(''); setProfile(p => p ? { ...p, full_name: fullName, email, whatsapp } : p) }
-    else setToast({ msg: data.error || t('Failed to save', 'فشل الحفظ'), ok: false })
+    if (res.ok) { setToast({ msg: t('Saved successfully âœ“', 'ØªÙ… Ø§Ù„Ø­ÙØ¸ Ø¨Ù†Ø¬Ø§Ø­ âœ“'), ok: true }); setPassword(''); setProfile(p => p ? { ...p, full_name: fullName, email, whatsapp } : p) }
+    else setToast({ msg: data.error || t('Failed to save', 'ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸'), ok: false })
   }
 
   const initials    = profile?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
   const planColor   = PLAN_COLOR[profile?.plan_slug || ''] || '#6B7280'
-  const planLabel   = PLAN_LABEL[profile?.plan_slug || ''] || { en: 'Member', ar: 'عضو' }
+  const planLabel   = PLAN_LABEL[profile?.plan_slug || ''] || { en: 'Member', ar: 'Ø¹Ø¶Ùˆ' }
   const rank        = getRank(profile?.total_spent_egp ?? 0)
 
   const inp = `w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
@@ -100,20 +100,20 @@ export default function MemberProfilePage() {
 
   const fmtAmt = (egp: number) => currency === 'usd'
     ? `${(egp / 50).toLocaleString(undefined, { maximumFractionDigits: 1 })} USD`
-    : `${egp.toLocaleString()} ${t('EGP','جنيه')}`
+    : `${egp.toLocaleString()} ${t('EGP','Ø¬Ù†ÙŠÙ‡')}`
 
   return (
     <div className="p-4 md:p-5 flex flex-col gap-3" dir={dir}>
 
-      <NotifBanner lang={lang} match={['تقييم','Review','Approved','Rejected','قبول','رفض']}/>
+      <NotifBanner lang={lang} match={['ØªÙ‚ÙŠÙŠÙ…','Review','Approved','Rejected','Ù‚Ø¨ÙˆÙ„','Ø±ÙØ¶']}/>
 
       <div className="flex-shrink-0">
-        <h1 className="text-base font-bold text-gray-900 dark:text-white">{t('Account Settings', 'إعدادات الحساب')}</h1>
-        <p className="text-[11px] text-gray-400">{t('Manage your profile, preferences and security', 'إدارة ملفك الشخصي وتفضيلاتك وأمان حسابك')}</p>
+        <h1 className="text-base font-bold text-gray-900 dark:text-white">{t('Account Settings', 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨')}</h1>
+        <p className="text-[11px] text-gray-400">{t('Manage your profile, preferences and security', 'Ø¥Ø¯Ø§Ø±Ø© Ù…Ù„ÙÙƒ Ø§Ù„Ø´Ø®ØµÙŠ ÙˆØªÙØ¶ÙŠÙ„Ø§ØªÙƒ ÙˆØ£Ù…Ø§Ù† Ø­Ø³Ø§Ø¨Ùƒ')}</p>
       </div>
 
-      {/* ── Profile card ── */}
-      <div className="glass-card-themed rounded-2xl overflow-hidden flex flex-col" data-reveal>
+      {/* â”€â”€ Profile card â”€â”€ */}
+      <div className="glass-card-themed rounded-2xl overflow-hidden flex flex-col">
         {/* Avatar hero */}
         <div className="relative px-4 md:px-6 py-5 flex items-center gap-4 md:gap-5"
           style={{background:'linear-gradient(135deg,#0d1117 0%,#1a1200 100%)'}}>
@@ -145,36 +145,36 @@ export default function MemberProfilePage() {
         {/* Form: 2-col grid */}
         <div className="px-4 md:px-6 pt-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={10}/>{t('Full Name','الاسم الكامل')}</label>
-            <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your full name','اسمك الكامل')} className={inp}/>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><User size={10}/>{t('Full Name','Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„')}</label>
+            <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('Your full name','Ø§Ø³Ù…Ùƒ Ø§Ù„ÙƒØ§Ù…Ù„')} className={inp}/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Mail size={10}/>{t('Email Address','البريد الإلكتروني')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Mail size={10}/>{t('Email Address','Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ')}</label>
             <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="email@example.com" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Phone size={10}/>{t('WhatsApp','واتساب')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Phone size={10}/>{t('WhatsApp','ÙˆØ§ØªØ³Ø§Ø¨')}</label>
             <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} type="tel" placeholder="+201234567890" className={inp} dir="ltr"/>
           </div>
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Lock size={10}/>{t('New Password','كلمة مرور جديدة')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5"><Lock size={10}/>{t('New Password','ÙƒÙ„Ù…Ø© Ù…Ø±ÙˆØ± Ø¬Ø¯ÙŠØ¯Ø©')}</label>
             <div className="relative">
               <input value={password} onChange={e => setPassword(e.target.value)} type={showPass?'text':'password'}
-                placeholder={t('Leave blank to keep current','اتركها فارغة للإبقاء على الحالية')} className={inp+' pe-10'}/>
+                placeholder={t('Leave blank to keep current','Ø§ØªØ±ÙƒÙ‡Ø§ ÙØ§Ø±ØºØ© Ù„Ù„Ø¥Ø¨Ù‚Ø§Ø¡ Ø¹Ù„Ù‰ Ø§Ù„Ø­Ø§Ù„ÙŠØ©')} className={inp+' pe-10'}/>
               <button type="button" onClick={() => setShowPass(p => !p)} className="absolute top-1/2 -translate-y-1/2 end-3 text-gray-400 hover:text-gray-600">
                 {showPass ? <EyeOff size={13}/> : <Eye size={13}/>}
               </button>
             </div>
           </div>
 
-          {/* Lang + Currency — stacked on mobile, inline on md+ */}
+          {/* Lang + Currency â€” stacked on mobile, inline on md+ */}
           <div className="md:col-span-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 pt-1">
             {/* Language */}
             <div className="flex items-center gap-2">
               <Globe size={12} className="text-indigo-500 flex-shrink-0"/>
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','اللغة')}</span>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Language','Ø§Ù„Ù„ØºØ©')}</span>
               <div className="flex gap-1.5">
-                {([{ key:'en', flag:'🇬🇧', label:'English' }, { key:'ar', flag:'🇪🇬', label:'العربية' }] as const).map(o => (
+                {([{ key:'en', flag:'ðŸ‡¬ðŸ‡§', label:'English' }, { key:'ar', flag:'ðŸ‡ªðŸ‡¬', label:'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' }] as const).map(o => (
                   <button key={o.key} onClick={()=>setLang(o.key)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${lang===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
                     <span>{o.flag}</span>{o.label}{lang===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
@@ -186,9 +186,9 @@ export default function MemberProfilePage() {
             {/* Currency */}
             <div className="flex items-center gap-2">
               <DollarSign size={12} className="text-emerald-500 flex-shrink-0"/>
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','العملة')}</span>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{t('Currency','Ø§Ù„Ø¹Ù…Ù„Ø©')}</span>
               <div className="flex gap-1.5">
-                {([{ key:'egp', flag:'🇪🇬', label:'EGP' }, { key:'usd', flag:'🇺🇸', label:'USD' }] as const).map(o => (
+                {([{ key:'egp', flag:'ðŸ‡ªðŸ‡¬', label:'EGP' }, { key:'usd', flag:'ðŸ‡ºðŸ‡¸', label:'USD' }] as const).map(o => (
                   <button key={o.key} onClick={()=>setCurrency(o.key)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${currency===o.key?'border-[#d99401] bg-[#d9940115] text-[#b37a00]':'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
                     <span>{o.flag}</span>{o.label}{currency===o.key&&<Check size={10} style={{color:'#d99401'}}/>}
@@ -204,7 +204,7 @@ export default function MemberProfilePage() {
         <div className="px-4 md:px-6 py-4 flex justify-end">
           <button onClick={save} disabled={saving}
             className="px-8 py-2.5 rounded-xl disabled:opacity-50 text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]" style={{background:'#d99401'}}>
-            {saving ? t('Saving…','جاري الحفظ…') : t('Save Changes','حفظ التغييرات')}
+            {saving ? t('Savingâ€¦','Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸â€¦') : t('Save Changes','Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª')}
           </button>
         </div>
       </div>
