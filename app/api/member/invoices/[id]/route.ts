@@ -37,13 +37,27 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   let tool_name: string | null      = null
   let bundle_name: string | null    = null
   let original_price: number | null = null
+  let starts_at: string | null      = null
+  let expires_at: string | null     = null
+  let duration_label: string | null = null
 
   if (payment.pack_id) {
-    const { data: tool } = await service.from('shop_tools').select('name, price_egp, price_usd').eq('id', payment.pack_id).single()
+    const { data: tool } = await service.from('shop_tools').select('name, price_egp, price_usd, duration_label').eq('id', payment.pack_id).single()
     tool_name = tool?.name || null
+    duration_label = tool?.duration_label || null
     if (payment.gateway === 'coupon' && tool) {
       original_price = payment.currency?.toUpperCase() === 'USD' ? tool.price_usd : tool.price_egp
     }
+    // Fetch the linked tool_purchase for subscription dates
+    const { data: purchase } = await service
+      .from('tool_purchases')
+      .select('starts_at, expires_at')
+      .eq('member_id', session.member_id)
+      .eq('tool_id', payment.pack_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    if (purchase) { starts_at = purchase.starts_at; expires_at = purchase.expires_at }
   }
   if (payment.bundle_id) {
     const { data: bundle } = await service.from('membership_plans').select('name').eq('id', payment.bundle_id).single()
@@ -58,7 +72,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const siteName = settings.site_name || 'Pro Keys'
 
   const element = React.createElement(InvoicePDF, {
-    payment:  { ...payment, tool_name, bundle_name, payment_code: payment.payment_code || null, original_price },
+    payment:  { ...payment, tool_name, bundle_name, payment_code: payment.payment_code || null, original_price, starts_at, expires_at, duration_label },
     member:   member || { full_name: 'Customer', email: '' },
     logoUrl,
     siteName,

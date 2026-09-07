@@ -97,6 +97,7 @@ export interface InvoiceData {
   transaction_id: string | null; tool_name: string | null
   bundle_name: string | null; created_at: string; payment_code?: string | null
   original_price?: number | null
+  starts_at?: string | null; expires_at?: string | null; duration_label?: string | null
 }
 export interface MemberData { full_name: string; email: string; phone?: string | null }
 interface Props { payment: InvoiceData; member: MemberData; logoUrl: string | null; siteName: string }
@@ -107,6 +108,9 @@ const GW: Record<string, string> = {
   instapay: 'InstaPay', vodafone: 'Vodafone Cash', binance: 'Binance Pay',
   bybit: 'Bybit Pay', bep20: 'USDT BEP20', easykash: 'EasyKash', coupon: 'Coupon',
 }
+
+const fmtDate = (d: string | null | undefined) =>
+  d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
 export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Props) {
   const invoiceN  = `INV-${payment.id.slice(0, 8).toUpperCase()}`
@@ -123,6 +127,7 @@ export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Pro
   const discount     = fmt(discountAmt)
   const method       = GW[payment.gateway] || payment.gateway || '—'
   const product      = payment.tool_name || payment.bundle_name || 'Digital Subscription'
+  const hasDates     = !!(payment.starts_at || payment.expires_at)
 
   return (
     <Document title={`Invoice ${invoiceN}`} author={siteName}>
@@ -193,12 +198,42 @@ export function InvoicePDF({ payment, member, logoUrl: _logoUrl, siteName }: Pro
             </View>
             <View style={s.trow}>
               <Text style={[s.tcell, { flex: 1, color: MUTED }]}>01</Text>
-              <Text style={[s.tcell, { flex: 5, fontWeight: 700 }]}>{product}</Text>
+              <View style={{ flex: 5 }}>
+                <Text style={[s.tcell, { fontWeight: 700 }]}>{product}</Text>
+                {payment.duration_label
+                  ? <Text style={[s.tcell, { fontSize: f.xs, color: MUTED, marginTop: 2 }]}>{payment.duration_label}</Text>
+                  : null}
+                {hasDates
+                  ? <Text style={[s.tcell, { fontSize: f.xs, color: MUTED, marginTop: 2 }]}>
+                      {fmtDate(payment.starts_at)} → {fmtDate(payment.expires_at)}
+                    </Text>
+                  : null}
+              </View>
               <Text style={[s.tcell, { flex: 2, textAlign: 'center', color: MUTED }]}>1</Text>
               <Text style={[s.tcell, { flex: 2, textAlign: 'center', color: MUTED }]}>{unitPrice} {currency}</Text>
               <Text style={[s.tcell, { flex: 2, textAlign: 'right', fontWeight: 700, color: GOLD }]}>{unitPrice} {currency}</Text>
             </View>
           </View>
+
+          {/* ── SUBSCRIPTION PERIOD (separate highlighted row) ── */}
+          {hasDates && (
+            <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24, marginTop: -12 }}>
+              <View style={{ flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                <Text style={[s.theadCell, { marginBottom: 4 }]}>SUBSCRIPTION START</Text>
+                <Text style={[s.tcell, { fontWeight: 700 }]}>{fmtDate(payment.starts_at)}</Text>
+              </View>
+              <View style={{ flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                <Text style={[s.theadCell, { marginBottom: 4 }]}>SUBSCRIPTION END</Text>
+                <Text style={[s.tcell, { fontWeight: 700, color: GOLD }]}>{fmtDate(payment.expires_at)}</Text>
+              </View>
+              {payment.duration_label && (
+                <View style={{ flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                  <Text style={[s.theadCell, { marginBottom: 4 }]}>DURATION</Text>
+                  <Text style={[s.tcell, { fontWeight: 700 }]}>{payment.duration_label}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* ── TOTALS ── */}
           <View style={s.totalsArea}>

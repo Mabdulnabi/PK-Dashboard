@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       expires = new Date(base + duration_days * 86400 * 1000)
 
       const { error: updErr } = await service.from('tool_purchases')
-        .update({ expires_at: expires.toISOString(), status: 'confirmed', confirmed_at: now.toISOString() })
+        .update({ starts_at: now.toISOString(), expires_at: expires.toISOString(), status: 'confirmed', confirmed_at: now.toISOString() })
         .eq('id', existing_purchase_id)
       if (updErr) throw updErr
     } else {

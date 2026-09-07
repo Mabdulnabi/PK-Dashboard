@@ -915,26 +915,33 @@ if (pathname==='/u/login') return <>{children}</>
 
         {/* Content */}
         <main className="flex-1 overflow-hidden relative" data-scroll style={{background: dark ? 'rgba(9,13,24,0.18)' : 'rgba(240,244,248,0.15)', transform:'translateZ(0)'}}>
-          {/* Keep-alive tab panels — mounted once, hidden when inactive */}
+          {/* Keep-alive tab panels — mounted once, animated in/out with spring */}
           {Array.from(mountedTabs).map(href => {
             const TabComp = TAB_MAP[href]
             const isActive = href === activeTab
             return (
-              <div key={href} data-scroll-container="1" style={{display: isActive ? 'block' : 'none', position:'absolute', inset:0, overflowY:'auto'}}>
+              <motion.div
+                key={href}
+                data-scroll-container="1"
+                animate={isActive
+                  ? { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto' as const }
+                  : { opacity: 0, scale: 0.985, y: 10, pointerEvents: 'none' as const }}
+                transition={{ type: 'spring', damping: 30, stiffness: 340, mass: 0.8 }}
+                style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
                 <TabComp/>
-              </div>
+              </motion.div>
             )
           })}
           {/* Sub-route children (e.g. /u/blogs/123, /u/tickets/456) */}
           {!activeTab && (
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={pathname}
-                initial={{opacity:0, y:16}}
-                animate={{opacity:1, y:0}}
-                exit={{opacity:0, y:-10}}
-                transition={{duration:0.22, ease:[0.25,0.46,0.45,0.94]}}
+                initial={{ opacity: 0, scale: 0.985, y: 14 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.99, y: -8 }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320, mass: 0.75 }}
                 data-scroll-container="1"
-                style={{position:'absolute', inset:0, overflowY:'auto'}}>
+                style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
                 {children}
               </motion.div>
             </AnimatePresence>

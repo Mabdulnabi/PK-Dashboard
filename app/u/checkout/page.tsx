@@ -677,9 +677,15 @@ function CheckoutInner() {
                 <p className="text-sm text-gray-400 mb-8">{t('You can start using it now from the dashboard.','تقدر تبدأ الاستخدام فوراً من لوحة التحكم.')}</p>
               </>)}
               <div className="flex flex-col gap-3 max-w-xs mx-auto">
-                <button onClick={()=>router.push('/u/dashboard')} className="py-4 rounded-xl text-white text-base font-bold transition-colors" style={{background:'#d99401'}}>
-                  {t('Go to Dashboard 🚀','الذهاب للوحة التحكم 🚀')}
-                </button>
+                {existingPurchase ? (
+                  <button onClick={()=>router.push('/u/orders')} className="py-4 rounded-xl text-white text-base font-bold transition-colors" style={{background:'#d99401'}}>
+                    {t('View My Orders 📋','عرض طلباتي 📋')}
+                  </button>
+                ) : (
+                  <button onClick={()=>router.push('/u/dashboard')} className="py-4 rounded-xl text-white text-base font-bold transition-colors" style={{background:'#d99401'}}>
+                    {t('Go to Dashboard 🚀','الذهاب للوحة التحكم 🚀')}
+                  </button>
+                )}
               </div>
             </div>
           )}
