@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createHash } from 'crypto'
+import { hash } from 'bcryptjs'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   const update: Record<string, any> = {}
   if (new_password) {
-    update.password_hash = createHash('sha256').update(new_password).digest('hex')
+    update.password_hash = await hash(new_password, 10)
   }
   if (new_email) {
     update.email = new_email

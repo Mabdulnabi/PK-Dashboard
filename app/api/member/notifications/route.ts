@@ -14,7 +14,7 @@ export async function GET() {
     .select('id, title, title_en, message, message_en, type, is_read, link, created_at')
     .eq('member_id', session.member_id)
     .order('created_at', { ascending: false })
-    .limit(30)
+    .limit(100)
 
   return NextResponse.json({ notifications: data || [] })
 }

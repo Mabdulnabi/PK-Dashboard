@@ -7,13 +7,20 @@ const service = createClient(
 )
 
 export async function GET(req: NextRequest) {
-  const status = req.nextUrl.searchParams.get('status') // 'pending'|'delivered'|null
+  const { searchParams } = req.nextUrl
+  const status = searchParams.get('status')
+  const page   = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+  const limit  = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)))
+  const offset = (page - 1) * limit
 
-  const { data: purchases, error } = await service
+  const query = service
     .from('tool_purchases')
-    .select(`id, member_id, created_at, expires_at, amount_egp, payment_method, shop_tools(id,name,image_url,category_slug,duration_days), members(id,full_name,email,member_code)`)
+    .select(`id, member_id, created_at, expires_at, amount_egp, payment_method, shop_tools(id,name,image_url,category_slug,duration_days), members(id,full_name,email,member_code)`, { count: 'exact' })
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  const { data: purchases, error, count } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -57,5 +64,5 @@ export async function GET(req: NextRequest) {
                : status === 'delivered' ? orders.filter(o => o.delivered)
                : orders
 
-  return NextResponse.json({ orders: result })
+  return NextResponse.json({ orders: result, total: count ?? 0, page, limit })
 }

@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
     const { edge_fn, ...payload } = body
     if (!edge_fn) return NextResponse.json({ error: 'Missing edge_fn' }, { status: 400 })
 
+    const ALLOWED_EDGE_FNS = new Set(['verify-easykash-payment', 'verify-payment'])
+    if (!ALLOWED_EDGE_FNS.has(edge_fn))
+      return NextResponse.json({ error: 'Invalid edge function' }, { status: 400 })
+
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${edge_fn}`,
       {

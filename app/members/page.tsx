@@ -99,7 +99,7 @@ export default function MembersPage() {
   const [delId,  setDelId]  = useState<Member|null>(null)
 
   // forms
-  const emptyMember = { full_name:'', email:'', phone:'', telegram:'', whatsapp:'', notes:'' }
+  const emptyMember = { full_name:'', email:'', phone:'', telegram:'', whatsapp:'', notes:'', password:'' }
   const [mForm, setMForm] = useState(emptyMember)
   const emptyWallet = { amount:'', currency:'EGP', note:'', action:'charge' as 'charge'|'deduct' }
   const [wForm, setWForm] = useState(emptyWallet)
@@ -112,7 +112,7 @@ export default function MembersPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const [mRes, subRes] = await Promise.all([
-      supabase.from('members_full').select('*').order('created_at', { ascending: false }),
+      supabase.from('members_full').select('*').order('created_at', { ascending: false }).limit(500),
       supabase.from('tool_purchases')
         .select('member_id, expires_at')
         .eq('status', 'confirmed')
@@ -174,15 +174,27 @@ export default function MembersPage() {
   const saveMember = async () => {
     if (!mForm.full_name || !mForm.email) return err('Name and email required')
     setSaving(true)
-    const payload: any = { full_name:mForm.full_name, email:mForm.email, phone:mForm.phone||null, telegram:mForm.telegram||null, whatsapp:mForm.whatsapp||null, notes:mForm.notes||null }
-    if (!sel) payload.status = 'active'
-    const res = sel
-      ? await supabase.from('members').update(payload).eq('id', sel.id)
-      : await supabase.from('members').insert(payload)
-    setSaving(false)
-    if (res.error) return err(res.error.message)
-    ok(sel ? 'Member updated' : 'Member added')
-    setModal(null); load()
+
+    if (!sel) {
+      // Create via API (hashes password server-side)
+      if (!mForm.password) { setSaving(false); return err('Password required for new members') }
+      const res = await fetch('/api/admin/members/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: mForm.full_name, email: mForm.email, password: mForm.password, whatsapp: mForm.whatsapp || null }),
+      })
+      const data = await res.json()
+      setSaving(false)
+      if (!res.ok) return err(data.error || 'Failed to create member')
+      ok('Member added'); setModal(null); load()
+    } else {
+      // Edit via supabase (no password change here — use reset modal)
+      const payload: any = { full_name:mForm.full_name, email:mForm.email, phone:mForm.phone||null, telegram:mForm.telegram||null, whatsapp:mForm.whatsapp||null, notes:mForm.notes||null }
+      const res = await supabase.from('members').update(payload).eq('id', sel.id)
+      setSaving(false)
+      if (res.error) return err(res.error.message)
+      ok('Member updated'); setModal(null); load()
+    }
   }
 
   const walletAction = async () => {
@@ -431,6 +443,12 @@ export default function MembersPage() {
               <Label>Email *</Label>
               <input type="email" value={mForm.email} onChange={e=>setMForm({...mForm,email:e.target.value})} placeholder="email@..." className={inp}/>
             </div>
+            {modal==='add' && (
+              <div className="col-span-2">
+                <Label>Password *</Label>
+                <input type="password" value={mForm.password} onChange={e=>setMForm({...mForm,password:e.target.value})} placeholder="Min 8 characters" className={inp}/>
+              </div>
+            )}
             <div>
               <Label>Phone</Label>
               <input value={mForm.phone} onChange={e=>setMForm({...mForm,phone:e.target.value})} placeholder="+20 10..." className={inp}/>

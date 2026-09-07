@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     .from('support_tickets')
     .select('*')
     .order('created_at', { ascending: false })
+    .limit(200)
 
   if (status && status !== 'all') {
     query = query.eq('status', status)

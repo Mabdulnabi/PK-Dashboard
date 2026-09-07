@@ -49,32 +49,9 @@ import {
   UserCircle, Key, GraduationCap, ClipboardText, Article, LinkSimple,
 } from '@phosphor-icons/react'
 
+import { RANK_TIERS, BADGE_CFG, getMemberRank, type RankKey } from '@/lib/rank'
+
 interface Member { id?:string; full_name:string; email:string; plan_slug:string; expires_at:string; member_code?:string; avatar_url?:string; total_spent_egp?:number }
-
-const RANK_TIERS = [
-  { key:'regular',  ar:'عادي',    en:'Regular',  min:0,      color:'#5a8098' },
-  { key:'bronze',   ar:'برونزي',  en:'Bronze',   min:1,      color:'#b06030' },
-  { key:'silver',   ar:'فضي',     en:'Silver',   min:2000,   color:'#8888a0' },
-  { key:'gold',     ar:'ذهبي',    en:'Gold',     min:8000,   color:'#d99401' },
-  { key:'platinum', ar:'بلاتيني', en:'Platinum', min:20000,  color:'#7898b8' },
-  { key:'emerald',  ar:'زمردي',   en:'Emerald',  min:40000,  color:'#18a050' },
-  { key:'diamond',  ar:'ماسي',    en:'Diamond',  min:60000,  color:'#3870b8' },
-] as const
-type RankKey = typeof RANK_TIERS[number]['key']
-function getMemberRank(spent = 0) {
-  for (let i = RANK_TIERS.length - 1; i >= 0; i--) if (spent >= RANK_TIERS[i].min) return RANK_TIERS[i]
-  return RANK_TIERS[0]
-}
-
-const BADGE_CFG: Record<RankKey,{g0:string;g1:string;g2:string;ft:string;fur:string;fb:string;fll:string;ib:string}> = {
-  regular:  {g0:'#c8dce8',g1:'#6888a0',g2:'#1e3448',ft:'#d8eaf8',fur:'#a0c0d8',fb:'#182838',fll:'#243c50',ib:'#eef4f8'},
-  bronze:   {g0:'#ffe090',g1:'#c07820',g2:'#3c1400',ft:'#ffe8a0',fur:'#d89838',fb:'#301000',fll:'#5a2808',ib:'#fef4e4'},
-  silver:   {g0:'#ffffff',g1:'#9898a8',g2:'#202028',ft:'#ffffff',fur:'#dcdcec',fb:'#181820',fll:'#323240',ib:'#f0f0f6'},
-  gold:     {g0:'#f5d060',g1:'#d99401',g2:'#3a1800',ft:'#f5d878',fur:'#d99401',fb:'#2a1000',fll:'#5c2800',ib:'#fff4e0'},
-  platinum: {g0:'#f4f8ff',g1:'#7898c0',g2:'#182840',ft:'#f8fcff',fur:'#ccdcf4',fb:'#101e34',fll:'#203050',ib:'#c8d8ee'},
-  emerald:  {g0:'#a8ffcc',g1:'#14b850',g2:'#022c10',ft:'#b8ffd4',fur:'#44ec84',fb:'#011c0a',fll:'#054018',ib:'#edfff4'},
-  diamond:  {g0:'#e0f0ff',g1:'#4090d8',g2:'#081428',ft:'#eaf6ff',fur:'#b0d4f8',fb:'#060e20',fll:'#102040',ib:'#eef6ff'},
-}
 function HexBadge({rk,size=36}:{rk:typeof RANK_TIERS[number];size?:number}) {
   const c = BADGE_CFG[rk.key]; const gid=`hg-${rk.key}-pop`
   const icons: Record<RankKey,React.ReactNode> = {
@@ -283,6 +260,8 @@ const [sidebarOpen,   setSidebar]    = useState(false)
   const [searchQ,          setSearchQ]       = useState('')
   const [searchModal,      setSearchModal]   = useState(false)
   const [searchTools,      setSearchTools]   = useState<any[]>([])
+  const [searchPurchases,  setSearchPurchases] = useState<any[]>([])
+  const [searchBlogs,      setSearchBlogs]   = useState<any[]>([])
   const [searchRate,       setSearchRate]    = useState(50)
   const searchLoaded = useRef(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -294,15 +273,23 @@ const [sidebarOpen,   setSidebar]    = useState(false)
       const rate = parseFloat(d.settings?.usd_to_egp_rate || '50')
       if (!isNaN(rate) && rate > 0) setSearchRate(rate)
     })
+    if (member?.id) {
+      fetch('/api/member/purchases').then(r=>r.json()).then(d=>setSearchPurchases(Array.isArray(d)?d:d.purchases||[]))
+      fetch('/api/member/blogs').then(r=>r.json()).then(d=>setSearchBlogs(Array.isArray(d)?d:[]))
+    }
   }
   const openSearch = () => { loadSearchTools(); setSearchModal(true); setTimeout(()=>searchInputRef.current?.focus(),80) }
   const closeSearch = () => { setSearchModal(false); setSearchQ('') }
-  const searchResults = searchQ.trim().length > 0
-    ? searchTools.filter(t => {
-        const q = searchQ.toLowerCase()
-        return t.name?.toLowerCase().includes(q) || t.category_slug?.toLowerCase().includes(q)
-      })
+  const q = searchQ.trim().toLowerCase()
+  const searchResults = q.length > 0
+    ? searchTools.filter(t => t.name?.toLowerCase().includes(q) || t.category_slug?.toLowerCase().includes(q))
     : searchTools.filter(t=>t.is_active!==false)
+  const purchaseResults = q.length > 0
+    ? searchPurchases.filter(p => p.shop_tools?.name?.toLowerCase().includes(q))
+    : searchPurchases.slice(0, 5)
+  const blogResults = q.length > 0
+    ? searchBlogs.filter(b => b.title?.toLowerCase().includes(q) || b.title_ar?.toLowerCase().includes(q))
+    : searchBlogs.slice(0, 4)
   // Tab keep-alive: track which tabs have been mounted so they stay in DOM
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => {
     const tab = TAB_HREFS.find(h => pathname === h)
@@ -1225,72 +1212,131 @@ if (pathname==='/u/login') return <>{children}</>
             </div>
             {/* Results */}
             <div className="max-h-[60vh] overflow-y-auto">
-              {searchResults.length === 0 && searchQ.trim().length > 0 ? (
+              {searchResults.length === 0 && purchaseResults.length === 0 && blogResults.length === 0 && searchQ.trim().length > 0 ? (
                 <div className="text-center py-12 text-sm text-gray-400">{isRtl?'لا توجد نتائج':'No results found'}</div>
               ) : (
                 <>
-                  {searchQ.trim().length === 0 && (
-                    <div className="px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      {isRtl ? 'كل المنتجات' : 'All Products'}
-                    </div>
+                  {/* Tools section */}
+                  {searchResults.length > 0 && (
+                    <>
+                      <div className="px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {isRtl ? 'المنتجات' : 'Products'}
+                      </div>
+                      {searchResults.map((t:any) => {
+                        const retailEgp = Number(t.retail_price_egp||0)
+                        const priceEgp  = Number(t.price_egp||0)
+                        const pct       = retailEgp>0&&priceEgp>0 ? Math.round((1-priceEgp/retailEgp)*100) : 0
+                        const rating    = Number(t.rating||0)
+                        const isUsd     = currency === 'usd'
+                        const displayPrice  = isUsd ? `$${(priceEgp/searchRate).toFixed(2)}` : isRtl ? `${priceEgp} جنيه` : `${priceEgp} EGP`
+                        const displayRetail = isUsd ? `$${(retailEgp/searchRate).toFixed(2)}` : isRtl ? `${retailEgp} جنيه` : `${retailEgp} EGP`
+                        return (
+                          <button key={t.id}
+                            onMouseDown={()=>{
+                              closeSearch()
+                              if (t.details_slug) {
+                                router.push(`/u/tool/${t.details_slug}`)
+                              } else {
+                                navigateTo('/u/store')
+                                setTimeout(()=>window.dispatchEvent(new CustomEvent('pk-search-tool',{detail:{id:t.id}})),150)
+                              }
+                            }}
+                            className="w-full flex items-center gap-3.5 px-4 py-3 text-start border-b last:border-0"
+                            style={{background:'transparent', borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}
+                            onMouseEnter={e=>(e.currentTarget.style.background=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)')}
+                            onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                            {t.image_url
+                              ? <img src={t.image_url} alt={t.name} className="w-11 h-11 object-contain rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}/>
+                              : <div className="w-11 h-11 rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'}}/>
+                            }
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{t.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                {t.category_slug && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize"
+                                    style={{background:'rgba(217,148,1,0.12)',color:'#d99401'}}>
+                                    {t.category_slug.replace(/-/g,' ')}
+                                  </span>
+                                )}
+                                {rating > 0 && (
+                                  <span className="flex items-center gap-0.5 text-[10px] text-amber-500 font-semibold">
+                                    ★ {rating.toFixed(1)}
+                                    {t.review_count>0 && <span className="text-gray-400 font-normal">({t.review_count})</span>}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 text-end">
+                              <div className="text-sm font-black" style={{color:'#d99401'}}>{priceEgp>0?displayPrice:''}</div>
+                              <div className="flex items-center gap-1 justify-end">
+                                {retailEgp>0&&retailEgp>priceEgp && <span className="text-[10px] text-gray-400 line-through">{displayRetail}</span>}
+                                {pct>0 && <span className="text-[9px] font-black px-1 py-0.5 rounded text-white" style={{background:'#ef4444'}}>{pct}%</span>}
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </>
                   )}
-                  {searchResults.map((t:any) => {
-                    const retailEgp = Number(t.retail_price_egp||0)
-                    const priceEgp  = Number(t.price_egp||0)
-                    const pct       = retailEgp>0&&priceEgp>0 ? Math.round((1-priceEgp/retailEgp)*100) : 0
-                    const rating    = Number(t.rating||0)
-                    const isUsd     = currency === 'usd'
-                    const displayPrice  = isUsd ? `$${(priceEgp/searchRate).toFixed(2)}` : isRtl ? `${priceEgp} جنيه` : `${priceEgp} EGP`
-                    const displayRetail = isUsd ? `$${(retailEgp/searchRate).toFixed(2)}` : isRtl ? `${retailEgp} جنيه` : `${retailEgp} EGP`
-                    return (
-                      <button key={t.id}
-                        onMouseDown={()=>{
-                          closeSearch()
-                          if (t.details_slug) {
-                            router.push(`/u/tool/${t.details_slug}`)
-                          } else {
-                            navigateTo('/u/store')
-                            setTimeout(()=>window.dispatchEvent(new CustomEvent('pk-search-tool',{detail:{id:t.id}})),150)
+                  {/* Purchases section */}
+                  {purchaseResults.length > 0 && (
+                    <>
+                      <div className="px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-t" style={{borderColor:dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)'}}>
+                        {isRtl ? 'اشتراكاتي' : 'My Subscriptions'}
+                      </div>
+                      {purchaseResults.map((p:any) => {
+                        const tool = p.shop_tools
+                        const status = p.status
+                        const statusColor = status==='confirmed'||status==='delivered' ? '#22c55e' : '#f59e0b'
+                        const statusLabel = isRtl
+                          ? (status==='delivered'?'مُسلَّم':status==='confirmed'?'مؤكد':'انتظار')
+                          : (status==='delivered'?'Delivered':status==='confirmed'?'Confirmed':'Pending')
+                        return (
+                          <button key={p.id}
+                            onMouseDown={()=>{ closeSearch(); navigateTo('/u/purchases') }}
+                            className="w-full flex items-center gap-3.5 px-4 py-3 text-start border-b last:border-0"
+                            style={{background:'transparent', borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}
+                            onMouseEnter={e=>(e.currentTarget.style.background=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)')}
+                            onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                            {tool?.image_url
+                              ? <img src={tool.image_url} alt={tool?.name} className="w-10 h-10 object-contain rounded-xl flex-shrink-0" style={{background:dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}/>
+                              : <div className="w-10 h-10 rounded-xl flex-shrink-0" style={{background:dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'}}/>
+                            }
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{tool?.name||'-'}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">{tool?.duration_label||''}</div>
+                            </div>
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full flex-shrink-0" style={{background:`${statusColor}20`,color:statusColor}}>{statusLabel}</span>
+                          </button>
+                        )
+                      })}
+                    </>
+                  )}
+                  {/* Blogs section */}
+                  {blogResults.length > 0 && (
+                    <>
+                      <div className="px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-t" style={{borderColor:dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)'}}>
+                        {isRtl ? 'المقالات' : 'Articles'}
+                      </div>
+                      {blogResults.map((b:any) => (
+                        <button key={b.id}
+                          onMouseDown={()=>{ closeSearch(); router.push(`/u/blogs/${b.id}`) }}
+                          className="w-full flex items-center gap-3.5 px-4 py-3 text-start border-b last:border-0"
+                          style={{background:'transparent', borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}
+                          onMouseEnter={e=>(e.currentTarget.style.background=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)')}
+                          onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                          {b.cover_image_url
+                            ? <img src={b.cover_image_url} alt={b.title} className="w-10 h-10 object-cover rounded-xl flex-shrink-0"/>
+                            : <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-lg" style={{background:dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'}}>📝</div>
                           }
-                        }}
-                        className="w-full flex items-center gap-3.5 px-4 py-3 text-start border-b last:border-0"
-                        style={{background:'transparent', borderColor: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}}
-                        onMouseEnter={e=>(e.currentTarget.style.background=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)')}
-                        onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                        {/* Image */}
-                        {t.image_url
-                          ? <img src={t.image_url} alt={t.name} className="w-11 h-11 object-contain rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}/>
-                          : <div className="w-11 h-11 rounded-xl flex-shrink-0" style={{background: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'}}/>
-                        }
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{t.name}</div>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            {t.category_slug && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize"
-                                style={{background:'rgba(217,148,1,0.12)',color:'#d99401'}}>
-                                {t.category_slug.replace(/-/g,' ')}
-                              </span>
-                            )}
-                            {rating > 0 && (
-                              <span className="flex items-center gap-0.5 text-[10px] text-amber-500 font-semibold">
-                                ★ {rating.toFixed(1)}
-                                {t.review_count>0 && <span className="text-gray-400 font-normal">({t.review_count})</span>}
-                              </span>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{isRtl&&b.title_ar ? b.title_ar : b.title}</div>
+                            <div className="text-[10px] text-gray-400 mt-0.5">{b.members?.full_name||''}</div>
                           </div>
-                        </div>
-                        {/* Price */}
-                        <div className="flex-shrink-0 text-end">
-                          <div className="text-sm font-black" style={{color:'#d99401'}}>{priceEgp>0?displayPrice:''}</div>
-                          <div className="flex items-center gap-1 justify-end">
-                            {retailEgp>0&&retailEgp>priceEgp && <span className="text-[10px] text-gray-400 line-through">{displayRetail}</span>}
-                            {pct>0 && <span className="text-[9px] font-black px-1 py-0.5 rounded text-white" style={{background:'#ef4444'}}>{pct}%</span>}
-                          </div>
-                        </div>
-                      </button>
-                    )
-                  })}
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </>
               )}
             </div>

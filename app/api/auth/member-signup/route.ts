@@ -1,5 +1,6 @@
 // Create new member account and return pk_member_token
 import { NextRequest, NextResponse } from 'next/server'
+import { hash } from 'bcryptjs'
 import { db } from '@/lib/db'
 import { MEMBER_COOKIE, COOKIE_MAX_AGE } from '@/lib/constants'
 import { getClientIp, getUserAgent } from '@/lib/request'
@@ -11,7 +12,8 @@ export async function POST(req: NextRequest) {
 
   const ip = getClientIp(req)
   const ua = getUserAgent(req)
-  const normalEmail = email.toLowerCase().trim()
+  const normalEmail    = email.toLowerCase().trim()
+  const hashedPassword = await hash(password, 10)
 
   // Check if member already exists
   const { data: existing } = await db
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
       email:         normalEmail,
       full_name:     full_name.trim(),
       whatsapp:      whatsapp?.trim() || null,
-      password_hash: password,
+      password_hash: hashedPassword,
       status:        'active',
       plan_slug:     'free',
       expires_at:    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),

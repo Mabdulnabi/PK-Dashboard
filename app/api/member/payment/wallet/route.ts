@@ -17,8 +17,11 @@ export async function POST(req: NextRequest) {
     if (sessionErr || !session?.valid)
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
 
-    const { tool_id, bundle_id, amount_egp, coupon_code, existing_purchase_id } = await req.json()
+    const { tool_id, bundle_id, amount_egp, coupon_code, existing_purchase_id, cart_items } = await req.json()
     if (!amount_egp) return NextResponse.json({ error: 'Missing amount_egp' }, { status: 400 })
+
+    // Cart mode: array of { tool_id, quantity }
+    const isCartMode = Array.isArray(cart_items) && cart_items.length > 0
 
     const member_id = session.member_id
     const price = Number(amount_egp)
@@ -71,7 +74,42 @@ export async function POST(req: NextRequest) {
     const now     = new Date()
     let expiresAt: string | null = null
 
-    if (tool_id) {
+    if (isCartMode) {
+      // Fetch all tools in the cart in one query
+      const toolIds = cart_items.map((i: any) => i.tool_id)
+      const { data: tools } = await service.from('shop_tools').select('id, name, duration_days').in('id', toolIds)
+      const toolMap = Object.fromEntries((tools || []).map((t: any) => [t.id, t]))
+
+      const now = new Date()
+      const purchaseRows = cart_items.map((item: any) => {
+        const td = toolMap[item.tool_id]
+        const days = Number(td?.duration_days || 30)
+        return {
+          member_id,
+          tool_id:        item.tool_id,
+          amount_egp:     0, // distributed — logged in payment record
+          payment_method: 'wallet',
+          status:         'confirmed',
+          reference:      pay.id,
+          starts_at:      now.toISOString(),
+          expires_at:     new Date(now.getTime() + days * 86400000).toISOString(),
+          confirmed_at:   now.toISOString(),
+        }
+      })
+      const { error: purchErr } = await service.from('tool_purchases').insert(purchaseRows)
+      if (purchErr) throw purchErr
+
+      const names = cart_items.map((i: any) => toolMap[i.tool_id]?.name || i.tool_id).join('، ')
+      void service.from('member_notifications').insert({
+        member_id,
+        title:      `تم تفعيل سلتك ✅`,
+        title_en:   `Cart activated ✅`,
+        message:    `تم خصم ${price} ج من محفظتك وتفعيل: ${names}.`,
+        message_en: `${price} EGP deducted from wallet. Activated: ${names}.`,
+        type:       'success',
+        link:       '/u/orders',
+      })
+    } else if (tool_id) {
       // Determine duration
       const { data: toolData } = await service.from('shop_tools').select('duration_days').eq('id', tool_id).single()
       const days = Number(toolData?.duration_days || 30)
@@ -124,6 +162,28 @@ export async function POST(req: NextRequest) {
         type:        'success',
         link:        '/u/orders',
       })
+    }
+
+    // Track coupon usage if a discount coupon was applied
+    if (coupon_code && !isCartMode) {
+      const { data: coupon } = await service
+        .from('coupons')
+        .select('id, used_count')
+        .eq('code', coupon_code.toUpperCase().trim())
+        .single()
+      if (coupon) {
+        await Promise.all([
+          service.from('coupon_usages').insert({
+            coupon_id: coupon.id,
+            member_id,
+            tool_id:   tool_id || null,
+            used_at:   new Date().toISOString(),
+          }),
+          service.from('coupons')
+            .update({ used_count: (coupon.used_count || 0) + 1 })
+            .eq('id', coupon.id),
+        ])
+      }
     }
 
     return NextResponse.json({ ok: true, payment_id: pay.id })

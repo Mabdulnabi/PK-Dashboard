@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { hash } from 'bcryptjs'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,7 +49,7 @@ export async function PATCH(req: NextRequest) {
 
   if (body.full_name?.trim())        updates.full_name    = body.full_name.trim()
   if (body.email?.trim())            updates.email        = body.email.trim().toLowerCase()
-  if (body.password?.trim())         updates.password_hash = body.password.trim()
+  if (body.password?.trim())         updates.password_hash = await hash(body.password.trim(), 10)
   if (body.whatsapp !== undefined)   updates.whatsapp     = body.whatsapp?.trim() || null
   if (body.avatar_url !== undefined) updates.avatar_url   = body.avatar_url || null
 

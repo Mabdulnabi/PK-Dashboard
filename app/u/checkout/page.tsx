@@ -273,7 +273,13 @@ function CheckoutInner() {
         }
       }catch{}
     }, 5000)
-    setTimeout(()=>{ clearInterval(pollRef.current!); setPolling(false) }, 600000)
+    setTimeout(()=>{
+      clearInterval(pollRef.current!); setPolling(false)
+      setError(t(
+        'Payment verification timed out. Please contact support if your payment was deducted.',
+        'انتهى وقت التحقق من الدفع. تواصل مع الدعم إذا تم خصم المبلغ.'
+      ))
+    }, 600000)
   }
 
   const verify = async()=>{
@@ -286,12 +292,14 @@ function CheckoutInner() {
         credentials:'include',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          gateway:   method,
-          amount:    amountForGateway(),
-          currency:  cfg.currency,
-          credits:   finalPriceEgp(),
-          tool_id:   cartMode ? null : (toolId || null),
-          bundle_id: bundleId || null,
+          gateway:     method,
+          amount:      amountForGateway(),
+          currency:    cfg.currency,
+          credits:     finalPriceEgp(),
+          tool_id:     cartMode ? null : (toolId || null),
+          bundle_id:   bundleId || null,
+          cart_items:  cartMode ? cartItems.map(i=>({ tool_id: i.tool_id, quantity: i.quantity||1 })) : undefined,
+          coupon_code: couponResult?.valid ? coupon : undefined,
         })
       })
       const createData = await createRes.json()
@@ -581,11 +589,12 @@ function CheckoutInner() {
                     method:'POST', credentials:'include',
                     headers:{'Content-Type':'application/json'},
                     body:JSON.stringify({
-                      tool_id:   toolId || null,
+                      tool_id:   cartMode ? null : (toolId || null),
                       bundle_id: bundleId || null,
                       amount_egp: finalPriceEgp(),
                       coupon_code: coupon || null,
                       existing_purchase_id: existingPurchase?.id || null,
+                      cart_items: cartMode ? cartItems.map(i=>({ tool_id: i.tool_id, quantity: i.quantity||1 })) : undefined,
                     })
                   })
                   const data = await res.json()

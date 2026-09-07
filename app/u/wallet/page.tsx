@@ -2,12 +2,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { createClient } from '@supabase/supabase-js'
+import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight, Copy, Trophy } from 'lucide-react'
+import { BADGE_CFG, getMemberRank, type RankKey } from '@/lib/rank'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-import { Check, Clock, X, ChevronLeft, ChevronRight, Download, Wallet, TrendingUp, TrendingDown, Plus, ArrowUpRight, Copy, Trophy } from 'lucide-react'
 
 interface WalletData {
   balance_egp: number; balance_usd: number
@@ -17,7 +18,7 @@ interface WalletData {
   total_spent_egp: number
 }
 
-// ── Rank system (mirrors profile page) ───────────────────────────────────────
+// Wallet page keeps extra display fields (light, darkest) alongside shared rank data
 const RANKS = [
   { key: 'regular',  ar: 'عادي',    en: 'Regular',  min: 0,      color: '#5a8098', light: '#b8d0e0', darkest: '#182e3c' },
   { key: 'bronze',   ar: 'برونزي',  en: 'Bronze',   min: 1,      color: '#b06030', light: '#f0bc78', darkest: '#321404' },
@@ -28,27 +29,10 @@ const RANKS = [
   { key: 'diamond',  ar: 'ماسي',    en: 'Diamond',  min: 60000,  color: '#3870b8', light: '#c0e0fc', darkest: '#0a1848' },
 ] as const
 
-type RankKey = typeof RANKS[number]['key']
-
-function getRank(spent: number) {
-  for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (spent >= RANKS[i].min) return RANKS[i]
-  }
-  return RANKS[0]
-}
-
-const BADGE_CFG = {
-  regular:  { g0:'#c8dce8', g1:'#6888a0', g2:'#1e3448', ft:'#d8eaf8', fur:'#a0c0d8', fb:'#182838', fll:'#243c50', ib:'#eef4f8' },
-  bronze:   { g0:'#ffe090', g1:'#c07820', g2:'#3c1400', ft:'#ffe8a0', fur:'#d89838', fb:'#301000', fll:'#5a2808', ib:'#fef4e4' },
-  silver:   { g0:'#ffffff', g1:'#9898a8', g2:'#202028', ft:'#ffffff', fur:'#dcdcec', fb:'#181820', fll:'#323240', ib:'#f0f0f6' },
-  gold:     { g0:'#f5d060', g1:'#d99401', g2:'#3a1800', ft:'#f5d878', fur:'#d99401', fb:'#2a1000', fll:'#5c2800', ib:'#fff4e0' },
-  platinum: { g0:'#f4f8ff', g1:'#7898c0', g2:'#182840', ft:'#f8fcff', fur:'#ccdcf4', fb:'#101e34', fll:'#203050', ib:'#c8d8ee' },
-  emerald:  { g0:'#a8ffcc', g1:'#14b850', g2:'#022c10', ft:'#b8ffd4', fur:'#44ec84', fb:'#011c0a', fll:'#054018', ib:'#edfff4' },
-  diamond:  { g0:'#e0f0ff', g1:'#4090d8', g2:'#081428', ft:'#eaf6ff', fur:'#b0d4f8', fb:'#060e20', fll:'#102040', ib:'#eef6ff' },
-} as const
+function getRank(spent: number) { return getMemberRank(spent) as typeof RANKS[number] }
 
 function MiniHexBadge({ rk, size = 44 }: { rk: typeof RANKS[number]; size?: number }) {
-  const c = BADGE_CFG[rk.key as keyof typeof BADGE_CFG]
+  const c = BADGE_CFG[rk.key as RankKey]
   const gid = `whg-${rk.key}`
   const icons: Record<RankKey, React.ReactNode> = {
     regular:  <><circle cy={-5} r={5.5} fill="#5a8098"/><path d="M-8,11 Q-8,2 0,2 Q8,2 8,11" fill="#5a8098"/></>,

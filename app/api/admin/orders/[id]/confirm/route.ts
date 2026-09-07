@@ -87,6 +87,35 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  // Increment coupon usage if this payment had a coupon applied
+  void (async () => {
+    const { data: payment } = await db
+      .from('payments')
+      .select('coupon_code, user_id')
+      .eq('reference', params.id)
+      .single()
+    if (payment?.coupon_code) {
+      const { data: coupon } = await db
+        .from('coupons')
+        .select('id, used_count')
+        .eq('code', payment.coupon_code.toUpperCase().trim())
+        .single()
+      if (coupon) {
+        await Promise.all([
+          db.from('coupon_usages').insert({
+            coupon_id: coupon.id,
+            member_id: payment.user_id,
+            tool_id:   toolId || null,
+            used_at:   new Date().toISOString(),
+          }),
+          db.from('coupons')
+            .update({ used_count: (coupon.used_count || 0) + 1 })
+            .eq('id', coupon.id),
+        ])
+      }
+    }
+  })()
+
   void writeAuditLog({
     member_id: memberId,
     action:    'subscription_confirmed',
