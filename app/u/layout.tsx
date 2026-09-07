@@ -42,6 +42,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Bell, Sun, Moon, SunMoon, ChevronDown, ChevronLeft, Globe, DollarSign, X, Menu, AlarmClock, GripVertical, SlidersHorizontal, ChevronUp, ShoppingCart, Search } from 'lucide-react'
 import { CartProvider, useCart } from '@/lib/cart-context'
+import { ScrollRevealProvider } from '@/components/ui/ScrollRevealProvider'
 import AuthModal from '@/components/auth/AuthModal'
 import {
   HouseSimple, ShoppingBag, Wallet, Headset, PlayCircle,
@@ -915,18 +916,21 @@ if (pathname==='/u/login') return <>{children}</>
 
         {/* Content */}
         <main className="flex-1 overflow-hidden relative" data-scroll style={{background: dark ? 'rgba(9,13,24,0.18)' : 'rgba(240,244,248,0.15)', transform:'translateZ(0)'}}>
-          {/* Keep-alive tab panels — mounted once, animated in/out with spring */}
+          {/* Keep-alive tab panels — directional slide: inactive tabs pushed left/right by index */}
           {Array.from(mountedTabs).map(href => {
             const TabComp = TAB_MAP[href]
             const isActive = href === activeTab
+            const activeIdx = TAB_HREFS.indexOf(activeTab)
+            const thisIdx   = TAB_HREFS.indexOf(href)
+            const xOffset   = isActive ? 0 : (thisIdx < activeIdx ? -60 : 60)
             return (
               <motion.div
                 key={href}
                 data-scroll-container="1"
                 animate={isActive
-                  ? { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto' as const }
-                  : { opacity: 0, scale: 0.985, y: 10, pointerEvents: 'none' as const }}
-                transition={{ type: 'spring', damping: 30, stiffness: 340, mass: 0.8 }}
+                  ? { opacity: 1, y: 0, pointerEvents: 'auto' as const }
+                  : { opacity: 0, y: 32, pointerEvents: 'none' as const }}
+                transition={{ type: 'spring', damping: 26, stiffness: 300, mass: 0.8 }}
                 style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
                 <TabComp/>
               </motion.div>
@@ -1277,6 +1281,7 @@ if (pathname==='/u/login') return <>{children}</>
       {/* Member-only floating widgets */}
       {member && <FloatingCart/>}
       {member && <ChatWidget/>}
+      <ScrollRevealProvider/>
 
     </div>
     </MemberContext.Provider>

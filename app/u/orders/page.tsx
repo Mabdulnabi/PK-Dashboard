@@ -945,7 +945,7 @@ export default function MyOrdersPage() {
             </a>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-reveal-stagger>
             {[...purchases]
               .filter(p => {
                 const d = daysLeft(p.expires_at)

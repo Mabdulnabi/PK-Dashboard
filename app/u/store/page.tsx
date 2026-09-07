@@ -446,7 +446,7 @@ export default function StorePage() {
           </div>
           {featuredTools.length > 3
             ? <ToolCarousel tools={featuredTools} lang={lang} formatPrice={formatPrice}/>
-            : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-reveal-stagger>
                 {featuredTools.map(t => (
                   <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice}/>
                 ))}
@@ -481,7 +481,7 @@ export default function StorePage() {
             </div>
             {sectionTools.length > 3
               ? <ToolCarousel tools={sectionTools} lang={lang} formatPrice={formatPrice}/>
-              : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-reveal-stagger>
                   {sectionTools.map(t => (
                     <StoreCard key={t.id} tool={t} lang={lang} formatPrice={formatPrice}/>
                   ))}
