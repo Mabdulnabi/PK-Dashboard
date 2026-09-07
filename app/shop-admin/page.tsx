@@ -117,7 +117,7 @@ function AdminReplyBox({ reviewId, onReply, S }: { reviewId: string; onReply: (r
   const send = async () => {
     if (!text.trim()) return
     setSending(true)
-    const res = await fetch(`/api/admin/reviews/${reviewId}/reply`, {
+    const res = await fetch(`/api/admin/reviews/${reviewId}/reply`, { // [id]/reply
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ content: text.trim() })
     })
@@ -149,9 +149,7 @@ function AdminReplyBox({ reviewId, onReply, S }: { reviewId: string; onReply: (r
 
 export default function ShopAdminPage() {
   useEffect(() => { document.title = 'Products | Pro Keys Admin' }, [])
-  const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'|'reviews'>('tools')
-  const [adminReviews, setAdminReviews] = useState<any[]>([])
-  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [tab,      setTab]      = useState<'tools'|'categories'|'bundles'|'deals'>('tools')
   const [tools,    setTools]    = useState<Tool[]>([])
   const [cats,     setCats]     = useState<Category[]>([])
   const [toolCat,  setToolCat]  = useState('all')
@@ -383,17 +381,11 @@ export default function ShopAdminPage() {
         <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{background:S.surface, borderBottom:`1px solid ${S.border}`}}>
           {/* Main tabs */}
           <div className="flex items-center gap-1 p-1 rounded-xl" style={{background:S.surface2}}>
-            {(['tools','categories','bundles','deals','reviews'] as const).map(t => (
-              <button key={t} onClick={()=>{
-                setTab(t)
-                if (t==='reviews' && !adminReviews.length) {
-                  setReviewsLoading(true)
-                  fetch('/api/admin/reviews').then(r=>r.json()).then(d=>{ setAdminReviews(d.reviews||[]); setReviewsLoading(false) }).catch(()=>setReviewsLoading(false))
-                }
-              }}
+            {(['tools','categories','bundles','deals'] as const).map(t => (
+              <button key={t} onClick={()=>setTab(t)}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize"
                 style={tab===t ? {background:S.surface3, color:S.text1} : {color:S.text3}}>
-                {t==='tools'?`Tools (${tools.length})`:t==='categories'?`Categories (${cats.length})`:t==='bundles'?'Bundles':t==='deals'?'Deals':'Reviews'}
+                {t==='tools'?`Tools (${tools.length})`:t==='categories'?`Categories (${cats.length})`:t==='bundles'?'Bundles':'Deals'}
               </button>
             ))}
           </div>
@@ -755,54 +747,6 @@ export default function ShopAdminPage() {
 
           {/* ── Bundles tab ── */}
           {tab==='bundles' && <BundlesTab/>}
-
-          {/* ── Reviews Tab ── */}
-          {tab==='reviews' && (
-            <div style={{padding:20}}>
-              {reviewsLoading && <div className="text-center py-10" style={{color:S.text3, fontSize:13}}>Loading reviews…</div>}
-              {!reviewsLoading && adminReviews.length===0 && <div className="text-center py-10" style={{color:S.text3, fontSize:13}}>No approved reviews yet.</div>}
-              <div className="space-y-4">
-                {adminReviews.map((r:any) => (
-                  <div key={r.id} style={{background:S.surface2, border:`1px solid ${S.border}`, borderRadius:12, padding:16}}>
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div>
-                        <span style={{fontWeight:700, fontSize:13, color:S.text1}}>{r.member_name}</span>
-                        <span style={{marginLeft:8, fontSize:11, color:S.text3}}>{r.tool_name}</span>
-                        <div className="flex gap-0.5 mt-1">
-                          {[1,2,3,4,5].map((i:number)=>(
-                            <span key={i} style={{color:i<=r.stars?'#F59E0B':'#D1D5DB', fontSize:12}}>★</span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs" style={{color:S.text3}}>
-                        <span>👍 {r.likes||0}</span>
-                        <span>👎 {r.dislikes||0}</span>
-                        <span>💬 {(r.replies||[]).length}</span>
-                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    {r.comment && <p style={{fontSize:13, color:S.text2, marginBottom:8}}>{r.comment}</p>}
-                    {(r.replies||[]).length > 0 && (
-                      <div style={{borderTop:`1px solid ${S.border}`, paddingTop:8, marginTop:8}} className="space-y-2">
-                        {(r.replies||[]).map((rep:any) => (
-                          <div key={rep.id} className="flex gap-2">
-                            <span style={{fontSize:10, fontWeight:700, color: rep.is_admin?'#d99401':S.text3, background: rep.is_admin?'rgba(217,148,1,0.1)':S.surface3, padding:'1px 6px', borderRadius:6, flexShrink:0}}>
-                              {rep.is_admin ? '★ Support' : rep.author_name?.[0]?.toUpperCase() || '?'}
-                            </span>
-                            <p style={{fontSize:12, color:S.text2}}>{rep.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {/* Admin Reply */}
-                    <AdminReplyBox reviewId={r.id} onReply={(rep:any)=>{
-                      setAdminReviews(prev=>prev.map((rv:any)=>rv.id===r.id?{...rv,replies:[...(rv.replies||[]),rep]}:rv))
-                    }} S={S}/>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </main>
 

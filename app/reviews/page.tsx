@@ -4,10 +4,12 @@ import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import { Star, Trash2, ThumbsUp, ThumbsDown, MessageCircle, Check, AlertCircle } from 'lucide-react'
 
+interface ReviewReply { id: string; author_name: string; is_admin: boolean; content: string; created_at: string }
 interface Review {
   id: string; tool_id: string; member_name: string; stars: number
   comment?: string; approved: boolean; created_at: string
   shop_tools?: { name: string }
+  likes?: number; dislikes?: number; replies?: ReviewReply[]
 }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'ok' | 'err'; onClose: () => void }) {
@@ -30,10 +32,28 @@ function StarRow({ n }: { n: number }) {
 }
 
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter,  setFilter]  = useState<'all' | 'pending' | 'approved'>('all')
-  const [toast,   setToast]   = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
+  const [reviews,    setReviews]    = useState<Review[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [filter,     setFilter]     = useState<'all' | 'pending' | 'approved'>('all')
+  const [toast,      setToast]      = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
+  const [replyOpen,  setReplyOpen]  = useState<string | null>(null)
+  const [replyText,  setReplyText]  = useState('')
+  const [replySending, setReplySending] = useState(false)
+
+  const submitReply = async (reviewId: string) => {
+    if (!replyText.trim()) return
+    setReplySending(true)
+    const res = await fetch(`/api/admin/reviews/${reviewId}/reply`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: replyText.trim() }),
+    })
+    setReplySending(false)
+    if (!res.ok) { setToast({ msg: 'Error sending reply', type: 'err' }); return }
+    const { reply } = await res.json()
+    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, replies: [...(r.replies || []), reply] } : r))
+    setReplyText(''); setReplyOpen(null)
+    setToast({ msg: 'Reply sent', type: 'ok' })
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -113,6 +133,43 @@ export default function ReviewsPage() {
                       <span className="text-[10px] text-gray-400 ms-auto">{r.shop_tools?.name}</span>
                     </div>
                     {r.comment && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-1">{r.comment}</p>}
+
+                    {/* Reactions */}
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-xs text-gray-400 flex items-center gap-1">👍 {r.likes || 0}</span>
+                      <span className="text-xs text-gray-400 flex items-center gap-1">👎 {r.dislikes || 0}</span>
+                      {(r.replies || []).length > 0 && <span className="text-xs text-gray-400">💬 {r.replies!.length}</span>}
+                    </div>
+
+                    {/* Existing replies */}
+                    {(r.replies || []).length > 0 && (
+                      <div className="mt-2 space-y-1.5 border-t border-gray-100 dark:border-gray-800 pt-2">
+                        {r.replies!.map(rep => (
+                          <div key={rep.id} className="flex items-start gap-2">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${rep.is_admin ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                              {rep.is_admin ? '★ Support' : rep.author_name?.[0]?.toUpperCase()}
+                            </span>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{rep.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reply box */}
+                    {replyOpen === r.id && (
+                      <div className="mt-2 flex gap-2">
+                        <input value={replyText} onChange={e => setReplyText(e.target.value)}
+                          placeholder="Reply as Pro Keys Support…"
+                          className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-amber-400"
+                          onKeyDown={e => e.key === 'Enter' && submitReply(r.id)}/>
+                        <button onClick={() => submitReply(r.id)} disabled={replySending || !replyText.trim()}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold disabled:opacity-40 transition-colors">
+                          {replySending ? '…' : 'Send'}
+                        </button>
+                        <button onClick={() => setReplyOpen(null)} className="text-xs text-gray-400 hover:text-gray-600 px-1">✕</button>
+                      </div>
+                    )}
+
                     <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1.5">{new Date(r.created_at).toLocaleString('en-GB')}</p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -128,6 +185,11 @@ export default function ReviewsPage() {
                         <ThumbsDown size={12} />Hide
                       </button>
                     )}
+                    <button onClick={() => { setReplyOpen(replyOpen === r.id ? null : r.id); setReplyText('') }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                      title="Reply">
+                      <MessageCircle size={12} />
+                    </button>
                     <button onClick={() => remove(r.id)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
                       <Trash2 size={12} />
