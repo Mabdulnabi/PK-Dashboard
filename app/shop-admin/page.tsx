@@ -895,7 +895,7 @@ export default function ShopAdminPage() {
                         </select>
                         <input value={(toolForm as any).warranty_label||''} onChange={e=>setToolForm({...toolForm,warranty_label:e.target.value} as any)}
                           placeholder="or type custom e.g. '3 Months Warranty'" {...inputProps} style={{...inpStyle, marginTop:6}}/>
-                        <FL style={{marginTop:10}}>Warranty Badge (Arabic / عربي)</FL>
+                        <FL><span style={{marginTop:10,display:'block'}}>Warranty Badge (Arabic / عربي)</span></FL>
                         <input value={(toolForm as any).warranty_label_ar||''} onChange={e=>setToolForm({...toolForm,warranty_label_ar:e.target.value} as any)}
                           placeholder="مثال: ضمان شهر كامل" {...inputProps} dir="rtl"/>
                       </div>
