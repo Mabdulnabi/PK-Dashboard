@@ -6,7 +6,7 @@ import { MEMBER_COOKIE, COOKIE_MAX_AGE } from '@/lib/constants'
 import { getClientIp, getUserAgent } from '@/lib/request'
 
 export async function POST(req: NextRequest) {
-  const { email, password, full_name, whatsapp } = await req.json()
+  const { email, password, full_name, whatsapp, referral_code } = await req.json()
   if (!email || !password || !full_name)
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
 
@@ -24,17 +24,32 @@ export async function POST(req: NextRequest) {
 
   if (existing) return NextResponse.json({ error: 'email_taken' }, { status: 409 })
 
+  // Resolve referrer from referral_code if provided
+  let referred_by_id: string | null = null
+  if (referral_code) {
+    const { data: referrer } = await db
+      .from('members')
+      .select('id')
+      .eq('referral_code', referral_code.toUpperCase().trim())
+      .single()
+    if (referrer) referred_by_id = referrer.id
+  }
+
+  const newCode = Math.random().toString(36).slice(2, 10).toUpperCase()
+
   // Create member (no plan — free/pending status, admin activates subscription)
   const { data: member, error: createErr } = await db
     .from('members')
     .insert({
-      email:         normalEmail,
-      full_name:     full_name.trim(),
-      whatsapp:      whatsapp?.trim() || null,
-      password_hash: hashedPassword,
-      status:        'active',
-      plan_slug:     'free',
-      expires_at:    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      email:          normalEmail,
+      full_name:      full_name.trim(),
+      whatsapp:       whatsapp?.trim() || null,
+      password_hash:  hashedPassword,
+      status:         'active',
+      plan_slug:      'free',
+      expires_at:     new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      referral_code:  newCode,
+      referred_by:    referred_by_id,
     })
     .select('id')
     .single()

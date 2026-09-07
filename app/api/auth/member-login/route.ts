@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { MEMBER_COOKIE, COOKIE_MAX_AGE } from '@/lib/constants'
 import { getClientIp, getUserAgent } from '@/lib/request'
+import { logAudit } from '@/lib/audit'
 
 // In-memory rate limiter: 5 attempts per IP per 60s window
 const RATE_LIMIT = 5
@@ -40,7 +41,12 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (!data.success) return NextResponse.json({ error: data.error }, { status: 401 })
+  if (!data.success) {
+    logAudit({ action: 'member.login.failed', actor_type: 'member', target_type: 'member', target_id: email.toLowerCase().trim(), ip })
+    return NextResponse.json({ error: data.error }, { status: 401 })
+  }
+
+  logAudit({ action: 'member.login', actor_type: 'member', actor_id: data.member_id, target_type: 'member', target_id: email.toLowerCase().trim(), ip })
 
   const res = NextResponse.json({ success: true })
   res.cookies.set(MEMBER_COOKIE, data.token, {

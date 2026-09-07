@@ -165,11 +165,13 @@ function AuthModal({ authModal, lang, logo, siteName, amEmail, setAmEmail, amPas
   const doForgot = async () => {
     if (!amForgotEmail) { setAmError(L.fill); return }
     setAmLoading(true); setAmError(''); setAmOk('')
-    const { error } = await supabase.auth.resetPasswordForEmail(amForgotEmail, {
-      redirectTo: window.location.origin + '/u/dashboard',
+    const res = await fetch('/api/auth/member-forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: amForgotEmail }),
     })
     setAmLoading(false)
-    if (error) { setAmError(lang==='ar' ? 'حدث خطأ، حاول مجدداً' : error.message); return }
+    if (!res.ok) { setAmError(lang==='ar' ? 'حدث خطأ، حاول مجدداً' : 'Something went wrong, try again'); return }
     setAmOk(L.sent)
   }
 

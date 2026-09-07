@@ -117,10 +117,42 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   })()
 
   void writeAuditLog({
-    member_id: memberId,
-    action:    'subscription_confirmed',
-    meta:      { purchase_id: params.id, tool_name: toolName },
+    action:      'payment.confirm',
+    actor_type:  'admin',
+    target_type: 'purchase',
+    target_id:   params.id,
+    details:     { member_id: memberId, tool_name: toolName },
   })
+
+  // Referral reward: give referrer 20 EGP on member's first confirmed payment
+  void (async () => {
+    const { data: mem } = await db.from('members').select('referred_by').eq('id', memberId).single()
+    if (!mem?.referred_by) return
+    const { count: prevPayments } = await db
+      .from('tool_purchases')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_id', memberId)
+      .eq('status', 'confirmed')
+    if ((prevPayments || 0) !== 1) return  // only first payment triggers reward
+    const { data: existing } = await db.from('referral_rewards').select('id').eq('referred_id', memberId).single()
+    if (existing) return  // already rewarded
+    await db.from('referral_rewards').insert({
+      referrer_id:  mem.referred_by,
+      referred_id:  memberId,
+      reward_egp:   20,
+      status:       'pending',
+      triggered_by: 'first_payment',
+    })
+    void db.from('member_notifications').insert({
+      member_id:  mem.referred_by,
+      title:      'مكافأة إحالة 🎁',
+      title_en:   'Referral Reward 🎁',
+      message:    'أحد أصدقائك أتم أول عملية شراء! حصلت على 20 جنيه مكافأة إحالة.',
+      message_en: 'Your referred friend completed their first purchase! You earned a 20 EGP referral reward.',
+      type:       'success',
+      link:       '/u/referrals',
+    })
+  })()
 
   return NextResponse.json({ ok: true })
 }

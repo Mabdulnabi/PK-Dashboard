@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { hash } from 'bcryptjs'
+import { logAudit } from '@/lib/audit'
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,6 +44,8 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    void logAudit({ action: 'member.create', actor_type: 'admin', target_type: 'member', target_id: member!.id, details: { email: normalEmail, full_name: full_name.trim() } })
 
     return NextResponse.json({ ok: true, member })
   } catch (err: any) {
