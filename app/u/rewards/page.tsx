@@ -100,9 +100,9 @@ function StatCard({ icon:Icon, label, value, sub, accent }: { icon:any; label:st
 }
 
 // ─── Orders-style info card wrapper ───────────────────────────────────────────
-function InfoCard({ accent = '#d99401', children, className = '' }: { accent?: string; children: React.ReactNode; className?: string }) {
+function InfoCard({ accent = '#d99401', children, className = '', ...rest }: { accent?: string; children: React.ReactNode; className?: string; [k: string]: unknown }) {
   return (
-    <div className={`rounded-xl relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm ${className}`}>
+    <div className={`rounded-xl relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm ${className}`} {...(rest as React.HTMLAttributes<HTMLDivElement>)}>
       <div className="absolute top-0 left-0 right-0 h-[2px] opacity-50"
         style={{background:`linear-gradient(90deg, ${accent}, transparent)`}}/>
       {children}
@@ -208,14 +208,15 @@ export default function RewardsPage() {
       const r = await fetch('/api/member/rewards/redeem', { method: 'POST' })
       const json = await r.json()
       if (!r.ok) {
-        setRedeemError(json.error === 'insufficient_points'
+        setRedeemError(json?.error === 'insufficient_points'
           ? (isRtl ? 'رصيدك أقل من 100 نقطة' : 'Balance below 100 points')
-          : (isRtl ? 'حدث خطأ، حاول مجدداً' : 'Error, please try again'))
+          : (json?.error || (isRtl ? 'حدث خطأ، حاول مجدداً' : 'Error, please try again')))
       } else {
         setGeneratedCode(json)
         load() // refresh balance
       }
-    } catch {
+    } catch (err) {
+      console.error('redeem fetch error:', err)
       setRedeemError(isRtl ? 'حدث خطأ، حاول مجدداً' : 'Error, please try again')
     } finally {
       setGenerating(false)
@@ -246,7 +247,7 @@ export default function RewardsPage() {
       <div className="p-4 md:p-5 flex flex-col gap-4" dir={isRtl ? 'rtl' : 'ltr'}>
 
         {/* ── RANK BANNER — same as profile page ───────────────────────── */}
-        <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm rounded-2xl overflow-hidden flex-shrink-0" data-reveal>
+        <div className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm rounded-2xl overflow-hidden flex-shrink-0">
           <div className="px-4 md:px-6 py-4 md:py-6"
             style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
             <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center gap-4 md:gap-6">
@@ -301,7 +302,7 @@ export default function RewardsPage() {
         </div>
 
         {/* ── Points balance + redeem CTA ───────────────────────────────── */}
-        <div className="rounded-xl relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm p-4 flex items-center justify-between gap-4">
+        <div className="rounded-xl relative overflow-hidden bg-white dark:bg-[#111827] border border-gray-100 dark:border-[#1a2233] shadow-sm p-4 flex items-center justify-between gap-4" data-reveal>
           <div className="absolute top-0 left-0 right-0 h-[2px] opacity-50"
             style={{background:'linear-gradient(90deg, #d99401, transparent)'}}/>
           <div>
@@ -405,7 +406,7 @@ export default function RewardsPage() {
         )}
 
         {/* ── TABS ─────────────────────────────────────────────────────── */}
-        <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-[#111827] border border-gray-200 dark:border-[#1a2233]">
+        <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-[#111827] border border-gray-200 dark:border-[#1a2233]" data-reveal>
           {[
             { key:'points',   ar:'النقاط والولاء',  en:'Points & Loyalty' },
             { key:'referral', ar:'برنامج الإحالة',   en:'Referral Program' },
@@ -425,14 +426,14 @@ export default function RewardsPage() {
         {tab === 'points' && (
           <div className="flex flex-col gap-4">
             {/* Stat cards — orders style */}
-            <div className="flex gap-3">
+            <div className="flex gap-3" data-reveal-stagger>
               <StatCard icon={Zap}   accent="#22c55e" label={isRtl ? 'مكتسب' : 'Earned'}     value={(data?.total_earned ?? 0).toLocaleString()} sub={isRtl ? 'إجمالي' : 'lifetime'}/>
               <StatCard icon={Star}  accent="#8b5cf6" label={isRtl ? 'مستبدل' : 'Redeemed'}   value={(data?.total_redeemed ?? 0).toLocaleString()} sub={isRtl ? 'نقطة' : 'points'}/>
               <StatCard icon={Clock} accent="#ef4444" label={isRtl ? 'ينتهي خلال' : 'Expires'} value={data?.expires_days != null ? `${data.expires_days}` : '—'} sub={isRtl ? 'يوم' : 'days'}/>
             </div>
 
             {/* How to earn */}
-            <InfoCard accent="#d99401" className="p-5">
+            <InfoCard accent="#d99401" className="p-5" data-reveal>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-4">
                 {isRtl ? 'كيف تكسب النقاط' : 'How to Earn'}
               </div>
@@ -455,7 +456,7 @@ export default function RewardsPage() {
             </InfoCard>
 
             {/* Redemption rules */}
-            <InfoCard accent="#8b5cf6" className="p-5">
+            <InfoCard accent="#8b5cf6" className="p-5" data-reveal>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-3">
                 {isRtl ? 'قواعد الاستبدال' : 'Redemption Rules'}
               </div>
@@ -483,7 +484,7 @@ export default function RewardsPage() {
 
             {/* Transactions */}
             {(data?.transactions ?? []).length > 0 && (
-              <InfoCard accent="#d99401">
+              <InfoCard accent="#d99401" data-reveal>
                 <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800/60">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                     {isRtl ? 'آخر المعاملات' : 'Recent Activity'}
@@ -506,14 +507,14 @@ export default function RewardsPage() {
         {tab === 'referral' && (
           <div className="flex flex-col gap-4">
             {/* Stats */}
-            <div className="flex gap-3">
+            <div className="flex gap-3" data-reveal-stagger>
               <StatCard icon={Users} accent="#3b82f6" label={isRtl ? 'أصدقاء مُحالون' : 'Referred'}    value={data?.total_referred ?? 0}/>
               <StatCard icon={Gift}  accent="#8b5cf6" label={isRtl ? 'نقاط إحالة' : 'Ref. Points'}     value={(data?.referral_points ?? 0).toLocaleString()} sub={isRtl ? 'نقطة' : 'pts'}/>
               <StatCard icon={Star}  accent="#d99401" label={isRtl ? 'مكافأة/إحالة' : 'Per Referral'} value="500" sub={isRtl ? 'نقطة' : 'pts'}/>
             </div>
 
             {/* Coupon card */}
-            <div className="rounded-xl relative overflow-hidden bg-white dark:bg-[#111827] border-2 border-dashed shadow-sm p-6"
+            <div className="rounded-xl relative overflow-hidden bg-white dark:bg-[#111827] border-2 border-dashed shadow-sm p-6" data-reveal
               style={{borderColor:'rgba(217,148,1,0.4)'}}>
               <div className="absolute top-0 left-0 right-0 h-[2px] opacity-50"
                 style={{background:'linear-gradient(90deg, #d99401, transparent)'}}/>

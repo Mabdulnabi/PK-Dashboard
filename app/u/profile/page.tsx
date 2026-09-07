@@ -19,111 +19,16 @@ function Toast({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => 
   )
 }
 
-/* ── Rank definitions ── */
 const RANKS = [
-  { key: 'regular',  ar: 'عادي',    en: 'Regular',  min: 0,      max: 1,       color: '#5a8098', light: '#b8d0e0', dark: '#1e3848', mid: '#4a7080', darkest: '#182e3c' },
-  { key: 'bronze',   ar: 'برونزي',  en: 'Bronze',   min: 1,      max: 2000,    color: '#b06030', light: '#f0bc78', dark: '#8a4c20', mid: '#502408', darkest: '#321404' },
-  { key: 'silver',   ar: 'فضي',     en: 'Silver',   min: 2000,   max: 8000,    color: '#8888a0', light: '#e4e4f0', dark: '#6e6e80', mid: '#383848', darkest: '#242432' },
-  { key: 'gold',     ar: 'ذهبي',    en: 'Gold',     min: 8000,   max: 20000,   color: '#c89010', light: '#fff060', dark: '#906800', mid: '#503800', darkest: '#342000' },
-  { key: 'platinum', ar: 'بلاتيني', en: 'Platinum', min: 20000,  max: 40000,   color: '#7898b8', light: '#dce8f8', dark: '#587898', mid: '#2c4460', darkest: '#1c2c48' },
-  { key: 'emerald',  ar: 'زمردي',   en: 'Emerald',  min: 40000,  max: 60000,   color: '#18a050', light: '#78f0a0', dark: '#0c7838', mid: '#064820', darkest: '#042c14' },
-  { key: 'diamond',  ar: 'ماسي',    en: 'Diamond',  min: 60000,  max: Infinity, color: '#3870b8', light: '#c0e0fc', dark: '#2050a0', mid: '#102868', darkest: '#0a1848' },
+  { key: 'regular',  ar: 'عادي',    en: 'Regular',  min: 0,      color: '#5a8098', light: '#b8d0e0' },
+  { key: 'bronze',   ar: 'برونزي',  en: 'Bronze',   min: 1,      color: '#b06030', light: '#f0bc78' },
+  { key: 'silver',   ar: 'فضي',     en: 'Silver',   min: 2000,   color: '#8888a0', light: '#e4e4f0' },
+  { key: 'gold',     ar: 'ذهبي',    en: 'Gold',     min: 8000,   color: '#c89010', light: '#fff060' },
+  { key: 'platinum', ar: 'بلاتيني', en: 'Platinum', min: 20000,  color: '#7898b8', light: '#dce8f8' },
+  { key: 'emerald',  ar: 'زمردي',   en: 'Emerald',  min: 40000,  color: '#18a050', light: '#78f0a0' },
+  { key: 'diamond',  ar: 'ماسي',    en: 'Diamond',  min: 60000,  color: '#3870b8', light: '#c0e0fc' },
 ] as const
-
-type RankKey = typeof RANKS[number]['key']
-
-function getRank(spent: number) {
-  for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (spent >= RANKS[i].min) return RANKS[i]
-  }
-  return RANKS[0]
-}
-
-/* ── Hex badge SVG — v5 design ── */
-const BADGE_CFG = {
-  regular:  { g0:'#c8dce8', g1:'#6888a0', g2:'#1e3448', ft:'#d8eaf8', fur:'#a0c0d8', fb:'#182838', fll:'#243c50', ib:'#eef4f8' },
-  bronze:   { g0:'#ffe090', g1:'#c07820', g2:'#3c1400', ft:'#ffe8a0', fur:'#d89838', fb:'#301000', fll:'#5a2808', ib:'#fef4e4' },
-  silver:   { g0:'#ffffff', g1:'#9898a8', g2:'#202028', ft:'#ffffff', fur:'#dcdcec', fb:'#181820', fll:'#323240', ib:'#f0f0f6' },
-  gold:     { g0:'#f5d060', g1:'#d99401', g2:'#3a1800', ft:'#f5d878', fur:'#d99401', fb:'#2a1000', fll:'#5c2800', ib:'#fff4e0' },
-  platinum: { g0:'#f4f8ff', g1:'#7898c0', g2:'#182840', ft:'#f8fcff', fur:'#ccdcf4', fb:'#101e34', fll:'#203050', ib:'#c8d8ee' },
-  emerald:  { g0:'#a8ffcc', g1:'#14b850', g2:'#022c10', ft:'#b8ffd4', fur:'#44ec84', fb:'#011c0a', fll:'#054018', ib:'#edfff4' },
-  diamond:  { g0:'#e0f0ff', g1:'#4090d8', g2:'#081428', ft:'#eaf6ff', fur:'#b0d4f8', fb:'#060e20', fll:'#102040', ib:'#eef6ff' },
-} as const
-
-function HexBadge({ rk, size = 72, active = false }: { rk: typeof RANKS[number]; size?: number; active?: boolean }) {
-  const c = BADGE_CFG[rk.key as keyof typeof BADGE_CFG]
-  const gid = `hg-${rk.key}`
-
-  const icon: Record<RankKey, React.ReactNode> = {
-    regular: <>
-      <circle cy={-5} r={5.5} fill="#5a8098"/>
-      <path d="M-8,11 Q-8,2 0,2 Q8,2 8,11" fill="#5a8098"/>
-    </>,
-    bronze: <>
-      <polygon points="0,-11 9.5,-5.5 9.5,5.5 0,11 -9.5,5.5 -9.5,-5.5" fill="none" stroke="#c07820" strokeWidth="2.2" strokeLinejoin="round"/>
-      <circle r={3.5} fill="#c07820"/>
-    </>,
-    silver: <>
-      <polygon points="0,-10 8.5,-5 0,0 -8.5,-5"  fill="#e8e8f4"/>
-      <polygon points="-8.5,-5 0,0 0,10 -8.5,5"   fill="#808090"/>
-      <polygon points="8.5,-5 8.5,5 0,10 0,0"     fill="#545462"/>
-    </>,
-    gold: <>
-      <polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="#a06800"/>
-      <polygon points="0,0 0,-12 10.4,-6"     fill="#f5d060"/>
-      <polygon points="0,0 10.4,-6 10.4,6"    fill="#c88000"/>
-      <polygon points="0,0 10.4,6 0,12"       fill="#b87000"/>
-      <polygon points="0,0 0,12 -10.4,6"      fill="#7a4000"/>
-      <polygon points="0,0 -10.4,6 -10.4,-6"  fill="#8c5000"/>
-      <polygon points="0,0 -10.4,-6 0,-12"    fill="#d99401"/>
-    </>,
-    platinum: <path fill="#4a78c8" d="M0,-15 3.6,-4.7 14.3,-4.7 6.1,1.7 9.0,12.4 0,6.4 -9.0,12.4 -6.1,1.7 -14.3,-4.7 -3.6,-4.7Z"/>,
-    emerald: <>
-      <polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="#14a848"/>
-      <polygon points="0,-12 10.4,-6 0,-4"     fill="#a0ffc8"/>
-      <polygon points="0,-12 -10.4,-6 0,-4"    fill="#70f0a0"/>
-      <polygon points="10.4,-6 10.4,6 0,0 0,-4" fill="#0a8030"/>
-      <polygon points="-10.4,-6 -10.4,6 0,0 0,-4" fill="#14a040"/>
-      <polygon points="10.4,6 0,12 -10.4,6 0,0" fill="#086028"/>
-    </>,
-    diamond: <>
-      <polygon points="-9,-13 9,-13 15,-2 -15,-2" fill="#90c4f4"/>
-      <polygon points="-9,-13 0,-8 -15,-2" fill="#e0f4ff"/>
-      <polygon points="9,-13 15,-2 0,-8"   fill="#cce8ff"/>
-      <polygon points="-9,-13 9,-13 0,-8"  fill="#f4faff"/>
-      <polygon points="-15,-2 15,-2 0,14"  fill="#4898e0"/>
-      <polygon points="-15,-2 0,-2 0,14"   fill="#2870c0"/>
-      <polygon points="15,-2 0,14 0,-2"    fill="#7ab8f0"/>
-    </>,
-  }
-
-  return (
-    <svg width={size} height={size} viewBox="-42 -48 84 96"
-      style={{filter: active ? `drop-shadow(0 0 8px ${rk.color}99)` : undefined}}>
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%"   stopColor={c.g0}/>
-          <stop offset="50%"  stopColor={c.g1}/>
-          <stop offset="100%" stopColor={c.g2}/>
-        </linearGradient>
-      </defs>
-      {/* drop shadow */}
-      <polygon points="20,-29 38,3 20,35 -20,35 -38,3 -20,-29" fill="#000" opacity="0.22" transform="translate(2,5)"/>
-      {/* hex ring */}
-      <polygon points="18,-32 36,0 18,32 -18,32 -36,0 -18,-32" fill={`url(#${gid})`}/>
-      {/* face highlights */}
-      <polygon points="-18,-32 18,-32 11,-20 -11,-20" fill={c.ft} opacity="0.92"/>
-      <polygon points="18,-32 36,0 23,0 11,-20"       fill={c.fur} opacity="0.85"/>
-      <polygon points="18,32 -18,32 -11,20 11,20"     fill={c.fb} opacity="0.88"/>
-      <polygon points="-18,32 -36,0 -23,0 -11,20"     fill={c.fll} opacity="0.75"/>
-      {/* inner white ring + bg */}
-      <circle r="23" fill="#fff"/>
-      <circle r="17" fill={c.ib}/>
-      {/* icon centered at 0,0 */}
-      {icon[rk.key as RankKey]}
-    </svg>
-  )
-}
+function getRank(s: number) { for (let i = RANKS.length - 1; i >= 0; i--) { if (s >= RANKS[i].min) return RANKS[i] } return RANKS[0] }
 
 const PLAN_COLOR: Record<string, string> = { basic: '#3B82F6', vip: '#F59E0B', private: '#8B5CF6' }
 const PLAN_LABEL: Record<string, { en: string; ar: string }> = {
@@ -183,11 +88,7 @@ export default function MemberProfilePage() {
   const initials    = profile?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
   const planColor   = PLAN_COLOR[profile?.plan_slug || ''] || '#6B7280'
   const planLabel   = PLAN_LABEL[profile?.plan_slug || ''] || { en: 'Member', ar: 'عضو' }
-  const spent       = profile?.total_spent_egp ?? 0
-  const rank        = getRank(spent)
-  const rankIdx     = RANKS.findIndex(r => r.key === rank.key)
-  const nextRank    = RANKS[rankIdx + 1]
-  const progress    = nextRank ? Math.min(100, ((spent - rank.min) / (nextRank.min - rank.min)) * 100) : 100
+  const rank        = getRank(profile?.total_spent_egp ?? 0)
 
   const inp = `w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#d99401] focus:ring-2 focus:ring-[#d99401]/10 transition-all`
 
@@ -205,59 +106,6 @@ export default function MemberProfilePage() {
     <div className="p-4 md:p-5 flex flex-col gap-3" dir={dir}>
 
       <NotifBanner lang={lang} match={['تقييم','Review','Approved','Rejected','قبول','رفض']}/>
-
-      {/* ── Rank card — top ── */}
-      <div className="glass-card-themed rounded-2xl overflow-hidden flex-shrink-0" data-reveal>
-        <div className="px-4 md:px-6 py-4 md:py-6"
-          style={{background:`linear-gradient(135deg, ${rank.darkest}ee 0%, #0d111a 100%)`}}>
-          {/* Desktop: 3-col grid — Mobile: badge+info row then badges row below */}
-          <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center gap-4 md:gap-6">
-            <HexBadge rk={rank} size={72} active/>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-gray-400 mb-0.5">{t('Your rank','رتبتك الحالية')}</p>
-              <p className="text-xl font-bold mb-1" style={{color: rank.light}}>{lang==='ar' ? rank.ar : rank.en}</p>
-              <p className="text-sm mb-3" style={{color: rank.color}}>
-                {t('Total spent','إجمالي الإنفاق')}: <span className="font-bold">{fmtAmt(spent)}</span>
-              </p>
-              {nextRank ? (
-                <>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-gray-400">{t('Next','التالية')}: <span className="font-semibold" style={{color: nextRank.color}}>{lang==='ar' ? nextRank.ar : nextRank.en}</span></span>
-                    <span className="text-xs text-gray-500">{fmtAmt(nextRank.min - spent)} {t('remaining','متبقي')}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden w-full" style={{background:'rgba(255,255,255,0.08)'}}>
-                    <div className="h-full rounded-full transition-all duration-700" style={{width:`${progress}%`, background:`linear-gradient(90deg, ${rank.color}, ${nextRank.color})`}}/>
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm font-bold" style={{color: rank.color}}>🏆 {t('Maximum rank achieved!','وصلت للرتبة الأعلى!')}</p>
-              )}
-            </div>
-            {/* All ranks — side column on desktop, horizontal scroll below on mobile */}
-            <div className="flex flex-col items-start md:items-center gap-2">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('All ranks','كل الرتب')}</p>
-              <div className="overflow-x-auto pb-1 w-full md:w-auto" style={{scrollbarWidth:'none'}}>
-                <div className="flex items-end gap-3 min-w-max">
-                  {RANKS.map((r, i) => {
-                    const isActive = r.key === rank.key
-                    const unlocked = i <= rankIdx
-                    return (
-                      <div key={r.key} className="flex flex-col items-center gap-1.5">
-                        <div style={{opacity: unlocked ? 1 : 0.28, transform: isActive ? 'scale(1.2)' : 'scale(1)', transition:'transform .2s'}}>
-                          <HexBadge rk={r} size={isActive ? 60 : 46} active={isActive}/>
-                        </div>
-                        <span className="text-[9px] font-bold" style={{color: isActive ? r.light : unlocked ? r.color : '#6b7280'}}>
-                          {lang==='ar' ? r.ar : r.en}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="flex-shrink-0">
         <h1 className="text-base font-bold text-gray-900 dark:text-white">{t('Account Settings', 'إعدادات الحساب')}</h1>
