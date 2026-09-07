@@ -4,14 +4,17 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import { Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, X, Check, AlertCircle, Pencil } from 'lucide-react'
+import { Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, X, Check, AlertCircle, Pencil, Gift } from 'lucide-react'
 
 interface Tool { id: string; name: string; image_url: string | null }
 interface Usage { id: string; member_id: string; tool_id: string | null; used_at: string; members: { full_name: string; email: string } | null }
+interface MemberBrief { id: string; full_name: string; email: string }
 interface Coupon {
   id: string; code: string; description: string | null; type: string; value: number
   max_uses: number; used_count: number; expires_at: string | null; is_active: boolean
   tool_ids: string[] | null; created_at: string; coupon_usages: Usage[]
+  source?: string; member_id?: string | null; points_redeemed?: number | null; min_order_egp?: number | null
+  members?: MemberBrief | null
 }
 
 const EMPTY_FORM = { code: '', description: '', type: 'discount', value: '', max_uses: '100', expires_at: '', tool_ids: [] as string[], is_active: true }
@@ -98,8 +101,14 @@ export default function CouponsPage() {
 
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(25)
-  const totalPages = Math.max(1, Math.ceil(coupons.length / perPage))
-  const paged = coupons.slice((page-1)*perPage, page*perPage)
+  const [activeTab, setActiveTab] = useState<'manual' | 'rewards'>('manual')
+
+  const manualCoupons  = coupons.filter(c => (c.source ?? 'manual') !== 'rewards_redemption')
+  const rewardsCoupons = coupons.filter(c => c.source === 'rewards_redemption')
+
+  const displayedCoupons = activeTab === 'rewards' ? rewardsCoupons : manualCoupons
+  const totalPages = Math.max(1, Math.ceil(displayedCoupons.length / perPage))
+  const paged = displayedCoupons.slice((page-1)*perPage, page*perPage)
   const toolMap = Object.fromEntries(tools.map(t => [t.id, t]))
 
   return (
@@ -110,13 +119,36 @@ export default function CouponsPage() {
 
         <div className="flex-1 overflow-auto p-6">
 
+          {/* Tabs */}
+          <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 mb-5 w-fit">
+            {([
+              { key: 'manual'  as const, label: 'Manual Coupons',  count: manualCoupons.length,  icon: null },
+              { key: 'rewards' as const, label: 'Rewards Coupons', count: rewardsCoupons.length, icon: Gift },
+            ]).map(t => (
+              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all"
+                style={{
+                  background: activeTab === t.key ? (t.key === 'rewards' ? '#d99401' : '#ef4444') : 'transparent',
+                  color:      activeTab === t.key ? '#fff' : '#9ca3af',
+                }}>
+                {t.icon && <t.icon size={13}/>}
+                {t.label}
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${activeTab === t.key ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
           {/* Header row */}
           <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-500 dark:text-gray-400">{coupons.length} coupon{coupons.length !== 1 ? 's' : ''}</p>
-            <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM }); setFormError('') }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
-              <Plus size={16}/> New Coupon
-            </button>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{displayedCoupons.length} coupon{displayedCoupons.length !== 1 ? 's' : ''}</p>
+            {activeTab === 'manual' && (
+              <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM }); setFormError('') }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+                <Plus size={16}/> New Coupon
+              </button>
+            )}
           </div>
 
           {/* Create form */}
@@ -208,10 +240,83 @@ export default function CouponsPage() {
             </div>
           )}
 
-          {/* List */}
+          {/* Rewards list */}
+          {!loading && activeTab === 'rewards' && (
+            rewardsCoupons.length === 0 ? (
+              <div className="text-center py-20 text-gray-400 text-sm">No rewards coupons yet</div>
+            ) : (
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                      <th className="text-left px-5 py-3">Code</th>
+                      <th className="text-left px-4 py-3">Member</th>
+                      <th className="text-left px-4 py-3">Points</th>
+                      <th className="text-left px-4 py-3">Value</th>
+                      <th className="text-left px-4 py-3">Status</th>
+                      <th className="text-left px-4 py-3">Expires</th>
+                      <th className="text-left px-4 py-3">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paged.map(c => {
+                      const expired = c.expires_at && new Date(c.expires_at) < new Date()
+                      const used = (c.used_count ?? 0) >= (c.max_uses ?? 1)
+                      return (
+                        <tr key={c.id} className="border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                          <td className="px-5 py-3">
+                            <span className="font-mono font-bold text-gray-900 dark:text-white tracking-wider" dir="ltr">{c.code}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                                style={{background:'rgba(217,148,1,0.15)', color:'#d99401'}}>
+                                {c.members?.full_name?.slice(0, 1).toUpperCase() || '?'}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[140px]">{c.members?.full_name || '—'}</div>
+                                <div className="text-[10px] text-gray-400 truncate max-w-[140px]">{c.members?.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                              {(c.points_redeemed ?? 0).toLocaleString()} pts
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              {c.value} EGP
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {used
+                              ? <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-bold">Used</span>
+                              : expired
+                                ? <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 font-bold">Expired</span>
+                                : <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 font-bold">Active</span>
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-400">
+                            {c.expires_at ? new Date(c.expires_at).toLocaleDateString('en-GB') : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-400">
+                            <div>{new Date(c.created_at).toLocaleDateString('en-GB')}</div>
+                            <div className="text-[10px]">{new Date(c.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+
+          {/* Manual coupons list */}
           {loading ? (
             <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"/></div>
-          ) : coupons.length === 0 ? (
+          ) : activeTab === 'manual' && (manualCoupons.length === 0 ? (
             <div className="text-center py-20 text-gray-400 text-sm">No coupons yet — create one above</div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -304,7 +409,7 @@ export default function CouponsPage() {
                   </div>
                 )
               })}
-              {coupons.length > perPage && (
+              {displayedCoupons.length > perPage && (
                 <div className="flex items-center justify-between py-3 text-xs text-gray-500">
                   <div className="flex items-center gap-1">
                     {[10,25,50].map(n=>(
@@ -315,7 +420,7 @@ export default function CouponsPage() {
                       </button>
                     ))}
                   </div>
-                  <span>{Math.min((page-1)*perPage+1,coupons.length)}–{Math.min(page*perPage,coupons.length)} of {coupons.length}</span>
+                  <span>{Math.min((page-1)*perPage+1,displayedCoupons.length)}–{Math.min(page*perPage,displayedCoupons.length)} of {displayedCoupons.length}</span>
                   <div className="flex items-center gap-1">
                     <button onClick={()=>setPage(p=>p-1)} disabled={page===1}
                       className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">←</button>
@@ -326,7 +431,7 @@ export default function CouponsPage() {
                 </div>
               )}
             </div>
-          )}
+          ))}
         </div>
       </div>
 

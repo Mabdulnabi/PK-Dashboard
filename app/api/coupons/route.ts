@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function GET() {
   const { data: coupons } = await supabase
     .from('coupons')
-    .select(`*, coupon_usages(id, member_id, tool_id, used_at, members(full_name, email))`)
+    .select(`*, coupon_usages(id, member_id, tool_id, used_at, members(full_name, email)), members!coupons_member_id_fkey(id, full_name, email)`)
     .order('created_at', { ascending: false })
 
   const { data: tools } = await supabase

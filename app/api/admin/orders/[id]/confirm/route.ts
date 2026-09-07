@@ -145,12 +145,31 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     }
   })()
 
-  // Award loyalty points
+  // Award loyalty points — use full order value (amount_egp + coupon discount)
   void (async () => {
     const { data: purchase2 } = await db.from('tool_purchases').select('amount_egp').eq('id', params.id).single()
-    if (purchase2?.amount_egp) {
-      await awardLoyaltyPoints(memberId, Number(purchase2.amount_egp), params.id, toolName)
+    let amountEgp = Number(purchase2?.amount_egp ?? 0)
+    if (!amountEgp) return
+
+    // Add back coupon discount so points reflect the full product price
+    const { data: payment2 } = await db
+      .from('payments')
+      .select('coupon_code')
+      .eq('reference', params.id)
+      .single()
+    if (payment2?.coupon_code) {
+      const { data: coupon2 } = await db
+        .from('coupons')
+        .select('type, value')
+        .eq('code', payment2.coupon_code.toUpperCase().trim())
+        .single()
+      if (coupon2) {
+        // fixed coupon: add the EGP value back; discount (%) already reflected in amount_egp
+        if (coupon2.type === 'fixed') amountEgp += Number(coupon2.value)
+      }
     }
+
+    await awardLoyaltyPoints(memberId, amountEgp, params.id, toolName)
   })()
 
   void writeAuditLog({

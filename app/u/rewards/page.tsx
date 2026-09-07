@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useLang } from '@/lib/lang-context'
 import { useSiteSettings } from '@/lib/use-site-settings'
-import { Copy, Check, Share2, Users, Gift, Star, Zap, ArrowUp, Clock, MessageCircle, Info, ChevronDown, ChevronUp } from 'lucide-react'
+import { Copy, Check, Share2, Users, Gift, Star, Zap, ArrowUp, Clock, Info, ChevronDown, ChevronUp, Ticket, Loader2 } from 'lucide-react'
 import React from 'react'
 
 // ─── Rank definitions (identical to profile page) ─────────────────────────────
@@ -149,7 +149,11 @@ export default function RewardsPage() {
   const [loading,    setLoading]    = useState(true)
   const [copied,     setCopied]     = useState(false)
   const [tab,        setTab]        = useState<'points' | 'referral'>('points')
-  const [redeemOpen, setRedeemOpen] = useState(false)
+  const [redeemOpen,    setRedeemOpen]    = useState(false)
+  const [generating,    setGenerating]    = useState(false)
+  const [generatedCode, setGeneratedCode] = useState<{ code: string; value_egp: number; expires_at: string } | null>(null)
+  const [codeCopied,    setCodeCopied]    = useState(false)
+  const [redeemError,   setRedeemError]   = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -195,12 +199,35 @@ export default function RewardsPage() {
     } else { copy() }
   }
 
-  const waNumber  = (settings.whatsapp_number || '').replace(/\D/g, '')
   const redeemEgp = data?.redeemable_egp ?? 0
-  const waText    = isRtl
-    ? `مرحباً، أريد استبدال نقاط الولاء الخاصة بي (${(data?.balance ?? 0).toLocaleString()} نقطة = ${redeemEgp} جنيه خصم) على طلبي القادم.`
-    : `Hello, I'd like to redeem my loyalty points (${(data?.balance ?? 0).toLocaleString()} pts = ${redeemEgp} EGP discount) on my next order.`
-  const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`
+
+  const generateCoupon = async () => {
+    setGenerating(true)
+    setRedeemError('')
+    try {
+      const r = await fetch('/api/member/rewards/redeem', { method: 'POST' })
+      const json = await r.json()
+      if (!r.ok) {
+        setRedeemError(json.error === 'insufficient_points'
+          ? (isRtl ? 'رصيدك أقل من 100 نقطة' : 'Balance below 100 points')
+          : (isRtl ? 'حدث خطأ، حاول مجدداً' : 'Error, please try again'))
+      } else {
+        setGeneratedCode(json)
+        load() // refresh balance
+      }
+    } catch {
+      setRedeemError(isRtl ? 'حدث خطأ، حاول مجدداً' : 'Error, please try again')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const copyCode = () => {
+    if (!generatedCode) return
+    navigator.clipboard.writeText(generatedCode.code)
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -296,50 +323,84 @@ export default function RewardsPage() {
           )}
         </div>
 
-        {/* ── Redemption Panel ──────────────────────────────────────────── */}
+        {/* ── Coupon Generator Panel ────────────────────────────────────── */}
         {redeemOpen && redeemEgp > 0 && (
           <InfoCard accent="#d99401" className="p-5">
-            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">
-              🎁 {isRtl ? 'كيف تستبدل نقاطك؟' : 'How to Redeem Your Points'}
+            <div className="flex items-center gap-2 mb-4">
+              <Ticket size={16} style={{color:'#d99401'}}/>
+              <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                {isRtl ? 'توليد كوبون خصم' : 'Generate Discount Coupon'}
+              </div>
             </div>
-            <div className="space-y-3 mb-4">
-              {(isRtl ? [
-                { n:'1', t:'اختار المنتج اللي عايز تشتريه من المتجر' },
-                { n:'2', t:'ابعت لنا رسالة على واتساب بنصها الجاهز أدناه' },
-                { n:'3', t:'هنضيف الخصم على طلبك مباشرة قبل التأكيد' },
-              ] : [
-                { n:'1', t:'Choose the product you want to buy from the store' },
-                { n:'2', t:'Send us the pre-filled WhatsApp message below' },
-                { n:'3', t:'We\'ll apply the discount to your order before confirming' },
-              ]).map(s => (
-                <div key={s.n} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0"
-                    style={{background:'rgba(217,148,1,0.12)', color:'#d99401'}}>{s.n}</div>
-                  <div className="text-sm text-gray-700 dark:text-gray-300">{s.t}</div>
+
+            {!generatedCode ? (
+              <>
+                {/* Info */}
+                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 mb-4 text-xs text-amber-800 dark:text-amber-400 space-y-1">
+                  <div className="flex items-center gap-1.5 font-semibold mb-1"><Info size={11}/>{isRtl ? 'تفاصيل الكوبون' : 'Coupon Details'}</div>
+                  {(isRtl ? [
+                    `القيمة: ${redeemEgp} جنيه خصم (${Math.floor((data?.balance ?? 0) / 100) * 100} نقطة)`,
+                    `صالح لمدة 7 أيام من الآن`,
+                    `استخدام مرة واحدة فقط على أي اشتراك`,
+                    `الحد الأدنى للفاتورة: 300 جنيه`,
+                  ] : [
+                    `Value: ${redeemEgp} EGP off (${Math.floor((data?.balance ?? 0) / 100) * 100} points)`,
+                    `Valid for 7 days from now`,
+                    `Single-use on any subscription`,
+                    `Minimum order: 300 EGP`,
+                  ]).map((c, i) => (
+                    <div key={i} className="flex items-center gap-1.5"><span style={{color:'#d99401'}}>•</span>{c}</div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            {/* Conditions */}
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 mb-4 text-xs text-amber-800 dark:text-amber-400 space-y-1">
-              <div className="flex items-center gap-1.5 font-semibold mb-1"><Info size={11}/>{isRtl ? 'الشروط' : 'Conditions'}</div>
-              {(isRtl ? [
-                `100 نقطة = 5 جنيه خصم`,
-                `رصيدك القابل للاستبدال: ${redeemEgp} جنيه (${data!.balance} نقطة)`,
-                `الحد الأدنى للفاتورة: 300 جنيه`,
-                `الحد الأقصى للاستخدام: 15% من قيمة الفاتورة`,
-              ] : [
-                `100 pts = 5 EGP discount`,
-                `Your redeemable: ${redeemEgp} EGP (${data!.balance} pts)`,
-                `Minimum order: 300 EGP`,
-                `Max per order: 15% of order value`,
-              ]).map((c, i) => <div key={i} className="flex items-center gap-1.5"><span style={{color:'#d99401'}}>•</span>{c}</div>)}
-            </div>
-            <a href={waHref} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-bold transition-colors"
-              style={{background:'#25d366'}}>
-              <MessageCircle size={15}/>
-              {isRtl ? `أرسل طلب الاستبدال (${redeemEgp} جنيه خصم)` : `Request Redemption (${redeemEgp} EGP off)`}
-            </a>
+                {redeemError && (
+                  <div className="text-xs text-red-500 mb-3 text-center">{redeemError}</div>
+                )}
+                <button
+                  onClick={generateCoupon}
+                  disabled={generating}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60"
+                  style={{background:'#d99401', color:'#000'}}>
+                  {generating
+                    ? <><Loader2 size={15} className="animate-spin"/>{isRtl ? 'جاري التوليد...' : 'Generating...'}</>
+                    : <><Ticket size={15}/>{isRtl ? `احصل على كوبون ${redeemEgp} جنيه` : `Get ${redeemEgp} EGP Coupon`}</>
+                  }
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-4">
+                  <div className="text-xs text-gray-400 mb-2">{isRtl ? 'كوبونك الخاص' : 'Your Coupon Code'}</div>
+                  <div className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed"
+                    style={{borderColor:'rgba(217,148,1,0.5)', background:'rgba(217,148,1,0.05)'}}>
+                    <span className="font-mono font-black text-2xl tracking-widest text-gray-900 dark:text-gray-100">
+                      {generatedCode.code}
+                    </span>
+                    <button onClick={copyCode}
+                      className="p-2 rounded-lg transition-colors"
+                      style={{background: codeCopied ? '#22c55e22' : 'rgba(217,148,1,0.12)'}}>
+                      {codeCopied
+                        ? <Check size={16} style={{color:'#22c55e'}}/>
+                        : <Copy size={16} style={{color:'#d99401'}}/>
+                      }
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-xs text-center text-gray-500 dark:text-gray-400">
+                  <div>
+                    {isRtl
+                      ? `قيمة الخصم: ${currency === 'usd' ? `${(generatedCode.value_egp / 50).toFixed(1)} USD` : `${generatedCode.value_egp} جنيه`}`
+                      : `Discount: ${currency === 'usd' ? `${(generatedCode.value_egp / 50).toFixed(1)} USD` : `${generatedCode.value_egp} EGP`}`
+                    }
+                  </div>
+                  <div>
+                    {isRtl ? 'ينتهي:' : 'Expires:'} {new Date(generatedCode.expires_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-GB')}
+                  </div>
+                  <div className="text-amber-500 font-semibold pt-1">
+                    {isRtl ? 'استخدم الكود عند الدفع في المتجر' : 'Apply this code at checkout in the store'}
+                  </div>
+                </div>
+              </>
+            )}
           </InfoCard>
         )}
 
@@ -367,7 +428,7 @@ export default function RewardsPage() {
             <div className="flex gap-3">
               <StatCard icon={Zap}   accent="#22c55e" label={isRtl ? 'مكتسب' : 'Earned'}     value={(data?.total_earned ?? 0).toLocaleString()} sub={isRtl ? 'إجمالي' : 'lifetime'}/>
               <StatCard icon={Star}  accent="#8b5cf6" label={isRtl ? 'مستبدل' : 'Redeemed'}   value={(data?.total_redeemed ?? 0).toLocaleString()} sub={isRtl ? 'نقطة' : 'points'}/>
-              <StatCard icon={Clock} accent={data?.expires_days != null && data.expires_days < 30 ? '#ef4444' : '#6b7280'} label={isRtl ? 'ينتهي خلال' : 'Expires'} value={data?.expires_days != null ? `${data.expires_days}` : '—'} sub={isRtl ? 'يوم' : 'days'}/>
+              <StatCard icon={Clock} accent="#ef4444" label={isRtl ? 'ينتهي خلال' : 'Expires'} value={data?.expires_days != null ? `${data.expires_days}` : '—'} sub={isRtl ? 'يوم' : 'days'}/>
             </div>
 
             {/* How to earn */}
