@@ -464,10 +464,10 @@ export default function RewardsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon:'🛒', ar:`كل ${fmtAmt(1)} = 1 نقطة`,           en:`1 ${currency==='usd'?'USD':'EGP'} = 1 point`,           sub_ar:'على أي اشتراك',     sub_en:'on any order' },
-                  { icon:'⚡', ar:`من ${fmtAmt(500)} → +100 نقطة`,   en:`From ${fmtAmt(500)} → +100 pts`,   sub_ar:`أقل من ${fmtAmt(1500)}`,  sub_en:`under ${fmtAmt(1500)}` },
-                  { icon:'💎', ar:`من ${fmtAmt(1500)} → +300 نقطة`,  en:`From ${fmtAmt(1500)} → +300 pts`,  sub_ar:'بونص الطلب الكبير',         sub_en:'big order bonus' },
-                  { icon:'🎁', ar:'أول اشتراك → +200 نقطة',          en:'First order → +200 pts',            sub_ar:'مكافأة ترحيب',              sub_en:'welcome gift' },
+                  { icon:'🛒', ar: currency==='usd' ? '1 USD = 50 نقطة' : 'كل 1 جنيه = 1 نقطة',            en: currency==='usd' ? '1 USD = 50 points' : '1 EGP = 1 point',           sub_ar:'على أي اشتراك',           sub_en:'on any order' },
+                  { icon:'⚡', ar:`من ${fmtAmt(500)} → +100 نقطة`,  en:`From ${fmtAmt(500)} → +100 pts`,   sub_ar:`أقل من ${fmtAmt(1500)}`,   sub_en:`under ${fmtAmt(1500)}` },
+                  { icon:'💎', ar:`من ${fmtAmt(1500)} → +300 نقطة`, en:`From ${fmtAmt(1500)} → +300 pts`,  sub_ar:'بونص الطلب الكبير',         sub_en:'big order bonus' },
+                  { icon:'🎁', ar:'أول اشتراك → +200 نقطة',         en:'First order → +200 pts',            sub_ar:'مكافأة ترحيب',              sub_en:'welcome gift' },
                 ].map((rule, i) => (
                   <div key={i} className="flex items-start gap-2.5 p-3 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
                     <span className="text-base leading-none flex-shrink-0">{rule.icon}</span>
