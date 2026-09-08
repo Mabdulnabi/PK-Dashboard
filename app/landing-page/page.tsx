@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
+import LandingBlockEditor, { type LandingBlock } from '@/components/admin/LandingBlockEditor'
 import {
   Save, Upload, Plus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon,
   Check, Globe, Star, MessageSquare, BarChart3, Map, HelpCircle, Mail,
-  Layers, Eye, GripVertical, AlertTriangle,
+  Layers, Eye, GripVertical, AlertTriangle, LayoutGrid,
 } from 'lucide-react'
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -40,15 +41,16 @@ const DEFAULT_REVIEWS: Review[] = [
 
 // ─── TABS ──────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'general',    label: 'عام',         icon: Globe },
-  { id: 'hero',       label: 'الهيرو',       icon: Layers },
-  { id: 'features',   label: 'المميزات',     icon: Star },
-  { id: 'stats',      label: 'الأرقام',      icon: BarChart3 },
-  { id: 'map',        label: 'الخريطة',      icon: Map },
-  { id: 'faq',        label: 'الأسئلة',      icon: HelpCircle },
-  { id: 'reviews',    label: 'التقييمات',    icon: MessageSquare },
-  { id: 'newsletter', label: 'النشرة',       icon: Mail },
-  { id: 'footer',     label: 'الفوتر',       icon: Globe },
+  { id: 'general',    label: 'عام',           icon: Globe },
+  { id: 'hero',       label: 'الهيرو',         icon: Layers },
+  { id: 'blocks',     label: 'محتوى الصفحة',  icon: LayoutGrid },
+  { id: 'features',   label: 'المميزات',       icon: Star },
+  { id: 'stats',      label: 'الأرقام',        icon: BarChart3 },
+  { id: 'map',        label: 'الخريطة',        icon: Map },
+  { id: 'faq',        label: 'الأسئلة',        icon: HelpCircle },
+  { id: 'reviews',    label: 'التقييمات',      icon: MessageSquare },
+  { id: 'newsletter', label: 'النشرة',         icon: Mail },
+  { id: 'footer',     label: 'الفوتر',         icon: Globe },
 ]
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
@@ -134,6 +136,9 @@ export default function LandingPageAdmin() {
   // ── Footer ──
   const [footerHtml,    setFooterHtml]    = useState('')
 
+  // ── Blocks ──
+  const [blocks, setBlocks] = useState<LandingBlock[]>([])
+
   // ── Upload state ──
   const [uploading, setUploading] = useState<string | null>(null)
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -201,6 +206,7 @@ export default function LandingPageAdmin() {
       setNlEmailEn(s.lp_nl_email_en || 'Email address')
 
       setFooterHtml(s.lp_footer_html || '')
+      setBlocks(safeParse(s.lp_blocks, []))
       setLoading(false)
     })
   }, [])
@@ -238,6 +244,7 @@ export default function LandingPageAdmin() {
       lp_nl_name_ar: nlNameAr, lp_nl_name_en: nlNameEn,
       lp_nl_email_ar: nlEmailAr, lp_nl_email_en: nlEmailEn,
       lp_footer_html: footerHtml,
+      lp_blocks: JSON.stringify(blocks),
     }
     const res = await fetch('/api/ui-settings', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -350,7 +357,7 @@ export default function LandingPageAdmin() {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className={`${tab === 'blocks' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto space-y-6`}>
 
               {/* ── GENERAL ── */}
               {tab === 'general' && (
@@ -431,6 +438,25 @@ export default function LandingPageAdmin() {
                       <Plus size={14}/> إضافة أداة
                     </button>
                   </Card>
+                </div>
+              )}
+
+              {/* ── BLOCKS ── */}
+              {tab === 'blocks' && (
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-800 dark:text-white">محتوى الصفحة — نظام البلوكات</h2>
+                      <p className="text-xs text-gray-400 mt-1">أضف وعدّل وأعد ترتيب أقسام الصفحة بحرية كاملة. البلوكات تدعم اللغتين عربي/إنجليزي.</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2 flex-shrink-0">
+                      <LayoutGrid size={12} className="text-yellow-600"/>
+                      <span className="text-yellow-700 dark:text-yellow-400 font-semibold">{blocks.length} بلوك</span>
+                    </div>
+                  </div>
+                  <div style={{ height: '620px' }}>
+                    <LandingBlockEditor blocks={blocks} onChange={setBlocks}/>
+                  </div>
                 </div>
               )}
 
